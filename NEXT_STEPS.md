@@ -183,15 +183,11 @@ Once the server is running:
 ### Starting Development
 
 ```bash
-# 1. Start backend
+# 1. Start backend (includes admin routes)
 cd backend
 npm run dev
 
-# 2. Start admin dashboard (optional)
-cd admin-dashboard/backend
-npm run dev
-
-# 3. Check logs
+# 2. Check logs
 tail -f backend/logs/combined.log
 ```
 
@@ -286,7 +282,7 @@ PORT=5001
 - **Tests:** `/api/practice-tests/*`, `/api/assigned-tests/*`
 - **Certificates:** `/api/certificates/*`
 - **Knowledge:** `/api/knowledge/*`
-- **Admin:** `/api/admin/*` (port 5001)
+- **Admin:** `/api/admin/*` (users, stats, analytics)
 
 ---
 

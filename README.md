@@ -23,17 +23,19 @@ TekyPro LMS is a comprehensive Learning Management System built for database tra
 
 ```
 Tekypro/
-├── backend/                    # Main Backend API (Port 5000)
+├── backend/                    # Unified Backend API (Port 5000)
 │   ├── config/                # Database, passport, swagger configs
 │   ├── controllers/           # Route controllers
+│   │   ├── admin/            # Admin-specific controllers
+│   │   └── ...               # Other controllers
 │   ├── middleware/            # Auth, validation, error handling
 │   ├── models/                # Sequelize models
 │   ├── routes/                # API routes
+│   │   └── api/
+│   │       ├── admin/        # Admin routes (/api/admin/*)
+│   │       └── ...           # Other routes
 │   ├── services/              # Business logic (email, certificates, etc.)
 │   └── utils/                 # Helper functions
-│
-├── admin-dashboard/           # Admin Dashboard Backend (Port 5001)
-│   └── backend/               # Admin-specific API endpoints
 │
 ├── database/                  # Database schema and seed data
 │   ├── schema.sql            # Complete database schema (30 tables)
@@ -62,10 +64,6 @@ cd Tekypro
 # Install backend dependencies
 cd backend
 npm install
-
-# Install admin dashboard dependencies
-cd ../admin-dashboard/backend
-npm install
 ```
 
 ### 2. Database Setup
@@ -93,11 +91,6 @@ SHOW TABLES;
 cd backend
 cp .env.example .env
 # Edit .env with your credentials
-
-# Admin Dashboard
-cd ../admin-dashboard/backend
-cp .env.example .env
-# Edit .env with your credentials (use same DB and secrets as main backend)
 ```
 
 **⚠️ IMPORTANT:** Generate strong secrets for production:
@@ -116,17 +109,13 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ### 4. Run the Application
 
 ```bash
-# Terminal 1: Start main backend
+# Start the backend
 cd backend
-npm run dev
-
-# Terminal 2: Start admin dashboard backend
-cd admin-dashboard/backend
 npm run dev
 ```
 
 **Backend API:** http://localhost:5000
-**Admin API:** http://localhost:5001
+**Admin API:** http://localhost:5000/api/admin/*
 **API Documentation:** http://localhost:5000/api-docs
 
 ## 📋 Default Users (Development)
@@ -178,6 +167,7 @@ Key endpoints:
 - `/api/assigned-tests/*` - Instructor tests
 - `/api/certificates/*` - Certificates
 - `/api/knowledge/*` - Knowledge center
+- `/api/admin/*` - Admin dashboard (users, stats, analytics)
 
 ## 🔧 Development
 
@@ -228,10 +218,9 @@ For production, use a managed MySQL service:
 
 ## 🐛 Known Issues
 
-1. **Duplicate Backend Code:** Admin dashboard has duplicate code. Should be consolidated into main backend with role-based routes.
-2. **No Tests:** Test suite needs to be implemented.
-3. **Missing Frontend:** React frontend not included in this repository.
-4. **Third-party Services:** Google OAuth, Cloudinary, and Email services need configuration.
+1. **No Tests:** Test suite needs to be implemented.
+2. **Missing Frontend:** React frontend not included in this repository.
+3. **Third-party Services:** Google OAuth, Cloudinary, and Email services need configuration.
 
 ## 📈 Performance
 
