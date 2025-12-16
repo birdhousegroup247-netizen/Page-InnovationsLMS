@@ -123,6 +123,11 @@ app.use('/api/profile', require('./routes/api/profile'));
 app.use('/api/export', require('./routes/api/export'));
 // app.use('/api/users', require('./routes/api/users'));
 
+// Admin routes (requires admin/super_admin role)
+app.use('/api/admin/users', require('./routes/api/admin/users'));
+app.use('/api/admin/stats', require('./routes/api/admin/stats'));
+app.use('/api/admin/analytics', require('./routes/api/admin/analytics'));
+
 // API root
 app.get('/api', (req, res) => {
   res.status(200).json({
@@ -146,6 +151,11 @@ app.get('/api', (req, res) => {
       announcements: '/api/courses/:courseId/announcements',
       activity: '/api/activity',
       profile: '/api/profile',
+      admin: {
+        users: '/api/admin/users',
+        stats: '/api/admin/stats',
+        analytics: '/api/admin/analytics',
+      },
     },
   });
 });
