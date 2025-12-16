@@ -5,9 +5,9 @@ const {
   PracticeTestAttempt,
   AssignedTestAttempt,
   QuestionBank,
-} = require('../models');
-const ApiResponse = require('../utils/response');
-const { sequelize } = require('../config/database');
+} = require('../../models');
+const ApiResponse = require('../../utils/response');
+const { sequelize } = require('../../config/database');
 const { Op } = require('sequelize');
 
 class AnalyticsController {
@@ -104,7 +104,7 @@ class AnalyticsController {
         group: ['category_id'],
         include: [
           {
-            model: require('../models').Category,
+            model: require('../../models').Category,
             as: 'category',
             attributes: ['id', 'name', 'icon'],
           },
@@ -167,7 +167,7 @@ class AnalyticsController {
         group: ['category_id'],
         include: [
           {
-            model: require('../models').Category,
+            model: require('../../models').Category,
             as: 'category',
             attributes: ['id', 'name'],
           },

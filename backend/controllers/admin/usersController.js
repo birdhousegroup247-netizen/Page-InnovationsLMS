@@ -1,7 +1,7 @@
-const { User, Course, Enrollment, Certificate } = require('../models');
-const ApiResponse = require('../utils/response');
-const logger = require('../utils/logger');
-const { NotFoundError, BadRequestError } = require('../utils/errors');
+const { User, Course, Enrollment, Certificate } = require('../../models');
+const ApiResponse = require('../../utils/response');
+const logger = require('../../utils/logger');
+const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
 

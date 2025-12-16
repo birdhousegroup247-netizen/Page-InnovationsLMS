@@ -7,9 +7,9 @@ const {
   PracticeTestAttempt,
   AssignedTest,
   KnowledgeArticle,
-} = require('../models');
-const ApiResponse = require('../utils/response');
-const { sequelize } = require('../config/database');
+} = require('../../models');
+const ApiResponse = require('../../utils/response');
+const { sequelize } = require('../../config/database');
 const { Op } = require('sequelize');
 
 class StatsController {
