@@ -350,6 +350,52 @@ class CourseController {
       next(error);
     }
   }
+
+  // Get instructor's students (all enrollments across all instructor's courses)
+  static async getInstructorStudents(req, res, next) {
+    try {
+      const { course_id } = req.query;
+
+      // Get instructor's courses
+      const courseWhere = { instructor_id: req.user.id };
+      if (course_id) {
+        courseWhere.id = course_id;
+      }
+
+      const instructorCourses = await Course.findAll({
+        where: courseWhere,
+        attributes: ['id'],
+      });
+
+      const courseIds = instructorCourses.map((c) => c.id);
+
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, { students: [] });
+      }
+
+      // Get all enrollments for instructor's courses
+      const enrollments = await Enrollment.findAll({
+        where: { course_id: { [Op.in]: courseIds } },
+        include: [
+          {
+            model: User,
+            as: 'student',
+            attributes: ['id', 'full_name', 'email', 'avatar_url'],
+          },
+          {
+            model: Course,
+            as: 'course',
+            attributes: ['id', 'title', 'thumbnail_url'],
+          },
+        ],
+        order: [['enrollment_date', 'DESC']],
+      });
+
+      return ApiResponse.success(res, { students: enrollments });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = CourseController;

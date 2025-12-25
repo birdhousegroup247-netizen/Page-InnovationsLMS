@@ -24,24 +24,39 @@ class AuthController {
         throw new BadRequestError('Email already registered');
       }
 
+      // Handle instructor application
+      let userRole = role || 'student';
+      let instructorStatus = 'none';
+      let registrationMessage = 'Registration successful';
+
+      if (role === 'instructor') {
+        // Set role to student and mark instructor status as pending
+        userRole = 'student';
+        instructorStatus = 'pending';
+        registrationMessage = 'Registration successful. Your instructor application is pending approval.';
+        logger.info(`New instructor application from: ${email}`);
+      }
+
       // Create user
       const user = await User.createUser({
         full_name,
         email,
         password,
-        role: role || 'student',
+        role: userRole,
+        instructor_status: instructorStatus,
       });
 
       // Generate tokens
       const tokens = JWT.generateTokens(user);
 
       // Log activity
-      logger.info(`New user registered: ${email}`);
+      logger.info(`New user registered: ${email} (role: ${userRole}, instructor_status: ${instructorStatus})`);
 
       return ApiResponse.created(res, {
         user: user.toJSON(),
         ...tokens,
-      }, 'Registration successful');
+        instructor_application_pending: instructorStatus === 'pending',
+      }, registrationMessage);
     } catch (error) {
       next(error);
     }

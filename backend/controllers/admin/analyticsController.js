@@ -51,7 +51,7 @@ class AnalyticsController {
         attributes: [
           'student_id',
           [sequelize.fn('AVG', sequelize.col('percentage')), 'avg_score'],
-          [sequelize.fn('COUNT', sequelize.col('id')), 'attempts'],
+          [sequelize.fn('COUNT', sequelize.col('PracticeTestAttempt.id')), 'attempts'],
         ],
         group: ['student_id'],
         order: [[sequelize.fn('AVG', sequelize.col('percentage')), 'DESC']],

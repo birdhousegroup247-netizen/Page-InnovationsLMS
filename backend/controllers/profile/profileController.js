@@ -160,7 +160,7 @@ class ProfileController {
       const completedCoursesCount = await Enrollment.count({
         where: {
           student_id: userId,
-          completion_date: { [Op.ne]: null },
+          completed_at: { [Op.ne]: null },
         },
       });
 
@@ -173,7 +173,7 @@ class ProfileController {
       const testsTaken = await AssignedTestAttempt.count({
         where: {
           student_id: userId,
-          status: 'completed',
+          completed_at: { [Op.ne]: null },
         },
       });
 
@@ -181,7 +181,7 @@ class ProfileController {
       const testAttempts = await AssignedTestAttempt.findAll({
         where: {
           student_id: userId,
-          status: 'completed',
+          completed_at: { [Op.ne]: null },
         },
         attributes: ['score'],
       });

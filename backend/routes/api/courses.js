@@ -29,6 +29,7 @@ router.delete('/:id', authenticate, CourseController.deleteCourse);
 router.post('/:id/enroll', authenticate, authorize('student'), CourseController.enrollCourse);
 router.get('/my/enrollments', authenticate, authorize('student'), CourseController.getMyCourses);
 router.get('/my/teaching', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.getInstructorCourses);
+router.get('/my/students', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.getInstructorStudents);
 
 // ============================================================================
 // MODULE ROUTES
@@ -50,6 +51,7 @@ router.delete('/contents/:contentId', authenticate, ContentController.deleteCont
 // ============================================================================
 // PROGRESS ROUTES
 // ============================================================================
+router.get('/:courseId/progress', authenticate, authorize('student'), ProgressController.getCourseProgress);
 router.post('/contents/:contentId/complete', authenticate, authorize('student'), ProgressController.markContentComplete);
 router.post('/contents/:contentId/progress', authenticate, authorize('student'), ProgressController.updateProgress);
 

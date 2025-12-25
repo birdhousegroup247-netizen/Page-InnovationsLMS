@@ -1,0 +1,84 @@
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award } from 'lucide-react';
+
+// Shared navigation items for all authenticated pages
+export const getNavigationItems = (role = 'student') => {
+  const commonItems = [];
+
+  const studentItems = [
+    {
+      label: 'Home',
+      path: '/dashboard',
+      icon: <Home className="w-5 h-5" />,
+    },
+    {
+      label: 'Explore Courses',
+      path: '/courses',
+      icon: <Search className="w-5 h-5" />,
+    },
+    {
+      label: 'My Courses',
+      path: '/my-courses',
+      icon: <BookOpen className="w-5 h-5" />,
+    },
+    {
+      label: 'Practice Tests',
+      path: '/tests',
+      icon: <FileCheck className="w-5 h-5" />,
+    },
+    {
+      label: 'Bookmarks',
+      path: '/bookmarks',
+      icon: <Bookmark className="w-5 h-5" />,
+    },
+    {
+      label: 'Certificates',
+      path: '/certificates',
+      icon: <Award className="w-5 h-5" />,
+    },
+  ];
+
+  const instructorItems = [
+    {
+      label: 'Dashboard',
+      path: '/instructor/dashboard',
+      icon: <Home className="w-5 h-5" />,
+    },
+    {
+      label: 'My Courses',
+      path: '/instructor/dashboard', // Dashboard contains the course list
+      icon: <BookOpen className="w-5 h-5" />,
+    },
+    {
+      label: 'Create Course',
+      path: '/instructor/courses/create',
+      icon: <FileCheck className="w-5 h-5" />, // Using FileCheck as a placeholder for "Plus" or similar if not imported
+    },
+    {
+      label: 'My Students',
+      path: '/instructor/students',
+      icon: <Award className="w-5 h-5" />, // Using Award as placeholder for Users
+    },
+  ];
+
+  const adminItems = [
+    {
+      label: 'Dashboard',
+      path: '/admin/dashboard',
+      icon: <Home className="w-5 h-5" />,
+    },
+    {
+      label: 'Instructor Applications',
+      path: '/admin/instructor-applications',
+      icon: <FileCheck className="w-5 h-5" />,
+    },
+    // Add more admin items as needed
+  ];
+
+  if (role === 'admin' || role === 'super_admin') {
+    return adminItems;
+  } else if (role === 'instructor') {
+    return instructorItems;
+  } else {
+    return studentItems;
+  }
+};

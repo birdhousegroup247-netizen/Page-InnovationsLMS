@@ -59,6 +59,45 @@ class ProgressController {
     }
   }
 
+  // Get course progress for all lessons
+  static async getCourseProgress(req, res, next) {
+    try {
+      const { courseId } = req.params;
+
+      // Get all module content IDs for this course
+      const modules = await CourseModule.findAll({
+        where: { course_id: courseId },
+        include: [{ model: ModuleContent, as: 'contents', attributes: ['id'] }],
+      });
+
+      const allContentIds = modules.flatMap(m => m.contents.map(c => c.id));
+
+      // Get progress for all content
+      const progressRecords = await ContentProgress.findAll({
+        where: {
+          student_id: req.user.id,
+          content_id: allContentIds,
+        },
+      });
+
+      // Convert to object indexed by content ID
+      const progress = {};
+      progressRecords.forEach(record => {
+        progress[record.content_id] = {
+          completed: record.completed,
+          completed_at: record.completed_at,
+          watch_time_seconds: record.watch_time_seconds,
+          last_position_seconds: record.last_position_seconds,
+          last_accessed: record.last_accessed,
+        };
+      });
+
+      return ApiResponse.success(res, { progress });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Helper to update course progress percentage
   static async updateCourseProgress(studentId, moduleId) {
     const module = await CourseModule.findByPk(moduleId);

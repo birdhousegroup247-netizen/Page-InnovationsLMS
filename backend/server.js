@@ -42,9 +42,25 @@ if (process.env.ENABLE_COMPRESSION === 'true') {
 }
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'http://localhost:5173',  // Main app dev
+  'http://localhost:5174',  // Admin app dev
+  process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -127,6 +143,8 @@ app.use('/api/export', require('./routes/api/export'));
 app.use('/api/admin/users', require('./routes/api/admin/users'));
 app.use('/api/admin/stats', require('./routes/api/admin/stats'));
 app.use('/api/admin/analytics', require('./routes/api/admin/analytics'));
+app.use('/api/admin/instructor-applications', require('./routes/admin/instructorApplicationRoutes'));
+app.use('/api/admin/courses', require('./routes/api/admin/courses'));
 
 // API root
 app.get('/api', (req, res) => {

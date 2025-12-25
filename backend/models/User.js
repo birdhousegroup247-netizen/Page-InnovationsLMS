@@ -46,6 +46,12 @@ const User = sequelize.define(
       defaultValue: 'student',
       allowNull: false,
     },
+    instructor_status: {
+      type: DataTypes.ENUM('none', 'pending', 'approved', 'rejected'),
+      defaultValue: 'none',
+      allowNull: false,
+      comment: 'Status of instructor application: none=not applied, pending=awaiting approval, approved=can create courses, rejected=denied',
+    },
     profile_picture: {
       type: DataTypes.STRING(500),
       allowNull: true,
@@ -61,6 +67,12 @@ const User = sequelize.define(
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    status: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.is_active ? 'active' : 'inactive';
+      },
     },
     email_verified: {
       type: DataTypes.BOOLEAN,

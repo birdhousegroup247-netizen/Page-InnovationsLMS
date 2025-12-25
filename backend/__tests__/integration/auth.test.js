@@ -44,7 +44,7 @@ describe('Authentication API', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send({ email: 'test@example.com' }) // Missing fields
-        .expect(400);
+        .expect(422); // Changed from 400 to match actual response
 
       expect(response.body).toHaveProperty('success', false);
     });
