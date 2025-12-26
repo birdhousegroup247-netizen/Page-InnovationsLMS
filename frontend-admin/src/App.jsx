@@ -1,13 +1,20 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './components/ui/Toast';
 import Login from './pages/Login';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Users from './pages/admin/Users';
 import AdminCourses from './pages/admin/Courses';
+import CourseBuilder from './pages/admin/CourseBuilder';
+import Categories from './pages/admin/Categories';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminActivity from './pages/admin/Activity';
 import InstructorApplications from './pages/admin/InstructorApplications';
+import QuestionBank from './pages/admin/QuestionBank';
+import Tests from './pages/admin/Tests';
+import TestBuilder from './pages/admin/TestBuilder';
+import TestResults from './pages/admin/TestResults';
 import AppLayout from './components/layout/AppLayout';
 
 // Protected Route Component with AppLayout (Admin Only)
@@ -77,9 +84,10 @@ function PublicRoute({ children }) {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <AuthProvider>
-          <Routes>
+      <ToastProvider>
+        <Router>
+          <AuthProvider>
+            <Routes>
             {/* Public Routes */}
             <Route
               path="/login"
@@ -116,6 +124,22 @@ function App() {
               }
             />
             <Route
+              path="/courses/:courseId/builder"
+              element={
+                <AdminRoute>
+                  <CourseBuilder />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/categories"
+              element={
+                <AdminRoute>
+                  <Categories />
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/analytics"
               element={
                 <AdminRoute>
@@ -139,15 +163,56 @@ function App() {
                 </AdminRoute>
               }
             />
+            <Route
+              path="/questions"
+              element={
+                <AdminRoute>
+                  <QuestionBank />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/tests"
+              element={
+                <AdminRoute>
+                  <Tests />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/test-builder"
+              element={
+                <AdminRoute>
+                  <TestBuilder />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/test-builder/:testId"
+              element={
+                <AdminRoute>
+                  <TestBuilder />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/test-results/:testId"
+              element={
+                <AdminRoute>
+                  <TestResults />
+                </AdminRoute>
+              }
+            />
 
             {/* Redirect root to dashboard */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* 404 - Redirect to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </AuthProvider>
-      </Router>
+            </Routes>
+          </AuthProvider>
+        </Router>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

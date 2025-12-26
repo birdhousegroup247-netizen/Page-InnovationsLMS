@@ -71,24 +71,24 @@ const Modal = ({
       {/* Modal */}
       <div
         className={cn(
-          'relative w-full bg-white rounded-xl shadow-2xl animate-slide-up',
+          'relative w-full bg-white dark:bg-dark-800 rounded-xl shadow-2xl animate-slide-up',
           sizes[size],
           className
         )}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-border-dark">
             {title && (
-              <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-text-dark-primary">{title}</h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5 text-text-muted" />
+                <X className="w-5 h-5 text-gray-600 dark:text-text-dark-secondary" />
               </button>
             )}
           </div>
@@ -107,7 +107,7 @@ Modal.Body = ({ children, className }) => (
 );
 
 Modal.Footer = ({ children, className }) => (
-  <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-gray-50 rounded-b-xl', className)}>
+  <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 rounded-b-xl', className)}>
     {children}
   </div>
 );

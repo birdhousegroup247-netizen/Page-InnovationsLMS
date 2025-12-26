@@ -5,6 +5,7 @@
 
 const User = require('./User');
 const PasswordReset = require('./PasswordReset');
+const InstructorApplication = require('./InstructorApplication');
 const Category = require('./Category');
 const Course = require('./Course');
 const CourseModule = require('./CourseModule');
@@ -37,6 +38,8 @@ const ActivityLog = require('./ActivityLog');
 
 // User relationships
 User.hasMany(PasswordReset, { foreignKey: 'user_id', as: 'password_resets' });
+User.hasMany(InstructorApplication, { foreignKey: 'user_id', as: 'instructor_applications' });
+User.hasMany(InstructorApplication, { foreignKey: 'reviewed_by', as: 'reviewed_applications' });
 User.hasMany(Course, { foreignKey: 'instructor_id', as: 'courses' });
 User.hasMany(Enrollment, { foreignKey: 'student_id', as: 'enrollments' });
 User.hasMany(ContentProgress, { foreignKey: 'student_id', as: 'content_progress' });
@@ -44,6 +47,10 @@ User.hasMany(QuestionBank, { foreignKey: 'created_by', as: 'questions' });
 User.hasMany(KnowledgeArticle, { foreignKey: 'author_id', as: 'articles' });
 
 PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Instructor Application relationships
+InstructorApplication.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+InstructorApplication.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 
 // Category relationships
 Category.hasMany(Category, { foreignKey: 'parent_category_id', as: 'subcategories' });
@@ -57,6 +64,7 @@ Course.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
 Course.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor' });
 Course.hasMany(CourseModule, { foreignKey: 'course_id', as: 'modules' });
 Course.hasMany(Enrollment, { foreignKey: 'course_id', as: 'enrollments' });
+Course.hasMany(QuestionBank, { foreignKey: 'course_id', as: 'questions' });
 
 // Module relationships
 CourseModule.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
@@ -75,6 +83,7 @@ ContentProgress.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 ContentProgress.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'content' });
 
 // Question Bank relationships
+QuestionBank.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
 QuestionBank.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
 QuestionBank.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
@@ -176,6 +185,7 @@ User.hasMany(ActivityLog, { foreignKey: 'user_id', as: 'activity_logs' });
 module.exports = {
   User,
   PasswordReset,
+  InstructorApplication,
   Category,
   Course,
   CourseModule,

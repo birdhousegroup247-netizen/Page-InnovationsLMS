@@ -26,6 +26,15 @@ const Course = sequelize.define(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    thumbnail_url: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue('thumbnail');
+      },
+      set(value) {
+        this.setDataValue('thumbnail', value);
+      }
+    },
     category_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -46,12 +55,29 @@ const Course = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    difficulty: {
+    level: {
       type: DataTypes.ENUM('beginner', 'intermediate', 'advanced'),
       defaultValue: 'beginner',
     },
+    difficulty: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue('level');
+      },
+      set(value) {
+        this.setDataValue('level', value);
+      }
+    },
+    price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0.00,
+      validate: {
+        min: 0
+      }
+    },
     status: {
-      type: DataTypes.ENUM('draft', 'published', 'archived'),
+      type: DataTypes.ENUM('draft', 'published', 'archived', 'pending'),
       defaultValue: 'draft',
     },
     average_rating: {
@@ -65,6 +91,12 @@ const Course = sequelize.define(
     enrollment_count: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
+    },
+    enrolled_count: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue('enrollment_count');
+      }
     },
     completion_count: {
       type: DataTypes.INTEGER,
@@ -90,13 +122,8 @@ const Course = sequelize.define(
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    indexes: [
-      { fields: ['category_id'] },
-      { fields: ['instructor_id'] },
-      { fields: ['status'] },
-      { fields: ['slug'] },
-      { fields: ['difficulty'] },
-    ],
+    // Indexes are already defined in the database schema
+    // Removed to prevent sync conflicts
   }
 );
 

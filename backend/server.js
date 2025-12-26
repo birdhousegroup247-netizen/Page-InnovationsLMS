@@ -141,6 +141,7 @@ app.use('/api/export', require('./routes/api/export'));
 
 // Admin routes (requires admin/super_admin role)
 app.use('/api/admin/users', require('./routes/api/admin/users'));
+app.use('/api/admin/categories', require('./routes/api/admin/categories'));
 app.use('/api/admin/stats', require('./routes/api/admin/stats'));
 app.use('/api/admin/analytics', require('./routes/api/admin/analytics'));
 app.use('/api/admin/instructor-applications', require('./routes/admin/instructorApplicationRoutes'));

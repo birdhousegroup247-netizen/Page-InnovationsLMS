@@ -188,8 +188,18 @@ export const adminUsersAPI = {
 export const adminCoursesAPI = {
   getAll: (params) => api.get('/api/admin/courses', { params }),
   getById: (id) => api.get(`/api/admin/courses/${id}`),
+  create: (data) => api.post('/api/courses', data), // Use regular courses endpoint
+  update: (id, data) => api.put(`/api/courses/${id}`, data), // Use regular courses endpoint
+  delete: (id) => api.delete(`/api/courses/${id}`), // Use regular courses endpoint
   updateStatus: (id, status) => api.patch(`/api/admin/courses/${id}/status`, { status }),
   getStats: () => api.get('/api/admin/courses/stats'),
+  approve: (id) => api.patch(`/api/admin/courses/${id}/status`, { status: 'published' }),
+  reject: (id) => api.patch(`/api/admin/courses/${id}/status`, { status: 'draft' }),
+  archive: (id) => api.patch(`/api/admin/courses/${id}/status`, { status: 'archived' }),
+  // Bulk operations
+  bulkUpdateStatus: (courseIds, status) => api.post('/api/admin/courses/bulk/status', { courseIds, status }),
+  bulkDelete: (courseIds) => api.post('/api/admin/courses/bulk/delete', { courseIds }),
+  bulkUpdateField: (courseIds, field, value) => api.post('/api/admin/courses/bulk/update-field', { courseIds, field, value }),
 };
 
 // Admin: Instructor Application Management
@@ -218,6 +228,62 @@ export const adminAnalyticsAPI = {
   getQuestionAnalytics: () => api.get('/api/admin/analytics/questions'),
   getInstructorAnalytics: () => api.get('/api/admin/analytics/instructors'),
   getEnrollmentAnalytics: (days = 30) => api.get('/api/admin/analytics/enrollments', { params: { days } }),
+};
+
+// Admin: Activity Logs
+export const adminActivityAPI = {
+  getAllLogs: (params) => api.get('/api/activity/admin/activity-logs', { params }),
+  getUserLogs: (userId, params) => api.get(`/api/activity/admin/activity-logs/user/${userId}`, { params }),
+  getStats: (params) => api.get('/api/activity/admin/activity-logs/stats', { params }),
+};
+
+// Admin: Category Management
+export const adminCategoriesAPI = {
+  getAll: (params) => api.get('/api/admin/categories', { params }),
+  getById: (id) => api.get(`/api/admin/categories/${id}`),
+  create: (data) => api.post('/api/admin/categories', data),
+  update: (id, data) => api.put(`/api/admin/categories/${id}`, data),
+  delete: (id) => api.delete(`/api/admin/categories/${id}`),
+  getStats: () => api.get('/api/admin/categories/stats'),
+};
+
+// Admin: Question Bank Management
+export const adminQuestionsAPI = {
+  getAll: (params) => api.get('/api/questions', { params }),
+  getById: (id) => api.get(`/api/questions/${id}`),
+  create: (data) => api.post('/api/questions', data),
+  update: (id, data) => api.put(`/api/questions/${id}`, data),
+  delete: (id) => api.delete(`/api/questions/${id}`),
+  approve: (id) => api.patch(`/api/questions/${id}/approve`),
+  bulkImport: (data) => api.post('/api/questions/bulk', data),
+  bulkApprove: (questionIds) => api.post('/api/questions/bulk/approve', { question_ids: questionIds }),
+  bulkDelete: (questionIds) => api.post('/api/questions/bulk/delete', { question_ids: questionIds }),
+  getStats: () => api.get('/api/questions/stats'),
+  getCourseStats: () => api.get('/api/questions/stats/by-course'),
+};
+
+// Admin: Test Management
+export const adminTestsAPI = {
+  getAll: (params) => api.get('/api/assigned-tests/my-tests', { params }),
+  getById: (id) => api.get(`/api/assigned-tests/${id}`),
+  create: (data) => api.post('/api/assigned-tests', data),
+  update: (id, data) => api.put(`/api/assigned-tests/${id}`, data),
+  delete: (id) => api.delete(`/api/assigned-tests/${id}`),
+  addQuestions: (testId, data) => api.post(`/api/assigned-tests/${testId}/questions`, data),
+  assignStudents: (testId, data) => api.post(`/api/assigned-tests/${testId}/assign`, data),
+  getResults: (testId, params) => api.get(`/api/assigned-tests/${testId}/results`, { params }),
+  getStudentResult: (attemptId) => api.get(`/api/assigned-tests/attempts/${attemptId}`),
+  publish: (testId) => api.patch(`/api/assigned-tests/${testId}/publish`),
+  archive: (testId) => api.patch(`/api/assigned-tests/${testId}/archive`),
+};
+
+// Practice Test Management (Student-facing)
+export const practiceTestsAPI = {
+  generate: (data) => api.post('/api/practice-tests/generate', data),
+  getHistory: (params) => api.get('/api/practice-tests/history', { params }),
+  getAttempt: (attemptId) => api.get(`/api/practice-tests/${attemptId}`),
+  submit: (attemptId, data) => api.post(`/api/practice-tests/${attemptId}/submit`, data),
+  getResults: (attemptId) => api.get(`/api/practice-tests/${attemptId}/results`),
 };
 
 export default api;

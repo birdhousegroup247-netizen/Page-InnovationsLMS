@@ -142,10 +142,10 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-      <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-1 transition-colors">{value}</h3>
-      <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">{title}</p>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{value}</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400 transition-colors">{title}</p>
       {subtitle && (
-        <p className="text-xs text-gray-500 dark:text-text-dark-muted mt-2 transition-colors">{subtitle}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors">{subtitle}</p>
       )}
     </div>
   );
@@ -163,12 +163,12 @@ export default function AdminDashboard() {
           <Icon className="h-4 w-4 text-brand-blue" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-900 dark:text-text-dark-primary transition-colors">
+          <p className="text-sm text-gray-900 dark:text-white transition-colors">
             <span className="font-medium">{activity.user}</span>
             {' '}{activity.action}{' '}
             {activity.target && <span className="text-brand-blue">{activity.target}</span>}
           </p>
-          <p className="text-xs text-gray-500 dark:text-text-dark-muted mt-1 transition-colors">{formatTimeAgo(activity.time)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors">{formatTimeAgo(activity.time)}</p>
         </div>
       </div>
     );
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <Spinner size="lg" />
-            <p className="mt-4 text-gray-600 dark:text-text-dark-secondary font-medium transition-colors">
+            <p className="mt-4 text-gray-600 dark:text-gray-400 font-medium transition-colors">
               Loading dashboard...
             </p>
           </div>
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Enrollment Trends Chart */}
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-brand-blue" />
                   Enrollment Trends (Last 30 Days)
                 </h2>
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-text-dark-muted">
+                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                     No enrollment data available
                   </div>
                 )}
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
 
               {/* Popular Courses Chart */}
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-brand-purple" />
                   Top 5 Popular Courses
                 </h2>
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-text-dark-muted">
+                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                     No course data available
                   </div>
                 )}
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
               {/* Recent Activity */}
               <div className="lg:col-span-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary flex items-center gap-2 transition-colors">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 transition-colors">
                     <Activity className="h-5 w-5" />
                     Recent Activity
                   </h2>
@@ -394,7 +394,7 @@ export default function AdminDashboard() {
                       <ActivityItem key={activity.id} activity={activity} />
                     ))
                   ) : (
-                    <div className="py-8 text-center text-gray-500 dark:text-text-dark-muted">
+                    <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                       No recent activities
                     </div>
                   )}
@@ -405,7 +405,7 @@ export default function AdminDashboard() {
               <div className="space-y-6">
                 {/* Quick Actions */}
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 transition-colors">Quick Actions</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 transition-colors">Quick Actions</h2>
                   <div className="space-y-3">
                     <Link to="/users" className="block w-full">
                       <Button variant="primary" fullWidth className="justify-start">
@@ -442,30 +442,30 @@ export default function AdminDashboard() {
                 {/* System Health */}
                 {systemHealth && (
                   <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-text-dark-primary mb-4 transition-colors">System Health</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 transition-colors">System Health</h3>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">Database</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 transition-colors">Database</span>
                         <span className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 transition-colors">
                           <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                           {systemHealth.database?.status || 'healthy'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">DB Size</span>
-                        <span className="text-sm text-gray-900 dark:text-text-dark-primary font-medium transition-colors">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 transition-colors">DB Size</span>
+                        <span className="text-sm text-gray-900 dark:text-white font-medium transition-colors">
                           {systemHealth.database?.sizeMs?.toFixed(2) || 0} MB
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">Uptime</span>
-                        <span className="text-sm text-gray-900 dark:text-text-dark-primary font-medium transition-colors">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 transition-colors">Uptime</span>
+                        <span className="text-sm text-gray-900 dark:text-white font-medium transition-colors">
                           {Math.floor((systemHealth.server?.uptime || 0) / 3600)}h {Math.floor(((systemHealth.server?.uptime || 0) % 3600) / 60)}m
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">Memory</span>
-                        <span className="text-sm text-gray-900 dark:text-text-dark-primary font-medium transition-colors">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 transition-colors">Memory</span>
+                        <span className="text-sm text-gray-900 dark:text-white font-medium transition-colors">
                           {systemHealth.server?.memory?.used || 'N/A'}
                         </span>
                       </div>
@@ -479,27 +479,27 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-text-dark-secondary transition-colors">Published Courses</h3>
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors">Published Courses</h3>
                   <CheckCircle className="h-5 w-5 text-green-500" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-1 transition-colors">{stats.courses?.published || 0}</p>
-                <p className="text-xs text-gray-500 dark:text-text-dark-muted transition-colors">Live on platform</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{stats.courses?.published || 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">Live on platform</p>
               </div>
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-text-dark-secondary transition-colors">Draft Courses</h3>
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors">Draft Courses</h3>
                   <Clock className="h-5 w-5 text-gray-400" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-1 transition-colors">{stats.courses?.draft || 0}</p>
-                <p className="text-xs text-gray-500 dark:text-text-dark-muted transition-colors">In development</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{stats.courses?.draft || 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">In development</p>
               </div>
               <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-text-dark-secondary transition-colors">Total Questions</h3>
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors">Total Questions</h3>
                   <Award className="h-5 w-5 text-brand-blue" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-1 transition-colors">{stats.questions?.total || 0}</p>
-                <p className="text-xs text-gray-500 dark:text-text-dark-muted transition-colors">{stats.questions?.approved || 0} approved</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{stats.questions?.total || 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors">{stats.questions?.approved || 0} approved</p>
               </div>
             </div>
           </>

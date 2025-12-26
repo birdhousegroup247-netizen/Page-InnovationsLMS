@@ -127,6 +127,31 @@ export const examsAPI = {
   getTestAttempt: (attemptId) => api.get(`/api/exams/attempts/${attemptId}`),
 };
 
+// Practice Tests API (Student)
+export const practiceTestsAPI = {
+  generate: (data) => api.post('/api/practice-tests/generate', data),
+  getHistory: (params) => api.get('/api/practice-tests/history', { params }),
+  getAttempt: (attemptId) => api.get(`/api/practice-tests/${attemptId}`),
+  submit: (attemptId, data) => api.post(`/api/practice-tests/${attemptId}/submit`, data),
+  getResults: (attemptId) => api.get(`/api/practice-tests/${attemptId}/results`),
+};
+
+// Assigned Tests API (Student)
+export const assignedTestsAPI = {
+  getMyTests: (params) => api.get('/api/assigned-tests/student/my-tests', { params }),
+  getTest: (testId) => api.get(`/api/assigned-tests/student/${testId}`),
+  startAttempt: (testId) => api.post(`/api/assigned-tests/student/${testId}/start`),
+  submitAttempt: (attemptId, data) => api.post(`/api/assigned-tests/student/attempts/${attemptId}/submit`, data),
+  getAttempt: (attemptId) => api.get(`/api/assigned-tests/student/attempts/${attemptId}`),
+  getResults: (attemptId) => api.get(`/api/assigned-tests/student/attempts/${attemptId}/results`),
+};
+
+// Questions API (for practice test generation)
+export const questionsAPI = {
+  getApproved: (params) => api.get('/api/questions/approved', { params }),
+  getByCategory: (categoryId, params) => api.get(`/api/questions/category/${categoryId}`, { params }),
+};
+
 export const notificationsAPI = {
   getAll: (params) => api.get('/api/notifications', { params }),
   getUnreadCount: () => api.get('/api/notifications/unread/count'),

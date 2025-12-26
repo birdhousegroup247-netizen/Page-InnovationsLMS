@@ -116,10 +116,10 @@ export default function AdminAnalytics() {
           </div>
         )}
       </div>
-      <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-1 transition-colors">{value}</h3>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1 transition-colors">{value}</h3>
       <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">{title}</p>
       {subtitle && (
-        <p className="text-xs text-gray-500 dark:text-text-dark-muted mt-2 transition-colors">{subtitle}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors">{subtitle}</p>
       )}
     </div>
   );
@@ -240,7 +240,7 @@ export default function AdminAnalytics() {
               {/* Courses by Category */}
               {courseAnalytics?.coursesByCategory && courseAnalytics.coursesByCategory.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <PieChart className="h-5 w-5 text-brand-blue" />
                     Courses by Category
                   </h2>
@@ -272,7 +272,7 @@ export default function AdminAnalytics() {
               {/* Courses by Difficulty */}
               {courseAnalytics?.coursesByDifficulty && courseAnalytics.coursesByDifficulty.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <Target className="h-5 w-5 text-brand-purple" />
                     Course Difficulty
                   </h2>
@@ -304,7 +304,7 @@ export default function AdminAnalytics() {
               {/* Questions by Type */}
               {questionAnalytics?.questionsByType && questionAnalytics.questionsByType.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <Award className="h-5 w-5 text-green-500" />
                     Question Types
                   </h2>
@@ -339,7 +339,7 @@ export default function AdminAnalytics() {
               {/* Enrollment Trends */}
               {enrollmentAnalytics?.enrollmentsByDay && enrollmentAnalytics.enrollmentsByDay.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-brand-blue" />
                     Enrollment & Completion Trends
                   </h2>
@@ -376,7 +376,7 @@ export default function AdminAnalytics() {
               {/* Course Creation Trends */}
               {courseAnalytics?.courseCreationTrends && courseAnalytics.courseCreationTrends.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <BookOpen className="h-5 w-5 text-brand-purple" />
                     Course Creation Trends (12 Months)
                   </h2>
@@ -428,9 +428,9 @@ export default function AdminAnalytics() {
                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                       <Target className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary transition-colors">Practice Tests</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">Practice Tests</h3>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
                     {parseFloat(studentPerformance.practiceTests?.avgScore || 0).toFixed(1)}%
                   </p>
                   <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
@@ -443,9 +443,9 @@ export default function AdminAnalytics() {
                     <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary transition-colors">Assigned Tests</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">Assigned Tests</h3>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
                     {parseFloat(studentPerformance.assignedTests?.passRate || 0).toFixed(1)}%
                   </p>
                   <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
@@ -458,9 +458,9 @@ export default function AdminAnalytics() {
                     <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                       <Award className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary transition-colors">Course Completion</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">Course Completion</h3>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
                     {parseFloat(studentPerformance.courseCompletion?.completionRate || 0).toFixed(1)}%
                   </p>
                   <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
@@ -475,7 +475,7 @@ export default function AdminAnalytics() {
               {/* Top Courses */}
               {courseAnalytics?.topCourses && courseAnalytics.topCourses.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-green-500" />
                     Top 10 Courses by Enrollment
                   </h2>
@@ -507,7 +507,7 @@ export default function AdminAnalytics() {
               {/* Top Instructors */}
               {instructorAnalytics?.topInstructors && instructorAnalytics.topInstructors.length > 0 && (
                 <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-6 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <Users className="h-5 w-5 text-brand-blue" />
                     Top 10 Instructors by Courses
                   </h2>
@@ -525,10 +525,10 @@ export default function AdminAnalytics() {
                             {index + 1}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {instructor.instructor?.full_name || 'Unknown'}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-text-dark-muted">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {instructor.courses_count} courses • {instructor.total_enrollments || 0} students
                             </p>
                           </div>

@@ -18,12 +18,19 @@ import CreateCourse from './pages/instructor/CreateCourse';
 import EditCourse from './pages/instructor/EditCourse';
 import ManageModules from './pages/instructor/ManageModules';
 import ManageLessons from './pages/instructor/ManageLessons';
+import InstructorCourseBuilder from './pages/instructor/CourseBuilder';
 import MyStudents from './pages/instructor/MyStudents';
 import ProfileSettings from './pages/ProfileSettings';
 import Notifications from './pages/Notifications';
 import Bookmarks from './pages/Bookmarks';
 import PracticeTests from './pages/PracticeTests';
 import Certificates from './pages/Certificates';
+import GeneratePracticeTest from './pages/GeneratePracticeTest';
+import TakeTest from './pages/TakeTest';
+import TestResults from './pages/TestResults';
+import MyAssignedTests from './pages/MyAssignedTests';
+import ManageTests from './pages/instructor/ManageTests';
+import ContributeQuestions from './pages/instructor/ContributeQuestions';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Users from './pages/admin/Users';
 import AdminCourses from './pages/admin/Courses';
@@ -291,10 +298,58 @@ function App() {
             }
           />
           <Route
+            path="/instructor/courses/:courseId/builder"
+            element={
+              <InstructorRoute>
+                <InstructorCourseBuilder />
+              </InstructorRoute>
+            }
+          />
+          <Route
             path="/instructor/students"
             element={
               <InstructorRoute>
                 <MyStudents />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/tests"
+            element={
+              <InstructorRoute>
+                <ManageTests />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/tests/create"
+            element={
+              <InstructorRoute>
+                <TakeTest />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/tests/:testId/edit"
+            element={
+              <InstructorRoute>
+                <TakeTest />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/tests/:testId/results"
+            element={
+              <InstructorRoute>
+                <TestResults />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/contribute-questions"
+            element={
+              <InstructorRoute>
+                <ContributeQuestions />
               </InstructorRoute>
             }
           />
@@ -335,6 +390,46 @@ function App() {
             element={
               <ProtectedRoute>
                 <Certificates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-assigned-tests"
+            element={
+              <ProtectedRoute>
+                <MyAssignedTests />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/generate-practice-test"
+            element={
+              <ProtectedRoute>
+                <GeneratePracticeTest />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice-tests/:attemptId/take"
+            element={
+              <ProtectedRoute>
+                <TakeTest />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/test-results/:attemptId"
+            element={
+              <ProtectedRoute>
+                <TestResults />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assigned-tests/:testId/take"
+            element={
+              <ProtectedRoute>
+                <TakeTest />
               </ProtectedRoute>
             }
           />

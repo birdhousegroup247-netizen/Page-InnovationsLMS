@@ -1,4 +1,4 @@
-import { Home, Search, BookOpen, FileCheck, Bookmark, Award } from 'lucide-react';
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList } from 'lucide-react';
 
 // Shared navigation items for all authenticated pages
 export const getNavigationItems = (role = 'student') => {
@@ -21,9 +21,19 @@ export const getNavigationItems = (role = 'student') => {
       icon: <BookOpen className="w-5 h-5" />,
     },
     {
+      label: 'My Assigned Tests',
+      path: '/my-assigned-tests',
+      icon: <ClipboardList className="w-5 h-5" />,
+    },
+    {
       label: 'Practice Tests',
-      path: '/tests',
+      path: '/practice-tests',
       icon: <FileCheck className="w-5 h-5" />,
+    },
+    {
+      label: 'Generate Test',
+      path: '/generate-practice-test',
+      icon: <Zap className="w-5 h-5" />,
     },
     {
       label: 'Bookmarks',
@@ -52,6 +62,16 @@ export const getNavigationItems = (role = 'student') => {
       label: 'Create Course',
       path: '/instructor/courses/create',
       icon: <FileCheck className="w-5 h-5" />, // Using FileCheck as a placeholder for "Plus" or similar if not imported
+    },
+    {
+      label: 'My Tests',
+      path: '/instructor/tests',
+      icon: <FileText className="w-5 h-5" />,
+    },
+    {
+      label: 'Contribute Questions',
+      path: '/instructor/contribute-questions',
+      icon: <HelpCircle className="w-5 h-5" />,
     },
     {
       label: 'My Students',

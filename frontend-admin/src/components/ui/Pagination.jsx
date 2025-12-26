@@ -72,9 +72,10 @@ const Pagination = ({
           onClick={() => handlePageChange(1)}
           disabled={currentPage === 1}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-border',
-            'transition-colors hover:bg-gray-100',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
+            'text-gray-700 dark:text-text-dark-primary',
+            'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
             sizes[size]
           )}
           aria-label="First page"
@@ -88,9 +89,10 @@ const Pagination = ({
         onClick={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg border border-border',
-          'transition-colors hover:bg-gray-100',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+          'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
+          'text-gray-700 dark:text-text-dark-primary',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
           sizes[size]
         )}
         aria-label="Previous page"
@@ -105,7 +107,7 @@ const Pagination = ({
             <span
               key={`ellipsis-${index}`}
               className={cn(
-                'inline-flex items-center justify-center text-text-muted',
+                'inline-flex items-center justify-center text-gray-500 dark:text-text-dark-secondary',
                 sizes[size]
               )}
             >
@@ -123,7 +125,7 @@ const Pagination = ({
               sizes[size],
               currentPage === page
                 ? 'bg-brand-blue text-white border-brand-blue hover:bg-brand-blue-600'
-                : 'border-border hover:bg-gray-100 text-text-primary'
+                : 'border-gray-200 dark:border-border-dark hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-900 dark:text-text-dark-primary'
             )}
             aria-label={`Page ${page}`}
             aria-current={currentPage === page ? 'page' : undefined}
@@ -138,9 +140,10 @@ const Pagination = ({
         onClick={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg border border-border',
-          'transition-colors hover:bg-gray-100',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+          'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
+          'text-gray-700 dark:text-text-dark-primary',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
           sizes[size]
         )}
         aria-label="Next page"
@@ -154,9 +157,10 @@ const Pagination = ({
           onClick={() => handlePageChange(totalPages)}
           disabled={currentPage === totalPages}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-border',
-            'transition-colors hover:bg-gray-100',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
+            'text-gray-700 dark:text-text-dark-primary',
+            'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
             sizes[size]
           )}
           aria-label="Last page"
@@ -190,9 +194,10 @@ export const SimplePagination = ({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={cn(
-          'inline-flex items-center gap-2 rounded-lg border border-border font-medium',
-          'transition-colors hover:bg-gray-100',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+          'inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-border-dark font-medium',
+          'text-gray-700 dark:text-text-dark-primary',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
           sizes[size]
         )}
       >
@@ -200,7 +205,7 @@ export const SimplePagination = ({
         Previous
       </button>
 
-      <span className="text-sm text-text-secondary">
+      <span className="text-sm text-gray-600 dark:text-text-dark-secondary">
         Page {currentPage} of {totalPages}
       </span>
 
@@ -208,9 +213,10 @@ export const SimplePagination = ({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={cn(
-          'inline-flex items-center gap-2 rounded-lg border border-border font-medium',
-          'transition-colors hover:bg-gray-100',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+          'inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-border-dark font-medium',
+          'text-gray-700 dark:text-text-dark-primary',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
           sizes[size]
         )}
       >

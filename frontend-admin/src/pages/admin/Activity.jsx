@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../lib/api';
+import { adminActivityAPI } from '../../lib/api';
 import {
   Activity as ActivityIcon,
   Search,
@@ -61,128 +61,102 @@ export default function Activity() {
     try {
       setLoading(true);
 
-      // Mock activity data (you'll replace with real API calls)
-      const mockActivities = [
-        {
-          id: 1,
-          type: 'enrollment',
-          severity: 'info',
-          user: { id: 123, name: 'John Doe', email: 'john@example.com', avatar: null },
-          action: 'enrolled in',
-          target: 'Advanced React Development',
-          metadata: { course_id: 45 },
-          timestamp: new Date(Date.now() - 5 * 60000),
-          ip_address: '192.168.1.1',
-        },
-        {
-          id: 2,
-          type: 'course_created',
-          severity: 'info',
-          user: { id: 456, name: 'Jane Smith', email: 'jane@example.com', avatar: null },
-          action: 'created course',
-          target: 'Python for Beginners',
-          metadata: { course_id: 78 },
-          timestamp: new Date(Date.now() - 60 * 60000),
-          ip_address: '192.168.1.2',
-        },
-        {
-          id: 3,
-          type: 'certificate_earned',
-          severity: 'success',
-          user: { id: 789, name: 'Mike Johnson', email: 'mike@example.com', avatar: null },
-          action: 'earned certificate for',
-          target: 'SQL Mastery',
-          metadata: { course_id: 23, certificate_id: 456 },
-          timestamp: new Date(Date.now() - 2 * 60 * 60000),
-          ip_address: '192.168.1.3',
-        },
-        {
-          id: 4,
-          type: 'instructor_application',
-          severity: 'warning',
-          user: { id: 234, name: 'Sarah Williams', email: 'sarah@example.com', avatar: null },
-          action: 'applied to become instructor',
-          target: '',
-          metadata: { application_id: 12 },
-          timestamp: new Date(Date.now() - 3 * 60 * 60000),
-          ip_address: '192.168.1.4',
-        },
-        {
-          id: 5,
-          type: 'review',
-          severity: 'info',
-          user: { id: 567, name: 'Tom Brown', email: 'tom@example.com', avatar: null },
-          action: 'left a 5-star review for',
-          target: 'JavaScript Basics',
-          metadata: { course_id: 34, rating: 5 },
-          timestamp: new Date(Date.now() - 4 * 60 * 60000),
-          ip_address: '192.168.1.5',
-        },
-        {
-          id: 6,
-          type: 'payment',
-          severity: 'success',
-          user: { id: 890, name: 'Alice Cooper', email: 'alice@example.com', avatar: null },
-          action: 'purchased',
-          target: 'Full Stack Bundle',
-          metadata: { amount: 199.99, currency: 'USD' },
-          timestamp: new Date(Date.now() - 5 * 60 * 60000),
-          ip_address: '192.168.1.6',
-        },
-        {
-          id: 7,
-          type: 'login',
-          severity: 'info',
-          user: { id: 123, name: 'John Doe', email: 'john@example.com', avatar: null },
-          action: 'logged in',
-          target: '',
-          metadata: {},
-          timestamp: new Date(Date.now() - 6 * 60 * 60000),
-          ip_address: '192.168.1.1',
-        },
-        {
-          id: 8,
-          type: 'failed_login',
-          severity: 'error',
-          user: { id: null, name: 'Unknown', email: 'unknown@example.com', avatar: null },
-          action: 'failed login attempt',
-          target: '',
-          metadata: { reason: 'Invalid password' },
-          timestamp: new Date(Date.now() - 7 * 60 * 60000),
-          ip_address: '192.168.1.7',
-        },
-        {
-          id: 9,
-          type: 'course_published',
-          severity: 'success',
-          user: { id: 456, name: 'Jane Smith', email: 'jane@example.com', avatar: null },
-          action: 'published course',
-          target: 'Python for Beginners',
-          metadata: { course_id: 78 },
-          timestamp: new Date(Date.now() - 8 * 60 * 60000),
-          ip_address: '192.168.1.2',
-        },
-        {
-          id: 10,
-          type: 'user_suspended',
-          severity: 'error',
-          user: { id: 999, name: 'Admin User', email: 'admin@example.com', avatar: null },
-          action: 'suspended user',
-          target: 'Bob Smith',
-          metadata: { reason: 'Policy violation', suspended_user_id: 888 },
-          timestamp: new Date(Date.now() - 10 * 60 * 60000),
-          ip_address: '192.168.1.8',
-        },
-      ];
+      // Fetch real activity logs from API
+      const params = {
+        page: filters.page,
+        limit: filters.limit,
+        action: filters.type || undefined,
+        // Map frontend severity to backend filtering if needed
+      };
 
-      setActivities(mockActivities);
-      setPagination({
-        currentPage: 1,
-        totalPages: 5,
-        totalItems: 100,
+      // Add search filter if present
+      if (filters.search) {
+        params.search = filters.search;
+      }
+
+      const response = await adminActivityAPI.getAllLogs(params);
+      const data = response.data.data;
+
+      // Transform backend data to match frontend format
+      const transformedActivities = data.logs.map(log => {
+        // Determine severity based on action
+        let severity = 'info';
+        let type = log.action;
+        let target = '';
+        let actionText = log.action.replace(/_/g, ' ');
+
+        // Map common actions to severity and user-friendly format
+        if (log.action === 'login') {
+          severity = 'info';
+          actionText = 'logged in';
+        } else if (log.action === 'failed_login') {
+          severity = 'error';
+          actionText = 'failed login attempt';
+        } else if (log.action.includes('enroll')) {
+          severity = 'info';
+          type = 'enrollment';
+          actionText = 'enrolled in';
+          target = log.metadata?.course_title || `${log.entity_type} #${log.entity_id}`;
+        } else if (log.action.includes('certificate')) {
+          severity = 'success';
+          type = 'certificate_earned';
+          actionText = 'earned certificate for';
+          target = log.metadata?.course_title || `course #${log.entity_id}`;
+        } else if (log.action.includes('course_create')) {
+          severity = 'info';
+          type = 'course_created';
+          actionText = 'created course';
+          target = log.metadata?.course_title || `course #${log.entity_id}`;
+        } else if (log.action.includes('course_publish')) {
+          severity = 'success';
+          type = 'course_published';
+          actionText = 'published course';
+          target = log.metadata?.course_title || `course #${log.entity_id}`;
+        } else if (log.action.includes('instructor_app')) {
+          severity = 'warning';
+          type = 'instructor_application';
+          actionText = 'applied to become instructor';
+        } else if (log.action.includes('payment') || log.action.includes('purchase')) {
+          severity = 'success';
+          type = 'payment';
+          actionText = 'purchased';
+          target = log.metadata?.course_title || log.metadata?.item_name || '';
+        } else if (log.action.includes('review')) {
+          severity = 'info';
+          type = 'review';
+          actionText = `left a ${log.metadata?.rating || 5}-star review for`;
+          target = log.metadata?.course_title || `course #${log.entity_id}`;
+        } else if (log.action.includes('suspend')) {
+          severity = 'error';
+          type = 'user_suspended';
+          actionText = 'suspended user';
+          target = log.metadata?.target_user_name || '';
+        }
+
+        return {
+          id: log.id,
+          type,
+          severity,
+          user: {
+            id: log.user?.id || null,
+            name: log.user?.full_name || 'System',
+            email: log.user?.email || '',
+            avatar: null,
+          },
+          action: actionText,
+          target,
+          metadata: log.metadata || {},
+          timestamp: new Date(log.created_at),
+          ip_address: log.ip_address || 'N/A',
+        };
       });
+
+      setActivities(transformedActivities);
+      setPagination(data.pagination);
     } catch (error) {
       console.error('Error fetching activities:', error);
+      setActivities([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
@@ -372,19 +346,19 @@ export default function Activity() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-4 mb-1">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 dark:text-text-dark-primary">
+                              <p className="text-sm text-gray-900 dark:text-white">
                                 <span className="font-medium">{activity.user.name}</span>
-                                {' '}<span className="text-gray-600 dark:text-text-dark-secondary">{activity.action}</span>
+                                {' '}<span className="text-gray-600 dark:text-gray-400">{activity.action}</span>
                                 {activity.target && (
                                   <span className="font-medium text-brand-blue"> {activity.target}</span>
                                 )}
                               </p>
                               <div className="flex items-center gap-3 mt-1">
-                                <p className="text-xs text-gray-500 dark:text-text-dark-muted flex items-center gap-1">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
                                   {formatTimestamp(activity.timestamp)}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-text-dark-muted">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                   IP: {activity.ip_address}
                                 </p>
                               </div>
@@ -396,7 +370,7 @@ export default function Activity() {
 
                           {/* Metadata */}
                           {Object.keys(activity.metadata).length > 0 && (
-                            <div className="mt-2 text-xs text-gray-500 dark:text-text-dark-muted bg-gray-50 dark:bg-dark-700 rounded p-2">
+                            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-dark-700 rounded p-2">
                               {Object.entries(activity.metadata).map(([key, value]) => (
                                 <span key={key} className="mr-3">
                                   <strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : value}
@@ -413,9 +387,9 @@ export default function Activity() {
 
               {/* Pagination */}
               {pagination && (
-                <div className="px-6 py-4 border-t border-gray-200 dark:border-border-dark">
+                <div className="px-3 py-4 border-t border-gray-200 dark:border-border-dark">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600 dark:text-text-dark-secondary">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{' '}
                       {Math.min(pagination.currentPage * filters.limit, pagination.totalItems)} of{' '}
                       {pagination.totalItems} activities

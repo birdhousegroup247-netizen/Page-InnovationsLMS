@@ -1,14 +1,14 @@
-const { Course, User, Category, Enrollment } = require('../../models');
+const { Course, User, Category, Enrollment, CourseModule, ModuleContent } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
-const { NotFoundError, BadRequestError } = require('../../utils/errors');
-const { Op } = require('sequelize');
+const { NotFoundError, BadRequestError, ForbiddenError } = require('../../utils/errors');
+const { Op, fn, col, literal } = require('sequelize');
 
 class AdminCoursesController {
     // Get all courses with filters (admin view)
     static async getAllCourses(req, res, next) {
         try {
-            const { status, search, instructor_id, category_id, page = 1, limit = 20 } = req.query;
+            const { status, search, instructor_id, category_id, level, dateFrom, dateTo, page = 1, limit = 20, sortBy = 'created_at', sortOrder = 'DESC' } = req.query;
 
             const where = {};
 
@@ -24,6 +24,10 @@ class AdminCoursesController {
                 where.category_id = category_id;
             }
 
+            if (level) {
+                where.level = level;
+            }
+
             if (search) {
                 where[Op.or] = [
                     { title: { [Op.like]: `%${search}%` } },
@@ -31,7 +35,26 @@ class AdminCoursesController {
                 ];
             }
 
+            // Date range filtering
+            if (dateFrom || dateTo) {
+                where.created_at = {};
+                if (dateFrom) {
+                    where.created_at[Op.gte] = new Date(dateFrom);
+                }
+                if (dateTo) {
+                    // Add 1 day to include the entire day
+                    const endDate = new Date(dateTo);
+                    endDate.setDate(endDate.getDate() + 1);
+                    where.created_at[Op.lt] = endDate;
+                }
+            }
+
             const offset = (page - 1) * limit;
+
+            // Validate sortBy to prevent SQL injection
+            const allowedSortFields = ['title', 'created_at', 'status', 'price', 'enrollment_count', 'level'];
+            const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
+            const validSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
             const { count, rows } = await Course.findAndCountAll({
                 where,
@@ -39,9 +62,21 @@ class AdminCoursesController {
                     { model: User, as: 'instructor', attributes: ['id', 'full_name', 'email'] },
                     { model: Category, as: 'category', attributes: ['id', 'name'] },
                 ],
+                attributes: {
+                    include: [
+                        [
+                            literal('(SELECT COUNT(*) FROM course_modules WHERE course_modules.course_id = Course.id)'),
+                            'module_count'
+                        ],
+                        [
+                            literal('(SELECT COUNT(*) FROM module_contents mc INNER JOIN course_modules cm ON mc.module_id = cm.id WHERE cm.course_id = Course.id)'),
+                            'content_count'
+                        ]
+                    ]
+                },
                 limit: parseInt(limit),
                 offset: parseInt(offset),
-                order: [['created_at', 'DESC']],
+                order: [[validSortBy, validSortOrder]],
             });
 
             return ApiResponse.success(res, {
@@ -67,6 +102,18 @@ class AdminCoursesController {
                 include: [
                     { model: User, as: 'instructor', attributes: ['id', 'full_name', 'email', 'profile_picture'] },
                     { model: Category, as: 'category' },
+                    {
+                        model: require('../../models/CourseModule'),
+                        as: 'modules',
+                        include: [
+                            {
+                                model: require('../../models/ModuleContent'),
+                                as: 'contents',
+                                attributes: ['id', 'title', 'content_type', 'duration_minutes', 'order_index']
+                            }
+                        ],
+                        order: [['order_index', 'ASC']]
+                    }
                 ],
             });
 
@@ -77,10 +124,41 @@ class AdminCoursesController {
             // Get enrollment count
             const enrollmentCount = await Enrollment.count({ where: { course_id: id } });
 
+            // Calculate content stats
+            const moduleCount = course.modules?.length || 0;
+            let contentCount = 0;
+            let videoCount = 0;
+            let documentCount = 0;
+            let articleCount = 0;
+            let totalDuration = 0;
+
+            if (course.modules) {
+                course.modules.forEach(module => {
+                    if (module.contents) {
+                        contentCount += module.contents.length;
+                        module.contents.forEach(content => {
+                            if (content.content_type === 'video') videoCount++;
+                            else if (content.content_type === 'document') documentCount++;
+                            else if (content.content_type === 'article') articleCount++;
+
+                            if (content.duration_minutes) {
+                                totalDuration += content.duration_minutes;
+                            }
+                        });
+                    }
+                });
+            }
+
             return ApiResponse.success(res, {
                 course,
                 stats: {
                     enrollments: enrollmentCount,
+                    modules: moduleCount,
+                    contents: contentCount,
+                    videos: videoCount,
+                    documents: documentCount,
+                    articles: articleCount,
+                    totalDurationMinutes: totalDuration,
                 },
             });
         } catch (error) {
@@ -125,14 +203,105 @@ class AdminCoursesController {
             const archived = await Course.count({ where: { status: 'archived' } });
 
             return ApiResponse.success(res, {
-                stats: {
-                    total,
-                    published,
-                    draft,
-                    pending,
-                    archived,
-                },
+                total,
+                published,
+                draft,
+                pending,
+                archived,
             });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // Bulk update course status
+    static async bulkUpdateStatus(req, res, next) {
+        try {
+            const { courseIds, status } = req.body;
+
+            if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0) {
+                throw new BadRequestError('Course IDs array is required');
+            }
+
+            if (!['published', 'draft', 'archived', 'pending'].includes(status)) {
+                throw new BadRequestError('Invalid status');
+            }
+
+            const updated = await Course.update(
+                { status },
+                { where: { id: courseIds } }
+            );
+
+            logger.info(`Bulk updated ${updated[0]} courses to status ${status} by admin ${req.user.email}`);
+
+            return ApiResponse.success(
+                res,
+                { updatedCount: updated[0] },
+                `Successfully updated ${updated[0]} course(s)`
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // Bulk delete courses
+    static async bulkDelete(req, res, next) {
+        try {
+            const { courseIds } = req.body;
+
+            if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0) {
+                throw new BadRequestError('Course IDs array is required');
+            }
+
+            // Only super admins can delete courses
+            if (req.user.role !== 'super_admin') {
+                throw new ForbiddenError('Only super admins can delete courses');
+            }
+
+            const deleted = await Course.destroy({
+                where: { id: courseIds }
+            });
+
+            logger.info(`Bulk deleted ${deleted} courses by super admin ${req.user.email}`);
+
+            return ApiResponse.success(
+                res,
+                { deletedCount: deleted },
+                `Successfully deleted ${deleted} course(s)`
+            );
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // Bulk update course field (price, category, etc.)
+    static async bulkUpdateField(req, res, next) {
+        try {
+            const { courseIds, field, value } = req.body;
+
+            if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0) {
+                throw new BadRequestError('Course IDs array is required');
+            }
+
+            // Whitelist allowed fields for bulk update
+            const allowedFields = ['price', 'category_id', 'level'];
+            if (!allowedFields.includes(field)) {
+                throw new BadRequestError(`Field '${field}' cannot be bulk updated`);
+            }
+
+            const updateData = { [field]: value };
+            const updated = await Course.update(
+                updateData,
+                { where: { id: courseIds } }
+            );
+
+            logger.info(`Bulk updated ${field} for ${updated[0]} courses by admin ${req.user.email}`);
+
+            return ApiResponse.success(
+                res,
+                { updatedCount: updated[0] },
+                `Successfully updated ${updated[0]} course(s)`
+            );
         } catch (error) {
             next(error);
         }

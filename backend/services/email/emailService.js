@@ -366,6 +366,291 @@ class EmailService {
   }
 
   /**
+   * Send instructor application approval email
+   * @param {String} email - User email
+   * @param {String} name - User name
+   * @returns {Promise<Object>} Send result
+   */
+  async sendInstructorApprovalEmail(email, name) {
+    const dashboardUrl = `${process.env.FRONTEND_URL}/instructor-dashboard`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .icon { text-align: center; font-size: 80px; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #10b981; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .features { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Application Approved! 🎉</h1>
+            </div>
+            <div class="content">
+              <div class="icon">👨‍🏫</div>
+              <h2>Congratulations, ${name}!</h2>
+              <p>We're excited to inform you that your instructor application has been <strong>approved</strong>!</p>
+
+              <p>You are now an official TekyPro instructor and can start creating and publishing courses.</p>
+
+              <div class="features">
+                <h3>What you can do now:</h3>
+                <ul>
+                  <li>✅ Create and publish courses</li>
+                  <li>✅ Upload course content (videos, documents, quizzes)</li>
+                  <li>✅ Manage enrolled students</li>
+                  <li>✅ Track student progress and performance</li>
+                  <li>✅ Communicate with your students</li>
+                  <li>✅ Earn revenue from course sales</li>
+                </ul>
+              </div>
+
+              <p>Ready to create your first course?</p>
+              <a href="${dashboardUrl}" class="button">Go to Instructor Dashboard</a>
+
+              <p>If you have any questions or need assistance, our support team is here to help!</p>
+
+              <p>Welcome to the TekyPro instructor community!</p>
+
+              <p>Best regards,<br>The TekyPro Team</p>
+            </div>
+            <div class="footer">
+              <p>TekyPro - The Leading Remote DBA Service Provider</p>
+              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: '🎉 Your Instructor Application Has Been Approved!',
+      html,
+      text: `Congratulations ${name}! Your instructor application has been approved. You can now start creating courses!`,
+    });
+  }
+
+  /**
+   * Send instructor application rejection email
+   * @param {String} email - User email
+   * @param {String} name - User name
+   * @param {String} reason - Rejection reason
+   * @returns {Promise<Object>} Send result
+   */
+  async sendInstructorRejectionEmail(email, name, reason) {
+    const supportUrl = `${process.env.FRONTEND_URL}/support`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #f44336; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .reason-box { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Application Update</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${name},</h2>
+              <p>Thank you for your interest in becoming a TekyPro instructor.</p>
+
+              <p>After careful review, we regret to inform you that your instructor application has not been approved at this time.</p>
+
+              ${reason ? `
+                <div class="reason-box">
+                  <strong>Feedback:</strong>
+                  <p>${reason}</p>
+                </div>
+              ` : ''}
+
+              <p>We encourage you to:</p>
+              <ul>
+                <li>Review the feedback provided (if any)</li>
+                <li>Enhance your qualifications or teaching experience</li>
+                <li>Apply again in the future</li>
+              </ul>
+
+              <p>You can still enjoy all student features and continue learning on our platform!</p>
+
+              <p>If you have questions or would like more information, please don't hesitate to contact us.</p>
+              <a href="${supportUrl}" class="button">Contact Support</a>
+
+              <p>Thank you for your understanding.</p>
+
+              <p>Best regards,<br>The TekyPro Team</p>
+            </div>
+            <div class="footer">
+              <p>TekyPro - The Leading Remote DBA Service Provider</p>
+              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Instructor Application Update - TekyPro LMS',
+      html,
+      text: `Hi ${name}, Thank you for your interest. Your instructor application has not been approved at this time. ${reason ? `Feedback: ${reason}` : ''}`,
+    });
+  }
+
+  /**
+   * Send instructor status revocation email
+   * @param {String} email - User email
+   * @param {String} name - User name
+   * @param {String} reason - Revocation reason
+   * @returns {Promise<Object>} Send result
+   */
+  async sendInstructorRevocationEmail(email, name, reason) {
+    const supportUrl = `${process.env.FRONTEND_URL}/support`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #f44336; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .warning { background: #ffebee; padding: 15px; border-left: 4px solid #f44336; margin: 20px 0; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Important Account Update</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${name},</h2>
+
+              <div class="warning">
+                <strong>⚠️ Your instructor status has been revoked.</strong>
+              </div>
+
+              <p>We regret to inform you that your instructor privileges have been removed from your TekyPro account.</p>
+
+              ${reason ? `
+                <p><strong>Reason:</strong> ${reason}</p>
+              ` : ''}
+
+              <p>This means you will no longer be able to:</p>
+              <ul>
+                <li>Create or publish new courses</li>
+                <li>Access the instructor dashboard</li>
+                <li>Manage student enrollments</li>
+              </ul>
+
+              <p>Your existing courses may be archived or removed depending on the circumstances.</p>
+
+              <p>You can still access the platform as a student and enroll in courses.</p>
+
+              <p>If you believe this action was taken in error or would like to discuss this further, please contact our support team.</p>
+              <a href="${supportUrl}" class="button">Contact Support</a>
+
+              <p>Best regards,<br>The TekyPro Team</p>
+            </div>
+            <div class="footer">
+              <p>TekyPro - The Leading Remote DBA Service Provider</p>
+              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Instructor Status Update - TekyPro LMS',
+      html,
+      text: `Hi ${name}, Your instructor status has been revoked. ${reason ? `Reason: ${reason}` : ''} Please contact support if you have questions.`,
+    });
+  }
+
+  /**
+   * Send course announcement to enrolled students
+   * @param {String} email - Student email
+   * @param {String} studentName - Student name
+   * @param {Object} announcement - Announcement details
+   * @returns {Promise<Object>} Send result
+   */
+  async sendCourseAnnouncement(email, studentName, announcement) {
+    const courseUrl = `${process.env.FRONTEND_URL}/courses/${announcement.course_id}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .announcement { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Course Announcement 📢</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${studentName},</h2>
+              <p>Your instructor has posted a new announcement for <strong>${announcement.course_title}</strong>:</p>
+
+              <div class="announcement">
+                <h3>${announcement.title}</h3>
+                <p>${announcement.content}</p>
+                ${announcement.instructor_name ? `<p><em>- ${announcement.instructor_name}</em></p>` : ''}
+              </div>
+
+              <p>Stay updated with your course!</p>
+              <a href="${courseUrl}" class="button">View Course</a>
+
+              <p>Best regards,<br>The TekyPro Team</p>
+            </div>
+            <div class="footer">
+              <p>TekyPro - The Leading Remote DBA Service Provider</p>
+              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: `Course Announcement: ${announcement.course_title}`,
+      html,
+      text: `Hi ${studentName}, New announcement for ${announcement.course_title}: ${announcement.title} - ${announcement.content}`,
+    });
+  }
+
+  /**
    * Verify email connection
    * @returns {Promise<Boolean>} Connection status
    */

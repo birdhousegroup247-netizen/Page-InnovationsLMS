@@ -7,6 +7,11 @@ const { authenticate, authorize } = require('../../../middleware/auth/authMiddle
 router.use(authenticate);
 router.use(authorize('admin', 'super_admin'));
 
+// Bulk operations (must come before /:id routes)
+router.post('/bulk/status', AdminCoursesController.bulkUpdateStatus);
+router.post('/bulk/delete', AdminCoursesController.bulkDelete);
+router.post('/bulk/update-field', AdminCoursesController.bulkUpdateField);
+
 // Get all courses
 router.get('/', AdminCoursesController.getAllCourses);
 

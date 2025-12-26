@@ -74,7 +74,7 @@ Dropdown.Menu = ({ children, align = 'left', className }) => {
     <div
       className={cn(
         'absolute z-50 mt-2 min-w-[12rem] overflow-hidden rounded-lg',
-        'bg-white border border-border shadow-lg',
+        'bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark shadow-lg',
         'animate-slide-down',
         alignments[align],
         className
@@ -103,8 +103,8 @@ Dropdown.Item = ({
         'w-full flex items-center gap-3 px-4 py-2 text-sm text-left',
         'transition-colors focus:outline-none',
         danger
-          ? 'text-error hover:bg-red-50'
-          : 'text-text-primary hover:bg-gray-100',
+          ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-dark-700',
         disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent',
         className
       )}

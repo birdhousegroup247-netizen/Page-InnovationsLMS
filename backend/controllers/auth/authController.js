@@ -1,4 +1,4 @@
-const { User, PasswordReset } = require('../../models');
+const { User, PasswordReset, InstructorApplication } = require('../../models');
 const JWT = require('../../utils/jwt');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -49,6 +49,37 @@ class AuthController {
       // Generate tokens
       const tokens = JWT.generateTokens(user);
 
+      // Log registration activity
+      await ActivityController.logActivity({
+        user_id: user.id,
+        action: 'user_register',
+        metadata: { email, role: userRole, instructor_status: instructorStatus },
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: req.get('user-agent'),
+      });
+
+      // Create instructor application if applicable
+      if (instructorStatus === 'pending') {
+        await InstructorApplication.createApplication({
+          user_id: user.id,
+          status: 'pending',
+          bio: req.body.bio || null,
+          qualifications: req.body.qualifications || null,
+          teaching_experience: req.body.teaching_experience || null,
+          subject_expertise: req.body.subject_expertise || null,
+          portfolio_url: req.body.portfolio_url || null,
+        });
+
+        // Log instructor application activity
+        await ActivityController.logActivity({
+          user_id: user.id,
+          action: 'instructor_application_submit',
+          metadata: { email, full_name },
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: req.get('user-agent'),
+        });
+      }
+
       // Log activity
       logger.info(`New user registered: ${email} (role: ${userRole}, instructor_status: ${instructorStatus})`);
 
@@ -84,6 +115,14 @@ class AuthController {
       // Verify password
       const isPasswordValid = await user.comparePassword(password);
       if (!isPasswordValid) {
+        // Log failed login attempt
+        await ActivityController.logActivity({
+          user_id: user.id,
+          action: 'failed_login',
+          metadata: { email, reason: 'Invalid password' },
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: req.get('user-agent'),
+        });
         throw new UnauthorizedError('Invalid email or password');
       }
 
@@ -92,6 +131,15 @@ class AuthController {
 
       // Generate tokens
       const tokens = JWT.generateTokens(user);
+
+      // Log successful login activity
+      await ActivityController.logActivity({
+        user_id: user.id,
+        action: 'login',
+        metadata: { email },
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: req.get('user-agent'),
+      });
 
       // Log activity
       logger.info(`User logged in: ${email}`);

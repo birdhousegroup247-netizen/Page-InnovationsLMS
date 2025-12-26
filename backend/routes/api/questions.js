@@ -8,6 +8,7 @@ const { authenticate, authorize } = require('../../middleware/auth/authMiddlewar
 // ============================================================================
 
 // Browse questions (instructors and admins)
+router.get('/stats/by-course', authenticate, authorize('admin', 'super_admin'), QuestionBankController.getCourseStats);
 router.get('/', authenticate, authorize('instructor', 'admin', 'super_admin'), QuestionBankController.getAllQuestions);
 router.get('/:id', authenticate, QuestionBankController.getQuestionById);
 

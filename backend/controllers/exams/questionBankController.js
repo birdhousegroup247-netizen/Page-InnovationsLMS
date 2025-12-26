@@ -1,4 +1,4 @@
-const { QuestionBank, Category, User } = require('../../models');
+const { QuestionBank, Category, User, Course } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
 const { Op } = require('sequelize');
@@ -7,13 +7,23 @@ class QuestionBankController {
   // Get all questions (with filters)
   static async getAllQuestions(req, res, next) {
     try {
-      const { category, difficulty, type, search, page = 1, limit = 20 } = req.query;
+      const { course_id, courses, category, difficulty, type, search, page = 1, limit = 20, is_approved } = req.query;
 
       const where = {};
+
+      // Support both single course and multiple courses
+      if (course_id) {
+        where.course_id = course_id;
+      } else if (courses) {
+        // courses can be comma-separated IDs like "1,2,3"
+        const courseIds = courses.split(',').map(id => parseInt(id));
+        where.course_id = { [Op.in]: courseIds };
+      }
 
       if (category) where.category_id = category;
       if (difficulty) where.difficulty = difficulty;
       if (type) where.question_type = type;
+      if (is_approved !== undefined) where.is_approved = is_approved === 'true';
       if (search) {
         where[Op.or] = [
           { question_text: { [Op.like]: `%${search}%` } },
@@ -31,6 +41,7 @@ class QuestionBankController {
       const { count, rows } = await QuestionBank.findAndCountAll({
         where,
         include: [
+          { model: Course, as: 'course', attributes: ['id', 'title'] },
           { model: Category, as: 'category', attributes: ['id', 'name'] },
           { model: User, as: 'creator', attributes: ['id', 'full_name'] },
         ],
@@ -60,6 +71,7 @@ class QuestionBankController {
 
       const question = await QuestionBank.findByPk(id, {
         include: [
+          { model: Course, as: 'course', attributes: ['id', 'title'] },
           { model: Category, as: 'category' },
           { model: User, as: 'creator', attributes: ['id', 'full_name'] },
         ],
@@ -77,6 +89,7 @@ class QuestionBankController {
   static async createQuestion(req, res, next) {
     try {
       const {
+        course_id,
         category_id,
         question_text,
         question_type,
@@ -89,6 +102,7 @@ class QuestionBankController {
       } = req.body;
 
       const question = await QuestionBank.create({
+        course_id,
         category_id,
         question_text,
         question_type,
@@ -186,6 +200,37 @@ class QuestionBankController {
       await question.update({ is_approved: true });
 
       return ApiResponse.success(res, { question }, 'Question approved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get question stats by course
+  static async getCourseStats(req, res, next) {
+    try {
+      const { sequelize } = require('../../config/database');
+
+      // Get question count per course
+      const stats = await QuestionBank.findAll({
+        attributes: [
+          'course_id',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'total_questions'],
+          [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_approved = true THEN 1 ELSE 0 END')), 'approved_questions'],
+          [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_approved = false THEN 1 ELSE 0 END')), 'pending_questions'],
+        ],
+        include: [
+          {
+            model: Course,
+            as: 'course',
+            attributes: ['id', 'title', 'thumbnail'],
+            required: false // Include courses with 0 questions
+          },
+        ],
+        group: ['course_id', 'course.id'],
+        raw: false,
+      });
+
+      return ApiResponse.success(res, { stats });
     } catch (error) {
       next(error);
     }

@@ -12,6 +12,7 @@ import {
   BarChart3,
   Star,
   CheckCircle,
+  Hammer,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Container, EmptyState } from '../components/layout';
@@ -205,7 +206,7 @@ export default function InstructorDashboard() {
                 course={course}
                 onEdit={() => navigate(`/instructor/courses/${course.id}/edit`)}
                 onView={() => navigate(`/courses/${course.id}`)}
-                onManageContent={() => navigate(`/instructor/courses/${course.id}/modules`)}
+                onManageContent={() => navigate(`/instructor/courses/${course.id}/builder`)}
                 delay={index * 0.1}
               />
             ))}
@@ -308,10 +309,10 @@ function CourseCard({ course, onEdit, onView, onManageContent, delay }) {
             variant="primary"
             size="sm"
             onClick={onManageContent}
-            leftIcon={<BookOpen className="h-4 w-4" />}
+            leftIcon={<Hammer className="h-4 w-4" />}
             className="flex-1 min-w-[120px]"
           >
-            Manage
+            Build Course
           </Button>
           <Button
             variant="secondary"

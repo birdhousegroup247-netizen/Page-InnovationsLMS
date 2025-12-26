@@ -29,9 +29,14 @@ const QuestionBank = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    course_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'courses', key: 'id' },
+    },
     category_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: { model: 'categories', key: 'id' },
     },
     subcategory: {
@@ -98,6 +103,7 @@ const QuestionBank = sequelize.define(
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     indexes: [
+      { fields: ['course_id'] },
       { fields: ['category_id'] },
       { fields: ['difficulty'] },
       { fields: ['question_type'] },

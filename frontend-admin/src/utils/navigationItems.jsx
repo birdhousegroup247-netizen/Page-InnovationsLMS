@@ -5,6 +5,9 @@ import {
   BarChart3,
   Activity,
   UserCheck,
+  FolderTree,
+  HelpCircle,
+  FileText,
 } from 'lucide-react';
 
 /**
@@ -26,6 +29,21 @@ const adminNavigationItems = [
     label: 'Courses',
     path: '/courses',
     icon: <BookOpen className="w-5 h-5" />,
+  },
+  {
+    label: 'Categories',
+    path: '/categories',
+    icon: <FolderTree className="w-5 h-5" />,
+  },
+  {
+    label: 'Question Bank',
+    path: '/questions',
+    icon: <HelpCircle className="w-5 h-5" />,
+  },
+  {
+    label: 'Tests',
+    path: '/tests',
+    icon: <FileText className="w-5 h-5" />,
   },
   {
     label: 'Analytics',

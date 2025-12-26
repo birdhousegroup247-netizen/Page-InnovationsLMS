@@ -22,7 +22,7 @@ import { cn } from '../../utils/cn';
 export default function InstructorApplications() {
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
-  const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
+  const [stats, setStats] = useState({ pending: 0, under_review: 0, approved: 0, rejected: 0, revoked: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
   const [processingId, setProcessingId] = useState(null);
@@ -109,8 +109,10 @@ export default function InstructorApplications() {
   const getStatusVariant = (status) => {
     const variants = {
       pending: 'warning',
+      under_review: 'info',
       approved: 'success',
       rejected: 'danger',
+      revoked: 'danger',
     };
     return variants[status] || 'secondary';
   };
@@ -163,8 +165,8 @@ export default function InstructorApplications() {
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-1 transition-colors">Pending</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">{stats.pending}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1 transition-colors">Pending</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">{stats.pending}</p>
               </div>
               <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center">
                 <Clock className="w-6 h-6 text-yellow-500" />
@@ -175,8 +177,8 @@ export default function InstructorApplications() {
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-1 transition-colors">Approved</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">{stats.approved}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1 transition-colors">Approved</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">{stats.approved}</p>
               </div>
               <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-green-500" />
@@ -187,8 +189,8 @@ export default function InstructorApplications() {
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-1 transition-colors">Rejected</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">{stats.rejected}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1 transition-colors">Rejected</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">{stats.rejected}</p>
               </div>
               <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center">
                 <XCircle className="w-6 h-6 text-red-500" />
@@ -199,8 +201,8 @@ export default function InstructorApplications() {
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-1 transition-colors">Total</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">{stats.total}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1 transition-colors">Total</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors">{stats.total}</p>
               </div>
               <div className="w-12 h-12 bg-brand-blue/10 rounded-lg flex items-center justify-center">
                 <Users className="w-6 h-6 text-brand-blue" />
@@ -233,8 +235,10 @@ export default function InstructorApplications() {
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {[
             { value: 'pending', label: 'Pending', count: stats.pending },
+            { value: 'under_review', label: 'Under Review', count: stats.under_review },
             { value: 'approved', label: 'Approved', count: stats.approved },
             { value: 'rejected', label: 'Rejected', count: stats.rejected },
+            { value: 'revoked', label: 'Revoked', count: stats.revoked },
             { value: '', label: 'All', count: stats.total },
           ].map((tab) => (
             <button
@@ -244,7 +248,7 @@ export default function InstructorApplications() {
                 'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
                 filter === tab.value
                   ? 'bg-brand-blue text-white shadow-md'
-                  : 'bg-gray-100 dark:bg-dark-800 text-gray-700 dark:text-text-dark-secondary hover:bg-gray-200 dark:hover:bg-dark-700'
+                  : 'bg-gray-100 dark:bg-dark-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-700'
               )}
             >
               {tab.label}
@@ -264,7 +268,7 @@ export default function InstructorApplications() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <Spinner size="lg" />
-            <p className="mt-4 text-gray-600 dark:text-text-dark-secondary font-medium transition-colors">
+            <p className="mt-4 text-gray-600 dark:text-gray-400 font-medium transition-colors">
               Loading applications...
             </p>
           </div>
@@ -286,95 +290,158 @@ export default function InstructorApplications() {
         {/* Applications List */}
         {!loading && applications.length > 0 && (
           <div className="space-y-4">
-            {applications.map((app) => (
-              <div key={app.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  {/* User Info */}
-                  <div className="flex-1">
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-medium text-lg flex-shrink-0">
-                        {app.full_name.charAt(0).toUpperCase()}
-                      </div>
+            {applications.map((app) => {
+              const user = app.user || {};
+              return (
+                <div key={app.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    {/* User Info */}
+                    <div className="flex-1">
+                      <div className="flex items-start gap-4">
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-medium text-lg flex-shrink-0">
+                          {(user.full_name || 'U').charAt(0).toUpperCase()}
+                        </div>
 
-                      {/* Details */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-1 transition-colors">
-                          {app.full_name}
-                        </h3>
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 transition-colors">
+                            {user.full_name || 'Unknown User'}
+                          </h3>
 
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <Badge variant={getStatusVariant(app.instructor_status)}>
-                            {app.instructor_status}
-                          </Badge>
-                          {app.role === 'instructor' && (
-                            <Badge variant="primary">Instructor</Badge>
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <Badge variant={getStatusVariant(app.status)}>
+                              {app.status}
+                            </Badge>
+                            {user.role === 'instructor' && (
+                              <Badge variant="primary">Instructor</Badge>
+                            )}
+                          </div>
+
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 transition-colors">
+                              <Mail className="w-4 h-4" />
+                              <span>{user.email || 'No email'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 transition-colors">
+                              <Calendar className="w-4 h-4" />
+                              <span>Applied: {formatDate(app.applied_at || app.created_at)}</span>
+                            </div>
+                            {app.reviewed_at && (
+                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 transition-colors">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Reviewed: {formatDate(app.reviewed_at)}</span>
+                                {app.reviewer && <span className="text-xs">by {app.reviewer.full_name}</span>}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Application Details */}
+                          {(app.bio || app.qualifications || app.teaching_experience || app.subject_expertise) && (
+                            <div className="mt-4 space-y-2 text-sm">
+                              {app.bio && (
+                                <div>
+                                  <span className="font-medium text-gray-700 dark:text-white">Bio:</span>
+                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.bio}</p>
+                                </div>
+                              )}
+                              {app.qualifications && (
+                                <div>
+                                  <span className="font-medium text-gray-700 dark:text-white">Qualifications:</span>
+                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.qualifications}</p>
+                                </div>
+                              )}
+                              {app.teaching_experience && (
+                                <div>
+                                  <span className="font-medium text-gray-700 dark:text-white">Teaching Experience:</span>
+                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.teaching_experience}</p>
+                                </div>
+                              )}
+                              {app.subject_expertise && (
+                                <div>
+                                  <span className="font-medium text-gray-700 dark:text-white">Subject Expertise:</span>
+                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.subject_expertise}</p>
+                                </div>
+                              )}
+                              {app.portfolio_url && (
+                                <div>
+                                  <span className="font-medium text-gray-700 dark:text-white">Portfolio:</span>
+                                  <a
+                                    href={app.portfolio_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-brand-blue hover:underline ml-2"
+                                  >
+                                    {app.portfolio_url}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Rejection Reason */}
+                          {app.rejection_reason && (
+                            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                              <span className="font-medium text-red-700 dark:text-red-400 text-sm">Rejection Reason:</span>
+                              <p className="text-red-600 dark:text-red-300 text-sm mt-1">{app.rejection_reason}</p>
+                            </div>
+                          )}
+
+                          {/* Admin Notes */}
+                          {app.admin_notes && (
+                            <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                              <span className="font-medium text-yellow-700 dark:text-yellow-400 text-sm">Admin Notes:</span>
+                              <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-1">{app.admin_notes}</p>
+                            </div>
                           )}
                         </div>
-
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-text-dark-secondary transition-colors">
-                            <Mail className="w-4 h-4" />
-                            <span>{app.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-text-dark-secondary transition-colors">
-                            <Calendar className="w-4 h-4" />
-                            <span>Applied: {formatDate(app.created_at)}</span>
-                          </div>
-                        </div>
-
-                        {app.bio && (
-                          <p className="mt-3 text-sm text-gray-600 dark:text-text-dark-secondary line-clamp-2 transition-colors">
-                            {app.bio}
-                          </p>
-                        )}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
-                    {app.instructor_status === 'pending' && (
-                      <>
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => handleApprove(app.id, app.full_name)}
-                          disabled={processingId === app.id}
-                          loading={processingId === app.id}
-                          leftIcon={!processingId && <UserCheck className="w-4 h-4" />}
-                        >
-                          Approve
-                        </Button>
+                    {/* Actions */}
+                    <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
+                      {app.status === 'pending' && (
+                        <>
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => handleApprove(app.id, user.full_name)}
+                            disabled={processingId === app.id}
+                            loading={processingId === app.id}
+                            leftIcon={!processingId && <UserCheck className="w-4 h-4" />}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleReject(app.id, user.full_name)}
+                            disabled={processingId === app.id}
+                            loading={processingId === app.id}
+                            leftIcon={!processingId && <UserX className="w-4 h-4" />}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      )}
+
+                      {app.status === 'approved' && user.role === 'instructor' && (
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => handleReject(app.id, app.full_name)}
+                          onClick={() => handleRevoke(app.id, user.full_name)}
                           disabled={processingId === app.id}
                           loading={processingId === app.id}
                           leftIcon={!processingId && <UserX className="w-4 h-4" />}
                         >
-                          Reject
+                          Revoke
                         </Button>
-                      </>
-                    )}
-
-                    {app.instructor_status === 'approved' && app.role === 'instructor' && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleRevoke(app.id, app.full_name)}
-                        disabled={processingId === app.id}
-                        loading={processingId === app.id}
-                        leftIcon={!processingId && <UserX className="w-4 h-4" />}
-                      >
-                        Revoke
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Container>
