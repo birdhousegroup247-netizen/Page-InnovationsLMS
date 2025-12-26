@@ -23,7 +23,8 @@ import {
   Users,
   Eye,
   Hammer,
-  HelpCircle
+  HelpCircle,
+  MoreVertical
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import {
@@ -33,7 +34,8 @@ import {
   Badge,
   Spinner,
   Modal,
-  Avatar
+  Avatar,
+  Dropdown
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
 import { cn } from '../../utils/cn';
@@ -876,7 +878,7 @@ export default function AdminCourses() {
                           <div className="text-sm text-gray-600 dark:text-gray-400">
                             {course.module_count || 0} modules
                             {course.content_count > 0 && (
-                              <div className="text-xs text-gray-500 dark:text-text-dark-tertiary">
+                              <div className="text-xs text-gray-500 dark:text-gray-500">
                                 {course.content_count} lessons
                               </div>
                             )}
@@ -888,11 +890,11 @@ export default function AdminCourses() {
                             return (
                               <div className="text-sm">
                                 <div className="flex items-center text-gray-900 dark:text-white font-medium">
-                                  <HelpCircle className="w-4 h-4 mr-1 text-gray-400" />
+                                  <HelpCircle className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
                                   {qStats.total}
                                 </div>
                                 {qStats.total > 0 && (
-                                  <div className="text-xs text-gray-500 dark:text-text-dark-tertiary mt-0.5">
+                                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
                                     <span className="text-green-600 dark:text-green-400">{qStats.approved}✓</span>
                                     {qStats.pending > 0 && (
                                       <span className="text-yellow-600 dark:text-yellow-400 ml-1">{qStats.pending}⏳</span>
@@ -926,90 +928,113 @@ export default function AdminCourses() {
                           </div>
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                              onClick={() => navigate(`/courses/${course.id}/builder`)}
-                              title="Build Course Content"
-                            >
-                              <Hammer className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                              onClick={() => handleViewCourseDetails(course)}
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                              onClick={() => handleEditCourse(course)}
-                              title="Edit Course"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-
-                            {course.status === 'pending' && (
+                          <Dropdown>
+                            {({ isOpen, setIsOpen }) => (
                               <>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                                  onClick={() => handleApproveCourse(course)}
-                                  title="Approve Course"
-                                  disabled={actionLoading}
+                                  onClick={() => setIsOpen(!isOpen)}
+                                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                 >
-                                  <CheckCircle className="w-4 h-4" />
+                                  <MoreVertical className="w-4 h-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  onClick={() => handleRejectCourse(course)}
-                                  title="Reject Course"
-                                  disabled={actionLoading}
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
+                                {isOpen && (
+                                  <Dropdown.Menu align="right">
+                                    <Dropdown.Item
+                                      icon={Hammer}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        navigate(`/courses/${course.id}/builder`);
+                                      }}
+                                    >
+                                      Build Course Content
+                                    </Dropdown.Item>
+
+                                    <Dropdown.Item
+                                      icon={Eye}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        handleViewCourseDetails(course);
+                                      }}
+                                    >
+                                      View Details
+                                    </Dropdown.Item>
+
+                                    <Dropdown.Item
+                                      icon={Edit}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        handleEditCourse(course);
+                                      }}
+                                    >
+                                      Edit Course
+                                    </Dropdown.Item>
+
+                                    {course.status === 'pending' && (
+                                      <>
+                                        <Dropdown.Separator />
+                                        <Dropdown.Item
+                                          icon={CheckCircle}
+                                          onClick={() => {
+                                            setIsOpen(false);
+                                            handleApproveCourse(course);
+                                          }}
+                                          disabled={actionLoading}
+                                        >
+                                          Approve Course
+                                        </Dropdown.Item>
+                                        <Dropdown.Item
+                                          icon={XCircle}
+                                          onClick={() => {
+                                            setIsOpen(false);
+                                            handleRejectCourse(course);
+                                          }}
+                                          disabled={actionLoading}
+                                          danger
+                                        >
+                                          Reject Course
+                                        </Dropdown.Item>
+                                      </>
+                                    )}
+
+                                    {course.status === 'published' && (
+                                      <>
+                                        <Dropdown.Separator />
+                                        <Dropdown.Item
+                                          icon={Archive}
+                                          onClick={() => {
+                                            setIsOpen(false);
+                                            handleArchiveCourse(course);
+                                          }}
+                                          disabled={actionLoading}
+                                        >
+                                          Archive Course
+                                        </Dropdown.Item>
+                                      </>
+                                    )}
+
+                                    {currentUser?.role === 'super_admin' && (
+                                      <>
+                                        <Dropdown.Separator />
+                                        <Dropdown.Item
+                                          icon={Trash2}
+                                          onClick={() => {
+                                            setIsOpen(false);
+                                            setSelectedCourse(course);
+                                            setIsDeleteModalOpen(true);
+                                          }}
+                                          danger
+                                        >
+                                          Delete Course
+                                        </Dropdown.Item>
+                                      </>
+                                    )}
+                                  </Dropdown.Menu>
+                                )}
                               </>
                             )}
-
-                            {course.status === 'published' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
-                                onClick={() => handleArchiveCourse(course)}
-                                title="Archive Course"
-                                disabled={actionLoading}
-                              >
-                                <Archive className="w-4 h-4" />
-                              </Button>
-                            )}
-
-                            {currentUser?.role === 'super_admin' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                onClick={() => {
-                                  setSelectedCourse(course);
-                                  setIsDeleteModalOpen(true);
-                                }}
-                                title="Delete Course"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
+                          </Dropdown>
                         </td>
                       </tr>
                     ))}
@@ -1152,7 +1177,7 @@ export default function AdminCourses() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   No course content yet
                 </p>
-                <p className="text-xs text-gray-400 dark:text-text-dark-tertiary">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   Modules and lessons will appear here once added
                 </p>
               </div>
