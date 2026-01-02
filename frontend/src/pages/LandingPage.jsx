@@ -155,266 +155,188 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-900 transition-colors overflow-hidden">
-      {/* Enhanced Animated Background with Gradient Mesh */}
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors overflow-hidden font-sans selection:bg-brand-blue/30">
+      {/* Enhanced Animated Background - More Subtle */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Animated gradient blobs */}
-        <div className="absolute top-0 -left-40 w-96 h-96 bg-gradient-to-br from-brand-blue/20 to-cyan-500/20 dark:from-brand-blue/10 dark:to-cyan-500/10 rounded-full blur-3xl animate-blob"></div>
-        <div className="absolute top-20 -right-40 w-96 h-96 bg-gradient-to-br from-brand-purple/20 to-pink-500/20 dark:from-brand-purple/10 dark:to-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-gradient-to-br from-brand-red/20 to-orange-500/20 dark:from-brand-red/10 dark:to-orange-500/10 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
-
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] dark:opacity-[0.05]"></div>
+        <div className="absolute top-0 -left-40 w-[800px] h-[800px] bg-brand-blue/10 dark:bg-brand-blue/10 rounded-full blur-[120px] animate-blob"></div>
+        <div className="absolute top-20 -right-40 w-[600px] h-[600px] bg-brand-purple/10 dark:bg-brand-purple/10 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-40 left-1/3 w-[600px] h-[600px] bg-brand-blue/10 dark:bg-brand-blue/10 rounded-full blur-[100px] animate-blob animation-delay-4000"></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] dark:opacity-[0.05]"></div>
       </div>
 
-      {/* Theme Toggle - Glass-morphism */}
+      {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="fixed top-6 right-6 p-4 rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl shadow-2xl hover:shadow-brand-blue/20 hover:scale-110 transition-all duration-300 z-50 group border border-gray-200/50 dark:border-gray-700/50"
+        className="fixed top-6 right-6 p-3 rounded-full bg-white/80 dark:bg-dark-800/80 backdrop-blur-md shadow-lg border border-gray-200/50 dark:border-gray-700/50 z-50 hover:scale-110 transition-all duration-300"
         aria-label="Toggle theme"
       >
         {theme === 'dark' ? (
-          <Sun className="w-5 h-5 text-yellow-500 group-hover:rotate-180 transition-transform duration-500" />
+          <Sun className="w-5 h-5 text-yellow-500" />
         ) : (
-          <Moon className="w-5 h-5 text-gray-700 group-hover:-rotate-180 transition-transform duration-500" />
+          <Moon className="w-5 h-5 text-gray-700" />
         )}
       </button>
 
-      {/* Navigation - Glass-morphism */}
-      <nav className="relative z-40 sticky top-0 backdrop-blur-xl bg-white/70 dark:bg-dark-900/70 border-b border-gray-200/50 dark:border-gray-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Navigation */}
+      <nav className="fixed w-full z-40 top-0 backdrop-blur-xl bg-white/80 dark:bg-dark-900/80 border-b border-gray-200/50 dark:border-gray-800/50">
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-3 group cursor-pointer">
-              <div className="relative">
-                <img src={logo} alt="TekyPro" className="h-12 w-auto transform group-hover:scale-110 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-blue to-brand-purple rounded-full blur-xl opacity-0 group-hover:opacity-30 transition-opacity"></div>
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red bg-clip-text text-transparent">
-                TekyPro
-              </span>
+            {/* Logo - Fixed Alignment */}
+            <div className="flex items-center gap-3 cursor-pointer select-none">
+              <img src={logo} alt="TekyPro" className="h-12 w-auto" />
             </div>
+
+            {/* Auth Buttons */}
             <div className="flex items-center gap-4">
               <Link
                 to="/login"
-                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 text-gray-700 dark:text-gray-300 hover:text-brand-blue dark:hover:text-brand-blue transition-all font-medium rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800"
+                className="hidden sm:inline-flex items-center px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-brand-blue dark:hover:text-white transition-colors"
               >
-                Login
+                Log in
               </Link>
               <Link
                 to="/register"
-                className="relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red text-white rounded-xl font-semibold overflow-hidden group shadow-lg hover:shadow-2xl hover:shadow-brand-blue/50 transition-all duration-300"
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-blue hover:bg-brand-blue-light text-white text-sm font-semibold rounded-full transition-all shadow-lg hover:shadow-brand-blue/25 hover:-translate-y-0.5"
               >
-                <span className="relative z-10">Get Started</span>
-                <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-purple via-brand-red to-brand-blue opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                Get Started
               </Link>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section - Enhanced */}
-      <section className="relative pt-20 pb-32 sm:pt-32 sm:pb-40">
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            {/* Badge with glass effect */}
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32">
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-[90%] mx-auto">
+            {/* Badge */}
             <div
-              className={`inline-flex items-center gap-2 px-5 py-2.5 bg-white/60 dark:bg-dark-800/60 backdrop-blur-xl rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 mb-8 transition-all duration-700 ${
+              className={`inline-flex items-center gap-2 px-4 py-2 bg-brand-blue/5 dark:bg-brand-blue/10 rounded-full border border-brand-blue/10 mb-8 transition-all duration-700 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
               }`}
-              style={{ transitionDelay: '0.1s' }}
             >
-              <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-blue opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-blue"></span>
+              </span>
+              <span className="text-sm font-medium text-brand-blue dark:text-brand-blue-300">
                 #1 Remote DBA Training Platform
               </span>
-              <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse"></div>
             </div>
 
-            {/* Main Heading with enhanced gradient */}
+            {/* Heading */}
             <h1
-              className={`text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold text-gray-900 dark:text-white mb-8 leading-tight transition-all duration-700 ${
+              className={`text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-8 leading-[1.1] tracking-tight transition-all duration-700 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
-              style={{ transitionDelay: '0.2s' }}
             >
-              <span className="block mb-2">Transform Your Career</span>
-              <span className="block bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red bg-clip-text text-transparent animate-gradient-x">
-                with Expert Training
+              Transform Your Career with <br className="hidden lg:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red animate-gradient-x">
+                Expert Training
               </span>
             </h1>
 
-            {/* Subtitle with better spacing */}
+            {/* Subtitle */}
             <p
-              className={`text-xl sm:text-2xl text-gray-600 dark:text-gray-400 mb-16 max-w-4xl mx-auto leading-relaxed transition-all duration-700 ${
+              className={`text-xl md:text-2xl text-gray-700 dark:text-gray-200 mb-12 max-w-3xl mx-auto leading-relaxed transition-all duration-700 delay-100 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
-              style={{ transitionDelay: '0.3s' }}
             >
-              Master database administration, cloud technologies, and more with{' '}
-              <span className="text-brand-blue dark:text-brand-blue font-semibold">hands-on courses</span> from{' '}
-              <span className="text-brand-purple dark:text-brand-purple font-semibold">industry experts</span>
+              Master database administration, cloud technologies, and more with <span className="text-brand-blue dark:text-cyan-400 font-bold">hands-on courses</span> from <span className="text-brand-purple dark:text-purple-400 font-bold">industry experts</span>.
             </p>
 
-            {/* Enhanced CTA Cards with vibrant gradients */}
+            {/* Cards Container - Wider & Glassmorphism */}
             <div
-              className={`grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-16 px-4 transition-all duration-700 ${
-                isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+              className={`grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[90%] mx-auto transition-all duration-700 delay-200 ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
-              style={{ transitionDelay: '0.4s' }}
             >
-              {/* Student Card - Vibrant Gradient Design */}
+              {/* Student Card */}
               <Link
-                to="/register?role=student"
-                className="group relative overflow-hidden rounded-3xl p-[2px] transition-all duration-500 transform hover:scale-105 hover:-translate-y-2"
+                to="/login"
+                className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-blue/20 text-left overflow-hidden"
               >
-                {/* Gradient border */}
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-blue via-cyan-500 to-blue-600 rounded-3xl animate-gradient-x"></div>
-
-                {/* Card content */}
-                <div className="relative bg-white/95 dark:bg-dark-900/95 backdrop-blur-2xl rounded-[22px] p-10 h-full">
-                  {/* Animated gradient background overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/10 via-cyan-500/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500 rounded-[22px]"></div>
-
-                  {/* Floating icon with 3D effect */}
-                  <div className="relative z-10 mb-8">
-                    <div className="w-28 h-28 mx-auto bg-gradient-to-br from-brand-blue via-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 shadow-2xl shadow-brand-blue/60">
-                      <BookOpen className="w-14 h-14 text-white" />
-                    </div>
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-blue to-cyan-500 rounded-full blur-3xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+                {/* Shine Effect */}
+                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 transition-all duration-1000 z-0"></div>
+                
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
+                  <BookOpen className="w-32 h-32 text-brand-blue" />
+                </div>
+                <div className="relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-brand-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-brand-blue/10">
+                    <BookOpen className="w-7 h-7 text-brand-blue" />
                   </div>
-
-                  {/* Content */}
-                  <div className="relative z-10">
-                    <h3 className="text-3xl lg:text-4xl font-black mb-4">
-                      <span className="bg-gradient-to-r from-brand-blue via-cyan-500 to-blue-600 bg-clip-text text-transparent">
-                        I'm a Student
-                      </span>
-                    </h3>
-                    <p className="text-gray-700 dark:text-gray-300 mb-8 text-lg leading-relaxed font-medium">
-                      Start your learning journey and master new skills with expert guidance
-                    </p>
-
-                    {/* Features with checkmarks */}
-                    <ul className="space-y-4 mb-8 text-left">
-                      {['Access 500+ expert courses', 'Get certified credentials', '24/7 learning support'].map((item, i) => (
-                        <li key={i} className="flex items-center gap-3 text-gray-800 dark:text-gray-200">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
-                            <CheckCircle className="w-4 h-4 text-white" />
-                          </div>
-                          <span className="font-semibold">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {/* CTA Button */}
-                    <div className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-brand-blue via-cyan-500 to-blue-600 text-white font-bold text-lg rounded-2xl group-hover:shadow-2xl group-hover:shadow-brand-blue/50 transition-all">
-                      Get Started
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </div>
+                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-brand-blue dark:group-hover:text-cyan-400 transition-colors">
+                    I'm a Student
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-8 text-lg font-medium">
+                    Start your learning journey and master new skills.
+                  </p>
+                  <div className="flex items-center gap-2 text-brand-blue dark:text-cyan-400 font-bold text-lg group-hover:gap-4 transition-all">
+                    Get Started <ArrowRight className="w-6 h-6" />
                   </div>
-
-                  {/* Shine effect on hover */}
-                  <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-all duration-1000 rounded-[22px]"></div>
                 </div>
               </Link>
 
-              {/* Tutor Card - Glass-morphism */}
+              {/* Instructor Card */}
               <Link
-                to="/register?role=instructor"
-                className="group relative overflow-hidden bg-white/70 dark:bg-dark-800/70 backdrop-blur-2xl rounded-3xl p-10 shadow-2xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2"
+                to="/login"
+                className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-purple/20 text-left overflow-hidden"
               >
-                {/* Animated gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                {/* Shine Effect */}
+                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 transition-all duration-1000 z-0"></div>
 
-                {/* Floating icon with 3D effect */}
-                <div className="relative z-10 mb-8">
-                  <div className="w-24 h-24 mx-auto bg-gradient-to-br from-brand-purple to-purple-600 rounded-3xl flex items-center justify-center transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 shadow-2xl shadow-brand-purple/50">
-                    <Users className="w-12 h-12 text-white" />
-                  </div>
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-purple to-purple-600 rounded-3xl blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 transform translate-y-2"></div>
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
+                  <Users className="w-32 h-32 text-brand-purple" />
                 </div>
-
-                {/* Content */}
                 <div className="relative z-10">
-                  <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-brand-purple dark:group-hover:text-brand-purple transition-colors">
-                    I'm a Tutor
+                  <div className="w-14 h-14 rounded-2xl bg-brand-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-brand-purple/10">
+                    <Users className="w-7 h-7 text-brand-purple" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-brand-purple dark:group-hover:text-purple-400 transition-colors">
+                    I'm an Instructor
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
-                    Share your expertise and earn money teaching thousands of students
+                  <p className="text-gray-700 dark:text-gray-300 mb-8 text-lg font-medium">
+                    Share your expertise and earn money teaching.
                   </p>
-
-                  {/* Features with checkmarks */}
-                  <ul className="space-y-3 mb-8 text-left">
-                    {['Reach 10,000+ students', 'Earn passive income', 'Full platform support'].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        </div>
-                        <span className="font-medium">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* CTA Button */}
-                  <div className="inline-flex items-center gap-3 text-brand-purple font-bold text-lg group-hover:gap-5 transition-all">
-                    Apply Now
-                    <div className="w-8 h-8 rounded-full bg-brand-purple/10 flex items-center justify-center group-hover:bg-brand-purple group-hover:text-white transition-all">
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
+                  <div className="flex items-center gap-2 text-brand-purple dark:text-purple-400 font-bold text-lg group-hover:gap-4 transition-all">
+                    Apply Now <ArrowRight className="w-6 h-6" />
                   </div>
                 </div>
-
-                {/* Shine effect on hover */}
-                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 transition-all duration-1000"></div>
               </Link>
             </div>
 
-            {/* Enhanced Trust Indicators */}
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+            {/* Trust Indicators */}
+            <div className="mt-20 pt-10 border-t border-gray-200/50 dark:border-gray-800/50">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-8 uppercase tracking-wider">
                 Trusted by professionals at
               </p>
-              <div className="flex items-center gap-8 flex-wrap justify-center">
+              <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
                 {['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple'].map((company) => (
-                  <span
-                    key={company}
-                    className="font-bold text-lg text-gray-700 dark:text-gray-300 hover:text-brand-blue dark:hover:text-brand-blue transition-colors cursor-default"
-                  >
+                  <span key={company} className="text-xl font-bold text-gray-800 dark:text-white">
                     {company}
                   </span>
                 ))}
               </div>
             </div>
           </div>
-
-          {/* Scroll Indicator */}
-          <div className="flex justify-center">
-            <div className="animate-bounce">
-              <ChevronDown className="w-8 h-8 text-gray-400 dark:text-gray-600" />
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Stats Section - Enhanced with icons and animations */}
-      <section className="py-24 bg-gradient-to-br from-white to-gray-50 dark:from-dark-800 dark:to-dark-900 transition-colors border-y border-gray-200/50 dark:border-gray-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      {/* Stats Section - Clean & Minimal */}
+      <section className="py-20 bg-white dark:bg-dark-800/50 border-y border-gray-100 dark:border-gray-800 relative overflow-hidden">
+        <div className="absolute inset-0 bg-brand-blue/5 dark:bg-transparent"></div>
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 max-w-[90%] mx-auto">
             {stats.map((stat, index) => (
-              <div
-                key={index}
-                className="group text-center transform hover:scale-110 transition-all duration-300"
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-blue/10 to-brand-purple/10 dark:from-brand-blue/20 dark:to-brand-purple/20 mb-4 group-hover:shadow-xl group-hover:shadow-brand-blue/20 transition-all">
-                  <stat.icon className="w-8 h-8 text-brand-blue dark:text-brand-blue" />
+              <div key={index} className="text-center group hover:-translate-y-1 transition-transform duration-300">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white dark:bg-dark-700 shadow-lg shadow-brand-blue/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <stat.icon className="w-8 h-8 text-brand-blue dark:text-cyan-400" />
                 </div>
-                <div className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red bg-clip-text text-transparent mb-2">
+                <div className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-brand-blue to-brand-purple dark:from-white dark:to-gray-300">
                   {stat.value}
                 </div>
-                <div className="text-gray-600 dark:text-gray-400 font-semibold text-sm sm:text-base">
+                <div className="text-gray-700 dark:text-gray-300 font-semibold text-base sm:text-lg">
                   {stat.label}
                 </div>
               </div>
@@ -423,48 +345,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Course Categories Preview */}
+      {/* Categories Section */}
       <section className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Explore Our Course Categories
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              From databases to cloud computing, master the skills that matter most in today's tech industry
-            </p>
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="max-w-full mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Explore Categories
+              </h2>
+              <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl">
+                Master the skills that matter most in today's tech industry.
+              </p>
+            </div>
+            <Link to="/courses" className="text-brand-blue dark:text-cyan-400 font-bold text-lg hover:underline flex items-center gap-2">
+              View all categories <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {courseCategories.map((category, index) => (
               <div
                 key={index}
-                className="group cursor-pointer bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-transparent transition-all duration-300 hover:shadow-2xl hover:-translate-y-2"
+                className="group p-6 rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-gray-700 hover:border-brand-blue/30 transition-all shadow-lg shadow-gray-200/50 dark:shadow-none hover:shadow-xl hover:shadow-brand-blue/10 cursor-pointer relative overflow-hidden"
               >
-                <div className={`w-16 h-16 ${category.color} rounded-2xl flex items-center justify-center mb-4 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg`}>
-                  <category.icon className="w-8 h-8 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className={`w-12 h-12 rounded-xl ${category.color.replace('bg-gradient-to-br', 'bg')} bg-opacity-10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  <category.icon className="w-6 h-6 text-gray-900 dark:text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-brand-blue dark:group-hover:text-brand-blue transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 relative z-10">
                   {category.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium relative z-10">
                   {category.count}
                 </p>
               </div>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
-      {/* Features Section - Enhanced */}
-      <section className="py-24 bg-gradient-to-br from-white to-gray-50 dark:from-dark-800 dark:to-dark-900 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Features Section */}
+      <section className="py-24 bg-gray-50 dark:bg-dark-800/30">
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="max-w-full mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Why Choose <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">TekyPro</span>?
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Why Choose TekyPro?
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              Everything you need to succeed in your tech career, all in one platform
+            <p className="text-lg text-gray-700 dark:text-gray-300">
+              Everything you need to succeed in your tech career.
             </p>
           </div>
 
@@ -472,269 +403,203 @@ export default function LandingPage() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-2xl hover:border-transparent transition-all duration-500 transform hover:-translate-y-3"
-                style={{ animationDelay: feature.delay }}
+                className="p-8 rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-blue/10 transition-all duration-300 group hover:-translate-y-1"
               >
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg`}>
-                  <feature.icon className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-dark-700 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <feature.icon className="w-7 h-7 text-brand-blue" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-brand-blue dark:group-hover:text-brand-blue transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
                   {feature.description}
                 </p>
               </div>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
-      {/* Testimonials Section - Carousel Style */}
+      {/* Testimonials */}
       <section className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Success Stories from Our <span className="bg-gradient-to-r from-brand-purple to-brand-red bg-clip-text text-transparent">Students</span>
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              Join thousands of professionals who transformed their careers with TekyPro
-            </p>
-          </div>
-
-          {/* Featured Testimonial - Large */}
-          <div className="max-w-4xl mx-auto mb-12">
-            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-dark-800 dark:to-dark-900 rounded-3xl p-12 shadow-2xl border border-gray-200/50 dark:border-gray-700/50 transform transition-all duration-500">
-              <div className="flex items-center gap-2 mb-6">
-                {[...Array(testimonials[activeTestimonial].rating)].map((_, i) => (
-                  <Star key={i} className="w-6 h-6 text-yellow-500 fill-yellow-500" />
-                ))}
-              </div>
-              <p className="text-2xl text-gray-700 dark:text-gray-300 mb-8 italic leading-relaxed">
-                "{testimonials[activeTestimonial].quote}"
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="max-w-full mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                Loved by students worldwide
+              </h2>
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
+                Join thousands of professionals who transformed their careers with TekyPro.
               </p>
-              <div className="flex items-center gap-6">
-                <img
-                  src={testimonials[activeTestimonial].image}
-                  alt={testimonials[activeTestimonial].name}
-                  className="w-20 h-20 rounded-full ring-4 ring-white dark:ring-dark-700 shadow-lg"
-                />
-                <div>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white">
-                    {testimonials[activeTestimonial].name}
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-400">
-                    {testimonials[activeTestimonial].role}
-                  </div>
-                </div>
+              
+              <div className="flex gap-4 mb-8">
+                <button 
+                  onClick={() => setActiveTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length)}
+                  className="p-3 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-dark-800 transition-colors"
+                >
+                  <ArrowRight className="w-5 h-5 rotate-180 text-gray-600 dark:text-gray-400" />
+                </button>
+                <button 
+                  onClick={() => setActiveTestimonial((prev) => (prev + 1) % testimonials.length)}
+                  className="p-3 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-dark-800 transition-colors"
+                >
+                  <ArrowRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </button>
               </div>
             </div>
 
-            {/* Testimonial Indicators */}
-            <div className="flex justify-center gap-3 mt-8">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveTestimonial(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === activeTestimonial
-                      ? 'bg-gradient-to-r from-brand-blue to-brand-purple w-8'
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* All Testimonials Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                onClick={() => setActiveTestimonial(index)}
-                className={`cursor-pointer bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl rounded-2xl p-8 transition-all duration-300 border ${
-                  index === activeTestimonial
-                    ? 'border-brand-blue shadow-2xl shadow-brand-blue/20 scale-105'
-                    : 'border-gray-200/50 dark:border-gray-700/50 hover:shadow-xl'
-                }`}
-              >
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 rounded-3xl transform rotate-3 scale-105 opacity-50 blur-xl"></div>
+              <div className="relative bg-white dark:bg-dark-800 p-10 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-xl shadow-gray-200/50 dark:shadow-xl">
+                <div className="flex gap-1 mb-6">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                   ))}
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 mb-6 line-clamp-3">
-                  "{testimonial.quote}"
-                </p>
+                <blockquote className="text-xl lg:text-2xl font-medium text-gray-900 dark:text-white mb-8 leading-relaxed">
+                  "{testimonials[activeTestimonial].quote}"
+                </blockquote>
                 <div className="flex items-center gap-4">
                   <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full"
+                    src={testimonials[activeTestimonial].image}
+                    alt={testimonials[activeTestimonial].name}
+                    className="w-12 h-12 rounded-full object-cover"
                   />
                   <div>
-                    <div className="font-semibold text-gray-900 dark:text-white text-sm">
-                      {testimonial.name}
+                    <div className="font-bold text-gray-900 dark:text-white text-lg">
+                      {testimonials[activeTestimonial].name}
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      {testimonial.role.split('@')[0]}
+                    <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                      {testimonials[activeTestimonial].role}
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-24 bg-gradient-to-br from-white to-gray-50 dark:from-dark-800 dark:to-dark-900 transition-colors">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              Everything you need to know about TekyPro
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            {faqs.map((faq, index) => (
-              <details
-                key={index}
-                className="group bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300"
-              >
-                <summary className="flex items-center justify-between cursor-pointer text-lg font-bold text-gray-900 dark:text-white list-none">
-                  {faq.question}
-                  <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
-                </summary>
-                <p className="mt-4 text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {faq.answer}
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA Section - Enhanced */}
-      <section className="py-32">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red rounded-3xl p-16 shadow-2xl">
-            {/* Animated background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-grid-pattern"></div>
             </div>
+          </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="relative z-10 text-center">
-              <Rocket className="w-16 h-16 text-white mx-auto mb-6 animate-bounce" />
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6">
-                Ready to Transform Your Career?
+      {/* CTA Section */}
+      <section className="py-24">
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="max-w-full mx-auto">
+          <div className="relative rounded-[2.5rem] overflow-hidden bg-brand-blue px-6 py-20 text-center">
+            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-blue to-brand-purple opacity-90"></div>
+            
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Ready to start learning?
               </h2>
-              <p className="text-xl sm:text-2xl text-white/90 mb-10 max-w-3xl mx-auto">
-                Join 10,000+ students and start your journey to becoming a tech professional today
+              <p className="text-xl text-blue-100 mb-10">
+                Join 10,000+ students and start your journey to becoming a tech professional today.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-3 px-10 py-5 bg-white text-brand-blue font-bold rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg group"
+                  className="px-8 py-4 bg-white text-brand-blue font-bold rounded-full hover:bg-blue-50 transition-colors"
                 >
-                  Start Learning Free
-                  <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                  Get Started for Free
                 </Link>
                 <Link
-                  to="/register?role=instructor"
-                  className="inline-flex items-center gap-3 px-10 py-5 bg-white/10 backdrop-blur-xl text-white font-bold rounded-2xl border-2 border-white/30 hover:bg-white/20 transition-all duration-300 text-lg"
+                  to="/courses"
+                  className="px-8 py-4 bg-transparent border border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors"
                 >
-                  Become an Instructor
+                  Browse Courses
                 </Link>
               </div>
-              <p className="mt-8 text-white/70 text-sm">
-                ✓ No credit card required • ✓ 30-day money-back guarantee • ✓ Cancel anytime
-              </p>
             </div>
+          </div>
           </div>
         </div>
       </section>
 
-      {/* Footer - Enhanced */}
-      <footer className="bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-800/50 py-12 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3 group cursor-pointer">
-              <img src={logo} alt="TekyPro" className="h-10 w-auto transform group-hover:scale-110 transition-transform" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red bg-clip-text text-transparent">
-                TekyPro
-              </span>
+      {/* Footer */}
+      <footer className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-gray-800 pt-16 pb-8">
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="max-w-full mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="col-span-1 md:col-span-1">
+              <div className="flex items-center gap-2 mb-6">
+                <img src={logo} alt="TekyPro" className="h-8 w-auto" />
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed font-medium">
+                The leading platform for database administration and cloud technology training.
+              </p>
             </div>
-            <div className="flex items-center gap-8">
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-brand-blue dark:hover:text-brand-blue transition-colors font-medium">
-                About
-              </a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-brand-blue dark:hover:text-brand-blue transition-colors font-medium">
-                Courses
-              </a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-brand-blue dark:hover:text-brand-blue transition-colors font-medium">
-                Contact
-              </a>
+            
+            <div>
+              <h4 className="font-bold text-gray-900 dark:text-white mb-6 text-lg">Platform</h4>
+              <ul className="space-y-4 text-sm text-gray-700 dark:text-gray-300 font-medium">
+                <li><Link to="/courses" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Browse Courses</Link></li>
+                <li><Link to="/register?role=instructor" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Become an Instructor</Link></li>
+                <li><Link to="/login" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Login</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-gray-900 dark:text-white mb-6 text-lg">Company</h4>
+              <ul className="space-y-4 text-sm text-gray-700 dark:text-gray-300 font-medium">
+                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Contact</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-gray-900 dark:text-white mb-6 text-lg">Legal</h4>
+              <ul className="space-y-4 text-sm text-gray-700 dark:text-gray-300 font-medium">
+                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Cookie Policy</a></li>
+              </ul>
             </div>
           </div>
-          <div className="mt-8 text-center text-gray-600 dark:text-gray-400 text-sm">
-            © 2025 TekyPro. All rights reserved. Built with ❤️ for learners worldwide.
+          
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            © {new Date().getFullYear()} TekyPro. All rights reserved.
+          </div>
           </div>
         </div>
       </footer>
 
-      {/* Custom CSS for animations */}
       <style jsx>{`
         @keyframes blob {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
         }
-
         .animate-blob {
           animation: blob 7s infinite;
         }
-
         .animation-delay-2000 {
           animation-delay: 2s;
         }
-
         .animation-delay-4000 {
           animation-delay: 4s;
         }
-
-        @keyframes gradient-x {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
         .animate-gradient-x {
           background-size: 200% 200%;
-          animation: gradient-x 3s ease infinite;
+          animation: gradient-x 15s ease infinite;
         }
-
+        @keyframes gradient-x {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
         .bg-grid-pattern {
-          background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-          background-size: 50px 50px;
+          background-image: linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+          background-size: 40px 40px;
         }
-
         .dark .bg-grid-pattern {
-          background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+          background-image: linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
         }
       `}</style>
     </div>
