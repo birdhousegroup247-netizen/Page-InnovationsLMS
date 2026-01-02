@@ -198,7 +198,7 @@ export default function Dashboard() {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="group relative overflow-hidden bg-white/5 dark:bg-dark-800/5 backdrop-blur-2xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 animate-scale-in"
+              className="group relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 animate-scale-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Glow effect on hover */}
@@ -249,7 +249,7 @@ export default function Dashboard() {
             </div>
             <Link
               to="/my-courses"
-              className="group flex items-center gap-2 px-6 py-3 bg-white/5 dark:bg-dark-800/5 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-brand-blue/50 transition-all duration-300 hover:scale-105"
+              className="group flex items-center gap-2 px-6 py-3 bg-transparent backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-brand-blue/50 transition-all duration-300 hover:scale-105"
             >
               <span className="font-semibold text-brand-blue">View all</span>
               <ArrowRight className="w-4 h-4 text-brand-blue group-hover:translate-x-1 transition-transform" />
@@ -259,7 +259,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recentCourses.length === 0 ? (
               <div className="col-span-full">
-                <div className="relative overflow-hidden bg-white/5 dark:bg-dark-800/5 backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
+                <div className="relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
                   <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 to-brand-purple/5 dark:from-brand-blue/5 dark:to-brand-purple/5"></div>
                   <div className="relative">
                     <div className="relative inline-block mb-6">
@@ -286,7 +286,7 @@ export default function Dashboard() {
               recentCourses.map((course, index) => (
               <div
                 key={course.id}
-                className="group relative overflow-hidden bg-white/5 dark:bg-dark-800/5 backdrop-blur-2xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 animate-slide-up"
+                className="group relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 animate-slide-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {/* Glow effect on hover */}
@@ -380,7 +380,7 @@ export default function Dashboard() {
             </div>
             <Link
               to="/courses"
-              className="group flex items-center gap-2 px-6 py-3 bg-white/5 dark:bg-dark-800/5 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-brand-purple/50 transition-all duration-300 hover:scale-105"
+              className="group flex items-center gap-2 px-6 py-3 bg-transparent backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-brand-purple/50 transition-all duration-300 hover:scale-105"
             >
               <span className="font-semibold text-brand-purple">Browse all</span>
               <ArrowRight className="w-4 h-4 text-brand-purple group-hover:translate-x-1 transition-transform" />
@@ -390,7 +390,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {recommendations.length === 0 ? (
               <div className="col-span-full">
-                <div className="relative overflow-hidden bg-white/5 dark:bg-dark-800/5 backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
+                <div className="relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
                   <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/5 to-brand-red/5 dark:from-brand-purple/5 dark:to-brand-red/5"></div>
                   <div className="relative">
                     <div className="relative inline-block mb-6">
@@ -410,7 +410,7 @@ export default function Dashboard() {
               recommendations.map((course, index) => (
               <div
                 key={course.id}
-                className="group relative overflow-hidden bg-white/5 dark:bg-dark-800/5 backdrop-blur-2xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2"
+                className="group relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2"
               >
                 {/* Glow effect on hover */}
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-purple to-brand-red rounded-3xl blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
