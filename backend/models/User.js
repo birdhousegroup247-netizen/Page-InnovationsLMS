@@ -146,7 +146,7 @@ User.prototype.updateLastLogin = async function () {
  * @returns {Promise<string>}
  */
 User.hashPassword = async function (password) {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   return await bcrypt.hash(password, salt);
 };
 

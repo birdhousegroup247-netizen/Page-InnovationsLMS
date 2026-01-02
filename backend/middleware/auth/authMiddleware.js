@@ -2,6 +2,7 @@ const JWT = require('../../utils/jwt');
 const { User } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { UnauthorizedError, ForbiddenError } = require('../../utils/errors');
+const TokenBlacklist = require('../../utils/tokenBlacklist');
 
 /**
  * Authentication Middleware
@@ -9,12 +10,22 @@ const { UnauthorizedError, ForbiddenError } = require('../../utils/errors');
  */
 const authenticate = async (req, res, next) => {
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
-    const token = JWT.extractFromHeader(authHeader);
+    // Get token from cookie first, fallback to Authorization header for backward compatibility
+    let token = req.cookies.accessToken;
+
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      token = JWT.extractFromHeader(authHeader);
+    }
 
     if (!token) {
       throw new UnauthorizedError('No token provided');
+    }
+
+    // Check if token is blacklisted
+    const isBlacklisted = await TokenBlacklist.isBlacklisted(token);
+    if (isBlacklisted) {
+      throw new UnauthorizedError('Token has been revoked');
     }
 
     // Verify token
@@ -51,17 +62,26 @@ const authenticate = async (req, res, next) => {
  */
 const optionalAuthenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = JWT.extractFromHeader(authHeader);
+    // Get token from cookie first, fallback to Authorization header
+    let token = req.cookies.accessToken;
+
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      token = JWT.extractFromHeader(authHeader);
+    }
 
     if (token) {
-      const decoded = JWT.verifyAccessToken(token);
-      const user = await User.findByPk(decoded.id, {
-        attributes: { exclude: ['password_hash'] },
-      });
+      // Check if token is blacklisted
+      const isBlacklisted = await TokenBlacklist.isBlacklisted(token);
+      if (!isBlacklisted) {
+        const decoded = JWT.verifyAccessToken(token);
+        const user = await User.findByPk(decoded.id, {
+          attributes: { exclude: ['password_hash'] },
+        });
 
-      if (user && user.is_active) {
-        req.user = user;
+        if (user && user.is_active) {
+          req.user = user;
+        }
       }
     }
 

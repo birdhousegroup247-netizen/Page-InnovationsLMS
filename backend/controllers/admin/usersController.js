@@ -2,6 +2,7 @@ const { User, Course, Enrollment, Certificate } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
+const { getPaginationParams, getPaginationMeta } = require('../../utils/pagination');
 const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
 
@@ -9,7 +10,10 @@ class UsersController {
   // Get all users with filters
   static async getAllUsers(req, res, next) {
     try {
-      const { role, search, page = 1, limit = 20 } = req.query;
+      const { role, search } = req.query;
+
+      // Get safe pagination parameters with maximum limit enforcement
+      const { page, limit, offset } = getPaginationParams(req.query);
 
       const where = {};
 
@@ -24,24 +28,17 @@ class UsersController {
         ];
       }
 
-      const offset = (page - 1) * limit;
-
       const { count, rows } = await User.findAndCountAll({
         where,
         attributes: { exclude: ['password'] },
-        limit: parseInt(limit),
-        offset: parseInt(offset),
+        limit,
+        offset,
         order: [['created_at', 'DESC']],
       });
 
       return ApiResponse.success(res, {
         users: rows,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(count / limit),
-          totalItems: count,
-          itemsPerPage: parseInt(limit),
-        },
+        pagination: getPaginationMeta(page, limit, count),
       });
     } catch (error) {
       next(error);
@@ -91,7 +88,7 @@ class UsersController {
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, 12);
 
       const user = await User.create({
         full_name,
@@ -129,7 +126,7 @@ class UsersController {
 
       // If updating password, hash it
       if (updates.password) {
-        updates.password = await bcrypt.hash(updates.password, 10);
+        updates.password = await bcrypt.hash(updates.password, 12);
       }
 
       // Prevent updating certain fields

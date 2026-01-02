@@ -12,8 +12,9 @@ import {
   CheckCircle,
   Clock,
   BookOpen,
+  Eye,
 } from 'lucide-react';
-import { coursesAPI } from '../../lib/api';
+import { coursesAPI, instructorAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert } from '../../components/ui';
 import { cn } from '../../utils/cn';
@@ -44,14 +45,21 @@ export default function MyStudents() {
       const coursesResponse = await coursesAPI.getInstructorCourses();
       setCourses(coursesResponse.data.data.courses || []);
 
-      // Fetch students
-      const params = {};
+      // Fetch students using new instructor API
       if (selectedCourse !== 'all') {
-        params.course_id = selectedCourse;
+        // Use new API for specific course
+        const studentsResponse = await instructorAPI.getCourseStudents(selectedCourse);
+        setStudents(studentsResponse.data.data.students || []);
+      } else {
+        // Fetch from all courses
+        const allCourses = coursesResponse.data.data.courses || [];
+        const allStudentsPromises = allCourses.map(course =>
+          instructorAPI.getCourseStudents(course.id).catch(() => ({ data: { data: { students: [] } } }))
+        );
+        const allStudentsResponses = await Promise.all(allStudentsPromises);
+        const combinedStudents = allStudentsResponses.flatMap(res => res.data.data.students || []);
+        setStudents(combinedStudents);
       }
-
-      const studentsResponse = await coursesAPI.getInstructorStudents(params);
-      setStudents(studentsResponse.data.data.students || []);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.response?.data?.message || 'Failed to load students');
@@ -401,6 +409,19 @@ export default function MyStudents() {
                             Completed on {new Date(enrollment.completed_at).toLocaleDateString()}
                           </div>
                         )}
+                      </div>
+
+                      {/* View Details Button */}
+                      <div className="flex items-center lg:ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<Eye className="w-4 h-4" />}
+                          onClick={() => navigate(`/instructor/students/${enrollment.student_id}/progress/${enrollment.course_id}`)}
+                          className="whitespace-nowrap"
+                        >
+                          View Details
+                        </Button>
                       </div>
                     </div>
                   </div>

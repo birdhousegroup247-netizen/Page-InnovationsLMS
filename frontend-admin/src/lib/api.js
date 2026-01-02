@@ -10,15 +10,22 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  withCredentials: true, // Send cookies with requests
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add CSRF token from cookie
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Get CSRF token from cookie and add to header
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrf-token='))
+      ?.split('=')[1];
+
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     }
+
     return config;
   },
   (error) => {
@@ -39,26 +46,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
+        // Attempt to refresh access token (refreshToken is in httpOnly cookie)
+        const response = await axios.post(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {}, // No body needed - refreshToken comes from cookie
+          { withCredentials: true } // Send cookies
+        );
 
-        // Attempt to refresh access token
-        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-          refreshToken,
-        });
-
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        // Retry original request (new accessToken is now in cookie)
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - clear tokens and redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        // Refresh failed - redirect to login
+        // Cookies will be cleared by backend on next request
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
@@ -77,8 +76,8 @@ export const authAPI = {
   resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
   verifyEmail: (token) => api.get(`/api/auth/verify-email/${token}`),
   refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }),
-  getProfile: () => api.get('/api/auth/profile'),
-  updateProfile: (data) => api.put('/api/auth/profile', data),
+  getProfile: () => api.get('/api/profile'),
+  updateProfile: (data) => api.put('/api/profile', data),
 };
 
 export const coursesAPI = {

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../lib/api';
+import logger from '../utils/logger';
 
 const AuthContext = createContext(null);
 
@@ -23,27 +24,15 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        setLoading(false);
-        setIsAuthenticated(false);
-        setUser(null);
-        return;
-      }
-
+      // Try to get user profile - if accessToken cookie exists and is valid, this will succeed
       const response = await authAPI.getProfile();
       setUser(response.data.data.user);
       setIsAuthenticated(true);
     } catch (error) {
-      console.error('Auth check failed:', error);
-
-      // Only clear auth state if tokens were actually removed by the interceptor
-      // (The interceptor removes tokens only when refresh fails)
-      const stillHasToken = localStorage.getItem('accessToken');
-      if (!stillHasToken) {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
+      logger.error('Auth check failed:', error);
+      // If profile fetch fails, user is not authenticated
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -52,10 +41,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login({ email, password });
-      const { accessToken, refreshToken, user } = response.data.data;
+      const { user } = response.data.data;
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Tokens are now in httpOnly cookies (set by backend)
+      // No need to store in localStorage
       setUser(user);
       setIsAuthenticated(true);
 
@@ -69,10 +58,10 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      const { accessToken, refreshToken, user } = response.data.data;
+      const { user } = response.data.data;
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Tokens are now in httpOnly cookies (set by backend)
+      // No need to store in localStorage
       setUser(user);
       setIsAuthenticated(true);
 
@@ -87,10 +76,10 @@ export const AuthProvider = ({ children }) => {
     try {
       await authAPI.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      // Cookies are cleared by backend
+      // Just clear local state
       setUser(null);
       setIsAuthenticated(false);
     }

@@ -1,280 +1,526 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { BookOpen, Award, Clock, TrendingUp, PlayCircle, ArrowRight, Star } from 'lucide-react';
+import { BookOpen, Award, Clock, TrendingUp, PlayCircle, ArrowRight, Star, Sparkles, Zap, Target } from 'lucide-react';
+import { profileAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
+import { DashboardSkeleton } from '../components/ui/Skeleton';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [stats, setStats] = useState([]);
+  const [recentCourses, setRecentCourses] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const stats = [
-    {
-      title: 'Enrolled Courses',
-      value: '12',
-      icon: BookOpen,
-      iconBg: 'bg-brand-blue/20',
-      iconColor: 'text-brand-blue',
-      trend: { value: '+2', label: 'this month' },
-    },
-    {
-      title: 'Completed',
-      value: '8',
-      icon: Award,
-      iconBg: 'bg-green-500/20',
-      iconColor: 'text-green-500',
-      trend: { value: '+3', label: 'this month' },
-    },
-    {
-      title: 'Hours Learned',
-      value: '145',
-      icon: Clock,
-      iconBg: 'bg-brand-purple/20',
-      iconColor: 'text-brand-purple',
-      trend: { value: '+12', label: 'this week' },
-    },
-    {
-      title: 'Progress',
-      value: '67%',
-      icon: TrendingUp,
-      iconBg: 'bg-brand-red/20',
-      iconColor: 'text-brand-red',
-      trend: { value: '+5%', label: 'from last week' },
-    },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const recentCourses = [
-    {
-      id: 1,
-      title: 'Advanced SQL Mastery',
-      progress: 75,
-      instructor: 'John Doe',
-      thumbnail: 'https://placehold.co/400x225/0e2b5c/ffffff?text=SQL+Mastery',
-      duration: '8h 30m',
-      lessonsCompleted: 15,
-      totalLessons: 20,
-    },
-    {
-      id: 2,
-      title: 'React Development',
-      progress: 45,
-      instructor: 'Jane Smith',
-      thumbnail: 'https://placehold.co/400x225/2e3192/ffffff?text=React+Dev',
-      duration: '12h 15m',
-      lessonsCompleted: 9,
-      totalLessons: 20,
-    },
-    {
-      id: 3,
-      title: 'Node.js Backend',
-      progress: 90,
-      instructor: 'Mike Johnson',
-      thumbnail: 'https://placehold.co/400x225/eb1c22/ffffff?text=Node.js',
-      duration: '10h 45m',
-      lessonsCompleted: 18,
-      totalLessons: 20,
-    },
-  ];
+        // Fetch all data in parallel
+        const [statsResponse, myCoursesResponse, allCoursesResponse] = await Promise.all([
+          profileAPI.getStats(),
+          enrollmentsAPI.getMyCourses(),
+          coursesAPI.getAll({ limit: 2, exclude_enrolled: true })
+        ]);
 
-  const recommendations = [
-    {
-      id: 4,
-      title: 'Python for Data Science',
-      instructor: 'Dr. Sarah Williams',
-      rating: 4.8,
-      students: 12543,
-      thumbnail: 'https://placehold.co/400x225/0e2b5c/ffffff?text=Python+DS',
-      level: 'Intermediate',
-      price: '$49.99',
-    },
-    {
-      id: 5,
-      title: 'Advanced JavaScript Patterns',
-      instructor: 'Alex Chen',
-      rating: 4.9,
-      students: 8932,
-      thumbnail: 'https://placehold.co/400x225/2e3192/ffffff?text=JS+Patterns',
-      level: 'Advanced',
-      price: '$59.99',
-    },
-  ];
+        // Process stats data
+        const statsData = statsResponse.data.data;
+        const processedStats = [
+          {
+            title: 'Enrolled Courses',
+            value: statsData.total_enrollments?.toString() || '0',
+            icon: BookOpen,
+            iconBg: 'bg-brand-blue/20',
+            iconColor: 'text-brand-blue',
+            trend: { value: `+${statsData.enrollments_this_month || 0}`, label: 'this month' },
+          },
+          {
+            title: 'Completed',
+            value: statsData.completed_courses?.toString() || '0',
+            icon: Award,
+            iconBg: 'bg-green-500/20',
+            iconColor: 'text-green-500',
+            trend: { value: `+${statsData.courses_completed_this_month || 0}`, label: 'this month' },
+          },
+          {
+            title: 'Certificates',
+            value: statsData.total_certificates?.toString() || '0',
+            icon: Clock,
+            iconBg: 'bg-brand-purple/20',
+            iconColor: 'text-brand-purple',
+            trend: { value: `+${statsData.certificates_this_month || 0}`, label: 'this month' },
+          },
+          {
+            title: 'Avg Progress',
+            value: `${Math.round(statsData.average_progress || 0)}%`,
+            icon: TrendingUp,
+            iconBg: 'bg-brand-red/20',
+            iconColor: 'text-brand-red',
+            trend: { value: '+5%', label: 'from last week' },
+          },
+        ];
+
+        // Process recent courses (in-progress courses)
+        const coursesData = myCoursesResponse.data.data.enrollments || [];
+        const inProgressCourses = coursesData
+          .filter(enrollment => enrollment.progress_percentage > 0 && enrollment.progress_percentage < 100)
+          .slice(0, 3)
+          .map(enrollment => ({
+            id: enrollment.course.id,
+            title: enrollment.course.title,
+            progress: Math.round(enrollment.progress_percentage || 0),
+            instructor: enrollment.course.instructor?.full_name || 'Instructor',
+            thumbnail: enrollment.course.thumbnail_url || `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(enrollment.course.title)}`,
+            duration: enrollment.course.duration || 'N/A',
+            lessonsCompleted: enrollment.completed_contents || 0,
+            totalLessons: enrollment.total_contents || 0,
+          }));
+
+        // Process recommendations (all courses excluding enrolled)
+        const recommendationsData = allCoursesResponse.data.data.courses || [];
+        const processedRecommendations = recommendationsData.slice(0, 2).map(course => ({
+          id: course.id,
+          title: course.title,
+          instructor: course.instructor?.full_name || 'Instructor',
+          rating: course.average_rating || 4.5,
+          students: course.total_enrollments || 0,
+          thumbnail: course.thumbnail_url || `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(course.title)}`,
+          level: course.difficulty || 'Intermediate',
+          price: course.price ? `$${course.price}` : 'Free',
+        }));
+
+        setStats(processedStats);
+        setRecentCourses(inProgressCourses);
+        setRecommendations(processedRecommendations);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again.');
+
+        // Set empty arrays on error
+        setStats([
+          {
+            title: 'Enrolled Courses',
+            value: '0',
+            icon: BookOpen,
+            iconBg: 'bg-brand-blue/20',
+            iconColor: 'text-brand-blue',
+            trend: { value: '+0', label: 'this month' },
+          },
+          {
+            title: 'Completed',
+            value: '0',
+            icon: Award,
+            iconBg: 'bg-green-500/20',
+            iconColor: 'text-green-500',
+            trend: { value: '+0', label: 'this month' },
+          },
+          {
+            title: 'Certificates',
+            value: '0',
+            icon: Clock,
+            iconBg: 'bg-brand-purple/20',
+            iconColor: 'text-brand-purple',
+            trend: { value: '+0', label: 'this month' },
+          },
+          {
+            title: 'Avg Progress',
+            value: '0%',
+            icon: TrendingUp,
+            iconBg: 'bg-brand-red/20',
+            iconColor: 'text-brand-red',
+            trend: { value: '+0%', label: 'from last week' },
+          },
+        ]);
+        setRecentCourses([]);
+        setRecommendations([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Section */}
-      <div className="mb-8 animate-fade-in">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-          Welcome back, {user?.full_name?.split(' ')[0]}! 👋
-        </h1>
-        <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
-          Continue your learning journey where you left off
-        </p>
+    <div className="relative min-h-screen">
+      {/* Animated Background Blobs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-gradient-to-br from-brand-blue/20 to-cyan-500/20 dark:from-brand-blue/10 dark:to-cyan-500/10 rounded-full blur-3xl animate-blob"></div>
+        <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-gradient-to-br from-brand-purple/20 to-pink-500/20 dark:from-brand-purple/10 dark:to-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/3 w-[600px] h-[600px] bg-gradient-to-br from-brand-red/20 to-orange-500/20 dark:from-brand-red/10 dark:to-orange-500/10 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card hover:shadow-md dark:hover:shadow-card-hover transition-all animate-scale-in"
-            style={{ animationDelay: `${index * 0.1}s` }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.iconBg} p-3 rounded-lg transition-colors`}>
-                <stat.icon className={`h-6 w-6 ${stat.iconColor} transition-colors`} />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section with Gradient */}
+        <div className="mb-12 animate-fade-in">
+          <div className="relative overflow-hidden bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red p-[2px] rounded-3xl mb-6">
+            <div className="bg-white/90 dark:bg-dark-900/90 backdrop-blur-xl p-8 rounded-[22px]">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue to-brand-purple rounded-full blur-lg opacity-50"></div>
+                  <Sparkles className="relative w-12 h-12 text-brand-blue dark:text-brand-purple" />
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-4xl md:text-5xl font-black mb-2">
+                    <span className="bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red bg-clip-text text-transparent animate-gradient-x">
+                      Welcome back, {user?.full_name?.split(' ')[0]}!
+                    </span>
+                  </h1>
+                  <p className="text-lg text-gray-600 dark:text-text-dark-secondary flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-brand-purple" />
+                    Ready to level up your skills today?
+                  </p>
+                </div>
               </div>
-            </div>
-            <h3 className="text-gray-600 dark:text-text-dark-secondary text-sm mb-1 transition-colors">
-              {stat.title}
-            </h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-              {stat.value}
-            </p>
-            <div className="flex items-center text-sm">
-              <span className="text-green-500 font-medium">{stat.trend.value}</span>
-              <span className="text-gray-500 dark:text-text-dark-muted ml-1 transition-colors">
-                {stat.trend.label}
-              </span>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Continue Learning Section */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
-            Continue Learning
-          </h2>
-          <Link
-            to="/my-courses"
-            className="text-brand-blue hover:text-brand-blue-light font-medium text-sm flex items-center gap-1 transition-colors"
-          >
-            View all courses
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          {error && (
+            <div className="mt-4 p-4 bg-red-50/90 dark:bg-red-900/20 backdrop-blur-xl border border-red-200/50 dark:border-red-800/50 rounded-2xl">
+              <p className="text-red-800 dark:text-red-200">{error}</p>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recentCourses.map((course, index) => (
+        {/* Stats Grid with Glass-morphism */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {stats.map((stat, index) => (
             <div
-              key={course.id}
-              className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden shadow-sm dark:shadow-card hover:shadow-md dark:hover:shadow-card-hover transition-all group animate-slide-up"
+              key={index}
+              className="group relative overflow-hidden bg-white/70 dark:bg-dark-800/70 backdrop-blur-2xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 animate-scale-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* Course Thumbnail */}
-              <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-dark-700 transition-colors">
-                <img
-                  src={course.thumbnail}
-                  alt={course.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-                {/* Play Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <PlayCircle className="w-16 h-16 text-white" />
-                </div>
-              </div>
+              {/* Glow effect on hover */}
+              <div className={`absolute inset-0 ${stat.iconBg.replace('/20', '')} rounded-3xl blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500`}></div>
 
-              {/* Course Info */}
-              <div className="p-5">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-2 line-clamp-2 transition-colors">
-                  {course.title}
+              <div className="relative">
+                {/* Icon with 3D effect */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`${stat.iconBg} p-4 rounded-2xl transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
+                    <stat.icon className={`h-7 w-7 ${stat.iconColor}`} />
+                  </div>
+                  {/* Decorative element */}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue/10 to-brand-purple/10 dark:from-brand-blue/5 dark:to-brand-purple/5 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-brand-blue/50 dark:text-brand-purple/50" />
+                  </div>
+                </div>
+
+                <h3 className="text-gray-500 dark:text-text-dark-secondary text-sm font-semibold mb-2 uppercase tracking-wide">
+                  {stat.title}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-text-dark-muted mb-4 transition-colors">
-                  by {course.instructor}
+                <p className="text-4xl font-black bg-gradient-to-br from-gray-900 to-gray-700 dark:from-text-dark-primary dark:to-text-dark-secondary bg-clip-text text-transparent mb-3">
+                  {stat.value}
                 </p>
-
-                {/* Progress Section */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-gray-600 dark:text-text-dark-secondary font-medium transition-colors">
-                      {course.lessonsCompleted}/{course.totalLessons} lessons
-                    </span>
-                    <span className="text-brand-blue font-semibold">{course.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-dark-700 rounded-full h-2 transition-colors">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-brand-blue to-brand-purple transition-all duration-300"
-                      style={{ width: `${course.progress}%` }}
-                    ></div>
-                  </div>
+                <div className="flex items-center text-sm">
+                  <span className="text-green-500 dark:text-green-400 font-bold">{stat.trend.value}</span>
+                  <span className="text-gray-400 dark:text-text-dark-muted ml-1">
+                    {stat.trend.label}
+                  </span>
                 </div>
-
-                {/* Continue Button */}
-                <Link
-                  to={`/courses/${course.id}/learn`}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-blue text-white rounded-lg font-medium hover:bg-brand-blue-600 transition-colors"
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  Continue Learning
-                </Link>
               </div>
+
+              {/* Shine effect on hover */}
+              <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 transition-all duration-1000"></div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Recommended Courses */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
-            Recommended for You
-          </h2>
-          <Link
-            to="/courses"
-            className="text-brand-blue hover:text-brand-blue-light font-medium text-sm flex items-center gap-1 transition-colors"
-          >
-            Browse all
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {recommendations.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden shadow-sm dark:shadow-card hover:shadow-md dark:hover:shadow-card-hover transition-all group"
+        {/* Continue Learning Section */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black mb-2">
+                <span className="bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+                  Continue Learning
+                </span>
+              </h2>
+              <p className="text-gray-600 dark:text-text-dark-secondary">Pick up where you left off</p>
+            </div>
+            <Link
+              to="/my-courses"
+              className="group flex items-center gap-2 px-6 py-3 bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-brand-blue/50 transition-all duration-300 hover:scale-105"
             >
-              <div className="flex flex-col sm:flex-row">
-                {/* Thumbnail */}
-                <div className="sm:w-48 aspect-video sm:aspect-auto bg-gray-100 dark:bg-dark-700 flex-shrink-0 transition-colors">
+              <span className="font-semibold text-brand-blue">View all</span>
+              <ArrowRight className="w-4 h-4 text-brand-blue group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentCourses.length === 0 ? (
+              <div className="col-span-full">
+                <div className="relative overflow-hidden bg-white/70 dark:bg-dark-800/70 backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 to-brand-purple/5 dark:from-brand-blue/5 dark:to-brand-purple/5"></div>
+                  <div className="relative">
+                    <div className="relative inline-block mb-6">
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-blue to-brand-purple rounded-full blur-2xl opacity-20"></div>
+                      <BookOpen className="relative w-20 h-20 mx-auto text-brand-blue dark:text-brand-purple" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2">
+                      Start Your Learning Journey
+                    </h3>
+                    <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+                      Explore our courses and begin your path to mastery
+                    </p>
+                    <Link
+                      to="/courses"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-bold hover:shadow-2xl hover:shadow-brand-blue/50 transition-all duration-300 transform hover:scale-105"
+                    >
+                      <BookOpen className="w-5 h-5" />
+                      Browse Courses
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              recentCourses.map((course, index) => (
+              <div
+                key={course.id}
+                className="group relative overflow-hidden bg-white/70 dark:bg-dark-800/70 backdrop-blur-2xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 animate-slide-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-blue to-brand-purple rounded-3xl blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                {/* Course Thumbnail */}
+                <div className="relative aspect-video overflow-hidden">
                   <img
                     src={course.thumbnail}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                  {/* Play Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/90 to-brand-purple/90 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
+                    <div className="transform scale-75 group-hover:scale-100 transition-transform duration-500">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-white rounded-full blur-xl opacity-50"></div>
+                        <PlayCircle className="relative w-20 h-20 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Progress Badge */}
+                  <div className="absolute top-4 right-4 px-4 py-2 bg-white/90 dark:bg-dark-900/90 backdrop-blur-xl rounded-full border border-white/50 shadow-lg">
+                    <span className="text-sm font-bold bg-gradient-to-r from-brand-blue to-brand-purple bg-clip-text text-transparent">
+                      {course.progress}% Complete
+                    </span>
+                  </div>
                 </div>
 
-                {/* Info */}
-                <div className="p-5 flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary flex-1 line-clamp-2 group-hover:text-brand-blue transition-colors">
-                      {course.title}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-text-dark-muted mb-3 transition-colors">
-                    by {course.instructor}
+                {/* Course Info */}
+                <div className="relative p-6">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 line-clamp-2 group-hover:text-brand-blue dark:group-hover:text-brand-purple transition-colors">
+                    {course.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-text-dark-muted mb-4 flex items-center gap-2">
+                    <Award className="w-4 h-4" />
+                    {course.instructor}
                   </p>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{course.rating}</span>
+
+                  {/* Progress Section */}
+                  <div className="mb-5">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-gray-600 dark:text-text-dark-secondary font-semibold">
+                        {course.lessonsCompleted} / {course.totalLessons} lessons
+                      </span>
                     </div>
-                    <div>{course.students.toLocaleString()} students</div>
-                    <div className="ml-auto">
-                      <span className="text-brand-blue font-bold">{course.price}</span>
+                    <div className="relative w-full h-3 bg-gray-200/50 dark:bg-dark-700/50 rounded-full overflow-hidden backdrop-blur-xl">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red rounded-full transition-all duration-500 shadow-lg shadow-brand-blue/50"
+                        style={{ width: `${course.progress}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Continue Button */}
                   <Link
-                    to={`/courses/${course.id}`}
-                    className="inline-flex items-center text-brand-blue hover:text-brand-blue-light font-medium text-sm transition-colors"
+                    to={`/courses/${course.id}/learn`}
+                    className="relative w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-bold overflow-hidden group/btn transition-all duration-300 hover:shadow-2xl hover:shadow-brand-blue/50"
                   >
-                    View course
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                    <span className="relative z-10 flex items-center gap-2">
+                      <PlayCircle className="w-5 h-5" />
+                      Continue Learning
+                    </span>
+                    {/* Button shine effect */}
+                    <div className="absolute inset-0 -inset-x-full group-hover/btn:inset-x-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 transition-all duration-1000"></div>
                   </Link>
                 </div>
+
+                {/* Card shine effect */}
+                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 transition-all duration-1000 pointer-events-none"></div>
               </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Recommended Courses */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black mb-2">
+                <span className="bg-gradient-to-r from-brand-purple to-brand-red bg-clip-text text-transparent">
+                  Recommended for You
+                </span>
+              </h2>
+              <p className="text-gray-600 dark:text-text-dark-secondary">Handpicked courses to expand your skills</p>
             </div>
-          ))}
+            <Link
+              to="/courses"
+              className="group flex items-center gap-2 px-6 py-3 bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl hover:border-brand-purple/50 transition-all duration-300 hover:scale-105"
+            >
+              <span className="font-semibold text-brand-purple">Browse all</span>
+              <ArrowRight className="w-4 h-4 text-brand-purple group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {recommendations.length === 0 ? (
+              <div className="col-span-full">
+                <div className="relative overflow-hidden bg-white/70 dark:bg-dark-800/70 backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/5 to-brand-red/5 dark:from-brand-purple/5 dark:to-brand-red/5"></div>
+                  <div className="relative">
+                    <div className="relative inline-block mb-6">
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-purple to-brand-red rounded-full blur-2xl opacity-20"></div>
+                      <Star className="relative w-20 h-20 mx-auto text-brand-purple dark:text-brand-red" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2">
+                      No Recommendations Yet
+                    </h3>
+                    <p className="text-gray-600 dark:text-text-dark-secondary">
+                      Check back soon for personalized course suggestions
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              recommendations.map((course, index) => (
+              <div
+                key={course.id}
+                className="group relative overflow-hidden bg-white/70 dark:bg-dark-800/70 backdrop-blur-2xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2"
+              >
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-purple to-brand-red rounded-3xl blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                <div className="relative flex flex-col sm:flex-row">
+                  {/* Thumbnail */}
+                  <div className="sm:w-56 aspect-video sm:aspect-auto flex-shrink-0 overflow-hidden relative">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/20 to-brand-red/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary flex-1 line-clamp-2 group-hover:text-brand-purple dark:group-hover:text-brand-red transition-colors">
+                        {course.title}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-text-dark-muted mb-4 flex items-center gap-2">
+                      <Award className="w-4 h-4" />
+                      {course.instructor}
+                    </p>
+                    <div className="flex items-center gap-6 text-sm mb-4">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                        <span className="font-bold text-gray-900 dark:text-text-dark-primary">{course.rating}</span>
+                      </div>
+                      <div className="text-gray-600 dark:text-text-dark-secondary font-medium">
+                        {course.students.toLocaleString()} students
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-auto pt-4">
+                      <div className="text-2xl font-black bg-gradient-to-r from-brand-purple to-brand-red bg-clip-text text-transparent">
+                        {course.price}
+                      </div>
+                      <Link
+                        to={`/courses/${course.id}`}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-red text-white rounded-2xl font-bold hover:shadow-2xl hover:shadow-brand-purple/50 transition-all duration-300 transform hover:scale-105"
+                      >
+                        View Course
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card shine effect */}
+                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 transition-all duration-1000 pointer-events-none"></div>
+              </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Custom Animations */}
+      <style jsx="true">{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+
+        @keyframes gradient-x {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient-x {
+          background-size: 200% 200%;
+          animation: gradient-x 3s ease infinite;
+        }
+
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out;
+        }
+
+        @keyframes scale-in {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.5s ease-out forwards;
+        }
+
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

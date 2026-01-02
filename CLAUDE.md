@@ -1,0 +1,1 @@
+- youdon't have to do a summary fro each day, when u are done with the whole week u do a complete summary for it, just short one that it has been done . contiune with day 2

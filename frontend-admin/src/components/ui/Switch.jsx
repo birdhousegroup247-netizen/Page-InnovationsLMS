@@ -1,7 +1,7 @@
 import { cn } from '../../utils/cn';
 
 /**
- * Switch Component - Toggle switch (iOS-style)
+ * Switch Component - Toggle switch (iOS-style) with full dark mode support
  *
  * @param {string} label - Label text for the switch
  * @param {string} description - Optional description text below label
@@ -9,6 +9,12 @@ import { cn } from '../../utils/cn';
  * @param {boolean} checked - Checked state (for controlled components)
  * @param {function} onChange - Change handler
  * @param {string} size - Size variant: 'sm', 'md', 'lg'
+ *
+ * Features:
+ * - WCAG 2.1 compliant with proper ARIA attributes
+ * - Full dark mode support
+ * - Smooth animations
+ * - Three size variants
  */
 const Switch = ({
   label,
@@ -46,7 +52,7 @@ const Switch = ({
           {label && (
             <label
               className={cn(
-                'block text-sm font-medium text-text-primary',
+                'block text-sm font-medium text-gray-900 dark:text-white',
                 disabled && 'opacity-50',
                 !disabled && 'cursor-pointer'
               )}
@@ -55,7 +61,7 @@ const Switch = ({
             </label>
           )}
           {description && (
-            <p className={cn('text-xs text-text-muted mt-0.5', disabled && 'opacity-50')}>
+            <p className={cn('text-xs text-gray-600 dark:text-gray-400 mt-0.5', disabled && 'opacity-50')}>
               {description}
             </p>
           )}
@@ -67,14 +73,17 @@ const Switch = ({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label || 'Toggle switch'}
         onClick={() => !disabled && onChange && onChange({ target: { checked: !checked } })}
         disabled={disabled}
         className={cn(
           'relative inline-flex flex-shrink-0 rounded-full transition-colors duration-200 ease-in-out',
-          'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           sizes[size].switch,
-          checked ? 'bg-brand-blue' : 'bg-gray-300'
+          checked
+            ? 'bg-blue-600 dark:bg-blue-500'
+            : 'bg-gray-300 dark:bg-gray-600'
         )}
         {...props}
       >

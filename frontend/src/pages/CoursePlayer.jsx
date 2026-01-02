@@ -14,9 +14,12 @@ import {
   PlayCircle,
   Lock,
   Home,
+  MessageCircle,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button, Spinner } from '../components/ui';
+import QuestionDiscussion from '../components/course/QuestionDiscussion';
 import logo from '../assets/logo.png';
 
 export default function CoursePlayer() {
@@ -30,6 +33,7 @@ export default function CoursePlayer() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchCourseData();
@@ -379,38 +383,125 @@ export default function CoursePlayer() {
               </div>
             </div>
 
-            {/* Lesson Description */}
-            {currentContent.description && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm dark:shadow-card p-6 mb-6 transition-colors">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-3 transition-colors">
-                  About this lesson
-                </h2>
-                <p className="text-gray-600 dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap transition-colors">
-                  {currentContent.description}
-                </p>
-              </div>
-            )}
+            {/* Tabs Section */}
+            <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm dark:shadow-card mb-6 overflow-hidden transition-colors">
+              {/* Tab Headers */}
+              <div className="flex border-b border-gray-200 dark:border-border-dark">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                    activeTab === 'overview'
+                      ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                      : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                  )}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Overview</span>
+                </button>
 
-            {/* Resources */}
-            {currentContent.resources && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm dark:shadow-card p-6 mb-6 transition-colors">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-3 flex items-center gap-2 transition-colors">
-                  <Download className="h-5 w-5" />
-                  Resources
-                </h2>
-                <div className="space-y-2">
-                  <a
-                    href={currentContent.resources}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-brand-blue hover:text-brand-blue-light transition-colors"
+                {currentContent.resources && (
+                  <button
+                    onClick={() => setActiveTab('resources')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                      activeTab === 'resources'
+                        ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                        : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                    )}
                   >
-                    <FileText className="h-4 w-4" />
-                    Download lesson resources
-                  </a>
-                </div>
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Resources</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setActiveTab('qa')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                    activeTab === 'qa'
+                      ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                      : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                  )}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Q&A</span>
+                </button>
               </div>
-            )}
+
+              {/* Tab Content */}
+              <div className="p-6">
+                {/* Overview Tab */}
+                {activeTab === 'overview' && (
+                  <div>
+                    {currentContent.description ? (
+                      <>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-3 transition-colors">
+                          About this lesson
+                        </h2>
+                        <p className="text-gray-600 dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap transition-colors">
+                          {currentContent.description}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <BookOpen className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+                        <p className="text-gray-600 dark:text-text-dark-secondary">
+                          No description available for this lesson.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Resources Tab */}
+                {activeTab === 'resources' && (
+                  <div>
+                    {currentContent.resources ? (
+                      <>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-4 flex items-center gap-2 transition-colors">
+                          <Download className="h-5 w-5" />
+                          Downloadable Resources
+                        </h2>
+                        <div className="space-y-3">
+                          <a
+                            href={currentContent.resources}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-dark-700 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors group"
+                          >
+                            <FileText className="h-5 w-5 text-brand-blue" />
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900 dark:text-text-dark-primary group-hover:text-brand-blue transition-colors">
+                                Lesson Resources
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-text-dark-muted">
+                                Click to download
+                              </p>
+                            </div>
+                            <Download className="h-5 w-5 text-gray-400 group-hover:text-brand-blue transition-colors" />
+                          </a>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Download className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+                        <p className="text-gray-600 dark:text-text-dark-secondary">
+                          No resources available for this lesson.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Q&A Tab */}
+                {activeTab === 'qa' && (
+                  <div>
+                    <QuestionDiscussion contentId={currentContent.id} />
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between gap-4 pb-8">

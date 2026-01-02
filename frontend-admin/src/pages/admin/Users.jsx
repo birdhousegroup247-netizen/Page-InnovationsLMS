@@ -67,6 +67,7 @@ export default function Users() {
   // Bulk selection
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -176,6 +177,14 @@ export default function Users() {
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
+  };
+
+  const toggleBulkSelectMode = () => {
+    setBulkSelectMode(!bulkSelectMode);
+    if (bulkSelectMode) {
+      // Exiting bulk mode - clear selections
+      setSelectedUsers([]);
+    }
   };
 
   useEffect(() => {
@@ -585,7 +594,7 @@ export default function Users() {
         )}
 
         {/* Bulk Actions Bar */}
-        {showBulkActions && (
+        {bulkSelectMode && showBulkActions && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 flex items-center justify-between">
             <span className="text-sm font-medium text-blue-900 dark:text-blue-200">
               {selectedUsers.length} user(s) selected
@@ -647,12 +656,14 @@ export default function Users() {
                 leftIcon={<Search className="w-4 h-4" />}
                 value={filters.search}
                 onChange={handleSearchChange}
+                className="!h-12"
               />
             </div>
             <div className="w-full md:w-48">
               <Select
                 value={filters.role}
                 onChange={handleRoleChange}
+                className="!h-12"
                 options={[
                   { value: '', label: 'All Roles' },
                   { value: 'student', label: 'Student' },
@@ -665,6 +676,7 @@ export default function Users() {
               <Select
                 value={filters.status}
                 onChange={handleStatusChange}
+                className="!h-12"
                 options={[
                   { value: '', label: 'All Status' },
                   { value: 'active', label: 'Active' },
@@ -674,6 +686,7 @@ export default function Users() {
             </div>
             <Button
               variant="outline"
+              className="!h-12 !min-h-[48px]"
               onClick={() => {
                 setFilters({
                   search: '',
@@ -689,6 +702,15 @@ export default function Users() {
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Reset
+            </Button>
+            <Button
+              className="!h-12 !min-h-[48px]"
+              variant={bulkSelectMode ? 'primary' : 'outline'}
+              onClick={toggleBulkSelectMode}
+              title={bulkSelectMode ? 'Exit bulk selection mode' : 'Select multiple users for bulk actions'}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              {bulkSelectMode ? 'Exit Select Mode' : 'Select Multiple'}
             </Button>
           </div>
         </div>
@@ -709,14 +731,16 @@ export default function Users() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-border-dark">
                     <tr>
-                      <th className="px-3 py-3 text-left">
-                        <input
-                          type="checkbox"
-                          checked={selectedUsers.length === users.length}
-                          onChange={handleSelectAll}
-                          className="rounded border-gray-300 dark:border-border-dark"
-                        />
-                      </th>
+                      {bulkSelectMode && (
+                        <th className="px-3 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.length === users.length}
+                            onChange={handleSelectAll}
+                            className="rounded border-gray-300 dark:border-border-dark"
+                          />
+                        </th>
+                      )}
                       <th
                         className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-600"
                         onClick={() => handleSort('full_name')}
@@ -759,14 +783,16 @@ export default function Users() {
                   <tbody className="divide-y divide-gray-200 dark:divide-border-dark">
                     {users.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                        <td className="px-3 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedUsers.includes(user.id)}
-                            onChange={() => handleSelectUser(user.id)}
-                            className="rounded border-gray-300 dark:border-border-dark"
-                          />
-                        </td>
+                        {bulkSelectMode && (
+                          <td className="px-3 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.includes(user.id)}
+                              onChange={() => handleSelectUser(user.id)}
+                              className="rounded border-gray-300 dark:border-border-dark"
+                            />
+                          </td>
+                        )}
                         <td className="px-3 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <Avatar src={user.profile_picture} alt={user.full_name} size="sm" className="mr-3" />

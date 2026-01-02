@@ -75,6 +75,7 @@ export default function AdminCourses() {
   // Bulk selection
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -144,9 +145,10 @@ export default function AdminCourses() {
   const fetchCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      setCategories(response.data.data || []);
+      setCategories(Array.isArray(response.data.data?.categories) ? response.data.data.categories : []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]);
     }
   };
 
@@ -219,6 +221,14 @@ export default function AdminCourses() {
         ? prev.filter(id => id !== courseId)
         : [...prev, courseId]
     );
+  };
+
+  const toggleBulkSelectMode = () => {
+    setBulkSelectMode(!bulkSelectMode);
+    if (bulkSelectMode) {
+      // Exiting bulk mode - clear selections
+      setSelectedCourses([]);
+    }
   };
 
   useEffect(() => {
@@ -458,6 +468,34 @@ export default function AdminCourses() {
     }
   };
 
+  // Get avatar initials and color for courses without images
+  const getAvatarProps = (title) => {
+    const initials = title
+      .split(' ')
+      .filter(word => word.length > 0)
+      .slice(0, 2)
+      .map(word => word[0].toUpperCase())
+      .join('');
+
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-red-500',
+      'bg-yellow-500',
+      'bg-teal-500',
+    ];
+
+    const colorIndex = title.charCodeAt(0) % colors.length;
+
+    return {
+      initials: initials || title.charAt(0).toUpperCase(),
+      bgColor: colors[colorIndex],
+    };
+  };
+
   // Sanitize CSV value to prevent CSV injection
   const sanitizeCSVValue = (value) => {
     if (value === null || value === undefined) return '';
@@ -564,7 +602,7 @@ export default function AdminCourses() {
                 <Button
                   onClick={handleExportCSV}
                   disabled={courses.length === 0}
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export
@@ -583,7 +621,7 @@ export default function AdminCourses() {
                     setFormErrors({});
                     setIsCreateModalOpen(true);
                   }}
-                  className="bg-white text-brand-blue hover:bg-white/90"
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Course
@@ -599,49 +637,49 @@ export default function AdminCourses() {
         {stats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total || 0}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white ml-0">{stats.total || 0}</p>
             </div>
 
             <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Published</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.published || 0}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white ml-0">{stats.published || 0}</p>
             </div>
 
             <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                   <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending || 0}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white ml-0">{stats.pending || 0}</p>
             </div>
 
             <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-gray-100 dark:bg-gray-900/30 rounded-lg">
                   <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 </div>
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Draft</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.draft || 0}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white ml-0">{stats.draft || 0}</p>
             </div>
           </div>
         )}
 
         {/* Bulk Actions Bar */}
-        {showBulkActions && (
+        {bulkSelectMode && showBulkActions && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 flex items-center justify-between">
             <span className="text-sm font-medium text-blue-900 dark:text-blue-200">
               {selectedCourses.length} course(s) selected
@@ -699,11 +737,13 @@ export default function AdminCourses() {
                 leftIcon={<Search className="w-4 h-4" />}
                 value={filters.search}
                 onChange={handleSearchChange}
+                className="!h-12"
               />
             </div>
             <Select
               value={filters.status}
               onChange={handleStatusChange}
+              className="!h-12"
               options={[
                 { value: '', label: 'All Status' },
                 { value: 'published', label: 'Published' },
@@ -715,6 +755,7 @@ export default function AdminCourses() {
             <Select
               value={filters.category_id}
               onChange={handleCategoryChange}
+              className="!h-12"
               options={[
                 { value: '', label: 'All Categories' },
                 ...categories.map(cat => ({ value: cat.id, label: cat.name }))
@@ -723,6 +764,7 @@ export default function AdminCourses() {
             <Select
               value={filters.level}
               onChange={handleLevelChange}
+              className="!h-12"
               options={[
                 { value: '', label: 'All Levels' },
                 { value: 'beginner', label: 'Beginner' },
@@ -739,19 +781,21 @@ export default function AdminCourses() {
               type="date"
               value={filters.dateFrom}
               onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value, page: 1 }))}
+              className="!h-12"
             />
             <Input
               label="To Date"
               type="date"
               value={filters.dateTo}
               onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value, page: 1 }))}
+              className="!h-12"
             />
           </div>
 
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
-              size="sm"
+              className="!h-12 !min-h-[48px]"
               onClick={() => {
                 setFilters({
                   search: '',
@@ -769,6 +813,15 @@ export default function AdminCourses() {
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Reset Filters
+            </Button>
+            <Button
+              className="!h-12 !min-h-[48px]"
+              variant={bulkSelectMode ? 'primary' : 'outline'}
+              onClick={toggleBulkSelectMode}
+              title={bulkSelectMode ? 'Exit bulk selection mode' : 'Select multiple courses for bulk actions'}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              {bulkSelectMode ? 'Exit Select Mode' : 'Select Multiple'}
             </Button>
           </div>
         </div>
@@ -790,14 +843,16 @@ export default function AdminCourses() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-border-dark">
                     <tr>
-                      <th className="px-3 py-3 text-left">
-                        <input
-                          type="checkbox"
-                          checked={selectedCourses.length === courses.length}
-                          onChange={handleSelectAll}
-                          className="rounded border-gray-300 dark:border-border-dark"
-                        />
-                      </th>
+                      {bulkSelectMode && (
+                        <th className="px-3 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={selectedCourses.length === courses.length}
+                            onChange={handleSelectAll}
+                            className="rounded border-gray-300 dark:border-border-dark"
+                          />
+                        </th>
+                      )}
                       <th
                         className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-600"
                         onClick={() => handleSort('title')}
@@ -842,23 +897,37 @@ export default function AdminCourses() {
                   <tbody className="divide-y divide-gray-200 dark:divide-border-dark">
                     {courses.map((course) => (
                       <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                        <td className="px-3 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedCourses.includes(course.id)}
-                            onChange={() => handleSelectCourse(course.id)}
-                            className="rounded border-gray-300 dark:border-border-dark"
-                          />
-                        </td>
+                        {bulkSelectMode && (
+                          <td className="px-3 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedCourses.includes(course.id)}
+                              onChange={() => handleSelectCourse(course.id)}
+                              className="rounded border-gray-300 dark:border-border-dark"
+                            />
+                          </td>
+                        )}
                         <td className="px-3 py-4">
                           <div className="flex items-center">
-                            {course.thumbnail_url && (
+                            {course.thumbnail_url ? (
                               <img
                                 src={course.thumbnail_url}
                                 alt={course.title}
                                 className="w-12 h-12 rounded-lg object-cover mr-3"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }}
                               />
-                            )}
+                            ) : null}
+                            <div
+                              className={`w-12 h-12 rounded-lg mr-3 flex items-center justify-center text-white font-bold text-sm ${
+                                course.thumbnail_url ? 'hidden' : ''
+                              } ${getAvatarProps(course.title).bgColor}`}
+                              style={{ display: course.thumbnail_url ? 'none' : 'flex' }}
+                            >
+                              {getAvatarProps(course.title).initials}
+                            </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 {course.title}

@@ -1,6 +1,7 @@
 const {
   User,
   Course,
+  Category,
   Enrollment,
   PracticeTestAttempt,
   AssignedTestAttempt,
@@ -101,23 +102,24 @@ class AnalyticsController {
           [sequelize.fn('COUNT', sequelize.col('Course.id')), 'course_count'],
           [sequelize.fn('SUM', sequelize.col('enrollment_count')), 'total_enrollments'],
         ],
-        group: ['category_id'],
+        group: ['category_id', 'category.id'],
         include: [
           {
-            model: require('../../models').Category,
+            model: Category,
             as: 'category',
             attributes: ['id', 'name', 'icon'],
           },
         ],
+        subQuery: false,
       });
 
-      // Courses by difficulty
-      const coursesByDifficulty = await Course.findAll({
+      // Courses by level (beginner, intermediate, advanced)
+      const coursesByLevel = await Course.findAll({
         attributes: [
-          'difficulty',
+          'level',
           [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
         ],
-        group: ['difficulty'],
+        group: ['level'],
         raw: true,
       });
 
@@ -146,7 +148,7 @@ class AnalyticsController {
 
       return ApiResponse.success(res, {
         coursesByCategory,
-        coursesByDifficulty,
+        coursesByLevel,
         topCourses,
         courseCreationTrends,
       });
@@ -164,14 +166,15 @@ class AnalyticsController {
           'category_id',
           [sequelize.fn('COUNT', sequelize.col('QuestionBank.id')), 'question_count'],
         ],
-        group: ['category_id'],
+        group: ['category_id', 'category.id'],
         include: [
           {
-            model: require('../../models').Category,
+            model: Category,
             as: 'category',
             attributes: ['id', 'name'],
           },
         ],
+        subQuery: false,
       });
 
       // Questions by difficulty

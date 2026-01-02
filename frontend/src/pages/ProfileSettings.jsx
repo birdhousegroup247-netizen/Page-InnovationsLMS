@@ -638,7 +638,7 @@ export default function ProfileSettings() {
                         type="password"
                         value={passwordForm.new_password}
                         onChange={(e) => {
-                          setPasswordForm({ ...profileForm, new_password: e.target.value });
+                          setPasswordForm({ ...passwordForm, new_password: e.target.value });
                           setValidationErrors({ ...validationErrors, new_password: '' });
                         }}
                         className={cn(

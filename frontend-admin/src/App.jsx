@@ -1,21 +1,37 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
-import Login from './pages/Login';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Users from './pages/admin/Users';
-import AdminCourses from './pages/admin/Courses';
-import CourseBuilder from './pages/admin/CourseBuilder';
-import Categories from './pages/admin/Categories';
-import AdminAnalytics from './pages/admin/Analytics';
-import AdminActivity from './pages/admin/Activity';
-import InstructorApplications from './pages/admin/InstructorApplications';
-import QuestionBank from './pages/admin/QuestionBank';
-import Tests from './pages/admin/Tests';
-import TestBuilder from './pages/admin/TestBuilder';
-import TestResults from './pages/admin/TestResults';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import AppLayout from './components/layout/AppLayout';
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+    <div className="text-center">
+      <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-brand-blue border-r-transparent"></div>
+      <p className="mt-4 text-text-secondary">Loading...</p>
+    </div>
+  </div>
+);
+
+// Public pages - load immediately
+import Login from './pages/Login';
+
+// Admin pages - lazy loaded for better performance
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const Users = lazy(() => import('./pages/admin/Users'));
+const AdminCourses = lazy(() => import('./pages/admin/Courses'));
+const CourseBuilder = lazy(() => import('./pages/admin/CourseBuilder'));
+const Categories = lazy(() => import('./pages/admin/Categories'));
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
+const AdminActivity = lazy(() => import('./pages/admin/Activity'));
+const InstructorApplications = lazy(() => import('./pages/admin/InstructorApplications'));
+const QuestionBank = lazy(() => import('./pages/admin/QuestionBank'));
+const Tests = lazy(() => import('./pages/admin/Tests'));
+const TestBuilder = lazy(() => import('./pages/admin/TestBuilder'));
+const TestResults = lazy(() => import('./pages/admin/TestResults'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
@@ -83,11 +99,13 @@ function PublicRoute({ children }) {
 
 function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <Router>
-          <AuthProvider>
-            <Routes>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <Router>
+            <AuthProvider>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
             {/* Public Routes */}
             <Route
               path="/login"
@@ -209,11 +227,13 @@ function App() {
 
             {/* 404 - Redirect to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                </Routes>
+              </Suspense>
           </AuthProvider>
         </Router>
       </ToastProvider>
     </ThemeProvider>
+  </ErrorBoundary>
   );
 }
 

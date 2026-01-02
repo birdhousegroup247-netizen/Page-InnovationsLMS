@@ -10,15 +10,22 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 seconds
+  withCredentials: true, // Send cookies with requests
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add CSRF token from cookie
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Get CSRF token from cookie and add to header
+    const csrfToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrf-token='))
+      ?.split('=')[1];
+
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
     }
+
     return config;
   },
   (error) => {
@@ -39,26 +46,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
+        // Attempt to refresh access token (refreshToken is in httpOnly cookie)
+        const response = await axios.post(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {}, // No body needed - refreshToken comes from cookie
+          { withCredentials: true } // Send cookies
+        );
 
-        // Attempt to refresh access token
-        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-          refreshToken,
-        });
-
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
-
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        // Retry original request (new accessToken is now in cookie)
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - clear tokens and redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        // Refresh failed - redirect to login
+        // Cookies will be cleared by backend on next request
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
@@ -97,6 +96,34 @@ export const coursesAPI = {
   markReviewHelpful: (courseId, reviewId) => api.post(`/api/courses/${courseId}/reviews/${reviewId}/helpful`),
   getInstructorCourses: () => api.get('/api/courses/my/teaching'),
   getInstructorStudents: (params) => api.get('/api/courses/my/students', { params }),
+};
+
+// Instructor-specific APIs
+export const instructorAPI = {
+  // Dashboard
+  getDashboard: () => api.get('/api/instructor/dashboard'),
+  getStats: () => api.get('/api/instructor/stats'),
+
+  // Student Management
+  getCourseStudents: (courseId, params) => api.get(`/api/instructor/courses/${courseId}/students`, { params }),
+  getStudentProgress: (studentId, courseId) => api.get(`/api/instructor/students/${studentId}/progress/${courseId}`),
+  getStudentTestResults: (studentId, params) => api.get(`/api/instructor/students/${studentId}/test-results`, { params }),
+  getCourseEnrollments: (courseId, params) => api.get(`/api/instructor/courses/${courseId}/enrollments`, { params }),
+
+  // Test Analytics
+  getTestAnalytics: (testId) => api.get(`/api/instructor/tests/${testId}/analytics`),
+  getTestResults: (testId, params) => api.get(`/api/instructor/tests/${testId}/results`, { params }),
+  getAttemptDetails: (attemptId) => api.get(`/api/instructor/attempts/${attemptId}/details`),
+
+  // Question Status
+  getMyQuestions: (params) => api.get('/api/instructor/questions/my', { params }),
+  getQuestionStatus: (questionId) => api.get(`/api/instructor/questions/${questionId}/status`),
+  getQuestionStats: () => api.get('/api/instructor/questions/stats'),
+
+  // Course Analytics
+  getCourseAnalytics: (courseId, params) => api.get(`/api/instructor/courses/${courseId}/analytics`, { params }),
+  getEnrollmentTrends: (courseId, params) => api.get(`/api/instructor/courses/${courseId}/enrollment-trends`, { params }),
+  getProgressDistribution: (courseId) => api.get(`/api/instructor/courses/${courseId}/progress-distribution`),
 };
 
 export const categoriesAPI = {
@@ -225,6 +252,33 @@ export const adminInstructorAPI = {
   approveApplication: (userId) => api.put(`/api/admin/instructor-applications/${userId}/approve`),
   rejectApplication: (userId, reason) => api.put(`/api/admin/instructor-applications/${userId}/reject`, { reason }),
   revokeInstructor: (userId, reason) => api.put(`/api/admin/instructor-applications/${userId}/revoke`, { reason }),
+};
+
+// Lesson Questions & Replies API
+export const lessonQuestionsAPI = {
+  // Questions
+  getLessonQuestions: (contentId, params) => api.get(`/api/lessons/${contentId}/questions`, { params }),
+  askQuestion: (contentId, data) => api.post(`/api/lessons/${contentId}/questions`, data),
+  getQuestionById: (questionId) => api.get(`/api/questions/${questionId}`),
+  updateQuestion: (questionId, data) => api.put(`/api/questions/${questionId}`, data),
+  deleteQuestion: (questionId) => api.delete(`/api/questions/${questionId}`),
+  upvoteQuestion: (questionId) => api.post(`/api/questions/${questionId}/upvote`),
+
+  // Replies
+  replyToQuestion: (questionId, data) => api.post(`/api/questions/${questionId}/replies`, data),
+  updateReply: (replyId, data) => api.put(`/api/replies/${replyId}`, data),
+  deleteReply: (replyId) => api.delete(`/api/replies/${replyId}`),
+  upvoteReply: (replyId) => api.post(`/api/replies/${replyId}/upvote`),
+};
+
+// Announcements API
+export const announcementsAPI = {
+  getMyAnnouncements: () => api.get('/api/announcements/my'),
+  getCourseAnnouncements: (courseId, params) => api.get(`/api/announcements/courses/${courseId}/announcements`, { params }),
+  createAnnouncement: (courseId, data) => api.post(`/api/announcements/courses/${courseId}/announcements`, data),
+  getById: (announcementId) => api.get(`/api/announcements/announcements/${announcementId}`),
+  update: (announcementId, data) => api.put(`/api/announcements/announcements/${announcementId}`, data),
+  delete: (announcementId) => api.delete(`/api/announcements/announcements/${announcementId}`),
 };
 
 export default api;

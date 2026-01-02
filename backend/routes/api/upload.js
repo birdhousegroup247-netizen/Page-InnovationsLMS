@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const UploadController = require('../../controllers/upload/uploadController');
 const { authenticate } = require('../../middleware/auth/authMiddleware');
+const { uploadRateLimiter } = require('../../middleware/rateLimiter');
 const {
   uploadImage,
   uploadDocument,
@@ -15,6 +16,9 @@ const {
   uploadMultiple,
   handleUploadErrors,
 } = require('../../middleware/upload/uploadMiddleware');
+
+// Apply upload rate limiting to all upload routes
+router.use(uploadRateLimiter);
 
 // =============================================================================
 // PROFILE PICTURE UPLOAD

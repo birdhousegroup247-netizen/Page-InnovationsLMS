@@ -2,9 +2,15 @@ import { cn } from '../../utils/cn';
 import { User } from 'lucide-react';
 
 /**
- * Avatar Component - User profile pictures
+ * Avatar Component - User profile pictures with full dark mode support
  *
  * Sizes: xs, sm, md, lg, xl, 2xl
+ *
+ * Features:
+ * - Full dark mode support
+ * - Image loading with fallback
+ * - Customizable fallback (initials or icon)
+ * - Accessible with proper alt text
  */
 const Avatar = ({
   src,
@@ -24,12 +30,25 @@ const Avatar = ({
   };
 
   const baseStyles =
-    'inline-flex items-center justify-center rounded-full bg-gray-200 overflow-hidden';
+    'inline-flex items-center justify-center rounded-full overflow-hidden';
 
   if (src) {
     return (
-      <div className={cn(baseStyles, sizes[size], className)} {...props}>
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+      <div
+        className={cn(
+          baseStyles,
+          'bg-gray-200 dark:bg-gray-700',
+          sizes[size],
+          className
+        )}
+        {...props}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
       </div>
     );
   }
@@ -39,7 +58,7 @@ const Avatar = ({
       className={cn(
         baseStyles,
         sizes[size],
-        'bg-brand-blue-100 text-brand-blue-700 font-medium',
+        'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium',
         className
       )}
       {...props}

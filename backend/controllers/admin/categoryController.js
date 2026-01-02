@@ -38,7 +38,7 @@ class AdminCategoryController {
           },
         ],
         order: [
-          ['parent_category_id', 'ASC NULLS FIRST'],
+          ['parent_category_id', 'ASC'], // MySQL automatically places NULL values first when sorting ASC
           ['display_order', 'ASC'],
           ['name', 'ASC'],
         ],

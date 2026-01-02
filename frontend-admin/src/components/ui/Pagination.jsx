@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 import { cn } from '../../utils/cn';
 
 /**
- * Pagination Component - Navigate through pages
+ * Pagination Component - Navigate through pages with full dark mode and accessibility
  *
  * @param {number} currentPage - Current active page (1-indexed)
  * @param {number} totalPages - Total number of pages
@@ -10,6 +10,13 @@ import { cn } from '../../utils/cn';
  * @param {number} siblingCount - Number of page buttons to show on each side of current page
  * @param {boolean} showFirstLast - Whether to show first/last page buttons
  * @param {string} size - Size variant: 'sm', 'md', 'lg'
+ *
+ * Features:
+ * - Full dark mode support
+ * - Keyboard navigation
+ * - ARIA labels and aria-current
+ * - Responsive button sizing
+ * - Accessible disabled states
  */
 const Pagination = ({
   currentPage = 1,
@@ -21,9 +28,9 @@ const Pagination = ({
   className,
 }) => {
   const sizes = {
-    sm: 'h-8 w-8 text-xs',
-    md: 'h-10 w-10 text-sm',
-    lg: 'h-12 w-12 text-base',
+    sm: 'h-8 w-8 min-w-[32px] text-xs',
+    md: 'h-10 w-10 min-w-[40px] text-sm',
+    lg: 'h-12 w-12 min-w-[48px] text-base',
   };
 
   // Generate page numbers to display
@@ -65,20 +72,25 @@ const Pagination = ({
   };
 
   return (
-    <nav className={cn('flex items-center justify-center gap-1', className)}>
+    <nav
+      className={cn('flex items-center justify-center gap-1', className)}
+      role="navigation"
+      aria-label="Pagination"
+    >
       {/* First Page */}
       {showFirstLast && (
         <button
           onClick={() => handlePageChange(1)}
           disabled={currentPage === 1}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
-            'text-gray-700 dark:text-text-dark-primary',
-            'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
+            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
+            'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
+            'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+            'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800',
             sizes[size]
           )}
-          aria-label="First page"
+          aria-label="Go to first page"
         >
           <ChevronsLeft className="w-4 h-4" />
         </button>
@@ -89,13 +101,14 @@ const Pagination = ({
         onClick={() => handlePageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
-          'text-gray-700 dark:text-text-dark-primary',
-          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
+          'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
+          'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800',
           sizes[size]
         )}
-        aria-label="Previous page"
+        aria-label="Go to previous page"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
@@ -107,11 +120,12 @@ const Pagination = ({
             <span
               key={`ellipsis-${index}`}
               className={cn(
-                'inline-flex items-center justify-center text-gray-500 dark:text-text-dark-secondary',
+                'inline-flex items-center justify-center text-gray-500 dark:text-gray-400',
                 sizes[size]
               )}
+              aria-hidden="true"
             >
-              ...
+              …
             </span>
           );
         }
@@ -122,12 +136,13 @@ const Pagination = ({
             onClick={() => handlePageChange(page)}
             className={cn(
               'inline-flex items-center justify-center rounded-lg border transition-colors font-medium',
+              'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
               sizes[size],
               currentPage === page
-                ? 'bg-brand-blue text-white border-brand-blue hover:bg-brand-blue-600'
-                : 'border-gray-200 dark:border-border-dark hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-900 dark:text-text-dark-primary'
+                ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600'
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'
             )}
-            aria-label={`Page ${page}`}
+            aria-label={`Go to page ${page}`}
             aria-current={currentPage === page ? 'page' : undefined}
           >
             {page}
@@ -140,13 +155,14 @@ const Pagination = ({
         onClick={() => handlePageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
-          'text-gray-700 dark:text-text-dark-primary',
-          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
+          'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
+          'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800',
           sizes[size]
         )}
-        aria-label="Next page"
+        aria-label="Go to next page"
       >
         <ChevronRight className="w-4 h-4" />
       </button>
@@ -157,13 +173,14 @@ const Pagination = ({
           onClick={() => handlePageChange(totalPages)}
           disabled={currentPage === totalPages}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-border-dark',
-            'text-gray-700 dark:text-text-dark-primary',
-            'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
+            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
+            'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
+            'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+            'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800',
             sizes[size]
           )}
-          aria-label="Last page"
+          aria-label="Go to last page"
         >
           <ChevronsRight className="w-4 h-4" />
         </button>
@@ -173,7 +190,7 @@ const Pagination = ({
 };
 
 /**
- * SimplePagination - Simplified pagination with just prev/next
+ * SimplePagination - Simplified pagination with just prev/next and page indicator
  */
 export const SimplePagination = ({
   currentPage = 1,
@@ -194,18 +211,20 @@ export const SimplePagination = ({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={cn(
-          'inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-border-dark font-medium',
-          'text-gray-700 dark:text-text-dark-primary',
-          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
+          'inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 font-medium',
+          'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800',
           sizes[size]
         )}
+        aria-label="Go to previous page"
       >
         <ChevronLeft className="w-4 h-4" />
         Previous
       </button>
 
-      <span className="text-sm text-gray-600 dark:text-text-dark-secondary">
+      <span className="text-sm text-gray-600 dark:text-gray-400">
         Page {currentPage} of {totalPages}
       </span>
 
@@ -213,12 +232,14 @@ export const SimplePagination = ({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={cn(
-          'inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-border-dark font-medium',
-          'text-gray-700 dark:text-text-dark-primary',
-          'transition-colors hover:bg-gray-100 dark:hover:bg-dark-700',
-          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent',
+          'inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 font-medium',
+          'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
+          'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+          'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800',
           sizes[size]
         )}
+        aria-label="Go to next page"
       >
         Next
         <ChevronRight className="w-4 h-4" />

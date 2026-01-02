@@ -1,36 +1,12 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell } from 'lucide-react';
-import { notificationsAPI } from '../../lib/api';
 
-export default function NotificationBell() {
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  // Fetch unread count
-  const fetchUnreadCount = async () => {
-    try {
-      setLoading(true);
-      const response = await notificationsAPI.getUnreadCount();
-      setUnreadCount(response.data.data.unread_count || 0);
-    } catch (err) {
-      console.error('Error fetching unread count:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
+/**
+ * NotificationBell - Presentational component for notification icon
+ * NOTE: This component accepts unreadCount as a prop to avoid duplicate API polling
+ * The parent component (e.g., AppLayout) should handle fetching notification count
+ */
+export default function NotificationBell({ unreadCount = 0 }) {
   return (
     <Link
       to="/notifications"

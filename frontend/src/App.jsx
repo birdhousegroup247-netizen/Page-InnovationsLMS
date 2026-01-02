@@ -1,43 +1,68 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-// Universal theme support
+import AppLayout from './components/layout/AppLayout';
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+    <div className="text-center">
+      <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-brand-blue border-r-transparent"></div>
+      <p className="mt-4 text-text-secondary">Loading...</p>
+    </div>
+  </div>
+);
+
+// Lazy load all page components for better performance
+// Public pages - load immediately (no lazy loading for critical paths)
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import RoleSelector from './pages/RoleSelector';
-import Dashboard from './pages/Dashboard';
-import Courses from './pages/Courses';
-import CourseDetail from './pages/CourseDetail';
-import MyCourses from './pages/MyCourses';
-import CoursePlayer from './pages/CoursePlayer';
-import InstructorDashboard from './pages/InstructorDashboard';
-import CreateCourse from './pages/instructor/CreateCourse';
-import EditCourse from './pages/instructor/EditCourse';
-import ManageModules from './pages/instructor/ManageModules';
-import ManageLessons from './pages/instructor/ManageLessons';
-import InstructorCourseBuilder from './pages/instructor/CourseBuilder';
-import MyStudents from './pages/instructor/MyStudents';
-import ProfileSettings from './pages/ProfileSettings';
-import Notifications from './pages/Notifications';
-import Bookmarks from './pages/Bookmarks';
-import PracticeTests from './pages/PracticeTests';
-import Certificates from './pages/Certificates';
-import GeneratePracticeTest from './pages/GeneratePracticeTest';
-import TakeTest from './pages/TakeTest';
-import TestResults from './pages/TestResults';
-import MyAssignedTests from './pages/MyAssignedTests';
-import ManageTests from './pages/instructor/ManageTests';
-import ContributeQuestions from './pages/instructor/ContributeQuestions';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Users from './pages/admin/Users';
-import AdminCourses from './pages/admin/Courses';
-import AdminAnalytics from './pages/admin/Analytics';
-import AdminActivity from './pages/admin/Activity';
-import InstructorApplications from './pages/admin/InstructorApplications';
-import AppLayout from './components/layout/AppLayout';
+
+// Student pages - lazy loaded
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Courses = lazy(() => import('./pages/Courses'));
+const CourseDetail = lazy(() => import('./pages/CourseDetail'));
+const MyCourses = lazy(() => import('./pages/MyCourses'));
+const CoursePlayer = lazy(() => import('./pages/CoursePlayer'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Bookmarks = lazy(() => import('./pages/Bookmarks'));
+const PracticeTests = lazy(() => import('./pages/PracticeTests'));
+const Certificates = lazy(() => import('./pages/Certificates'));
+const GeneratePracticeTest = lazy(() => import('./pages/GeneratePracticeTest'));
+const TakeTest = lazy(() => import('./pages/TakeTest'));
+const TestResults = lazy(() => import('./pages/TestResults'));
+const MyAssignedTests = lazy(() => import('./pages/MyAssignedTests'));
+
+// Instructor pages - lazy loaded
+const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
+const CreateCourse = lazy(() => import('./pages/instructor/CreateCourse'));
+const EditCourse = lazy(() => import('./pages/instructor/EditCourse'));
+const ManageModules = lazy(() => import('./pages/instructor/ManageModules'));
+const ManageLessons = lazy(() => import('./pages/instructor/ManageLessons'));
+const InstructorCourseBuilder = lazy(() => import('./pages/instructor/CourseBuilder'));
+const MyStudents = lazy(() => import('./pages/instructor/MyStudents'));
+const StudentProgress = lazy(() => import('./pages/instructor/StudentProgress'));
+const TestAnalytics = lazy(() => import('./pages/instructor/TestAnalytics'));
+const MyQuestions = lazy(() => import('./pages/instructor/MyQuestions'));
+const CourseAnalytics = lazy(() => import('./pages/instructor/CourseAnalytics'));
+const Announcements = lazy(() => import('./pages/instructor/Announcements'));
+const EnrollmentManagement = lazy(() => import('./pages/instructor/EnrollmentManagement'));
+const ManageTests = lazy(() => import('./pages/instructor/ManageTests'));
+const ContributeQuestions = lazy(() => import('./pages/instructor/ContributeQuestions'));
+
+// Admin pages - lazy loaded
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const Users = lazy(() => import('./pages/admin/Users'));
+const AdminCourses = lazy(() => import('./pages/admin/Courses'));
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
+const AdminActivity = lazy(() => import('./pages/admin/Activity'));
+const InstructorApplications = lazy(() => import('./pages/admin/InstructorApplications'));
 
 // Protected Route Component with AppLayout
 function ProtectedRoute({ children }) {
@@ -178,7 +203,8 @@ function App() {
     <ThemeProvider>
       <Router>
         <AuthProvider>
-          <Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
           {/* Public Routes */}
           <Route
             path="/login"
@@ -314,6 +340,14 @@ function App() {
             }
           />
           <Route
+            path="/instructor/students/:studentId/progress/:courseId"
+            element={
+              <InstructorRoute>
+                <StudentProgress />
+              </InstructorRoute>
+            }
+          />
+          <Route
             path="/instructor/tests"
             element={
               <InstructorRoute>
@@ -341,7 +375,55 @@ function App() {
             path="/instructor/tests/:testId/results"
             element={
               <InstructorRoute>
+                <TestAnalytics />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/attempts/:attemptId/details"
+            element={
+              <InstructorRoute>
                 <TestResults />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/questions"
+            element={
+              <InstructorRoute>
+                <MyQuestions />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/analytics"
+            element={
+              <InstructorRoute>
+                <CourseAnalytics />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/students"
+            element={
+              <InstructorRoute>
+                <MyStudents />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/announcements"
+            element={
+              <InstructorRoute>
+                <Announcements />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/enrollments"
+            element={
+              <InstructorRoute>
+                <EnrollmentManagement />
               </InstructorRoute>
             }
           />
@@ -489,7 +571,8 @@ function App() {
 
           {/* 404 - Redirect to landing page */}
           <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </Router>
     </ThemeProvider>

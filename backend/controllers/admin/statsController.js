@@ -200,25 +200,33 @@ class StatsController {
       }
 
       // Get database size info (MySQL specific)
-      const [dbSizeResult] = await sequelize.query(`
-        SELECT
+      const [dbSizeResult] = await sequelize.query(
+        `SELECT
           table_schema AS 'database',
           ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size_mb'
         FROM information_schema.tables
-        WHERE table_schema = '${process.env.DB_NAME}'
-        GROUP BY table_schema
-      `);
+        WHERE table_schema = :dbName
+        GROUP BY table_schema`,
+        {
+          replacements: { dbName: process.env.DB_NAME },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
 
       const dbSize = dbSizeResult[0]?.size_mb || 0;
 
       // Table counts
-      const tables = await sequelize.query(`
-        SELECT COUNT(*) AS count
+      const [tables] = await sequelize.query(
+        `SELECT COUNT(*) AS count
         FROM information_schema.tables
-        WHERE table_schema = '${process.env.DB_NAME}'
-      `);
+        WHERE table_schema = :dbName`,
+        {
+          replacements: { dbName: process.env.DB_NAME },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
 
-      const tableCount = tables[0][0]?.count || 0;
+      const tableCount = tables[0]?.count || 0;
 
       return ApiResponse.success(res, {
         database: {

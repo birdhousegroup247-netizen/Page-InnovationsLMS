@@ -169,18 +169,27 @@ export default function Categories() {
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard
             </Link>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <FolderTree className="h-6 w-6 text-white" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <FolderTree className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
+                    Categories
+                  </h1>
+                  <p className="text-lg text-white/90 animate-fade-in mt-1">
+                    Manage course categories and subcategories
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  Categories
-                </h1>
-                <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  Manage course categories and subcategories
-                </p>
-              </div>
+              <Button
+                onClick={() => handleOpenModal('create')}
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Category
+              </Button>
             </div>
           </Container>
         </div>
@@ -271,26 +280,16 @@ export default function Categories() {
         )}
 
         {/* Actions Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeInactive}
-                onChange={(e) => setIncludeInactive(e.target.checked)}
-                className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
-              />
-              Show inactive categories
-            </label>
-          </div>
-
-          <Button
-            variant="primary"
-            onClick={() => handleOpenModal('create')}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Add Category
-          </Button>
+        <div className="flex items-center gap-2 mb-6">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeInactive}
+              onChange={(e) => setIncludeInactive(e.target.checked)}
+              className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+            />
+            Show inactive categories
+          </label>
         </div>
 
         {/* Loading State */}

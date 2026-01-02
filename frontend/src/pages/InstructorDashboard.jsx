@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { coursesAPI } from '../lib/api';
+import { instructorAPI, coursesAPI } from '../lib/api';
 import {
   BookOpen,
   Users,
@@ -13,6 +13,13 @@ import {
   Star,
   CheckCircle,
   Hammer,
+  TrendingUp,
+  Clock,
+  FileQuestion,
+  Award,
+  Megaphone,
+  UserPlus,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Container, EmptyState } from '../components/layout';
@@ -23,15 +30,10 @@ export default function InstructorDashboard() {
   const location = useLocation();
   const { user } = useAuth();
 
+  const [dashboardData, setDashboardData] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
-  const [stats, setStats] = useState({
-    totalCourses: 0,
-    totalStudents: 0,
-    totalRevenue: 0,
-    averageRating: 0,
-  });
 
   useEffect(() => {
     // Check if user is instructor
@@ -55,29 +57,27 @@ export default function InstructorDashboard() {
   const fetchInstructorData = async () => {
     setLoading(true);
     try {
-      const response = await coursesAPI.getInstructorCourses();
-      const coursesData = response.data.data.courses || [];
+      // Fetch dashboard data from new API
+      const [dashboardResponse, coursesResponse] = await Promise.all([
+        instructorAPI.getDashboard(),
+        coursesAPI.getInstructorCourses()
+      ]);
+
+      const dashData = dashboardResponse.data.data;
+      const coursesData = coursesResponse.data.data.courses || [];
+
+      setDashboardData(dashData);
       setCourses(coursesData);
-
-      // Calculate stats from courses
-      const totalCourses = coursesData.length;
-      const totalStudents = coursesData.reduce((sum, course) => sum + (course.enrolled_count || 0), 0);
-      const totalRevenue = coursesData.reduce(
-        (sum, course) => sum + (course.price || 0) * (course.enrolled_count || 0),
-        0
-      );
-      const avgRating = coursesData.length > 0
-        ? coursesData.reduce((sum, course) => sum + (course.average_rating || 0), 0) / coursesData.length
-        : 0;
-
-      setStats({
-        totalCourses,
-        totalStudents,
-        totalRevenue,
-        averageRating: avgRating,
-      });
     } catch (error) {
       console.error('Error fetching instructor data:', error);
+      // Fallback to old method if new API fails
+      try {
+        const response = await coursesAPI.getInstructorCourses();
+        const coursesData = response.data.data.courses || [];
+        setCourses(coursesData);
+      } catch (fallbackError) {
+        console.error('Fallback error:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }
@@ -129,37 +129,189 @@ export default function InstructorDashboard() {
         <StatsGrid columns={4} className="mb-8">
           <StatsCard
             title="Total Courses"
-            value={stats.totalCourses}
+            value={dashboardData?.teaching_summary?.total_courses || 0}
             icon={BookOpen}
             iconColor="bg-brand-blue"
+            trend={`${dashboardData?.teaching_summary?.published_courses || 0} published`}
             className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
             style={{ animationDelay: '0s' }}
           />
           <StatsCard
             title="Total Students"
-            value={stats.totalStudents}
+            value={dashboardData?.teaching_summary?.total_students || 0}
             icon={Users}
             iconColor="bg-brand-purple"
+            trend={`${dashboardData?.teaching_summary?.enrollments_this_month || 0} this month`}
             className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
             style={{ animationDelay: '0.1s' }}
           />
           <StatsCard
-            title="Total Revenue"
-            value={`$${stats.totalRevenue.toLocaleString()}`}
-            icon={DollarSign}
+            title="Total Enrollments"
+            value={dashboardData?.teaching_summary?.total_enrollments || 0}
+            icon={TrendingUp}
             iconColor="bg-green-500"
             className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
             style={{ animationDelay: '0.2s' }}
           />
           <StatsCard
-            title="Average Rating"
-            value={stats.averageRating > 0 ? stats.averageRating.toFixed(1) : 'N/A'}
-            icon={Star}
+            title="Pending Questions"
+            value={dashboardData?.pending_questions || 0}
+            icon={FileQuestion}
             iconColor="bg-yellow-500"
             className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
             style={{ animationDelay: '0.3s' }}
           />
         </StatsGrid>
+
+        {/* Recent Enrollments & Course Performance */}
+        {dashboardData && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Recent Enrollments */}
+            {dashboardData.recent_enrollments && dashboardData.recent_enrollments.length > 0 && (
+              <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-4 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-brand-blue" />
+                  Recent Enrollments
+                </h3>
+                <div className="space-y-3">
+                  {dashboardData.recent_enrollments.slice(0, 5).map((enrollment, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate">
+                          {enrollment.student_name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">
+                          {enrollment.course_title}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-400 dark:text-text-dark-muted ml-2">
+                        {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Course Performance */}
+            {dashboardData.course_performance && dashboardData.course_performance.length > 0 && (
+              <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-4 flex items-center gap-2">
+                  <Award className="h-5 w-5 text-brand-purple" />
+                  Course Performance
+                </h3>
+                <div className="space-y-3">
+                  {dashboardData.course_performance.slice(0, 5).map((course, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate flex-1">
+                          {course.title}
+                        </p>
+                        <span className="text-xs text-gray-500 dark:text-text-dark-muted ml-2">
+                          {course.students} students
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-gray-600 dark:text-text-dark-secondary">Avg Progress</span>
+                            <span className="font-medium text-gray-900 dark:text-text-dark-primary">
+                              {course.avg_progress?.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-1.5">
+                            <div
+                              className="bg-brand-blue h-1.5 rounded-full transition-all"
+                              style={{ width: `${Math.min(course.avg_progress || 0, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-gray-600 dark:text-text-dark-secondary">Completion</p>
+                          <p className="font-medium text-gray-900 dark:text-text-dark-primary">
+                            {course.completion_rate?.toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-text-dark-primary mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* View Students */}
+            <button
+              onClick={() => navigate('/instructor/students')}
+              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-brand-blue dark:hover:border-brand-blue hover:shadow-lg transition-all text-left"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-lg bg-brand-blue/10 flex items-center justify-center group-hover:bg-brand-blue/20 transition-colors">
+                  <Users className="w-6 h-6 text-brand-blue" />
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-blue group-hover:translate-x-1 transition-all" />
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">My Students</h4>
+              <p className="text-sm text-gray-600 dark:text-text-dark-muted">View and track student progress</p>
+            </button>
+
+            {/* Announcements */}
+            <button
+              onClick={() => navigate('/instructor/announcements')}
+              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-brand-purple dark:hover:border-brand-purple hover:shadow-lg transition-all text-left"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-lg bg-brand-purple/10 flex items-center justify-center group-hover:bg-brand-purple/20 transition-colors">
+                  <Megaphone className="w-6 h-6 text-brand-purple" />
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-purple group-hover:translate-x-1 transition-all" />
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">Announcements</h4>
+              <p className="text-sm text-gray-600 dark:text-text-dark-muted">Create course announcements</p>
+            </button>
+
+            {/* My Questions */}
+            <button
+              onClick={() => navigate('/instructor/questions')}
+              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-green-500 dark:hover:border-green-500 hover:shadow-lg transition-all text-left"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                  <FileQuestion className="w-6 h-6 text-green-500" />
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">My Questions</h4>
+              <p className="text-sm text-gray-600 dark:text-text-dark-muted">Track question approval status</p>
+            </button>
+
+            {/* Test Analytics */}
+            <button
+              onClick={() => navigate('/instructor/tests')}
+              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-yellow-500 dark:hover:border-yellow-500 hover:shadow-lg transition-all text-left"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
+                  <BarChart3 className="w-6 h-6 text-yellow-500" />
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-yellow-500 group-hover:translate-x-1 transition-all" />
+              </div>
+              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">Test Analytics</h4>
+              <p className="text-sm text-gray-600 dark:text-text-dark-muted">View test results & analytics</p>
+            </button>
+          </div>
+        </div>
 
         {/* Section Header */}
         <div className="flex items-center justify-between mb-6">

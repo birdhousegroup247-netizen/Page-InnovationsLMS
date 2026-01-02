@@ -4,12 +4,50 @@ const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { BadRequestError, UnauthorizedError, NotFoundError } = require('../../utils/errors');
 const ActivityController = require('../activity/activityController');
+const TokenBlacklist = require('../../utils/tokenBlacklist');
+const CSRF = require('../../utils/csrf');
 
 /**
  * Authentication Controller
  */
 
 class AuthController {
+  /**
+   * Helper: Set authentication cookies
+   * @private
+   */
+  static setAuthCookies(res, tokens) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Set access token cookie (httpOnly for security)
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
+      secure: isProduction, // HTTPS only in production
+      sameSite: 'lax', // CSRF protection
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    // Set refresh token cookie (httpOnly for security)
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Set CSRF token cookie (readable by JavaScript for headers)
+    CSRF.setCookie(res);
+  }
+
+  /**
+   * Helper: Clear authentication cookies
+   * @private
+   */
+  static clearAuthCookies(res) {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    res.clearCookie('csrf-token');
+  }
   /**
    * Register a new user
    * POST /api/auth/register
@@ -49,6 +87,9 @@ class AuthController {
       // Generate tokens
       const tokens = JWT.generateTokens(user);
 
+      // Set authentication cookies
+      this.setAuthCookies(res, tokens);
+
       // Log registration activity
       await ActivityController.logActivity({
         user_id: user.id,
@@ -85,7 +126,6 @@ class AuthController {
 
       return ApiResponse.created(res, {
         user: user.toJSON(),
-        ...tokens,
         instructor_application_pending: instructorStatus === 'pending',
       }, registrationMessage);
     } catch (error) {
@@ -132,6 +172,9 @@ class AuthController {
       // Generate tokens
       const tokens = JWT.generateTokens(user);
 
+      // Set authentication cookies
+      this.setAuthCookies(res, tokens);
+
       // Log successful login activity
       await ActivityController.logActivity({
         user_id: user.id,
@@ -146,7 +189,6 @@ class AuthController {
 
       return ApiResponse.success(res, {
         user: user.toJSON(),
-        ...tokens,
       }, 'Login successful');
     } catch (error) {
       next(error);
@@ -180,10 +222,17 @@ class AuthController {
    */
   static async refreshToken(req, res, next) {
     try {
-      const { refreshToken } = req.body;
+      // Try to get refresh token from cookie first, fallback to body for backward compatibility
+      const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
       if (!refreshToken) {
         throw new BadRequestError('Refresh token is required');
+      }
+
+      // Check if token is blacklisted
+      const isBlacklisted = await TokenBlacklist.isBlacklisted(refreshToken);
+      if (isBlacklisted) {
+        throw new UnauthorizedError('Token has been revoked');
       }
 
       // Verify refresh token
@@ -198,7 +247,12 @@ class AuthController {
       // Generate new tokens
       const tokens = JWT.generateTokens(user);
 
-      return ApiResponse.success(res, tokens, 'Token refreshed successfully');
+      // Set new authentication cookies
+      this.setAuthCookies(res, tokens);
+
+      return ApiResponse.success(res, {
+        message: 'Token refreshed successfully'
+      }, 'Token refreshed successfully');
     } catch (error) {
       next(error);
     }
@@ -236,14 +290,11 @@ class AuthController {
         // Continue anyway - don't reveal if email exists
       }
 
-      // In development, return the token for testing (remove in production!)
-      const responseData = process.env.NODE_ENV === 'development'
-        ? { token, expires_at, message: 'Password reset email sent (dev mode)' }
-        : null;
-
+      // Never expose the token in the response for security
+      // The token should only be sent via email
       return ApiResponse.success(
         res,
-        responseData,
+        null,
         'If the email exists, a password reset link will be sent'
       );
     } catch (error) {
@@ -321,19 +372,50 @@ class AuthController {
   }
 
   /**
-   * Logout (client-side token removal)
+   * Logout (blacklist tokens and clear cookies)
    * POST /api/auth/logout
    */
   static async logout(req, res, next) {
     try {
-      // Log activity
-      if (req.user) {
-        logger.info(`User logged out: ${req.user.email}`);
+      // Get tokens from cookies
+      const accessToken = req.cookies.accessToken;
+      const refreshToken = req.cookies.refreshToken;
+
+      // Blacklist both tokens if they exist
+      if (accessToken) {
+        try {
+          const decoded = JWT.decode(accessToken);
+          const ttl = TokenBlacklist.calculateTTL(decoded);
+          await TokenBlacklist.addToBlacklist(accessToken, ttl);
+        } catch (error) {
+          logger.warn('Failed to blacklist access token:', error);
+        }
       }
 
-      // Note: Since we're using JWT, logout is primarily client-side
-      // The client should remove the token from storage
-      // For enhanced security, you could implement token blacklisting
+      if (refreshToken) {
+        try {
+          const decoded = JWT.decode(refreshToken);
+          const ttl = TokenBlacklist.calculateTTL(decoded);
+          await TokenBlacklist.addToBlacklist(refreshToken, ttl);
+        } catch (error) {
+          logger.warn('Failed to blacklist refresh token:', error);
+        }
+      }
+
+      // Clear authentication cookies
+      this.clearAuthCookies(res);
+
+      // Log activity
+      if (req.user) {
+        await ActivityController.logActivity({
+          user_id: req.user.id,
+          action: 'logout',
+          metadata: { email: req.user.email },
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: req.get('user-agent'),
+        });
+        logger.info(`User logged out: ${req.user.email}`);
+      }
 
       return ApiResponse.success(res, null, 'Logout successful');
     } catch (error) {
@@ -357,11 +439,13 @@ class AuthController {
       // Generate JWT tokens
       const tokens = JWT.generateTokens(user);
 
+      // Set authentication cookies
+      this.setAuthCookies(res, tokens);
+
       logger.info(`User logged in via Google: ${user.email}`);
 
-      // Redirect to frontend with tokens in URL params
-      // Frontend should extract tokens and store them
-      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
+      // Redirect to frontend (tokens are now in cookies)
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?success=true`;
 
       return res.redirect(redirectUrl);
     } catch (error) {

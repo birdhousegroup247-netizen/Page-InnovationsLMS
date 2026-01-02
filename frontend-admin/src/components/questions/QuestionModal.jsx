@@ -69,9 +69,10 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess }) 
   const fetchCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      setCategories(response.data.data || []);
+      setCategories(Array.isArray(response.data.data?.categories) ? response.data.data.categories : []);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
+      setCategories([]);
     }
   };
 

@@ -214,7 +214,7 @@ class QuestionBankController {
       const stats = await QuestionBank.findAll({
         attributes: [
           'course_id',
-          [sequelize.fn('COUNT', sequelize.col('id')), 'total_questions'],
+          [sequelize.fn('COUNT', sequelize.col('QuestionBank.id')), 'total_questions'],
           [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_approved = true THEN 1 ELSE 0 END')), 'approved_questions'],
           [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_approved = false THEN 1 ELSE 0 END')), 'pending_questions'],
         ],

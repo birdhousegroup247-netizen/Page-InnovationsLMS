@@ -374,21 +374,41 @@ export default function TestBuilder() {
   }
 
   return (
-    <Container>
+    <>
       {/* Header */}
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/tests')}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Tests
-        </Button>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          {isEditing ? 'Edit Test' : 'Create New Test'}
-        </h1>
+      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
+
+        <div className="relative z-10 py-12 sm:py-16">
+          <Container>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/tests')}
+              className="mb-4 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Tests
+            </Button>
+
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
+                  {isEditing ? 'Edit Test' : 'Create New Test'}
+                </h1>
+                <p className="text-lg text-white/90 animate-fade-in mt-1">
+                  {isEditing ? 'Update test configuration and settings' : 'Build and configure your test step by step'}
+                </p>
+              </div>
+            </div>
+          </Container>
+        </div>
       </div>
+
+      <Container className="py-8">
 
       {/* Progress Steps */}
       <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-6 mb-6">
@@ -404,10 +424,10 @@ export default function TestBuilder() {
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-blue-600 dark:bg-blue-500 text-white'
                         : isCompleted
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                        ? 'bg-green-500 dark:bg-green-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                     }`}
                   >
                     {isCompleted ? (
@@ -618,7 +638,7 @@ export default function TestBuilder() {
                               : autoConfig.selected_courses.filter(id => id !== course.id);
                             handleAutoConfigChange('selected_courses', newCourses);
                           }}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          className="w-4 h-4 text-blue-600 dark:text-blue-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                         />
                         <span className="text-sm text-gray-900 dark:text-white">
                           {course.title}
@@ -1092,6 +1112,7 @@ export default function TestBuilder() {
           )}
         </div>
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

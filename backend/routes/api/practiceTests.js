@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const PracticeTestController = require('../../controllers/exams/practiceTestController');
 const { authenticate, authorize } = require('../../middleware/auth/authMiddleware');
+const { testSubmissionLimiter } = require('../../middleware/rateLimiter');
 
 // ============================================================================
 // PRACTICE TEST ROUTES (Student Only)
@@ -16,8 +17,8 @@ router.get('/history', authenticate, authorize('student'), PracticeTestControlle
 // Get ongoing test
 router.get('/:attemptId', authenticate, authorize('student'), PracticeTestController.getOngoingTest);
 
-// Submit practice test
-router.post('/:attemptId/submit', authenticate, authorize('student'), PracticeTestController.submitPracticeTest);
+// Submit practice test (rate limited to prevent spam)
+router.post('/:attemptId/submit', authenticate, authorize('student'), testSubmissionLimiter, PracticeTestController.submitPracticeTest);
 
 // Get test results
 router.get('/:attemptId/results', authenticate, authorize('student'), PracticeTestController.getTestResults);

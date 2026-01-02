@@ -84,6 +84,23 @@ const QuestionBank = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    approval_status: {
+      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      defaultValue: 'pending',
+    },
+    rejection_reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    reviewed_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+    },
+    reviewed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     points: {
       type: DataTypes.INTEGER,
       defaultValue: 1,

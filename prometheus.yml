@@ -1,0 +1,54 @@
+# ============================================================================
+# Prometheus Configuration for TekyPro LMS
+# ============================================================================
+
+global:
+  scrape_interval: 15s # Scrape targets every 15 seconds
+  evaluation_interval: 15s # Evaluate rules every 15 seconds
+  external_labels:
+    monitor: 'tekypro-lms'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # TekyPro Backend API
+  - job_name: 'tekypro-backend'
+    static_configs:
+      - targets: ['backend:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter (if added)
+  - job_name: 'node'
+    static_configs:
+      - targets: []
+        # - 'node-exporter:9100'
+
+  # MySQL Exporter (if added)
+  - job_name: 'mysql'
+    static_configs:
+      - targets: []
+        # - 'mysql-exporter:9104'
+
+  # Redis Exporter (if added)
+  - job_name: 'redis'
+    static_configs:
+      - targets: []
+        # - 'redis-exporter:9121'

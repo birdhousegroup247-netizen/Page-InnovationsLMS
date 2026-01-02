@@ -183,51 +183,66 @@ export default function TestResults() {
   }
 
   return (
-    <Container>
+    <>
       {/* Header */}
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/tests')}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Tests
-        </Button>
+      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{test.title}</h1>
-              <p className="text-purple-100">
-                {test.description || 'Test Results and Analytics'}
-              </p>
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span className="text-sm">{test.assigned_students_count} Students</span>
+        <div className="relative z-10 py-12 sm:py-16">
+          <Container>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/tests')}
+              className="mb-4 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Tests
+            </Button>
+
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-white" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm">{test.question_count} Questions</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm">{test.time_limit_minutes} Minutes</span>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
+                    {test.title}
+                  </h1>
+                  <p className="text-lg text-white/90 animate-fade-in mt-1">
+                    {test.description || 'Test Results and Analytics'}
+                  </p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-white/80" />
+                      <span className="text-sm text-white/90">{test.assigned_students_count} Students</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-white/80" />
+                      <span className="text-sm text-white/90">{test.question_count} Questions</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-white/80" />
+                      <span className="text-sm text-white/90">{test.time_limit_minutes} Minutes</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleExportResults}
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Results
+                </Button>
+              </div>
             </div>
-            <Button
-              onClick={handleExportResults}
-              variant="white"
-              className="bg-white text-purple-600 hover:bg-purple-50"
-            >
-              <Download className="w-5 h-5 mr-2" />
-              Export Results
-            </Button>
-          </div>
+          </Container>
         </div>
       </div>
+
+      <Container className="py-8">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -336,12 +351,13 @@ export default function TestResults() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm p-4 mb-6">
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <Select
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+              className="!h-12"
             >
               <option value="">All Status</option>
               <option value="completed">Completed</option>
@@ -352,6 +368,7 @@ export default function TestResults() {
             <Select
               value={filters.sort}
               onChange={(e) => setFilters(prev => ({ ...prev, sort: e.target.value }))}
+              className="!h-12"
             >
               <option value="score_desc">Highest Score First</option>
               <option value="score_asc">Lowest Score First</option>
@@ -580,6 +597,7 @@ export default function TestResults() {
           </div>
         </div>
       )}
-    </Container>
+      </Container>
+    </>
   );
 }

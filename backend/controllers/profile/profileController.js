@@ -131,7 +131,7 @@ class ProfileController {
       }
 
       // Hash new password
-      const hashedPassword = await bcrypt.hash(new_password, 10);
+      const hashedPassword = await bcrypt.hash(new_password, 12);
       user.password = hashedPassword;
       await user.save();
 

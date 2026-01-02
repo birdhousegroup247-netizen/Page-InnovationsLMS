@@ -16,7 +16,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { adminQuestionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
-import { Button, Input, Select, Badge, Spinner, Modal, Dropdown } from '../../components/ui';
+import { Button, Input, Select, Badge, Spinner, Modal, Dropdown, Table } from '../../components/ui';
 import Container from '../../components/layout/Container';
 import StatsCard from '../../components/ui/StatsCard';
 import Pagination from '../../components/ui/Pagination';
@@ -42,6 +42,7 @@ export default function QuestionBank() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -91,9 +92,10 @@ export default function QuestionBank() {
   const fetchCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      setCategories(response.data.data || []);
+      setCategories(Array.isArray(response.data.data?.categories) ? response.data.data.categories : []);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
+      setCategories([]);
     }
   };
 
@@ -223,13 +225,21 @@ export default function QuestionBank() {
     }
   };
 
-  const getDifficultyColor = (difficulty) => {
-    const colors = {
-      easy: 'green',
-      medium: 'yellow',
-      hard: 'red'
+  const toggleBulkSelectMode = () => {
+    setBulkSelectMode(!bulkSelectMode);
+    if (bulkSelectMode) {
+      // Exiting bulk mode - clear selections
+      setSelectedQuestions([]);
+    }
+  };
+
+  const getDifficultyVariant = (difficulty) => {
+    const variants = {
+      easy: 'success',
+      medium: 'warning',
+      hard: 'danger'
     };
-    return colors[difficulty] || 'gray';
+    return variants[difficulty?.toLowerCase()] || 'default';
   };
 
   const getQuestionTypeLabel = (type) => {
@@ -241,10 +251,16 @@ export default function QuestionBank() {
     return labels[type] || type;
   };
 
+  const truncateText = (text, maxLength = 60) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
+      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
@@ -264,17 +280,17 @@ export default function QuestionBank() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Button
                   onClick={() => setShowBulkImportModal(true)}
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Import CSV
                 </Button>
                 <Button
                   onClick={handleAddQuestion}
-                  className="bg-white text-brand-blue hover:bg-white/90"
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Question
@@ -328,18 +344,18 @@ export default function QuestionBank() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl p-4 mb-6 shadow-sm">
+      <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm mb-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
               <Input
                 type="text"
                 placeholder="Search questions..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="pl-10"
+                className="pl-10 !h-12"
               />
             </div>
           </div>
@@ -348,85 +364,90 @@ export default function QuestionBank() {
           <Select
             value={filters.course_id}
             onChange={(e) => handleFilterChange('course_id', e.target.value)}
-          >
-            <option value="">All Courses</option>
-            {courses.map(course => (
-              <option key={course.id} value={course.id}>{course.title}</option>
-            ))}
-          </Select>
-
-          {/* Category Filter */}
-          <Select
-            value={filters.category_id}
-            onChange={(e) => handleFilterChange('category_id', e.target.value)}
-          >
-            <option value="">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </Select>
+            className="!h-12"
+            options={[
+              { value: '', label: 'All Courses' },
+              ...courses.map(course => ({ value: course.id, label: course.title }))
+            ]}
+          />
 
           {/* Difficulty Filter */}
           <Select
             value={filters.difficulty}
             onChange={(e) => handleFilterChange('difficulty', e.target.value)}
-          >
-            <option value="">All Difficulties</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </Select>
+            className="!h-12"
+            options={[
+              { value: '', label: 'All Difficulties' },
+              { value: 'easy', label: 'Easy' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'hard', label: 'Hard' }
+            ]}
+          />
 
           {/* Type Filter */}
           <Select
             value={filters.question_type}
             onChange={(e) => handleFilterChange('question_type', e.target.value)}
-          >
-            <option value="">All Types</option>
-            <option value="multiple_choice">Multiple Choice</option>
-            <option value="true_false">True/False</option>
-            <option value="fill_blank">Fill in the Blank</option>
-          </Select>
+            className="!h-12"
+            options={[
+              { value: '', label: 'All Types' },
+              { value: 'multiple_choice', label: 'Multiple Choice' },
+              { value: 'true_false', label: 'True/False' },
+              { value: 'fill_blank', label: 'Fill in the Blank' }
+            ]}
+          />
         </div>
 
-        {/* Approval Filter */}
-        <div className="mt-4 flex items-center gap-4">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={filters.is_approved === '' ? 'primary' : 'outline'}
-              onClick={() => handleFilterChange('is_approved', '')}
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={filters.is_approved === 'true' ? 'primary' : 'outline'}
-              onClick={() => handleFilterChange('is_approved', 'true')}
-            >
-              Approved
-            </Button>
-            <Button
-              size="sm"
-              variant={filters.is_approved === 'false' ? 'primary' : 'outline'}
-              onClick={() => handleFilterChange('is_approved', 'false')}
-            >
-              Pending
-            </Button>
+        {/* Approval Filter and Bulk Select Toggle */}
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+            <div className="flex gap-2">
+              <Button
+                className="!h-12 !min-h-[48px]"
+                variant={filters.is_approved === '' ? 'primary' : 'outline'}
+                onClick={() => handleFilterChange('is_approved', '')}
+              >
+                All
+              </Button>
+              <Button
+                className="!h-12 !min-h-[48px]"
+                variant={filters.is_approved === 'true' ? 'primary' : 'outline'}
+                onClick={() => handleFilterChange('is_approved', 'true')}
+              >
+                Approved
+              </Button>
+              <Button
+                className="!h-12 !min-h-[48px]"
+                variant={filters.is_approved === 'false' ? 'primary' : 'outline'}
+                onClick={() => handleFilterChange('is_approved', 'false')}
+              >
+                Pending
+              </Button>
+            </div>
           </div>
+
+          {/* Bulk Select Toggle */}
+          <Button
+            className="!h-12 !min-h-[48px]"
+            variant={bulkSelectMode ? 'primary' : 'outline'}
+            onClick={toggleBulkSelectMode}
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            {bulkSelectMode ? 'Exit Select Mode' : 'Select Multiple'}
+          </Button>
         </div>
       </div>
 
       {/* Bulk Actions */}
-      {selectedQuestions.length > 0 && (
+      {bulkSelectMode && selectedQuestions.length > 0 && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
               {selectedQuestions.length} question(s) selected
             </span>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleBulkApprove}>
+              <Button size="sm" variant="success" onClick={handleBulkApprove}>
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Approve Selected
               </Button>
@@ -439,14 +460,14 @@ export default function QuestionBank() {
         </div>
       )}
 
-      {/* Questions List */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm overflow-hidden">
+      {/* Questions Table */}
+      <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Spinner size="lg" />
           </div>
         ) : questions.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 px-4">
             <HelpCircle className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No questions found
@@ -461,143 +482,162 @@ export default function QuestionBank() {
           </div>
         ) : (
           <>
-            {/* Table Header */}
-            <div className="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-dark-900">
-              <div className="flex items-center gap-4">
-                <input
-                  type="checkbox"
-                  checked={selectedQuestions.length === questions.length}
-                  onChange={handleSelectAll}
-                  className="rounded"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Select All
-                </span>
-              </div>
-            </div>
-
-            {/* Questions */}
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {questions.map((question) => (
-                <div
-                  key={question.id}
-                  className="p-4 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-                >
-                  <div className="flex items-start gap-4">
+            <Table>
+              <Table.Header>
+                <Table.Row>
+                  {bulkSelectMode && (
+                    <Table.Head className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuestions.length === questions.length && questions.length > 0}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400"
+                      />
+                    </Table.Head>
+                  )}
+                  <Table.Head className="min-w-[300px]">Question</Table.Head>
+                  <Table.Head>Type</Table.Head>
+                  <Table.Head>Difficulty</Table.Head>
+                  <Table.Head>Marks</Table.Head>
+                  <Table.Head>Category</Table.Head>
+                  <Table.Head>Status</Table.Head>
+                  <Table.Head className="w-20">Actions</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {questions.map((question) => (
+                  <Table.Row key={question.id}>
                     {/* Checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={selectedQuestions.includes(question.id)}
-                      onChange={() => handleSelectQuestion(question.id)}
-                      className="mt-1 rounded"
-                    />
+                    {bulkSelectMode && (
+                      <Table.Cell>
+                        <input
+                          type="checkbox"
+                          checked={selectedQuestions.includes(question.id)}
+                          onChange={() => handleSelectQuestion(question.id)}
+                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400"
+                        />
+                      </Table.Cell>
+                    )}
 
-                    {/* Question Content */}
-                    <div className="flex-1">
-                      {/* Question Text */}
-                      <div className="mb-2">
-                        <h3 className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                          {question.question_text}
-                        </h3>
-                      </div>
-
-                      {/* Metadata */}
-                      <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <Badge color={question.is_approved ? 'green' : 'yellow'}>
-                          {question.is_approved ? '✓ Approved' : '⏳ Pending'}
-                        </Badge>
-                        <Badge color="blue">
-                          {getQuestionTypeLabel(question.question_type)}
-                        </Badge>
-                        <Badge color={getDifficultyColor(question.difficulty)}>
-                          {question.difficulty}
-                        </Badge>
-                        {question.course && (
-                          <span className="text-gray-700 dark:text-gray-300 font-medium">
-                            📚 {question.course.title}
-                          </span>
-                        )}
-                        {question.category && (
-                          <span className="text-gray-600 dark:text-gray-400">
-                            📁 {question.category.name}
-                          </span>
-                        )}
-                        <span className="text-gray-600 dark:text-gray-400">
-                          💯 {question.marks} marks
+                    {/* Question Text */}
+                    <Table.Cell>
+                      <div className="max-w-md">
+                        <span
+                          className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                          title={question.question_text}
+                        >
+                          {truncateText(question.question_text, 80)}
                         </span>
-                        {question.times_used > 0 && (
-                          <span className="text-gray-600 dark:text-gray-400">
-                            📊 Used {question.times_used}x
-                          </span>
-                        )}
-                        {question.creator && (
-                          <span className="text-gray-600 dark:text-gray-400">
-                            👤 {question.creator.full_name}
-                          </span>
-                        )}
                       </div>
-                    </div>
+                    </Table.Cell>
+
+                    {/* Type */}
+                    <Table.Cell>
+                      <Badge variant="primary" size="sm">
+                        {getQuestionTypeLabel(question.question_type)}
+                      </Badge>
+                    </Table.Cell>
+
+                    {/* Difficulty */}
+                    <Table.Cell>
+                      <Badge variant={getDifficultyVariant(question.difficulty)} size="sm">
+                        {question.difficulty}
+                      </Badge>
+                    </Table.Cell>
+
+                    {/* Marks */}
+                    <Table.Cell>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {question.marks}
+                      </span>
+                    </Table.Cell>
+
+                    {/* Category */}
+                    <Table.Cell>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {question.category?.name || question.course?.title || '-'}
+                      </span>
+                    </Table.Cell>
+
+                    {/* Status */}
+                    <Table.Cell>
+                      <Badge variant={question.is_approved ? 'success' : 'warning'} size="sm">
+                        {question.is_approved ? 'Approved' : 'Pending'}
+                      </Badge>
+                    </Table.Cell>
 
                     {/* Actions */}
-                    <Dropdown>
-                      {({ isOpen, setIsOpen }) => (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsOpen(!isOpen)}
-                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                          {isOpen && (
-                            <Dropdown.Menu align="right">
-                              {!question.is_approved && (
-                                <>
-                                  <Dropdown.Item
-                                    icon={CheckCircle}
-                                    onClick={() => {
-                                      setIsOpen(false);
-                                      handleApprove(question.id);
-                                    }}
-                                  >
-                                    Approve Question
-                                  </Dropdown.Item>
-                                  <Dropdown.Separator />
-                                </>
-                              )}
-                              <Dropdown.Item
-                                icon={Edit}
-                                onClick={() => {
-                                  setIsOpen(false);
-                                  handleEditQuestion(question);
-                                }}
-                              >
-                                Edit Question
-                              </Dropdown.Item>
-                              <Dropdown.Separator />
-                              <Dropdown.Item
-                                icon={Trash2}
-                                onClick={() => {
-                                  setIsOpen(false);
-                                  handleDeleteQuestion(question);
-                                }}
-                                danger
-                              >
-                                Delete Question
-                              </Dropdown.Item>
-                            </Dropdown.Menu>
-                          )}
-                        </>
-                      )}
-                    </Dropdown>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <Table.Cell>
+                      <Dropdown>
+                        {({ isOpen, setIsOpen, menuRef }) => (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsOpen(!isOpen)}
+                              aria-label="More actions"
+                              className="text-gray-600 dark:text-gray-400"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                            {isOpen && (
+                              <Dropdown.Menu align="right" menuRef={menuRef}>
+                                {!question.is_approved && (
+                                  <>
+                                    <Dropdown.Item
+                                      icon={CheckCircle}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        handleApprove(question.id);
+                                      }}
+                                    >
+                                      Approve
+                                    </Dropdown.Item>
+                                    <Dropdown.Separator />
+                                  </>
+                                )}
+                                <Dropdown.Item
+                                  icon={Edit}
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    handleEditQuestion(question);
+                                  }}
+                                >
+                                  Edit
+                                </Dropdown.Item>
+                                <Dropdown.Item
+                                  icon={Eye}
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    // Preview functionality
+                                  }}
+                                >
+                                  Preview
+                                </Dropdown.Item>
+                                <Dropdown.Separator />
+                                <Dropdown.Item
+                                  icon={Trash2}
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    handleDeleteQuestion(question);
+                                  }}
+                                  danger
+                                >
+                                  Delete
+                                </Dropdown.Item>
+                              </Dropdown.Menu>
+                            )}
+                          </>
+                        )}
+                      </Dropdown>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
 
             {/* Pagination */}
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="px-4 py-4 border-t border-gray-200 dark:border-border-dark">
               <Pagination
                 currentPage={pagination.page}
                 totalPages={pagination.pages}
@@ -619,19 +659,19 @@ export default function QuestionBank() {
             <p className="text-gray-700 dark:text-gray-300 mb-6">
               Are you sure you want to delete this question? This action cannot be undone.
             </p>
-            <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 mb-6">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
               <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {questionToDelete?.question_text}
               </p>
             </div>
-            <div className="flex justify-end gap-3">
+            <Modal.Footer>
               <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </Button>
               <Button variant="danger" onClick={confirmDelete}>
                 Delete Question
               </Button>
-            </div>
+            </Modal.Footer>
           </div>
         </Modal>
       )}
@@ -646,7 +686,6 @@ export default function QuestionBank() {
         question={selectedQuestion}
         onSuccess={() => {
           fetchQuestions();
-          fetchStats();
         }}
       />
 
@@ -656,7 +695,6 @@ export default function QuestionBank() {
         onClose={() => setShowBulkImportModal(false)}
         onSuccess={() => {
           fetchQuestions();
-          fetchStats();
         }}
       />
     </Container>

@@ -1,11 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 /**
- * Modal Component - Beautiful dialog/modal
+ * Modal Component - Accessible dialog/modal with full dark mode support
  *
  * Sizes: sm, md, lg, xl, full
+ *
+ * Features:
+ * - Full ARIA compliance (role, aria-modal, aria-labelledby)
+ * - Focus trap - users cannot tab outside the modal
+ * - Focus restoration - returns focus to trigger element on close
+ * - Escape key to close
+ * - Click outside to close (configurable)
+ * - Body scroll lock
+ * - Full dark mode support
+ * - Smooth animations
  */
 const Modal = ({
   isOpen,
@@ -18,6 +28,68 @@ const Modal = ({
   closeOnOverlayClick = true,
   ...props
 }) => {
+  const modalRef = useRef(null);
+  const previousActiveElement = useRef(null);
+  const titleId = useRef(`modal-title-${Math.random().toString(36).substr(2, 9)}`);
+
+  // Store the element that opened the modal
+  useEffect(() => {
+    if (isOpen) {
+      previousActiveElement.current = document.activeElement;
+    }
+  }, [isOpen]);
+
+  // Focus management and restoration
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      // Focus the modal container
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      } else {
+        modalRef.current.focus();
+      }
+    } else if (!isOpen && previousActiveElement.current) {
+      // Restore focus when modal closes
+      previousActiveElement.current.focus();
+    }
+  }, [isOpen]);
+
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const handleTabKey = (e) => {
+      if (e.key !== 'Tab') return;
+
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e) => {
@@ -63,39 +135,51 @@ const Modal = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={handleOverlayClick}
+      aria-labelledby={title ? titleId.current : undefined}
+      aria-modal="true"
+      role="dialog"
       {...props}
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" />
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        tabIndex={-1}
         className={cn(
-          'relative w-full bg-white dark:bg-dark-800 rounded-xl shadow-2xl animate-slide-up',
+          'relative w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl dark:shadow-black/50 animate-slide-up overflow-hidden',
           sizes[size],
           className
         )}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-border-dark">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             {title && (
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-text-dark-primary">{title}</h2>
+              <h2
+                id={titleId.current}
+                className="text-xl font-semibold text-gray-900 dark:text-white"
+              >
+                {title}
+              </h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                className="ml-auto p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5 text-gray-600 dark:text-text-dark-secondary" />
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
         )}
 
         {/* Content */}
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -107,7 +191,12 @@ Modal.Body = ({ children, className }) => (
 );
 
 Modal.Footer = ({ children, className }) => (
-  <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 rounded-b-xl', className)}>
+  <div
+    className={cn(
+      'flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-b-xl',
+      className
+    )}
+  >
     {children}
   </div>
 );
