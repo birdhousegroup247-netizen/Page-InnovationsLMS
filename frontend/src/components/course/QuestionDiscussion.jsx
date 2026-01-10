@@ -11,7 +11,7 @@ import {
   Award,
   AlertCircle
 } from 'lucide-react';
-import { Button } from '../ui/Button';
+import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import { cn } from '../../utils/cn';
 
