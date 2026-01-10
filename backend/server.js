@@ -24,6 +24,9 @@ const { sanitizeInput, preventRateLimitBypass } = require('./middleware/requestV
 // Initialize Express app
 const app = express();
 
+// Trust proxy (required for Render/Heroku to get correct IP)
+app.set('trust proxy', 1);
+
 // Create HTTP server
 const server = http.createServer(app);
 

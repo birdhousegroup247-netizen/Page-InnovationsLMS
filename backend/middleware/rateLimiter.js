@@ -141,6 +141,9 @@ const registrationLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
+  },
   handler: (req, res) => {
     logger.warn(`Registration rate limit exceeded for IP ${req.ip}`);
     res.status(429).json({
