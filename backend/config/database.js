@@ -14,8 +14,13 @@ if (process.env.DATABASE_URL) {
     pool: {
       max: parseInt(process.env.DB_POOL_MAX) || 5,
       min: parseInt(process.env.DB_POOL_MIN) || 0,
-      acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 30000,
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 60000, // Increased to 60s for Render
       idle: parseInt(process.env.DB_POOL_IDLE) || 10000,
+    },
+
+    retry: {
+      max: 5,
+      timeout: 60000
     },
 
     define: {
@@ -29,7 +34,8 @@ if (process.env.DATABASE_URL) {
       ssl: {
         require: true,
         rejectUnauthorized: false // Required for Render/Heroku with self-signed certs
-      }
+      },
+      connectTimeout: 60000 // 60 second timeout
     }
   });
 } else {
@@ -68,16 +74,27 @@ if (process.env.DATABASE_URL) {
   );
 }
 
-// Test database connection
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✓ Database connection established successfully.');
-    return true;
-  } catch (error) {
-    console.error('✗ Unable to connect to the database:', error.message);
-    return false;
+
+// Test database connection with retry logic
+const testConnection = async (retries = 5, delay = 3000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await sequelize.authenticate();
+      console.log('✓ Database connection established successfully.');
+      return true;
+    } catch (error) {
+      console.log(`✗ Database connection attempt ${i + 1}/${retries} failed: ${error.message}`);
+      if (i < retries - 1) {
+        console.log(`  Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error('✗ Unable to connect to the database after all retries.');
+        console.error('  Make sure DATABASE_URL is set correctly in environment variables.');
+        return false;
+      }
+    }
   }
+  return false;
 };
 
 module.exports = { sequelize, testConnection };
