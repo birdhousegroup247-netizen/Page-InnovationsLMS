@@ -30,7 +30,7 @@ if (process.env.DATABASE_URL) {
     },
 
     timezone: '+00:00',
-    dialectOptions: {
+    dialectOptions: process.env.DB_DISABLE_SSL === 'true' ? {} : {
       ssl: {
         require: true,
         rejectUnauthorized: false // Required for Render/Heroku with self-signed certs
