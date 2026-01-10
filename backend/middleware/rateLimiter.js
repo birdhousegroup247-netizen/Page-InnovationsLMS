@@ -3,7 +3,7 @@
  * Per-user rate limiting with Redis backend
  */
 
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis').default;
 const { getRedisClient } = require('../config/redis');
 const logger = require('../utils/logger');
@@ -53,11 +53,11 @@ const createUserRateLimiter = (options = {}) => {
     skipSuccessfulRequests,
     skipFailedRequests,
     // Use user ID for authenticated requests, IP for anonymous
-    keyGenerator: (req) => {
+    keyGenerator: (req, res) => {
       if (req.user && req.user.id) {
         return `user_${req.user.id}`;
       }
-      return `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
+      return `ip_${ipKeyGenerator(req, res)}`;
     },
     handler: (req, res) => {
       logger.warn(`Rate limit exceeded for ${req.user?.id ? `user ${req.user.id}` : `IP ${req.ip}`}`);
@@ -86,10 +86,10 @@ const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins
-  keyGenerator: (req) => {
+  keyGenerator: (req, res) => {
     // Use email from request body if available, otherwise IP
     const email = req.body?.email;
-    return email ? `email_${email}` : `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
+    return email ? `email_${email}` : `ip_${ipKeyGenerator(req, res)}`;
   },
   handler: (req, res) => {
     logger.warn(`Auth rate limit exceeded for ${req.body?.email || req.ip}`);
@@ -114,9 +114,9 @@ const passwordResetLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
+  keyGenerator: (req, res) => {
     const email = req.body?.email;
-    return email ? `email_${email}` : `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
+    return email ? `email_${email}` : `ip_${ipKeyGenerator(req, res)}`;
   },
   handler: (req, res) => {
     logger.warn(`Password reset rate limit exceeded for ${req.body?.email || req.ip}`);
@@ -141,8 +141,8 @@ const registrationLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
+  keyGenerator: (req, res) => {
+    return `ip_${ipKeyGenerator(req, res)}`;
   },
   handler: (req, res) => {
     logger.warn(`Registration rate limit exceeded for IP ${req.ip}`);
