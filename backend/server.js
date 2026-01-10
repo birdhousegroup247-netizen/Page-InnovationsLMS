@@ -283,10 +283,16 @@ const startServer = async () => {
     // Initialize Redis
     initRedis();
 
-    // Sync database (only in development)
-    if (process.env.NODE_ENV === 'development') {
+    // Sync database tables if enabled
+    // Set DB_SYNC_ENABLED=true in environment to create tables on first deploy
+    // IMPORTANT: Disable after tables are created to prevent accidental schema changes
+    if (process.env.DB_SYNC_ENABLED === 'true') {
+      await sequelize.sync({ alter: false, force: false });
+      logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
+      logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
+    } else if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
-      logger.info('✓ Database synchronized');
+      logger.info('✓ Database synchronized (development mode)');
     }
 
     // Start server
