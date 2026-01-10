@@ -33,8 +33,15 @@ export default function Login() {
       const result = await login(formData.email, formData.password);
 
       if (result.success) {
-        // NEW: Redirect to role selector instead of auto-redirect
-        navigate('/role-selector');
+        // Redirect based on user role
+        const { user } = result;
+        if (user.role === 'admin' || user.role === 'super_admin') {
+          navigate('/admin/dashboard');
+        } else if (user.role === 'instructor') {
+          navigate('/instructor/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError(result.error);
       }

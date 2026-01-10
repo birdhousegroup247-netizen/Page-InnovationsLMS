@@ -26,4 +26,7 @@ router.get('/activities/recent', StatsController.getRecentActivities);
 // Get system health
 router.get('/system/health', StatsController.getSystemHealth);
 
+// Default stats endpoint (overview)
+router.get('/', StatsController.getOverviewStats);
+
 module.exports = router;

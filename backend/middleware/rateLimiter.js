@@ -40,6 +40,7 @@ const createUserRateLimiter = (options = {}) => {
 
   return rateLimit({
     store: getRedisStore('rate_limit:user:'),
+    validate: { ip: false },
     windowMs,
     max,
     message: {
@@ -75,6 +76,7 @@ const createUserRateLimiter = (options = {}) => {
  */
 const authRateLimiter = rateLimit({
   store: getRedisStore('rate_limit:auth:'),
+  validate: { ip: false },
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts per window
   message: {
@@ -103,6 +105,7 @@ const authRateLimiter = rateLimit({
  */
 const passwordResetLimiter = rateLimit({
   store: getRedisStore('rate_limit:password:'),
+  validate: { ip: false },
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 attempts per hour
   message: {
@@ -129,6 +132,7 @@ const passwordResetLimiter = rateLimit({
  */
 const registrationLimiter = rateLimit({
   store: getRedisStore('rate_limit:register:'),
+  validate: { ip: false },
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5, // 5 registrations per hour per IP
   message: {

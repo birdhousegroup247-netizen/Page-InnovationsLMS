@@ -35,7 +35,7 @@ const TestResults = lazy(() => import('./pages/admin/TestResults'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading, user, logout } = useAuth();
 
   if (loading) {
     return (
@@ -61,12 +61,20 @@ function AdminRoute({ children }) {
           <p className="text-text-secondary mb-6">
             You don't have permission to access the admin panel.
           </p>
-          <a
-            href={import.meta.env.VITE_MAIN_APP_URL || 'http://localhost:5173'}
-            className="inline-block px-6 py-3 bg-brand-blue text-white rounded-lg hover:bg-brand-blue/90 transition-colors"
-          >
-            Return to Main App
-          </a>
+          <div className="flex flex-col gap-3">
+             <button
+              onClick={() => logout()}
+              className="inline-block px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              Logout & Login as Admin
+            </button>
+            <a
+              href={import.meta.env.VITE_MAIN_APP_URL || 'http://localhost:5173'}
+              className="inline-block px-6 py-3 bg-dark-800 text-text-primary border border-dark-700 rounded-lg hover:bg-dark-700 transition-colors"
+            >
+              Return to Main App
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -74,6 +82,7 @@ function AdminRoute({ children }) {
 
   return <AppLayout>{children}</AppLayout>;
 }
+
 
 // Public Route Component (redirect to dashboard if already logged in)
 function PublicRoute({ children }) {

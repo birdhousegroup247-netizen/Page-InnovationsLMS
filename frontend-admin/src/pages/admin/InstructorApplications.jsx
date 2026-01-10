@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert, Badge } from '../../components/ui';
+import emptyApplications from '../../assets/empty-applications.svg';
 import { cn } from '../../utils/cn';
 
 export default function InstructorApplications() {
@@ -135,13 +136,6 @@ export default function InstructorApplications() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/admin/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Shield className="h-6 w-6 text-white" />
@@ -277,6 +271,7 @@ export default function InstructorApplications() {
         {/* Empty State */}
         {!loading && applications.length === 0 && (
           <EmptyState
+            image={emptyApplications}
             icon={<Users className="w-16 h-16" />}
             title="No applications found"
             description={

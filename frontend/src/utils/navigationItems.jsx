@@ -55,7 +55,7 @@ export const getNavigationItems = (role = 'student') => {
     },
     {
       label: 'My Courses',
-      path: '/instructor/dashboard', // Dashboard contains the course list
+      path: '/instructor/courses', // Separate route to fix sidebar highlighting
       icon: <BookOpen className="w-5 h-5" />,
     },
     {

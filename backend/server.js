@@ -63,6 +63,9 @@ const allowedOrigins = [
   'http://localhost:5173',  // Main app dev
   'http://localhost:5174',  // Admin app dev
   process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
+  // Production URLs (Render.com deployment)
+  'https://tekypro-student.onrender.com',
+  'https://tekypro-admin.onrender.com',
 ];
 
 app.use(

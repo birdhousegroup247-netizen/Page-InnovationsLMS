@@ -45,9 +45,9 @@ const StatsCard = ({
     const TrendIcon = icons[trend.direction] || Minus;
 
     const colors = {
-      up: 'text-green-600 dark:text-green-400',
-      down: 'text-red-600 dark:text-red-400',
-      neutral: 'text-gray-600 dark:text-gray-400',
+      up: 'text-green-400 dark:text-green-300',
+      down: 'text-red-400 dark:text-red-300',
+      neutral: 'text-gray-400 dark:text-gray-300',
     };
 
     return (
@@ -57,7 +57,7 @@ const StatsCard = ({
           {trend.value}
         </span>
         {trend.label && (
-          <span className={isGradient ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}>
+          <span className={isGradient ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'}>
             {trend.label}
           </span>
         )}
@@ -80,7 +80,7 @@ const StatsCard = ({
           <p
             className={cn(
               'text-sm font-medium mb-2',
-              isGradient ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'
+              isGradient ? 'text-white/80' : 'text-gray-500 dark:text-gray-300'
             )}
           >
             {title}
@@ -104,7 +104,7 @@ const StatsCard = ({
             <p
               className={cn(
                 'text-xs mt-2',
-                isGradient ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'
+                isGradient ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'
               )}
             >
               {description}

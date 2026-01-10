@@ -121,12 +121,6 @@ export default function MyQuestions() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/instructor/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
             </Link>
 
             <div className="flex items-start gap-4 mb-3">

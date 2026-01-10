@@ -41,6 +41,16 @@ router.get(
 // STUDENT MANAGEMENT ROUTES
 // ============================================
 
+// @route   GET /api/instructor/students
+// @desc    Get all students enrolled in any of the instructor's courses
+// @access  Private (Instructor, Admin, Super Admin)
+router.get(
+  '/students',
+  authenticate,
+  authorize('instructor', 'admin', 'super_admin'),
+  (req, res, next) => StudentManagementController.getAllStudents(req, res, next)
+);
+
 // @route   GET /api/instructor/courses/:courseId/students
 // @desc    Get all students enrolled in a specific course
 // @access  Private (Instructor, Admin, Super Admin)

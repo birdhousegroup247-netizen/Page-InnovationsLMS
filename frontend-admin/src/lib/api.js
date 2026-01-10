@@ -42,7 +42,17 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle 401 Unauthorized - attempt to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh if we're on a public page (login, register, etc.) or if the request was for login
+    const isPublicPage =
+      window.location.pathname.startsWith('/login') ||
+      window.location.pathname.startsWith('/register') ||
+      window.location.pathname.startsWith('/forgot-password') ||
+      window.location.pathname.startsWith('/reset-password') ||
+      window.location.pathname === '/';
+
+    const isLoginRequest = originalRequest.url.includes('/api/auth/login');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isPublicPage && !isLoginRequest) {
       originalRequest._retry = true;
 
       try {
@@ -57,12 +67,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed - redirect to login
-        // Cookies will be cleared by backend on next request
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
 
+    // If we're on a public page, just reject the error without refresh attempt
     return Promise.reject(error);
   }
 );
@@ -76,7 +86,7 @@ export const authAPI = {
   resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
   verifyEmail: (token) => api.get(`/api/auth/verify-email/${token}`),
   refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }),
-  getProfile: () => api.get('/api/profile'),
+  getProfile: () => api.get('/api/auth/me'),
   updateProfile: (data) => api.put('/api/profile', data),
 };
 
@@ -99,7 +109,7 @@ export const coursesAPI = {
 };
 
 export const categoriesAPI = {
-  getAll: () => api.get('/api/categories'),
+  getAll: () => api.get('/api/courses/categories'),
   getById: (id) => api.get(`/api/categories/${id}`),
   create: (data) => api.post('/api/categories', data),
   update: (id, data) => api.put(`/api/categories/${id}`, data),
@@ -181,6 +191,8 @@ export const adminUsersAPI = {
   delete: (id) => api.delete(`/api/admin/users/${id}`),
   activate: (id) => api.patch(`/api/admin/users/${id}/activate`),
   getRolesStats: () => api.get('/api/admin/users/stats/roles'),
+  sendPasswordReset: (userId) => api.post(`/api/admin/users/${userId}/send-password-reset`),
+  sendVerificationEmail: (userId) => api.post(`/api/admin/users/${userId}/send-verification-email`),
 };
 
 // Admin: Course Management

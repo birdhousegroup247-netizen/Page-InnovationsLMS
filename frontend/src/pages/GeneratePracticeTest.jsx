@@ -42,7 +42,7 @@ export default function GeneratePracticeTest() {
   const fetchCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      setCategories(response.data.data || []);
+      setCategories(response.data.data.categories || []);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }
@@ -85,14 +85,29 @@ export default function GeneratePracticeTest() {
       return;
     }
 
+    if (config.category_ids.length === 0) {
+      alert('Please select at least one category');
+      return;
+    }
+
     try {
       setGenerating(true);
-      const response = await practiceTestsAPI.generate(config);
+
+      // Transform payload to match backend expectations
+      const payload = {
+        categories: config.category_ids,  // Backend expects 'categories' not 'category_ids'
+        difficulty: 'mixed',              // Backend expects single string, not distribution object
+        question_count: config.total_questions,  // Backend expects 'question_count' not 'total_questions'
+        time_limit_minutes: config.time_limit_minutes
+      };
+
+      const response = await practiceTestsAPI.generate(payload);
       const attemptId = response.data.data.attempt_id;
       navigate(`/practice-tests/${attemptId}/take`);
     } catch (error) {
       console.error('Failed to generate practice test:', error);
-      alert('Failed to generate practice test. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to generate practice test. Please try again.';
+      alert(errorMessage);
     } finally {
       setGenerating(false);
     }
@@ -121,7 +136,7 @@ export default function GeneratePracticeTest() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
@@ -151,7 +166,7 @@ export default function GeneratePracticeTest() {
         </div>
       </div>
 
-      <Container className="py-8 max-w-4xl">
+      <Container className="py-8">
         {/* Presets */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">

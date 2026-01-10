@@ -21,6 +21,7 @@ export default function MyAssignedTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [startingTest, setStartingTest] = useState(null); // Track which test is being started
   const [filter, setFilter] = useState('all'); // all, not_started, in_progress, completed
 
   useEffect(() => {
@@ -105,7 +106,10 @@ export default function MyAssignedTests() {
   };
 
   const handleStartTest = async (test) => {
+    if (startingTest) return; // Prevent multiple simultaneous starts
+
     try {
+      setStartingTest(test.id);
       const status = getTestStatus(test);
 
       if (status === 'in_progress') {
@@ -121,6 +125,7 @@ export default function MyAssignedTests() {
     } catch (error) {
       console.error('Failed to start test:', error);
       alert(error.response?.data?.message || 'Failed to start test');
+      setStartingTest(null); // Reset loading state on error
     }
   };
 
@@ -150,13 +155,13 @@ export default function MyAssignedTests() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                 <FileText className="h-8 w-8 text-white" />
               </div>
@@ -169,31 +174,62 @@ export default function MyAssignedTests() {
                 </p>
               </div>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-white mb-1">{stats.total}</div>
-                <div className="text-sm text-white/80">Total Tests</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-white mb-1">{stats.notStarted}</div>
-                <div className="text-sm text-white/80">Not Started</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-white mb-1">{stats.inProgress}</div>
-                <div className="text-sm text-white/80">In Progress</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-white mb-1">{stats.completed}</div>
-                <div className="text-sm text-white/80">Completed</div>
-              </div>
-            </div>
           </Container>
         </div>
       </div>
 
       <Container className="py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Total Enrolled</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-blue-500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">In Progress</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.inProgress}</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-purple-500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Completed</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Not Started</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.notStarted}</p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-yellow-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-4 mb-6">
           <div className="flex flex-wrap gap-2">
@@ -348,10 +384,19 @@ export default function MyAssignedTests() {
                       {canTakeTest(test) ? (
                         <Button
                           onClick={() => handleStartTest(test)}
-                          disabled={overdue && status === 'not_started'}
+                          disabled={(overdue && status === 'not_started') || startingTest === test.id}
                         >
-                          <Play className="w-4 h-4 mr-2" />
-                          {status === 'in_progress' ? 'Continue' : status === 'completed' ? 'Retake' : 'Start Test'}
+                          {startingTest === test.id ? (
+                            <>
+                              <Spinner className="w-4 h-4 mr-2" />
+                              Starting...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              {status === 'in_progress' ? 'Continue' : status === 'completed' ? 'Retake' : 'Start Test'}
+                            </>
+                          )}
                         </Button>
                       ) : (
                         <Button variant="outline" disabled>

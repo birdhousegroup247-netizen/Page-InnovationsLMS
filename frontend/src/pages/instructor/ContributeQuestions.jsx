@@ -53,7 +53,7 @@ export default function ContributeQuestions() {
   const fetchCategories = async () => {
     try {
       const response = await categoriesAPI.getAll();
-      setCategories(response.data.data || []);
+      setCategories(response.data.data.categories || []);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }
@@ -72,8 +72,9 @@ export default function ContributeQuestions() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
@@ -98,10 +99,10 @@ export default function ContributeQuestions() {
                   setSelectedQuestion(null);
                   setShowModal(true);
                 }}
-                variant="white"
-                className="bg-white text-indigo-600 hover:bg-white/90"
+                variant="outline"
+                leftIcon={<Plus className="h-4 w-4" />}
+                className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
               >
-                <Plus className="w-5 h-5 mr-2" />
                 Add Question
               </Button>
             </div>

@@ -260,13 +260,6 @@ export default function EditCourse() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/instructor/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center gap-3 mb-2">
               <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
@@ -280,7 +273,7 @@ export default function EditCourse() {
         </div>
       </div>
 
-      <Container className="py-8 max-w-4xl">
+      <Container className="py-8">
         {/* Error Alert */}
         {error && (
           <Alert variant="danger" className="mb-6">

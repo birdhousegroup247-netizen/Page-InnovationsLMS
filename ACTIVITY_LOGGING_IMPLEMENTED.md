@@ -78,6 +78,56 @@ Created:
 
 
 
+● Perfect! Here are the login credentials for testing:
+
+  🔑 LOGIN CREDENTIALS
+
+  All accounts use the same password: password123
+
+  👨‍🏫 INSTRUCTOR ACCOUNTS
+
+  1. Harold Block
+    - Email: kayleigh85@yahoo.com
+    - Password: password123
+  2. Willie Nolan
+    - Email: dorthy_osinski-schroeder@yahoo.com
+    - Password: password123
+  3. William Hermann
+    - Email: camylle_schumm@hotmail.com
+    - Password: password123
+
+  👨‍🎓 STUDENT ACCOUNTS
+
+  1. Benjamin Cormier
+    - Email: dayne.kris33@hotmail.com
+    - Password: password123
+  2. Mr. Alejandro Abshire
+    - Email: bridie_bernhard@yahoo.com
+    - Password: password123
+  3. Andrea Kirlin
+    - Email: yasmine.roberts@gmail.com
+    - Password: password123
+  4. Lewis Streich
+    - Email: monserrate10@yahoo.com
+    - Password: password123
+  5. Adrienne O'Reilly
+    - Email: brionna.homenick@gmail.com
+    - Password: password123
+
+  👑 ADMIN ACCOUNT
+
+  - Super Admin
+    - Email: admin@tekypro.com
+    - Password: password123
+
+  ---
+  Login URLs:
+  - Student/Instructor Portal: http://localhost:5173/login
+  - Admin Portal: http://localhost:5174/login
+
+  All accounts are fully populated with courses, enrollments, and sample data!
+
+✻ Sautéed for 57s
 
 
 
@@ -92,12 +142,13 @@ y
 
 
 
+tekyprolms-tekyprolms.d.aivencloud.com:22469
 
 
+tekyprolms-tekyprolms.d.aivencloud.com
 
 
-
-
+22469
 
 
 

@@ -38,6 +38,20 @@ if check_port 5000; then
     fi
 fi
 
+if check_port 5173; then
+    echo -e "${YELLOW}⚠  Warning: Port 5173 is already in use${NC}"
+    echo "   Student/Instructor frontend may already be running"
+    read -p "   Do you want to kill the process and restart? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        kill -9 $(lsof -ti:5173) 2>/dev/null
+        echo -e "${GREEN}✓  Killed process on port 5173${NC}"
+    else
+        echo "   Skipping student/instructor frontend startup"
+        SKIP_MAIN_FRONTEND=true
+    fi
+fi
+
 if check_port 5174 || check_port 5175; then
     echo -e "${YELLOW}⚠  Warning: Port 5174 or 5175 is already in use${NC}"
     echo "   Admin frontend may already be running"
@@ -48,8 +62,8 @@ if check_port 5174 || check_port 5175; then
         kill -9 $(lsof -ti:5175) 2>/dev/null
         echo -e "${GREEN}✓  Killed process on ports 5174/5175${NC}"
     else
-        echo "   Skipping frontend startup"
-        SKIP_FRONTEND=true
+        echo "   Skipping admin frontend startup"
+        SKIP_ADMIN_FRONTEND=true
     fi
 fi
 
@@ -71,23 +85,40 @@ if [ "$SKIP_BACKEND" != true ]; then
     cd ..
 fi
 
-# Wait a moment for backend to start
+# Wait a moment
 sleep 2
 
 # Start Admin Frontend
-if [ "$SKIP_FRONTEND" != true ]; then
+if [ "$SKIP_ADMIN_FRONTEND" != true ]; then
     echo ""
     echo -e "${BLUE}Starting Admin Frontend...${NC}"
     cd frontend-admin
     if [ ! -d "node_modules" ]; then
-        echo "Installing frontend dependencies..."
+        echo "Installing admin frontend dependencies..."
         npm install
     fi
     npm run dev > ../logs/frontend-admin.log 2>&1 &
-    FRONTEND_PID=$!
-    echo -e "${GREEN}✓  Admin Frontend started (PID: $FRONTEND_PID)${NC}"
-    echo "   URL: http://localhost:5174 (or 5175 if 5174 is in use)"
+    ADMIN_FRONTEND_PID=$!
+    echo -e "${GREEN}✓  Admin Frontend started (PID: $ADMIN_FRONTEND_PID)${NC}"
+    echo "   URL: http://localhost:5174"
     echo "   Logs: logs/frontend-admin.log"
+    cd ..
+fi
+
+# Start Student/Instructor Frontend
+if [ "$SKIP_MAIN_FRONTEND" != true ]; then
+    echo ""
+    echo -e "${BLUE}Starting Student/Instructor Frontend...${NC}"
+    cd frontend
+    if [ ! -d "node_modules" ]; then
+        echo "Installing student/instructor frontend dependencies..."
+        npm install
+    fi
+    npm run dev > ../logs/frontend.log 2>&1 &
+    MAIN_FRONTEND_PID=$!
+    echo -e "${GREEN}✓  Student/Instructor Frontend started (PID: $MAIN_FRONTEND_PID)${NC}"
+    echo "   URL: http://localhost:5173"
+    echo "   Logs: logs/frontend.log"
     cd ..
 fi
 
@@ -96,21 +127,21 @@ mkdir -p logs
 
 echo ""
 echo "=========================================="
-echo -e "${GREEN}✓  Development servers are running!${NC}"
+echo -e "${GREEN}✓  All Development servers are running!${NC}"
 echo "=========================================="
 echo ""
-echo "Backend API:      http://localhost:5000"
-echo "Admin Frontend:   http://localhost:5174"
-echo "Health Check:     http://localhost:5000/health"
+echo "Backend API:                  http://localhost:5000"
+echo "Admin Frontend:               http://localhost:5174"
+echo "Student/Instructor Frontend:  http://localhost:5173"
+echo "Health Check:                 http://localhost:5000/health"
 echo ""
-echo "To stop the servers, press Ctrl+C or run:"
-echo "  kill $BACKEND_PID $FRONTEND_PID"
+echo "To stop the servers, press Ctrl+C"
 echo ""
 echo "Logs are being written to the 'logs' directory"
 echo ""
 
 # Wait for user interrupt
-trap 'echo ""; echo "Stopping servers..."; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit' INT TERM
+trap 'echo ""; echo "Stopping servers..."; kill $BACKEND_PID $ADMIN_FRONTEND_PID $MAIN_FRONTEND_PID 2>/dev/null; exit' INT TERM
 
 # Keep script running
 wait

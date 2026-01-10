@@ -17,14 +17,25 @@ class ExportController {
   static async exportEnrollmentsCSV(req, res, next) {
     try {
       const { course_id, status, start_date, end_date } = req.query;
+      const { Op } = require('sequelize');
 
       const where = {};
       if (course_id) where.course_id = course_id;
-      if (status) where.status = status;
+
+      // Handle status filter (status doesn't exist in DB, use completed_at and progress_percentage)
+      if (status === 'completed') {
+        where.completed_at = { [Op.ne]: null };
+      } else if (status === 'in_progress' || status === 'active') {
+        where.completed_at = null;
+        where.progress_percentage = { [Op.gt]: 0 };
+      } else if (status === 'not_started') {
+        where.progress_percentage = 0;
+      }
+
       if (start_date || end_date) {
-        where.enrolled_at = {};
-        if (start_date) where.enrolled_at[Op.gte] = new Date(start_date);
-        if (end_date) where.enrolled_at[Op.lte] = new Date(end_date);
+        where.enrollment_date = {};
+        if (start_date) where.enrollment_date[Op.gte] = new Date(start_date);
+        if (end_date) where.enrollment_date[Op.lte] = new Date(end_date);
       }
 
       const enrollments = await Enrollment.findAll({
@@ -33,7 +44,7 @@ class ExportController {
           { model: User, as: 'student', attributes: ['id', 'full_name', 'email'] },
           { model: Course, as: 'course', attributes: ['id', 'title'] },
         ],
-        order: [['enrolled_at', 'DESC']],
+        order: [['enrollment_date', 'DESC']],
       });
 
       const { data, filename, contentType } = await ExportService.exportEnrollments(
@@ -233,9 +244,18 @@ class ExportController {
   static async generateEnrollmentReportPDF(req, res, next) {
     try {
       const { status } = req.query;
+      const { Op } = require('sequelize');
 
       const where = {};
-      if (status) where.status = status;
+      // Handle status filter (status doesn't exist in DB)
+      if (status === 'completed') {
+        where.completed_at = { [Op.ne]: null };
+      } else if (status === 'in_progress' || status === 'active') {
+        where.completed_at = null;
+        where.progress_percentage = { [Op.gt]: 0 };
+      } else if (status === 'not_started') {
+        where.progress_percentage = 0;
+      }
 
       const enrollments = await Enrollment.findAll({
         where,
@@ -243,15 +263,15 @@ class ExportController {
           { model: User, as: 'student', attributes: ['id', 'full_name', 'email'] },
           { model: Course, as: 'course', attributes: ['id', 'title'] },
         ],
-        order: [['enrolled_at', 'DESC']],
+        order: [['enrollment_date', 'DESC']],
         limit: 50, // Recent 50 for PDF
       });
 
       const enrollmentData = {
         total: enrollments.length,
-        active: enrollments.filter((e) => e.status === 'active').length,
-        completed: enrollments.filter((e) => e.status === 'completed').length,
-        dropped: enrollments.filter((e) => e.status === 'dropped').length,
+        active: enrollments.filter((e) => !e.completed_at && e.progress_percentage > 0).length,
+        completed: enrollments.filter((e) => e.completed_at !== null).length,
+        not_started: enrollments.filter((e) => e.progress_percentage === 0).length,
         recent: enrollments.slice(0, 20).map((e) => e.toJSON()),
       };
 

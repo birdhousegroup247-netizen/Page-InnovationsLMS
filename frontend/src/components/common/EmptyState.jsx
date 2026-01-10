@@ -1,0 +1,49 @@
+
+import React from 'react';
+
+const EmptyState = ({ 
+  image, 
+  title, 
+  description, 
+  action,
+  icon,
+  className = "" 
+}) => {
+  return (
+    <div className={`flex flex-col items-center justify-center p-8 text-center bg-gray-50/50 rounded-lg border border-dashed border-gray-200 ${className}`}>
+      {image ? (
+        <div className="mb-6 w-48 h-48 flex items-center justify-center">
+          <img 
+            src={image} 
+            alt={title || "Empty state"} 
+            className="w-full h-full object-contain opacity-90 hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      ) : icon ? (
+        <div className="mb-6 w-20 h-20 flex items-center justify-center text-gray-400 bg-gray-100 rounded-full">
+          {React.cloneElement(icon, { className: `w-10 h-10 ${icon.props.className || ''}` })}
+        </div>
+      ) : null}
+      
+      {title && (
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">
+          {title}
+        </h3>
+      )}
+      
+      {description && (
+        <p className="text-gray-500 max-w-md mb-6 leading-relaxed">
+          {description}
+        </p>
+      )}
+      
+      {action && (
+        <div className="mt-2">
+          {action}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default EmptyState;

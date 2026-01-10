@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import { BookOpen, Award, Clock, TrendingUp, PlayCircle, ArrowRight, Star, Sparkles, Zap, Target } from 'lucide-react';
 import { profileAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/common/EmptyState';
+import emptyCourses from '../assets/empty-courses.svg';
+import emptyRecommendations from '../assets/empty-recommendations.svg';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -259,19 +262,12 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recentCourses.length === 0 ? (
               <div className="col-span-full">
-                <div className="relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/5 to-brand-purple/5 dark:from-brand-blue/5 dark:to-brand-purple/5"></div>
-                  <div className="relative">
-                    <div className="relative inline-block mb-6">
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-blue to-brand-purple rounded-full blur-2xl opacity-20"></div>
-                      <BookOpen className="relative w-20 h-20 mx-auto text-brand-blue dark:text-brand-purple" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2">
-                      Start Your Learning Journey
-                    </h3>
-                    <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
-                      Explore our courses and begin your path to mastery
-                    </p>
+                <EmptyState
+                  image={emptyCourses}
+                  icon={<BookOpen className="w-16 h-16" />}
+                  title="Start Your Learning Journey"
+                  description="Explore our courses and begin your path to mastery"
+                  action={
                     <Link
                       to="/courses"
                       className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-bold hover:shadow-2xl hover:shadow-brand-blue/50 transition-all duration-300 transform hover:scale-105"
@@ -279,8 +275,8 @@ export default function Dashboard() {
                       <BookOpen className="w-5 h-5" />
                       Browse Courses
                     </Link>
-                  </div>
-                </div>
+                  }
+                />
               </div>
             ) : (
               recentCourses.map((course, index) => (
@@ -390,21 +386,12 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {recommendations.length === 0 ? (
               <div className="col-span-full">
-                <div className="relative overflow-hidden bg-transparent backdrop-blur-2xl rounded-3xl p-16 text-center border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/5 to-brand-red/5 dark:from-brand-purple/5 dark:to-brand-red/5"></div>
-                  <div className="relative">
-                    <div className="relative inline-block mb-6">
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-purple to-brand-red rounded-full blur-2xl opacity-20"></div>
-                      <Star className="relative w-20 h-20 mx-auto text-brand-purple dark:text-brand-red" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2">
-                      No Recommendations Yet
-                    </h3>
-                    <p className="text-gray-600 dark:text-text-dark-secondary">
-                      Check back soon for personalized course suggestions
-                    </p>
-                  </div>
-                </div>
+                <EmptyState
+                  image={emptyRecommendations}
+                  icon={<Star className="w-16 h-16" />}
+                  title="No Recommendations Yet"
+                  description="Check back soon for personalized course suggestions"
+                />
               </div>
             ) : (
               recommendations.map((course, index) => (

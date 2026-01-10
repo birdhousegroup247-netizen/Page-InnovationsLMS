@@ -114,3 +114,6 @@ docs/.vuepress/dist
 
 # Local development
 .local
+
+# Credentials (do not commit!)
+LOGIN_CREDENTIALS.md

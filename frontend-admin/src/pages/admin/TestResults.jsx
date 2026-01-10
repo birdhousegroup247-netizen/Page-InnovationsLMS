@@ -185,7 +185,7 @@ export default function TestResults() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
@@ -194,9 +194,9 @@ export default function TestResults() {
             <Button
               variant="outline"
               onClick={() => navigate('/tests')}
-              className="mb-4 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+              className="mb-4 bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Tests
             </Button>
 

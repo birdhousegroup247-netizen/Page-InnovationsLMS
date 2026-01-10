@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Container, EmptyState } from '../components/layout';
 import { Badge, Button, Spinner } from '../components/ui';
+import emptyCourses from '../assets/empty-courses.svg';
 import { cn } from '../utils/cn';
 
 export default function Courses() {
@@ -248,6 +249,7 @@ export default function Courses() {
           {/* Empty State */}
           {!loading && courses.length === 0 && (
             <EmptyState
+              image={emptyCourses}
               icon={<BookOpen className="w-16 h-16" />}
               title="No courses found"
               description="Try adjusting your filters or search query"

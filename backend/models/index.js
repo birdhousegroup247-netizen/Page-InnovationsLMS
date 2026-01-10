@@ -3,6 +3,7 @@
  * Central export point for all Sequelize models
  */
 
+const { sequelize } = require('../config/database');
 const User = require('./User');
 const PasswordReset = require('./PasswordReset');
 const InstructorApplication = require('./InstructorApplication');
@@ -86,6 +87,7 @@ ContentProgress.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'conten
 QuestionBank.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
 QuestionBank.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
 QuestionBank.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+QuestionBank.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 
 // Knowledge Article relationships
 KnowledgeArticle.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
@@ -183,6 +185,7 @@ ActivityLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 User.hasMany(ActivityLog, { foreignKey: 'user_id', as: 'activity_logs' });
 
 module.exports = {
+  sequelize,  // Export sequelize instance
   User,
   PasswordReset,
   InstructorApplication,

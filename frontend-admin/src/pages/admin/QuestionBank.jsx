@@ -19,6 +19,8 @@ import { adminQuestionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { Button, Input, Select, Badge, Spinner, Modal, Dropdown, Table } from '../../components/ui';
 import Container from '../../components/layout/Container';
 import StatsCard from '../../components/ui/StatsCard';
+import { EmptyState } from '../../components/layout';
+import emptyQuestions from '../../assets/empty-questions.svg';
 import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 import QuestionModal from '../../components/questions/QuestionModal';
@@ -260,7 +262,7 @@ export default function QuestionBank() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
@@ -283,16 +285,18 @@ export default function QuestionBank() {
               <div className="flex gap-2">
                 <Button
                   onClick={() => setShowBulkImportModal(true)}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+                  variant="ghost"
+                  leftIcon={<Upload className="h-4 w-4" />}
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
                   Import CSV
                 </Button>
                 <Button
                   onClick={handleAddQuestion}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+                  variant="ghost"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Add Question
                 </Button>
               </div>
@@ -364,6 +368,7 @@ export default function QuestionBank() {
           <Select
             value={filters.course_id}
             onChange={(e) => handleFilterChange('course_id', e.target.value)}
+            placeholder="Filter by course"
             className="!h-12"
             options={[
               { value: '', label: 'All Courses' },
@@ -375,6 +380,7 @@ export default function QuestionBank() {
           <Select
             value={filters.difficulty}
             onChange={(e) => handleFilterChange('difficulty', e.target.value)}
+            placeholder="Filter by difficulty"
             className="!h-12"
             options={[
               { value: '', label: 'All Difficulties' },
@@ -388,6 +394,7 @@ export default function QuestionBank() {
           <Select
             value={filters.question_type}
             onChange={(e) => handleFilterChange('question_type', e.target.value)}
+            placeholder="Filter by question type"
             className="!h-12"
             options={[
               { value: '', label: 'All Types' },
@@ -467,19 +474,18 @@ export default function QuestionBank() {
             <Spinner size="lg" />
           </div>
         ) : questions.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <HelpCircle className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No questions found
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Get started by adding your first question
-            </p>
-            <Button onClick={handleAddQuestion}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Question
-            </Button>
-          </div>
+          <EmptyState
+            image={emptyQuestions}
+            icon={<HelpCircle className="w-16 h-16" />}
+            title="No questions found"
+            description={filters.search || filters.course_id || filters.difficulty ? "No questions match your current filters." : "Get started by adding your first question to the bank."}
+            action={
+              <Button onClick={handleAddQuestion}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Question
+              </Button>
+            }
+          />
         ) : (
           <>
             <Table>

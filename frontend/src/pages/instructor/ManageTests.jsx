@@ -71,7 +71,7 @@ export default function ManageTests() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
@@ -95,10 +95,10 @@ export default function ManageTests() {
               </div>
               <Button
                 onClick={() => navigate('/instructor/tests/create')}
-                variant="white"
-                className="bg-white text-indigo-600 hover:bg-white/90"
+                variant="ghost"
+                leftIcon={<Plus className="h-4 w-4" />}
+                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
               >
-                <Plus className="w-5 h-5 mr-2" />
                 Create Test
               </Button>
             </div>

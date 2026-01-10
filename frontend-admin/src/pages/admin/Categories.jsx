@@ -18,6 +18,7 @@ import {
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import emptyCategories from '../../assets/empty-categories.svg';
 
 export default function Categories() {
   const { user } = useAuth();
@@ -162,13 +163,6 @@ export default function Categories() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/admin/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -185,9 +179,10 @@ export default function Categories() {
               </div>
               <Button
                 onClick={() => handleOpenModal('create')}
-                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+                variant="ghost"
+                leftIcon={<Plus className="h-4 w-4" />}
+                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
               >
-                <Plus className="w-4 h-4 mr-2" />
                 Add Category
               </Button>
             </div>
@@ -305,9 +300,10 @@ export default function Categories() {
         {/* Empty State */}
         {!loading && categories.length === 0 && (
           <EmptyState
+            image={emptyCategories}
             icon={<FolderTree className="w-16 h-16" />}
             title="No categories found"
-            description="Get started by creating your first category"
+            description="Get started by creating your first category to organize your courses."
             action={
               <Button
                 variant="primary"

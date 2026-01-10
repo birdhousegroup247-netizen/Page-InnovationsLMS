@@ -33,8 +33,15 @@ class StudentManagementController {
 
       // Build where clause
       const whereClause = { course_id: courseId };
-      if (status) {
-        whereClause.status = status;
+
+      // Filter by status (calculated from completed_at and progress_percentage)
+      if (status === 'completed') {
+        whereClause.completed_at = { [Op.ne]: null };
+      } else if (status === 'in_progress') {
+        whereClause.completed_at = null;
+        whereClause.progress_percentage = { [Op.gt]: 0 };
+      } else if (status === 'not_started') {
+        whereClause.progress_percentage = 0;
       }
 
       // Build student search
@@ -61,41 +68,52 @@ class StudentManagementController {
         ],
         limit: parseInt(limit),
         offset: offset,
-        order: [['enrolled_at', 'DESC']],
+        order: [['enrollment_date', 'DESC']],
         distinct: true
       });
 
       // Get progress details for each student
       const studentsWithProgress = await Promise.all(
         enrollments.map(async (enrollment) => {
-          // Get completed content count
+          // Get completed content count using CourseModule association
+          const { CourseModule } = require('../../models');
           const completedContent = await ContentProgress.count({
             where: {
               student_id: enrollment.student_id,
-              status: 'completed'
+              completed: true  // Fixed: use completed boolean instead of status
             },
             include: [{
               model: ModuleContent,
               as: 'content',
               required: true,
               include: [{
-                model: Course,
-                as: 'course',
-                where: { id: courseId },
+                model: CourseModule,
+                as: 'module',
+                required: true,
+                where: { course_id: courseId },
                 attributes: []
               }]
             }]
           });
 
-          // Get total content count
+          // Get total content count using CourseModule association
           const totalContent = await ModuleContent.count({
             include: [{
-              model: Course,
-              as: 'course',
-              where: { id: courseId },
+              model: CourseModule,
+              as: 'module',
+              required: true,
+              where: { course_id: courseId },
               attributes: []
             }]
           });
+
+          // Calculate status based on progress and completion
+          let enrollmentStatus = 'not_started';
+          if (enrollment.completed_at) {
+            enrollmentStatus = 'completed';
+          } else if (enrollment.progress_percentage > 0) {
+            enrollmentStatus = 'in_progress';
+          }
 
           return {
             enrollment_id: enrollment.id,
@@ -104,13 +122,13 @@ class StudentManagementController {
             student_email: enrollment.student?.email,
             student_avatar: enrollment.student?.profile_picture,
             student_phone: enrollment.student?.phone,
-            enrolled_at: enrollment.enrolled_at,
-            progress_percentage: enrollment.progress_percentage || 0,
-            status: enrollment.status,
+            enrollment_date: enrollment.enrollment_date,
+            progress_percentage: parseFloat(enrollment.progress_percentage) || 0,
+            status: enrollmentStatus,
             completed_content: completedContent,
             total_content: totalContent,
             last_accessed: enrollment.last_accessed,
-            completion_date: enrollment.completion_date
+            completed_at: enrollment.completed_at
           };
         })
       );
@@ -221,6 +239,14 @@ class StudentManagementController {
 
       const progressByModule = Object.values(moduleMap);
 
+      // Calculate status based on progress and completion
+      let enrollmentStatus = 'not_started';
+      if (enrollment.completed_at) {
+        enrollmentStatus = 'completed';
+      } else if (enrollment.progress_percentage > 0) {
+        enrollmentStatus = 'in_progress';
+      }
+
       return ApiResponse.success(res, {
         student: {
           id: enrollment.student.id,
@@ -229,11 +255,11 @@ class StudentManagementController {
           avatar: enrollment.student.profile_picture
         },
         enrollment: {
-          enrolled_at: enrollment.enrolled_at,
-          status: enrollment.status,
-          progress_percentage: enrollment.progress_percentage || 0,
+          enrollment_date: enrollment.enrollment_date,
+          status: enrollmentStatus,
+          progress_percentage: parseFloat(enrollment.progress_percentage) || 0,
           last_accessed: enrollment.last_accessed,
-          completion_date: enrollment.completion_date
+          completed_at: enrollment.completed_at
         },
         progress_by_module: progressByModule
       }, 'Student progress retrieved successfully');
@@ -344,17 +370,23 @@ class StudentManagementController {
       // Build where clause
       const whereClause = { course_id: courseId };
 
-      if (status) {
-        whereClause.status = status;
+      // Filter by status (calculated from completed_at and progress_percentage)
+      if (status === 'completed') {
+        whereClause.completed_at = { [Op.ne]: null };
+      } else if (status === 'in_progress') {
+        whereClause.completed_at = null;
+        whereClause.progress_percentage = { [Op.gt]: 0 };
+      } else if (status === 'not_started') {
+        whereClause.progress_percentage = 0;
       }
 
       if (startDate || endDate) {
-        whereClause.enrolled_at = {};
+        whereClause.enrollment_date = {};
         if (startDate) {
-          whereClause.enrolled_at[Op.gte] = new Date(startDate);
+          whereClause.enrollment_date[Op.gte] = new Date(startDate);
         }
         if (endDate) {
-          whereClause.enrolled_at[Op.lte] = new Date(endDate);
+          whereClause.enrollment_date[Op.lte] = new Date(endDate);
         }
       }
 
@@ -367,34 +399,140 @@ class StudentManagementController {
             attributes: ['id', 'full_name', 'email', 'profile_picture']
           }
         ],
-        order: [['enrolled_at', 'DESC']]
+        order: [['enrollment_date', 'DESC']]
       });
 
       // Calculate statistics
       const stats = {
         total: enrollments.length,
-        in_progress: enrollments.filter(e => e.status === 'in_progress').length,
-        completed: enrollments.filter(e => e.status === 'completed').length,
+        in_progress: enrollments.filter(e => !e.completed_at && e.progress_percentage > 0).length,
+        completed: enrollments.filter(e => e.completed_at !== null).length,
+        not_started: enrollments.filter(e => e.progress_percentage === 0).length,
         avg_progress: enrollments.length > 0
-          ? enrollments.reduce((sum, e) => sum + (e.progress_percentage || 0), 0) / enrollments.length
+          ? enrollments.reduce((sum, e) => sum + (parseFloat(e.progress_percentage) || 0), 0) / enrollments.length
           : 0
       };
 
       return ApiResponse.success(res, {
-        enrollments: enrollments.map(e => ({
-          id: e.id,
-          student_id: e.student_id,
-          student_name: e.student?.full_name,
-          student_email: e.student?.email,
-          student_avatar: e.student?.profile_picture,
-          enrolled_at: e.enrolled_at,
-          progress_percentage: e.progress_percentage || 0,
-          status: e.status,
-          last_accessed: e.last_accessed,
-          completion_date: e.completion_date
-        })),
+        enrollments: enrollments.map(e => {
+          // Calculate status
+          let enrollmentStatus = 'not_started';
+          if (e.completed_at) {
+            enrollmentStatus = 'completed';
+          } else if (e.progress_percentage > 0) {
+            enrollmentStatus = 'in_progress';
+          }
+
+          return {
+            id: e.id,
+            student_id: e.student_id,
+            student_name: e.student?.full_name,
+            student_email: e.student?.email,
+            student_avatar: e.student?.profile_picture,
+            enrollment_date: e.enrollment_date,
+            progress_percentage: parseFloat(e.progress_percentage) || 0,
+            status: enrollmentStatus,
+            last_accessed: e.last_accessed,
+            completed_at: e.completed_at
+          };
+        }),
         stats
       }, 'Course enrollments retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get all students enrolled in any of the instructor's courses
+   * GET /api/instructor/students
+   */
+  static async getAllStudents(req, res, next) {
+    try {
+      const instructorId = req.user.id;
+      const { search, page = 1, limit = 20 } = req.query;
+
+      // Get all courses by this instructor
+      const courses = await Course.findAll({
+        where: { instructor_id: instructorId },
+        attributes: ['id', 'title']
+      });
+
+      const courseIds = courses.map(c => c.id);
+
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, {
+          students: [],
+          pagination: {
+            total: 0,
+            page: 1,
+            limit: parseInt(limit),
+            totalPages: 0
+          }
+        }, 'No students found');
+      }
+
+      // Build student search
+      const studentWhere = {};
+      if (search) {
+        studentWhere[Op.or] = [
+          { full_name: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } }
+        ];
+      }
+
+      // Get unique students across all courses
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+
+      const { count, rows: enrollments } = await Enrollment.findAndCountAll({
+        where: {
+          course_id: { [Op.in]: courseIds }
+        },
+        include: [
+          {
+            model: User,
+            as: 'student',
+            attributes: ['id', 'full_name', 'email', 'profile_picture', 'phone'],
+            where: studentWhere
+          },
+          {
+            model: Course,
+            as: 'course',
+            attributes: ['id', 'title']
+          }
+        ],
+        limit: parseInt(limit),
+        offset: offset,
+        order: [['enrollment_date', 'DESC']],
+        distinct: true,
+        col: 'student_id'
+      });
+
+      // Format student data
+      const students = enrollments.map(enrollment => ({
+        enrollment_id: enrollment.id,
+        student_id: enrollment.student_id,
+        student_name: enrollment.student?.full_name,
+        student_email: enrollment.student?.email,
+        student_avatar: enrollment.student?.profile_picture,
+        student_phone: enrollment.student?.phone,
+        course_id: enrollment.course_id,
+        course_title: enrollment.course?.title,
+        enrollment_date: enrollment.enrollment_date,
+        progress_percentage: parseFloat(enrollment.progress_percentage) || 0,
+        last_accessed: enrollment.last_accessed,
+        completed_at: enrollment.completed_at
+      }));
+
+      return ApiResponse.success(res, {
+        students,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(count / parseInt(limit))
+        }
+      }, 'All students retrieved successfully');
     } catch (error) {
       next(error);
     }

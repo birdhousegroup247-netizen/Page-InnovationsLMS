@@ -7,8 +7,11 @@ const { authenticate, authorize } = require('../../middleware/auth/authMiddlewar
 // CERTIFICATE ROUTES (Student)
 // ============================================================================
 
-// Get my certificates
-router.get('/my', authenticate, authorize('student'), CertificateController.getMyCertificates);
+// Get my certificates (default route)
+router.get('/', authenticate, CertificateController.getMyCertificates);
+
+// Get my certificates (explicit route for clarity)
+router.get('/my', authenticate, CertificateController.getMyCertificates);
 
 // Check if certificate is available for a course
 router.get('/check/:courseId', authenticate, authorize('student'), CertificateController.checkCertificateAvailability);

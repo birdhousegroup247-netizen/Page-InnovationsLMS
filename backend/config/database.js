@@ -26,6 +26,12 @@ const sequelize = new Sequelize(
     },
 
     timezone: '+00:00',
+    dialectOptions: process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // Required for some cloud providers like Heroku/Render/Aiven with self-signed certs
+      }
+    } : {}
   }
 );
 

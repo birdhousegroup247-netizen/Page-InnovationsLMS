@@ -26,4 +26,7 @@ router.get('/instructors', AnalyticsController.getInstructorAnalytics);
 // Enrollment analytics
 router.get('/enrollments', AnalyticsController.getEnrollmentAnalytics);
 
+// Default analytics endpoint (enrollment analytics)
+router.get('/', AnalyticsController.getEnrollmentAnalytics);
+
 module.exports = router;

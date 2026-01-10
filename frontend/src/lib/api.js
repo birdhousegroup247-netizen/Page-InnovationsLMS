@@ -42,7 +42,17 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle 401 Unauthorized - attempt to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh if we're on a public page (login, register, etc.) or if the request was for login
+    const isPublicPage =
+      window.location.pathname.startsWith('/login') ||
+      window.location.pathname.startsWith('/register') ||
+      window.location.pathname.startsWith('/forgot-password') ||
+      window.location.pathname.startsWith('/reset-password') ||
+      window.location.pathname === '/';
+
+    const isLoginRequest = originalRequest.url.includes('/api/auth/login');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isPublicPage && !isLoginRequest) {
       originalRequest._retry = true;
 
       try {
@@ -57,12 +67,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed - redirect to login
-        // Cookies will be cleared by backend on next request
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
 
+    // If we're on a public page, just reject the error without refresh attempt
     return Promise.reject(error);
   }
 );
@@ -76,8 +86,8 @@ export const authAPI = {
   resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
   verifyEmail: (token) => api.get(`/api/auth/verify-email/${token}`),
   refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }),
-  getProfile: () => api.get('/api/auth/profile'),
-  updateProfile: (data) => api.put('/api/auth/profile', data),
+  getProfile: () => api.get('/api/auth/me'),
+  updateProfile: (data) => api.put('/api/profile', data),
 };
 
 export const coursesAPI = {
@@ -127,7 +137,7 @@ export const instructorAPI = {
 };
 
 export const categoriesAPI = {
-  getAll: () => api.get('/api/categories'),
+  getAll: () => api.get('/api/courses/categories'),
   getById: (id) => api.get(`/api/categories/${id}`),
   create: (data) => api.post('/api/categories', data),
   update: (id, data) => api.put(`/api/categories/${id}`, data),
@@ -135,7 +145,7 @@ export const categoriesAPI = {
 };
 
 export const enrollmentsAPI = {
-  getMyCourses: () => api.get('/api/enrollments/my-courses'),
+  getMyCourses: () => api.get('/api/courses/my/enrollments'),
   getEnrollment: (courseId) => api.get(`/api/enrollments/${courseId}`),
   unenroll: (courseId) => api.delete(`/api/enrollments/${courseId}`),
 };
@@ -163,20 +173,40 @@ export const practiceTestsAPI = {
   getResults: (attemptId) => api.get(`/api/practice-tests/${attemptId}/results`),
 };
 
-// Assigned Tests API (Student)
+// Assigned Tests API (Student & Instructor)
 export const assignedTestsAPI = {
+  // Student endpoints
   getMyTests: (params) => api.get('/api/assigned-tests/student/my-tests', { params }),
   getTest: (testId) => api.get(`/api/assigned-tests/student/${testId}`),
   startAttempt: (testId) => api.post(`/api/assigned-tests/student/${testId}/start`),
   submitAttempt: (attemptId, data) => api.post(`/api/assigned-tests/student/attempts/${attemptId}/submit`, data),
   getAttempt: (attemptId) => api.get(`/api/assigned-tests/student/attempts/${attemptId}`),
   getResults: (attemptId) => api.get(`/api/assigned-tests/student/attempts/${attemptId}/results`),
+
+  // Instructor endpoints
+  getInstructorTests: (params) => api.get('/api/assigned-tests/my-tests', { params }),
+  createTest: (data) => api.post('/api/assigned-tests/', data),
+  updateTest: (testId, data) => api.put(`/api/assigned-tests/${testId}`, data),
+  deleteTest: (testId) => api.delete(`/api/assigned-tests/${testId}`),
+  getTestById: (testId) => api.get(`/api/assigned-tests/${testId}`),
+  addQuestionsToTest: (testId, data) => api.post(`/api/assigned-tests/${testId}/questions`, data),
+  assignTestToStudents: (testId, data) => api.post(`/api/assigned-tests/${testId}/assign`, data),
+  getTestResults: (testId, params) => api.get(`/api/assigned-tests/${testId}/results`, { params }),
+  getTestAttempts: (testId, params) => api.get(`/api/assigned-tests/${testId}/attempts`, { params }),
 };
 
-// Questions API (for practice test generation)
+// Questions API (for practice test generation & instructor contributions)
 export const questionsAPI = {
   getApproved: (params) => api.get('/api/questions/approved', { params }),
   getByCategory: (categoryId, params) => api.get(`/api/questions/category/${categoryId}`, { params }),
+  getAll: (params) => api.get('/api/questions', { params }),
+  getById: (id) => api.get(`/api/questions/${id}`),
+  create: (payload) => api.post('/api/questions/', payload),
+  update: (id, payload) => api.put(`/api/questions/${id}`, payload),
+  delete: (id) => api.delete(`/api/questions/${id}`),
+  getMyContributions: (params) => api.get('/api/instructor/questions/my', { params }),
+  updateStatus: (id, status) => api.put(`/api/questions/${id}/status`, { status }),
+  bulkImport: (data) => api.post('/api/questions/bulk-import', data),
 };
 
 export const notificationsAPI = {

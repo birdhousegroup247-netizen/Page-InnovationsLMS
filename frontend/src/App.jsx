@@ -41,6 +41,7 @@ const MyAssignedTests = lazy(() => import('./pages/MyAssignedTests'));
 
 // Instructor pages - lazy loaded
 const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
+const InstructorCourses = lazy(() => import('./pages/instructor/InstructorCourses'));
 const CreateCourse = lazy(() => import('./pages/instructor/CreateCourse'));
 const EditCourse = lazy(() => import('./pages/instructor/EditCourse'));
 const ManageModules = lazy(() => import('./pages/instructor/ManageModules'));
@@ -54,6 +55,7 @@ const CourseAnalytics = lazy(() => import('./pages/instructor/CourseAnalytics'))
 const Announcements = lazy(() => import('./pages/instructor/Announcements'));
 const EnrollmentManagement = lazy(() => import('./pages/instructor/EnrollmentManagement'));
 const ManageTests = lazy(() => import('./pages/instructor/ManageTests'));
+const CreateTest = lazy(() => import('./pages/instructor/CreateTest'));
 const ContributeQuestions = lazy(() => import('./pages/instructor/ContributeQuestions'));
 
 // Admin pages - lazy loaded
@@ -150,8 +152,14 @@ function PublicRoute({ children }) {
   }
 
   if (isAuthenticated && user) {
-    // NEW: Redirect to role selector instead of auto-redirect
-    return <Navigate to="/role-selector" replace />;
+    // Redirect based on user role
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (user.role === 'instructor') {
+      return <Navigate to="/instructor/dashboard" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return children;
@@ -194,8 +202,14 @@ function RoleBasedRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // NEW: Redirect to role selector
-  return <Navigate to="/role-selector" replace />;
+  // Redirect based on user role
+  if (user.role === 'admin' || user.role === 'super_admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  } else if (user.role === 'instructor') {
+    return <Navigate to="/instructor/dashboard" replace />;
+  } else {
+    return <Navigate to="/dashboard" replace />;
+  }
 }
 
 function App() {
@@ -292,6 +306,14 @@ function App() {
             }
           />
           <Route
+            path="/instructor/courses"
+            element={
+              <InstructorRoute>
+                <InstructorCourses />
+              </InstructorRoute>
+            }
+          />
+          <Route
             path="/instructor/courses/create"
             element={
               <InstructorRoute>
@@ -359,7 +381,7 @@ function App() {
             path="/instructor/tests/create"
             element={
               <InstructorRoute>
-                <TakeTest />
+                <CreateTest />
               </InstructorRoute>
             }
           />

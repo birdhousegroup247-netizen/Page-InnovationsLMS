@@ -37,6 +37,8 @@ import {
   Dropdown
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
+import { EmptyState } from '../../components/layout';
+import emptyUsers from '../../assets/empty-users.svg';
 import { cn } from '../../utils/cn';
 import { validateUserForm, formatErrors } from '../../utils/validation';
 
@@ -514,7 +516,8 @@ export default function Users() {
                 <Button
                   onClick={handleExportCSV}
                   disabled={users.length === 0}
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                  variant="ghost"
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                   title="Export users to CSV file"
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -533,10 +536,11 @@ export default function Users() {
                     setFormErrors({});
                     setIsCreateModalOpen(true);
                   }}
-                  className="bg-white text-brand-blue hover:bg-white/90"
+                  variant="ghost"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                   title="Create a new user account"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Create User
                 </Button>
               </div>
@@ -663,6 +667,7 @@ export default function Users() {
               <Select
                 value={filters.role}
                 onChange={handleRoleChange}
+                placeholder="Filter by role"
                 className="!h-12"
                 options={[
                   { value: '', label: 'All Roles' },
@@ -676,6 +681,7 @@ export default function Users() {
               <Select
                 value={filters.status}
                 onChange={handleStatusChange}
+                placeholder="Filter by status"
                 className="!h-12"
                 options={[
                   { value: '', label: 'All Status' },
@@ -722,9 +728,21 @@ export default function Users() {
               <Spinner size="lg" />
             </div>
           ) : users.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500 dark:text-text-dark-secondary">No users found</p>
-            </div>
+            <EmptyState
+              image={emptyUsers}
+              icon={<UsersIcon className="w-16 h-16" />}
+              title="No users found"
+              description={filters.search || filters.role || filters.status ? "No users match your current filters." : "Get started by adding your first user."}
+              action={
+                <Button
+                  variant="primary"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  leftIcon={<Plus className="w-4 h-4" />}
+                >
+                  Create User
+                </Button>
+              }
+            />
           ) : (
             <>
               <div className="overflow-x-auto">

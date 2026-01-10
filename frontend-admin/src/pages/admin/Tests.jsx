@@ -225,9 +225,10 @@ export default function Tests() {
               </div>
               <Button
                 onClick={handleCreateTest}
-                className="bg-white text-brand-blue hover:bg-white/90"
+                variant="ghost"
+                leftIcon={<Plus className="h-4 w-4" />}
+                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
               >
-                <Plus className="w-5 h-5 mr-2" />
                 Create Test
               </Button>
             </div>
@@ -289,6 +290,7 @@ export default function Tests() {
             <Select
               value={filters.course_id}
               onChange={(e) => handleFilterChange('course_id', e.target.value)}
+              placeholder="Filter by course"
             >
               <option value="">All Courses</option>
               {courses.map(course => (
@@ -303,6 +305,7 @@ export default function Tests() {
             <Select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
+              placeholder="Filter by status"
             >
               <option value="">All Status</option>
               <option value="draft">Draft</option>

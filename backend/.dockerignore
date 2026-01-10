@@ -1,0 +1,118 @@
+# ============================================================================
+# Backend Docker Ignore File
+# Excludes unnecessary files from Docker build context
+# ============================================================================
+
+# Node modules (will be installed via npm ci)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (use build args or secrets instead)
+.env
+.env.*
+*.env
+
+# Tests and test files
+__tests__/
+*.test.js
+*.spec.js
+test-*.js
+coverage/
+.nyc_output
+
+# Development files
+test-db-debug.js
+test-services.js
+reset-test-passwords.js
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in runtime)
+*.md
+!README.md
+docs/
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Logs (generated at runtime)
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Build artifacts (if any)
+dist/
+build/
+
+# Database files (should be in volumes)
+*.sql
+*.dump
+*.sqlite
+*.db
+
+# Backup files
+backups/
+*.bak
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Scripts directory (development scripts)
+scripts/seedDatabase.js
+scripts/testDatabaseIntegrity.js
+scripts/auditDatabase.js
+scripts/clearDatabase.js
+scripts/createAdmin.js
+scripts/makeAdmin.js
+scripts/resetAdminPassword.js
+scripts/resetAdminPasswordForce.js
+scripts/getLoginCredentials.js
+scripts/listUsers.js
+scripts/testAdminEndpoints.js
+scripts/clear-rate-limits.js
+
+# Jest config
+jest.config.js
+jest.setup.js
+
+# Development scripts
+start-dev.sh
+run-all-tests.sh
+test-backend-api.sh
+
+# PM2 files
+ecosystem.config.js
+.pm2
+
+# Uploads directory (should be in volumes)
+uploads/*
+
+# Docker files (no need to copy into image)
+Dockerfile
+.dockerignore
+docker-compose.yml

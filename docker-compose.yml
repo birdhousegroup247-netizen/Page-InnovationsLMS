@@ -2,8 +2,9 @@
 # TekyPro LMS - Docker Compose Configuration
 # For local development and testing
 # ============================================================================
-
-version: '3.8'
+# SECURITY WARNING: Always use strong passwords via environment variables
+# NEVER use the default fallback values in production!
+# ============================================================================
 
 services:
   # MySQL Database
@@ -12,10 +13,11 @@ services:
     container_name: tekypro_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-teky_root_password}
+      # SECURITY: Set these in .env file - fallback values are for dev ONLY
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Error: DB_ROOT_PASSWORD not set in environment}
       MYSQL_DATABASE: ${DB_NAME:-tekypro_lms}
-      MYSQL_USER: ${DB_USER:-teky_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-teky_password}
+      MYSQL_USER: ${DB_USER:?Error: DB_USER not set in environment}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD not set in environment}
     ports:
       - "3306:3306"
     volumes:
@@ -36,13 +38,17 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
+    # SECURITY: Redis with password authentication
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:?Error: REDIS_PASSWORD not set in environment}
     volumes:
       - redis_data:/data
     networks:
       - tekypro_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,8 +73,9 @@ services:
       REDIS_ENABLED: "true"
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Error: REDIS_PASSWORD not set in environment}
+      JWT_SECRET: ${JWT_SECRET:?Error: JWT_SECRET not set in environment}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Error: JWT_REFRESH_SECRET not set in environment}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       ADMIN_FRONTEND_URL: ${ADMIN_FRONTEND_URL:-http://localhost:5174}
     depends_on:
@@ -148,8 +155,9 @@ services:
     ports:
       - "3001:3000"
     environment:
+      # SECURITY: Set strong password in .env file
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Error: GRAFANA_PASSWORD not set in environment}
     volumes:
       - grafana_data:/var/lib/grafana
     networks:

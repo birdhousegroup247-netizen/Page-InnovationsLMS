@@ -45,9 +45,9 @@ const StatsCard = ({
     const TrendIcon = icons[trend.direction] || Minus;
 
     const colors = {
-      up: 'text-green-600',
-      down: 'text-red-600',
-      neutral: 'text-gray-600',
+      up: 'text-green-400 dark:text-green-300',
+      down: 'text-red-400 dark:text-red-300',
+      neutral: 'text-gray-400 dark:text-gray-300',
     };
 
     return (
@@ -57,7 +57,7 @@ const StatsCard = ({
           {trend.value}
         </span>
         {trend.label && (
-          <span className={isGradient ? 'text-white/70' : 'text-text-muted'}>
+          <span className={isGradient ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'}>
             {trend.label}
           </span>
         )}
@@ -80,7 +80,7 @@ const StatsCard = ({
           <p
             className={cn(
               'text-sm font-medium mb-2',
-              isGradient ? 'text-white/80' : 'text-text-secondary'
+              isGradient ? 'text-white/80' : 'text-gray-400 dark:text-gray-300'
             )}
           >
             {title}
@@ -90,7 +90,7 @@ const StatsCard = ({
           <h3
             className={cn(
               'text-3xl font-bold mb-1',
-              isGradient ? 'text-white' : 'text-text-primary'
+              isGradient ? 'text-white' : 'text-white dark:text-white'
             )}
           >
             {value}
@@ -104,7 +104,7 @@ const StatsCard = ({
             <p
               className={cn(
                 'text-xs mt-2',
-                isGradient ? 'text-white/70' : 'text-text-muted'
+                isGradient ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'
               )}
             >
               {description}
@@ -141,14 +141,14 @@ export const SimpleStatsCard = ({
   return (
     <div
       className={cn(
-        'rounded-lg bg-white border border-border p-4 hover:shadow-sm transition-all',
+        'rounded-lg bg-white dark:bg-dark-800 border border-border dark:border-border-dark p-4 hover:shadow-sm transition-all',
         className
       )}
       {...props}
     >
-      <p className="text-sm font-medium text-text-secondary mb-1">{label}</p>
+      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
       <div className="flex items-baseline gap-2">
-        <h4 className="text-2xl font-bold text-text-primary">{value}</h4>
+        <h4 className="text-2xl font-bold text-gray-900 dark:text-white">{value}</h4>
         {change && (
           <span
             className={cn(

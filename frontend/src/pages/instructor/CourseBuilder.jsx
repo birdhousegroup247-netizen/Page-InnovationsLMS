@@ -421,7 +421,8 @@ export default function CourseBuilder() {
               </div>
               <Button
                 onClick={() => setIsPreviewOpen(true)}
-                className="bg-white text-brand-blue hover:bg-white/90"
+                variant="ghost"
+                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Preview

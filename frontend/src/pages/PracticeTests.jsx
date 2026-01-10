@@ -5,6 +5,7 @@ import { FileText, Clock, Award, Play, ArrowLeft, CheckCircle } from 'lucide-rea
 import { examsAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
+import emptyTests from '../assets/empty-tests.svg';
 import { cn } from '../utils/cn';
 
 export default function PracticeTests() {
@@ -135,13 +136,6 @@ export default function PracticeTests() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <FileText className="h-6 w-6 text-white" />
@@ -192,6 +186,7 @@ export default function PracticeTests() {
         {/* Empty State */}
         {!loading && currentTests.length === 0 && (
           <EmptyState
+            image={emptyTests}
             icon={activeTab === 'practice' ? <FileText className="w-16 h-16" /> : <CheckCircle className="w-16 h-16" />}
             title={activeTab === 'practice' ? 'No practice tests available' : 'No assigned tests'}
             description={

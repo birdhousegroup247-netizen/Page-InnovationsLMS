@@ -5,6 +5,7 @@ import { Award, Download, Share2, ArrowLeft, ExternalLink, Copy, CheckCircle } f
 import api from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
+import emptyCertificates from '../assets/empty-certificates.svg';
 import { cn } from '../utils/cn';
 
 export default function Certificates() {
@@ -63,13 +64,6 @@ export default function Certificates() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Award className="h-6 w-6 text-white" />
@@ -101,6 +95,7 @@ export default function Certificates() {
         {/* Empty State */}
         {!loading && certificates.length === 0 && (
           <EmptyState
+            image={emptyCertificates}
             icon={<Award className="w-16 h-16" />}
             title="No certificates yet"
             description="Complete courses to earn certificates and showcase your achievements"

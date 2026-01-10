@@ -19,6 +19,7 @@ import {
 import { notificationsAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Alert } from '../components/ui';
+import emptyNotifications from '../assets/empty-notifications.svg';
 import { cn } from '../utils/cn';
 
 const NOTIFICATION_ICONS = {
@@ -224,13 +225,6 @@ export default function Notifications() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -374,6 +368,7 @@ export default function Notifications() {
             {/* Empty State */}
             {notifications.length === 0 && (
               <EmptyState
+                image={emptyNotifications}
                 icon={<BellOff className="w-16 h-16" />}
                 title="No notifications"
                 description={

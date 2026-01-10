@@ -61,7 +61,7 @@ This Learning Management System transforms traditional database training into a 
 - ✅ 100% course completion tracking
 - ✅ Automated exam grading system
 - ✅ Certificate generation on completion
-- ✅ Mobile-responsive on all devicesi th
+- ✅ Mobile-responsive on all devices
 - ✅ Zero video hosting costs (YouTube integration)
 - ✅ $0 monthly operating cost (free tier hosting)
 

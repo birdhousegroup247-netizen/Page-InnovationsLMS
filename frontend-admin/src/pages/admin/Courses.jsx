@@ -38,6 +38,8 @@ import {
   Dropdown
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
+import { EmptyState } from '../../components/layout';
+import emptyCourses from '../../assets/empty-courses.svg';
 import { cn } from '../../utils/cn';
 import { validateCourseForm, formatErrors } from '../../utils/validation';
 
@@ -602,7 +604,8 @@ export default function AdminCourses() {
                 <Button
                   onClick={handleExportCSV}
                   disabled={courses.length === 0}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+                  variant="ghost"
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export
@@ -621,7 +624,8 @@ export default function AdminCourses() {
                     setFormErrors({});
                     setIsCreateModalOpen(true);
                   }}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+                  variant="ghost"
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Course
@@ -743,6 +747,7 @@ export default function AdminCourses() {
             <Select
               value={filters.status}
               onChange={handleStatusChange}
+              placeholder="Filter by status"
               className="!h-12"
               options={[
                 { value: '', label: 'All Status' },
@@ -755,6 +760,7 @@ export default function AdminCourses() {
             <Select
               value={filters.category_id}
               onChange={handleCategoryChange}
+              placeholder="Filter by category"
               className="!h-12"
               options={[
                 { value: '', label: 'All Categories' },
@@ -764,6 +770,7 @@ export default function AdminCourses() {
             <Select
               value={filters.level}
               onChange={handleLevelChange}
+              placeholder="Filter by level"
               className="!h-12"
               options={[
                 { value: '', label: 'All Levels' },
@@ -833,10 +840,20 @@ export default function AdminCourses() {
               <Spinner size="lg" />
             </div>
           ) : courses.length === 0 ? (
-            <div className="p-8 text-center">
-              <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No courses found</p>
-            </div>
+            <EmptyState
+              image={emptyCourses}
+              title="No courses found"
+              description={filters.search || filters.category_id || filters.status ? "No courses match your current filters." : "Get started by creating your first course."}
+              action={
+                <Button
+                  variant="primary"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  leftIcon={<Plus className="w-4 h-4" />}
+                >
+                  Create Course
+                </Button>
+              }
+            />
           ) : (
             <>
               <div className="overflow-x-auto">

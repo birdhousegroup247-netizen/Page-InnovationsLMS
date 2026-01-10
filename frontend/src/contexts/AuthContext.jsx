@@ -28,7 +28,8 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.data.user);
       setIsAuthenticated(true);
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // Silently fail - don't log errors to console on mount
+      // This is expected when user is not logged in or has expired tokens
       // If profile fetch fails, user is not authenticated
       setIsAuthenticated(false);
       setUser(null);

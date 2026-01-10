@@ -200,6 +200,49 @@ class ProfileController {
         },
       });
 
+      // Get enrollments this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const enrollmentsThisMonth = await Enrollment.count({
+        where: {
+          student_id: userId,
+          enrollment_date: { [Op.gte]: startOfMonth }
+        }
+      });
+
+      // Get completed courses this month
+      const coursesCompletedThisMonth = await Enrollment.count({
+        where: {
+          student_id: userId,
+          completed_at: {
+            [Op.gte]: startOfMonth,
+            [Op.ne]: null
+          }
+        }
+      });
+
+      // Get certificates this month
+      const certificatesThisMonth = await Certificate.count({
+        where: {
+          student_id: userId,
+          issue_date: { [Op.gte]: startOfMonth }
+        }
+      });
+
+      // Calculate average progress across all enrollments
+      const enrollments = await Enrollment.findAll({
+        where: { student_id: userId },
+        attributes: ['progress_percentage']
+      });
+
+      let averageProgress = 0;
+      if (enrollments.length > 0) {
+        const totalProgress = enrollments.reduce((sum, e) => sum + (parseFloat(e.progress_percentage) || 0), 0);
+        averageProgress = totalProgress / enrollments.length;
+      }
+
       // Recent activity (last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -212,9 +255,19 @@ class ProfileController {
       });
 
       // Calculate learning streak (simplified - consecutive days with activity)
-      const learningStreak = await this.calculateLearningStreak(userId);
+      const learningStreak = await ProfileController.calculateLearningStreak(userId);
 
       return ApiResponse.success(res, {
+        // Dashboard fields (frontend expects these)
+        total_enrollments: enrolledCoursesCount,
+        enrollments_this_month: enrollmentsThisMonth,
+        completed_courses: completedCoursesCount,
+        courses_completed_this_month: coursesCompletedThisMonth,
+        total_certificates: certificatesCount,
+        certificates_this_month: certificatesThisMonth,
+        average_progress: Math.round(averageProgress),
+
+        // Legacy fields (keep for backwards compatibility)
         courses_enrolled: enrolledCoursesCount,
         courses_completed: completedCoursesCount,
         certificates_earned: certificatesCount,

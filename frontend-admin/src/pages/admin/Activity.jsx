@@ -261,9 +261,9 @@ export default function Activity() {
               </div>
               <div className="hidden md:block">
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   onClick={handleExport}
-                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export Logs

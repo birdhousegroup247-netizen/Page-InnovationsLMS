@@ -178,7 +178,7 @@ class CourseAnalyticsController {
       Enrollment.count({
         where: {
           course_id: courseId,
-          status: 'completed'
+          completed_at: { [Op.ne]: null }  // Fixed: use completed_at instead of status
         }
       }),
       ModuleContent.count({
@@ -209,12 +209,12 @@ class CourseAnalyticsController {
   static async _getEnrollmentTrends(courseId, startDate) {
     const enrollments = await sequelize.query(`
       SELECT
-        DATE(enrolled_at) as date,
+        DATE(enrollment_date) as date,
         COUNT(*) as enrollments
       FROM enrollments
       WHERE course_id = :courseId
-        AND enrolled_at >= :startDate
-      GROUP BY DATE(enrolled_at)
+        AND enrollment_date >= :startDate
+      GROUP BY DATE(enrollment_date)
       ORDER BY date ASC
     `, {
       replacements: { courseId, startDate: startDate.toISOString() },
@@ -265,8 +265,8 @@ class CourseAnalyticsController {
         mc.content_type,
         mc.duration,
         COUNT(DISTINCT cp.student_id) as views,
-        SUM(CASE WHEN cp.status = 'completed' THEN 1 ELSE 0 END) as completions,
-        ROUND(AVG(cp.time_spent), 2) as avg_time_spent
+        SUM(CASE WHEN cp.completed = 1 THEN 1 ELSE 0 END) as completions,
+        ROUND(AVG(cp.watch_time_seconds), 2) as avg_time_spent
       FROM module_contents mc
       JOIN course_modules cm ON mc.module_id = cm.id
       LEFT JOIN content_progress cp ON mc.id = cp.content_id
@@ -334,12 +334,12 @@ class CourseAnalyticsController {
           attributes: ['id', 'full_name', 'email']
         }
       ],
-      order: [['enrolled_at', 'DESC']],
+      order: [['enrollment_date', 'DESC']],
       limit
     });
 
     const recentCompletions = await ContentProgress.findAll({
-      where: { status: 'completed' },
+      where: { completed: true },  // Fixed: use completed boolean instead of status
       include: [
         {
           model: ModuleContent,
@@ -368,7 +368,7 @@ class CourseAnalyticsController {
         type: 'enrollment',
         student_name: e.student?.full_name,
         student_email: e.student?.email,
-        timestamp: e.enrolled_at,
+        timestamp: e.enrollment_date,
         details: 'Enrolled in course'
       })),
       ...recentCompletions.map(c => ({

@@ -82,7 +82,7 @@ class InstructorDashboardController {
     const monthlyEnrollments = await Enrollment.count({
       where: {
         course_id: { [Op.in]: courseIds },
-        enrolled_at: { [Op.gte]: startOfMonth }
+        enrollment_date: { [Op.gte]: startOfMonth }
       }
     });
 
@@ -128,7 +128,7 @@ class InstructorDashboardController {
           attributes: ['id', 'title', 'thumbnail']
         }
       ],
-      order: [['enrolled_at', 'DESC']],
+      order: [['enrollment_date', 'DESC']],
       limit: limit
     });
 
@@ -141,7 +141,7 @@ class InstructorDashboardController {
       course_id: enrollment.course_id,
       course_title: enrollment.course?.title,
       course_thumbnail: enrollment.course?.thumbnail,
-      enrolled_at: enrollment.enrolled_at,
+      enrollment_date: enrollment.enrollment_date,
       progress_percentage: enrollment.progress_percentage || 0
     }));
   }
@@ -154,7 +154,7 @@ class InstructorDashboardController {
     const count = await QuestionBank.count({
       where: {
         created_by: instructorId,
-        status: 'pending'
+        is_approved: false  // Fixed: use is_approved instead of status
       }
     });
 
@@ -175,7 +175,7 @@ class InstructorDashboardController {
         {
           model: Enrollment,
           as: 'enrollments',
-          attributes: ['progress_percentage', 'status']
+          attributes: ['progress_percentage', 'completed_at']  // Fixed: use completed_at instead of status
         }
       ],
       limit: limit,
@@ -185,9 +185,9 @@ class InstructorDashboardController {
     return courses.map(course => {
       const enrollments = course.enrollments || [];
       const totalStudents = enrollments.length;
-      const completedStudents = enrollments.filter(e => e.status === 'completed').length;
+      const completedStudents = enrollments.filter(e => e.completed_at !== null).length;
       const avgProgress = totalStudents > 0
-        ? enrollments.reduce((sum, e) => sum + (e.progress_percentage || 0), 0) / totalStudents
+        ? enrollments.reduce((sum, e) => sum + (parseFloat(e.progress_percentage) || 0), 0) / totalStudents
         : 0;
       const completionRate = totalStudents > 0
         ? (completedStudents / totalStudents) * 100
@@ -249,7 +249,7 @@ class InstructorDashboardController {
           attributes: ['id', 'title']
         }
       ],
-      order: [['enrolled_at', 'DESC']],
+      order: [['enrollment_date', 'DESC']],
       limit: limit
     });
 
@@ -258,7 +258,7 @@ class InstructorDashboardController {
       message: `${enrollment.student?.full_name} enrolled in ${enrollment.course?.title}`,
       student_name: enrollment.student?.full_name,
       course_title: enrollment.course?.title,
-      timestamp: enrollment.enrolled_at,
+      timestamp: enrollment.enrollment_date,
       avatar: enrollment.student?.profile_picture
     }));
   }
@@ -297,14 +297,14 @@ class InstructorDashboardController {
       const completedEnrollments = await Enrollment.count({
         where: {
           course_id: { [Op.in]: courseIds },
-          status: 'completed'
+          completed_at: { [Op.ne]: null }
         }
       });
 
       // Get tests created
       const testsCreated = await AssignedTest.count({
         where: {
-          created_by: instructorId
+          instructor_id: instructorId
         }
       });
 
@@ -319,7 +319,7 @@ class InstructorDashboardController {
       const questionsApproved = await QuestionBank.count({
         where: {
           created_by: instructorId,
-          status: 'approved'
+          approval_status: 'approved'
         }
       });
 

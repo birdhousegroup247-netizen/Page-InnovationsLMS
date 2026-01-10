@@ -5,6 +5,7 @@ import { Bookmark, Trash2, BookOpen, FileText, ArrowLeft, CheckCircle } from 'lu
 import { bookmarksAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Badge, Alert } from '../components/ui';
+import emptyBookmarks from '../assets/empty-bookmarks.svg';
 import { cn } from '../utils/cn';
 
 export default function Bookmarks() {
@@ -28,17 +29,33 @@ export default function Bookmarks() {
       let lessonBookmarks = [];
       let articleBookmarks = [];
 
+      // Fetch bookmarks in parallel for better performance
+      const promises = [];
+
       if (filter === 'all' || filter === 'lessons') {
-        const lessonRes = await bookmarksAPI.getLessonBookmarks();
-        lessonBookmarks = lessonRes.data.data.bookmarks.map(b => ({ ...b, type: 'lesson' }));
+        promises.push(
+          bookmarksAPI.getLessonBookmarks()
+            .then(res => res.data.data.bookmarks.map(b => ({ ...b, type: 'lesson' })))
+            .catch(err => {
+              console.error('Error fetching lesson bookmarks:', err);
+              return []; // Return empty array on error
+            })
+        );
       }
 
       if (filter === 'all' || filter === 'articles') {
-        const articleRes = await bookmarksAPI.getArticleBookmarks();
-        articleBookmarks = articleRes.data.data.bookmarks.map(b => ({ ...b, type: 'article' }));
+        promises.push(
+          bookmarksAPI.getArticleBookmarks()
+            .then(res => res.data.data.bookmarks.map(b => ({ ...b, type: 'article' })))
+            .catch(err => {
+              console.error('Error fetching article bookmarks:', err);
+              return []; // Return empty array on error
+            })
+        );
       }
 
-      const allBookmarks = [...lessonBookmarks, ...articleBookmarks].sort(
+      const results = await Promise.all(promises);
+      const allBookmarks = results.flat().sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
 
@@ -94,13 +111,6 @@ export default function Bookmarks() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Bookmark className="h-6 w-6 text-white" />
@@ -170,6 +180,7 @@ export default function Bookmarks() {
         {/* Empty State */}
         {!loading && bookmarks.length === 0 && (
           <EmptyState
+            image={emptyBookmarks}
             icon={<Bookmark className="w-16 h-16" />}
             title="No bookmarks yet"
             description="Save lessons and articles to find them here later"

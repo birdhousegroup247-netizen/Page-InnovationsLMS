@@ -17,6 +17,7 @@ import {
 import { coursesAPI, instructorAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert } from '../../components/ui';
+import emptyStudents from '../../assets/empty-students.svg';
 import { cn } from '../../utils/cn';
 
 export default function MyStudents() {
@@ -159,13 +160,6 @@ export default function MyStudents() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/instructor/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Users className="h-6 w-6 text-white" />
@@ -312,6 +306,7 @@ export default function MyStudents() {
             {/* Empty State */}
             {sortedStudents.length === 0 && (
               <EmptyState
+                image={emptyStudents}
                 icon={<Users className="w-16 h-16" />}
                 title={
                   searchQuery || selectedCourse !== 'all'

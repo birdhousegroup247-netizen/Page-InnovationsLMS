@@ -17,7 +17,7 @@ export default function RoleSelector() {
       color: 'from-brand-blue to-blue-600',
       hoverColor: 'hover:from-blue-600 hover:to-blue-700',
       route: '/dashboard',
-      available: user?.role === 'student' || user?.role === 'instructor',
+      available: user?.role === 'student',
     },
     {
       name: 'instructor',
@@ -27,7 +27,7 @@ export default function RoleSelector() {
       color: 'from-brand-purple to-purple-600',
       hoverColor: 'hover:from-purple-600 hover:to-purple-700',
       route: '/instructor/dashboard',
-      available: user?.role === 'instructor' || user?.role === 'admin',
+      available: user?.role === 'instructor',
     },
     {
       name: 'admin',
@@ -37,7 +37,7 @@ export default function RoleSelector() {
       color: 'from-brand-red to-red-600',
       hoverColor: 'hover:from-red-600 hover:to-red-700',
       route: '/admin/dashboard',
-      available: user?.role === 'admin',
+      available: user?.role === 'admin' || user?.role === 'super_admin',
       badge: 'Admin Only',
     },
   ];
@@ -82,10 +82,10 @@ export default function RoleSelector() {
             className="h-16 sm:h-20 mx-auto mb-6 drop-shadow-lg"
           />
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-            Welcome back, {user?.full_name}! 👋
+            {user?.full_name}! 👋
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            How would you like to continue?
+            Choose your role to continue
           </p>
         </div>
 

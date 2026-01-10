@@ -15,6 +15,7 @@ import {
 import { announcementsAPI, coursesAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert, Modal } from '../../components/ui';
+import emptyAnnouncements from '../../assets/empty-announcements.svg';
 import { cn } from '../../utils/cn';
 
 export default function Announcements() {
@@ -187,9 +188,9 @@ export default function Announcements() {
   };
 
   // Filter announcements by selected course
-  const filteredAnnouncements = selectedCourse === 'all'
+  const filteredAnnouncements = selectedCourse === 'all' || !selectedCourse
     ? announcements
-    : announcements.filter((a) => a.course_id === parseInt(selectedCourse));
+    : announcements.filter((a) => a.course_id === parseInt(selectedCourse, 10));
 
   return (
     <>
@@ -200,13 +201,6 @@ export default function Announcements() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <Link
-              to="/instructor/dashboard"
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
@@ -290,6 +284,7 @@ export default function Announcements() {
             {/* Announcements List */}
             {filteredAnnouncements.length === 0 ? (
               <EmptyState
+                image={emptyAnnouncements}
                 icon={<Megaphone className="w-16 h-16" />}
                 title={courses.length === 0 ? 'No courses yet' : 'No announcements yet'}
                 description={

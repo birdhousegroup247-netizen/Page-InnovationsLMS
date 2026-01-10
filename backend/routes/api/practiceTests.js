@@ -9,18 +9,18 @@ const { testSubmissionLimiter } = require('../../middleware/rateLimiter');
 // ============================================================================
 
 // Generate new practice test
-router.post('/generate', authenticate, authorize('student'), PracticeTestController.generatePracticeTest);
+router.post('/generate', authenticate, authorize('student', 'instructor'), PracticeTestController.generatePracticeTest);
 
 // Get test history
-router.get('/history', authenticate, authorize('student'), PracticeTestController.getTestHistory);
+router.get('/history', authenticate, authorize('student', 'instructor'), PracticeTestController.getTestHistory);
 
 // Get ongoing test
-router.get('/:attemptId', authenticate, authorize('student'), PracticeTestController.getOngoingTest);
+router.get('/:attemptId', authenticate, authorize('student', 'instructor'), PracticeTestController.getOngoingTest);
 
 // Submit practice test (rate limited to prevent spam)
-router.post('/:attemptId/submit', authenticate, authorize('student'), testSubmissionLimiter, PracticeTestController.submitPracticeTest);
+router.post('/:attemptId/submit', authenticate, authorize('student', 'instructor'), testSubmissionLimiter, PracticeTestController.submitPracticeTest);
 
 // Get test results
-router.get('/:attemptId/results', authenticate, authorize('student'), PracticeTestController.getTestResults);
+router.get('/:attemptId/results', authenticate, authorize('student', 'instructor'), PracticeTestController.getTestResults);
 
 module.exports = router;

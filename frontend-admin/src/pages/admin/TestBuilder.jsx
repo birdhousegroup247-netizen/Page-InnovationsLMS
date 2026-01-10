@@ -376,18 +376,18 @@ export default function TestBuilder() {
   return (
     <>
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => navigate('/tests')}
-              className="mb-4 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+              className="mb-4 !bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Tests
             </Button>
 
@@ -410,53 +410,54 @@ export default function TestBuilder() {
 
       <Container className="py-8">
 
-      {/* Progress Steps */}
-      <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-6 mb-6">
-        <div className="flex items-center justify-between">
+      {/* Stepper */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
           {steps.map((step, index) => {
             const Icon = step.icon;
             const isActive = currentStep === step.number;
             const isCompleted = currentStep > step.number;
 
             return (
-              <div key={step.number} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                      isActive
-                        ? 'bg-blue-600 dark:bg-blue-500 text-white'
-                        : isCompleted
-                        ? 'bg-green-500 dark:bg-green-600 text-white'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle className="w-6 h-6" />
-                    ) : (
-                      <Icon className="w-6 h-6" />
-                    )}
-                  </div>
-                  <p
-                    className={`text-sm font-medium ${
-                      isActive
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : isCompleted
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    {step.title}
-                  </p>
-                </div>
+              <div key={step.number} className="flex flex-col items-center flex-1 relative">
+                {/* Connector Line */}
                 {index < steps.length - 1 && (
                   <div
-                    className={`h-1 flex-1 mx-4 ${
-                      currentStep > step.number
-                        ? 'bg-green-500'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                    className={`absolute top-6 left-1/2 h-0.5 w-full transition-colors ${
+                      isCompleted
+                        ? 'bg-brand-blue'
+                        : 'bg-gray-300 dark:bg-gray-600'
                     }`}
                   />
                 )}
+
+                {/* Step Circle */}
+                <div className="relative z-10 mb-2">
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      isActive
+                        ? 'bg-brand-blue text-white shadow-lg scale-110'
+                        : isCompleted
+                        ? 'bg-brand-blue text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Step Label */}
+                <span
+                  className={`text-sm font-medium text-center transition-colors ${
+                    isActive
+                      ? 'text-brand-blue'
+                      : isCompleted
+                      ? 'text-gray-700 dark:text-gray-300'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {step.title}
+                </span>
               </div>
             );
           })}

@@ -12,7 +12,10 @@ const { authenticate, authorize } = require('../../middleware/auth/authMiddlewar
 // ACTIVITY LOG ROUTES
 // ============================================================================
 
-// Get authenticated user's own activity
+// Get authenticated user's own activity (default route)
+router.get('/', authenticate, ActivityController.getMyActivity);
+
+// Get authenticated user's own activity (explicit route)
 router.get('/my', authenticate, ActivityController.getMyActivity);
 
 // Admin routes - all activity logs

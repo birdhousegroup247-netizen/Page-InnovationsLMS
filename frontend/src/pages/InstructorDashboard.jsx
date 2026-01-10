@@ -24,6 +24,7 @@ import {
 import { cn } from '../utils/cn';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, StatsCard, StatsGrid } from '../components/ui';
+import emptyCourses from '../assets/empty-courses.svg';
 
 export default function InstructorDashboard() {
   const navigate = useNavigate();
@@ -174,24 +175,31 @@ export default function InstructorDashboard() {
                   Recent Enrollments
                 </h3>
                 <div className="space-y-3">
-                  {dashboardData.recent_enrollments.slice(0, 5).map((enrollment, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate">
-                          {enrollment.student_name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">
-                          {enrollment.course_title}
-                        </p>
+                  {dashboardData.recent_enrollments.slice(0, 5).map((enrollment, idx) => {
+                    // Format date safely - backend returns 'enrollment_date'
+                    const enrollmentDate = enrollment.enrollment_date
+                      ? new Date(enrollment.enrollment_date).toLocaleDateString()
+                      : 'N/A';
+
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate">
+                            {enrollment.student_name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">
+                            {enrollment.course_title}
+                          </p>
+                        </div>
+                        <span className="text-xs text-gray-400 dark:text-text-dark-muted ml-2">
+                          {enrollmentDate}
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-400 dark:text-text-dark-muted ml-2">
-                        {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -313,24 +321,34 @@ export default function InstructorDashboard() {
           </div>
         </div>
 
-        {/* Section Header */}
+        {/* Recent Courses Section */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
-            Your Courses
+            Recent Courses
           </h3>
-          <Button
-            variant="primary"
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => navigate('/instructor/courses/create')}
-            className="hidden sm:flex"
-          >
-            Create New Course
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              rightIcon={<ArrowRight className="h-4 w-4" />}
+              onClick={() => navigate('/instructor/courses')}
+              className="hidden sm:flex"
+            >
+              View All Courses
+            </Button>
+            <Button
+              variant="primary"
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={() => navigate('/instructor/courses/create')}
+              className="hidden sm:flex"
+            >
+              Create New Course
+            </Button>
+          </div>
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col justify-center items-center py-20">
+          <div className="flex flex-col justify-center items-center py-12">
             <Spinner size="lg" />
             <p className="mt-4 text-gray-600 dark:text-text-dark-secondary font-medium transition-colors">
               Loading your courses...
@@ -341,6 +359,7 @@ export default function InstructorDashboard() {
         {/* Empty State */}
         {!loading && courses.length === 0 && (
           <EmptyState
+            image={emptyCourses}
             icon={<BookOpen className="w-16 h-16" />}
             title="No courses yet"
             description="Get started by creating your first course"
@@ -349,20 +368,36 @@ export default function InstructorDashboard() {
           />
         )}
 
-        {/* Courses List */}
+        {/* Recent Courses List - Show max 4 courses */}
         {!loading && courses.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {courses.map((course, index) => (
-              <CourseCard
-                key={course.id}
-                course={course}
-                onEdit={() => navigate(`/instructor/courses/${course.id}/edit`)}
-                onView={() => navigate(`/courses/${course.id}`)}
-                onManageContent={() => navigate(`/instructor/courses/${course.id}/builder`)}
-                delay={index * 0.1}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {courses.slice(0, 4).map((course, index) => (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  onEdit={() => navigate(`/instructor/courses/${course.id}/edit`)}
+                  onView={() => navigate(`/courses/${course.id}`)}
+                  onManageContent={() => navigate(`/instructor/courses/${course.id}/builder`)}
+                  delay={index * 0.1}
+                />
+              ))}
+            </div>
+
+            {/* View All Courses Link - Mobile and when more than 4 courses */}
+            {courses.length > 4 && (
+              <div className="text-center">
+                <Button
+                  variant="outline"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                  onClick={() => navigate('/instructor/courses')}
+                  className="w-full sm:w-auto"
+                >
+                  View All {courses.length} Courses
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </Container>
     </>
