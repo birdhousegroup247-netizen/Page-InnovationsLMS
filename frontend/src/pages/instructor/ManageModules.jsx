@@ -218,18 +218,23 @@ export default function ManageModules() {
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
+            <Link
+              to="/instructor/courses"
+              className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to My Courses
             </Link>
+
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">
                   Manage Modules
                 </h1>
-                <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  {course?.title || 'Loading...'}
-                </p>
+                <p className="text-white/80 mt-1">{course?.title}</p>
               </div>
             </div>
           </Container>
