@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen, Award, Clock, TrendingUp, PlayCircle, ArrowRight, Star, Sparkles, Zap, Target } from 'lucide-react';
 import { profileAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
-import { EmptyState } from '../components/common/EmptyState';
+import EmptyState from '../components/common/EmptyState';
 import emptyCourses from '../assets/empty-courses.svg';
 import emptyRecommendations from '../assets/empty-recommendations.svg';
 

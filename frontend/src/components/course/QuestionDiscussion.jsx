@@ -12,7 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import Spinner from '../ui/Spinner';
 import { cn } from '../../utils/cn';
 
 export default function QuestionDiscussion({ contentId }) {
