@@ -57,7 +57,7 @@ const createUserRateLimiter = (options = {}) => {
       if (req.user && req.user.id) {
         return `user_${req.user.id}`;
       }
-      return `ip_${req.ip}`;
+      return `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
     },
     handler: (req, res) => {
       logger.warn(`Rate limit exceeded for ${req.user?.id ? `user ${req.user.id}` : `IP ${req.ip}`}`);
@@ -89,7 +89,7 @@ const authRateLimiter = rateLimit({
   keyGenerator: (req) => {
     // Use email from request body if available, otherwise IP
     const email = req.body?.email;
-    return email ? `email_${email}` : `ip_${req.ip}`;
+    return email ? `email_${email}` : `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
   },
   handler: (req, res) => {
     logger.warn(`Auth rate limit exceeded for ${req.body?.email || req.ip}`);
@@ -116,7 +116,7 @@ const passwordResetLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const email = req.body?.email;
-    return email ? `email_${email}` : `ip_${req.ip}`;
+    return email ? `email_${email}` : `ip_${req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'}`;
   },
   handler: (req, res) => {
     logger.warn(`Password reset rate limit exceeded for ${req.body?.email || req.ip}`);
