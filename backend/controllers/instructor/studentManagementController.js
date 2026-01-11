@@ -26,8 +26,8 @@ class StudentManagementController {
 
       // Allow if instructor owns course OR user is admin
       if (course.instructor_id !== instructorId &&
-          req.user.role !== 'admin' &&
-          req.user.role !== 'super_admin') {
+        req.user.role !== 'admin' &&
+        req.user.role !== 'super_admin') {
         throw new ForbiddenError('You do not have access to this course');
       }
 
@@ -118,6 +118,20 @@ class StudentManagementController {
           return {
             enrollment_id: enrollment.id,
             student_id: enrollment.student_id,
+            course_id: courseId,
+            // Add nested objects for frontend compatibility
+            student: {
+              id: enrollment.student_id,
+              full_name: enrollment.student?.full_name,
+              email: enrollment.student?.email,
+              profile_picture: enrollment.student?.profile_picture,
+              phone: enrollment.student?.phone
+            },
+            course: {
+              id: courseId,
+              title: course.title
+            },
+            // Keep flat properties for backward compatibility
             student_name: enrollment.student?.full_name,
             student_email: enrollment.student?.email,
             student_avatar: enrollment.student?.profile_picture,
@@ -163,8 +177,8 @@ class StudentManagementController {
       }
 
       if (course.instructor_id !== instructorId &&
-          req.user.role !== 'admin' &&
-          req.user.role !== 'super_admin') {
+        req.user.role !== 'admin' &&
+        req.user.role !== 'super_admin') {
         throw new ForbiddenError('You do not have access to this course');
       }
 
@@ -362,8 +376,8 @@ class StudentManagementController {
       }
 
       if (course.instructor_id !== instructorId &&
-          req.user.role !== 'admin' &&
-          req.user.role !== 'super_admin') {
+        req.user.role !== 'admin' &&
+        req.user.role !== 'super_admin') {
         throw new ForbiddenError('You do not have access to this course');
       }
 
