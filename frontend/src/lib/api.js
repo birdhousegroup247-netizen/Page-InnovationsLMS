@@ -13,10 +13,16 @@ const api = axios.create({
   withCredentials: true, // Send cookies with requests
 });
 
-// Request interceptor to add CSRF token from cookie
+// Request interceptor to add auth token and CSRF token
 api.interceptors.request.use(
   (config) => {
-    // Get CSRF token from cookie and add to header
+    // Add Authorization header with token from localStorage
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    // Get CSRF token from cookie and add to header (if still using cookies for CSRF)
     const csrfToken = document.cookie
       .split('; ')
       .find(row => row.startsWith('csrf-token='))
@@ -56,17 +62,35 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt to refresh access token (refreshToken is in httpOnly cookie)
+        // Get refresh token from localStorage
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (!refreshToken) {
+          // No refresh token - redirect to login
+          localStorage.removeItem('accessToken');
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
+
+        // Attempt to refresh access token
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
-          {}, // No body needed - refreshToken comes from cookie
-          { withCredentials: true } // Send cookies
+          { refreshToken },
+          { withCredentials: true }
         );
 
-        // Retry original request (new accessToken is now in cookie)
+        // Update tokens in localStorage
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
+        localStorage.setItem('accessToken', newAccessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - redirect to login
+        // Refresh failed - clear tokens and redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

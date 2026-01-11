@@ -38,30 +38,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
-    try {
-      const response = await authAPI.login({ email, password });
-      const { user } = response.data.data;
-
-      // Tokens are now in httpOnly cookies (set by backend)
-      // No need to store in localStorage
-      setUser(user);
-      setIsAuthenticated(true);
-
-      return { success: true, user };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
-      return { success: false, error: message };
-    }
-  };
-
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      const { user } = response.data.data;
+      const { user, accessToken, refreshToken } = response.data.data;
 
-      // Tokens are now in httpOnly cookies (set by backend)
-      // No need to store in localStorage
+      // Store tokens in localStorage
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      
       setUser(user);
       setIsAuthenticated(true);
 
@@ -72,14 +57,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const login = async (email, password) => {
+    try {
+      const response = await authAPI.login({ email, password });
+      const { user, accessToken, refreshToken } = response.data.data;
+
+      // Store tokens in localStorage
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      
+      setUser(user);
+      setIsAuthenticated(true);
+
+      return { success: true, user };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Login failed';
+      return { success: false, error: message };
+    }
+  };
+
   const logout = async () => {
     try {
       await authAPI.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Cookies are cleared by backend
-      // Just clear local state
+      // Clear tokens from localStorage
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      
       setUser(null);
       setIsAuthenticated(false);
     }

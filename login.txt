@@ -1,0 +1,21 @@
+Perfect! Here are your login credentials:
+
+🔐 Login Credentials
+All accounts use the same password: password123
+
+📧 ADMIN ACCOUNTS
+Super Admin: admin@tekypro.com
+Admin: jerod.homenick38@tekypro.com
+Admin: aliyah_veum@tekypro.com
+👨‍🏫 INSTRUCTOR ACCOUNTS
+shannon_hayes71@yahoo.com
+arnold98@gmail.com
+carlotta_moen@tekypro.com
+👨‍🎓 STUDENT ACCOUNTS
+lela53@yahoo.com
+grover.barton@yahoo.com
+rene83@yahoo.com
+Note: There are 50 total students and 10 total instructors in the database - these are just the first 3 of each for testing. All use password123 as the password.
+
+Ready to test! Once your frontend deployments complete, you can login with any of these accounts to explore different roles in your LMS! 🚀
+

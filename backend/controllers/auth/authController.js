@@ -127,6 +127,8 @@ class AuthController {
       return ApiResponse.created(res, {
         user: user.toJSON(),
         instructor_application_pending: instructorStatus === 'pending',
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       }, registrationMessage);
     } catch (error) {
       next(error);
@@ -189,6 +191,8 @@ class AuthController {
 
       return ApiResponse.success(res, {
         user: user.toJSON(),
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       }, 'Login successful');
     } catch (error) {
       next(error);
@@ -251,7 +255,8 @@ class AuthController {
       this.setAuthCookies(res, tokens);
 
       return ApiResponse.success(res, {
-        message: 'Token refreshed successfully'
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       }, 'Token refreshed successfully');
     } catch (error) {
       next(error);
