@@ -165,14 +165,14 @@ export default function CreateCourse() {
     setLoading(true);
 
     try {
-      // Prepare data
+      // Prepare data - temporarily exclude thumbnail to avoid Cloudflare WAF blocking
       const courseData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category_id: parseInt(formData.category_id),
         difficulty: formData.difficulty,
         duration_hours: formData.duration_hours ? parseInt(formData.duration_hours) : null,
-        thumbnail: formData.thumbnail || null,
+        // thumbnail: formData.thumbnail || null, // Disabled - triggers Cloudflare WAF
         status: submitStatus,
       };
 
