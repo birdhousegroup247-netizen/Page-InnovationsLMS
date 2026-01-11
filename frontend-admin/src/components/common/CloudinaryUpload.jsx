@@ -73,7 +73,7 @@ export default function CloudinaryUpload({
     return null;
   };
 
-  // Upload to Cloudinary using Upload Widget
+  // Upload to backend API (which uploads to Cloudinary)
   const uploadFile = async (file) => {
     const validationError = validateFile(file);
     if (validationError) {
@@ -86,45 +86,53 @@ export default function CloudinaryUpload({
     setError('');
     setProgress(0);
 
-    // Create Cloudinary widget
-    const widget = window.cloudinary.createUploadWidget(
-      {
-        cloudName: cloudName,
-        uploadPreset: uploadPreset,
-        folder: folder || '',
-        sources: ['local'],
-        maxFileSize: maxSizeMB * 1024 * 1024,
-        clientAllowedFormats: acceptedTypes === 'image' 
-          ? ['jpg', 'jpeg', 'png', 'gif', 'webp']
-          : acceptedTypes === 'document'
-          ? ['pdf', 'doc', 'docx', 'txt']
-          : ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt'],
-      },
-      (error, result) => {
-        if (error) {
-          console.error('Upload widget error:', error);
-          setError(error.statusText || 'Upload failed');
-          if (onUploadError) {
-            onUploadError(error.statusText || 'Upload failed');
-          }
-          setUploading(false);
-          return;
-        }
-
-        if (result.event === 'success') {
-          console.log('Upload successful:', result.info);
-          setPreview(result.info.secure_url);
-          setProgress(100);
-          setUploading(false);
-          
-          if (onUploadSuccess) {
-            onUploadSuccess(result.info.secure_url);
-          }
-        }
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (folder) {
+        formData.append('folder', folder);
       }
-    );
 
-    widget.open();
+      // Upload to backend API
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/upload/course-thumbnail`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Upload error:', errorData);
+        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.data.url;
+      
+      // Set preview
+      setPreview(imageUrl);
+      setProgress(100);
+      
+      // Call success callback
+      if (onUploadSuccess) {
+        onUploadSuccess(imageUrl);
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      const errorMessage = err.message || 'Failed to upload file';
+      setError(errorMessage);
+      if (onUploadError) {
+        onUploadError(errorMessage);
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Handle file selection
