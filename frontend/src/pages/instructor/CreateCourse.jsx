@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import { Button, Input, Alert, Spinner } from '../../components/ui';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 
 export default function CreateCourse() {
   const navigate = useNavigate();
@@ -165,14 +166,14 @@ export default function CreateCourse() {
     setLoading(true);
 
     try {
-      // Prepare data - temporarily exclude thumbnail to avoid Cloudflare WAF blocking
+      // Prepare data
       const courseData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category_id: parseInt(formData.category_id),
         difficulty: formData.difficulty,
         duration_hours: formData.duration_hours ? parseInt(formData.duration_hours) : null,
-        // thumbnail: formData.thumbnail || null, // Disabled - triggers Cloudflare WAF
+        thumbnail: formData.thumbnail || null, // Now using Cloudinary URL
         status: submitStatus,
       };
 
@@ -378,49 +379,19 @@ export default function CreateCourse() {
                 Course Thumbnail
               </label>
 
-              {thumbnailPreview ? (
-                <div className="relative">
-                  <img
-                    src={thumbnailPreview}
-                    alt="Thumbnail preview"
-                    className="w-full h-64 object-cover rounded-lg border border-gray-300 dark:border-border-dark transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeThumbnail}
-                    className="absolute top-2 right-2 p-2 bg-gray-900/80 hover:bg-gray-900 dark:bg-dark-900/80 dark:hover:bg-dark-900 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-white" />
-                  </button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 dark:border-border-dark rounded-lg p-8 text-center hover:border-brand-blue dark:hover:border-brand-blue transition-colors">
-                  <input
-                    id="thumbnail"
-                    name="thumbnail"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailChange}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="thumbnail"
-                    className="cursor-pointer flex flex-col items-center gap-3"
-                  >
-                    <div className="p-3 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-lg">
-                      <ImageIcon className="w-8 h-8 text-brand-blue" />
-                    </div>
-                    <div>
-                      <p className="text-gray-900 dark:text-text-dark-primary font-medium mb-1 transition-colors">
-                        Click to upload thumbnail
-                      </p>
-                      <p className="text-gray-500 dark:text-text-dark-muted text-sm transition-colors">
-                        PNG, JPG up to 5MB (Recommended: 1200x675px)
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              )}
+              <CloudinaryUpload
+                onUploadSuccess={(url) => {
+                  setFormData({ ...formData, thumbnail: url });
+                  setThumbnailPreview(url);
+                }}
+                onUploadError={(error) => {
+                  setValidationErrors({ ...validationErrors, thumbnail: error });
+                }}
+                acceptedTypes="image"
+                maxSizeMB={5}
+                currentFile={thumbnailPreview}
+                folder="tekyprolms/courses"
+              />
 
               {validationErrors.thumbnail && (
                 <p className="text-red-600 dark:text-red-400 text-xs mt-1 transition-colors">{validationErrors.thumbnail}</p>
