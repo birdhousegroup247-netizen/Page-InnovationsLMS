@@ -104,7 +104,9 @@ export default function CloudinaryUpload({
       );
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Cloudinary upload error:', errorData);
+        throw new Error(errorData.error?.message || `Upload failed with status ${response.status}`);
       }
 
       const data = await response.json();
@@ -118,6 +120,7 @@ export default function CloudinaryUpload({
         onUploadSuccess(data.secure_url);
       }
     } catch (err) {
+      console.error('Upload error:', err);
       const errorMessage = err.message || 'Failed to upload file';
       setError(errorMessage);
       if (onUploadError) {
