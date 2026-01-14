@@ -215,8 +215,7 @@ class QuestionBankController {
         attributes: [
           'course_id',
           [sequelize.fn('COUNT', sequelize.col('QuestionBank.id')), 'total_questions'],
-          [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_approved = true THEN 1 ELSE 0 END')), 'approved_questions'],
-          [sequelize.fn('SUM', sequelize.literal('CASE WHEN is_approved = false THEN 1 ELSE 0 END')), 'pending_questions'],
+          [sequelize.fn('SUM', sequelize.cast(sequelize.col('is_approved'), 'INTEGER')), 'approved_questions'],
         ],
         include: [
           {

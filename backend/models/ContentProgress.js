@@ -47,6 +47,10 @@ const ContentProgress = sequelize.define(
       { fields: ['student_id'] },
       { fields: ['content_id'] },
       { unique: true, fields: ['student_id', 'content_id'] },
+      // Critical hot path index - most frequently queried
+      { fields: ['completed'] }, // For filtering completed content
+      { fields: ['student_id', 'completed'] }, // For student completion stats
+      { fields: ['last_accessed'] }, // For recent activity queries
     ],
   }
 );

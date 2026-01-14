@@ -52,6 +52,10 @@ const Certificate = sequelize.define(
       { fields: ['certificate_id'], unique: true },
       { fields: ['student_id'] },
       { fields: ['course_id'] },
+      // Performance indexes for queries
+      { fields: ['student_id', 'issue_date'] },
+      { fields: ['issue_date'] }, // For monthly/yearly stats
+      { fields: ['student_id', 'course_id'] }, // Lookup specific certificate
     ],
   }
 );

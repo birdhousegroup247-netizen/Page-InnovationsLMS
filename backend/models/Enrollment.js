@@ -43,6 +43,11 @@ const Enrollment = sequelize.define(
       { fields: ['student_id'] },
       { fields: ['course_id'] },
       { unique: true, fields: ['student_id', 'course_id'] },
+      // Performance indexes for analytics queries
+      { fields: ['course_id', 'enrollment_date'] },
+      { fields: ['completed_at'] },
+      { fields: ['student_id', 'completed_at'] },
+      { fields: ['last_accessed'] }, // For activity tracking
     ],
   }
 );

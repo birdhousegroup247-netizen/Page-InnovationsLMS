@@ -120,10 +120,18 @@ const Course = sequelize.define(
   {
     tableName: 'courses',
     timestamps: true,
+    paranoid: true, // Enable soft delete
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    // Indexes are already defined in the database schema
-    // Removed to prevent sync conflicts
+    deletedAt: 'deleted_at', // Soft delete timestamp
+    indexes: [
+      { fields: ['instructor_id'] },
+      { fields: ['category_id'] },
+      { fields: ['status'] },
+      { fields: ['slug'], unique: true },
+      { fields: ['deleted_at'] }, // Index for soft delete queries
+      { fields: ['published_at'] }, // For sorting published courses
+    ],
   }
 );
 

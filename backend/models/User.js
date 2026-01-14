@@ -96,13 +96,16 @@ const User = sequelize.define(
   {
     tableName: 'users',
     timestamps: true,
+    paranoid: true, // Enable soft delete
     createdAt: 'created_at',
     updatedAt: 'updated_at',
+    deletedAt: 'deleted_at', // Soft delete timestamp
     indexes: [
       { fields: ['email'] },
       { fields: ['role'] },
       { fields: ['google_id'] },
       { fields: ['is_active'] },
+      { fields: ['deleted_at'] }, // Index for soft delete queries
     ],
   }
 );

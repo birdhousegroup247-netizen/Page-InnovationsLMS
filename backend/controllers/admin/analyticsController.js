@@ -31,7 +31,7 @@ class AnalyticsController {
         attributes: [
           [sequelize.fn('AVG', sequelize.col('percentage')), 'avg_score'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'total_attempts'],
-          [sequelize.fn('SUM', sequelize.literal('CASE WHEN passed = true THEN 1 ELSE 0 END')), 'passed_count'],
+          [sequelize.fn('SUM', sequelize.cast(sequelize.col('passed'), 'INTEGER')), 'passed_count'],
         ],
         raw: true,
       });

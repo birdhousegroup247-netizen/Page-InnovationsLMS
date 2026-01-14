@@ -5,6 +5,7 @@ const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
 const ActivityController = require('../activity/activityController');
+const cache = require('../../utils/cache');
 
 class CourseController {
   // Get all courses (public) with advanced filtering
@@ -24,6 +25,16 @@ class CourseController {
         page = 1,
         limit = 12,
       } = req.query;
+
+      // Generate cache key based on query params
+      const cacheKey = `courses:${JSON.stringify(req.query)}`;
+
+      // Try to get from cache (5 minute TTL)
+      const cachedData = await cache.get('public_courses', cacheKey);
+      if (cachedData) {
+        logger.debug('Serving courses from cache');
+        return ApiResponse.success(res, cachedData);
+      }
 
       const where = { status: 'published' };
 
@@ -76,7 +87,7 @@ class CourseController {
         order: [[sortField, sortDirection]],
       });
 
-      return ApiResponse.success(res, {
+      const responseData = {
         courses: rows,
         pagination: {
           currentPage: parseInt(page),
@@ -96,7 +107,12 @@ class CourseController {
           sort_by: sortField,
           sort_order: sortDirection,
         },
-      });
+      };
+
+      // Store in cache for 5 minutes
+      await cache.set('public_courses', cacheKey, responseData, 300);
+
+      return ApiResponse.success(res, responseData);
     } catch (error) {
       next(error);
     }
@@ -107,6 +123,15 @@ class CourseController {
     try {
       const { id } = req.params;
 
+      // Try cache first (shorter TTL for course details)
+      const cacheKey = `course:${id}:${req.user?.id || 'guest'}`;
+      const cachedCourse = await cache.get('course_details', cacheKey);
+      if (cachedCourse) {
+        logger.debug(`Serving course ${id} from cache`);
+        return ApiResponse.success(res, cachedCourse);
+      }
+
+      // Fetch course with limited content preview (only first 5 items per module)
       const course = await Course.findByPk(id, {
         include: [
           { model: Category, as: 'category' },
@@ -114,7 +139,17 @@ class CourseController {
           {
             model: CourseModule,
             as: 'modules',
-            include: [{ model: ModuleContent, as: 'contents' }],
+            include: [
+              {
+                model: ModuleContent,
+                as: 'contents',
+                // Only load essential fields for preview
+                attributes: ['id', 'title', 'type', 'order_index', 'duration_minutes', 'is_preview'],
+                limit: 5, // Only first 5 items
+                separate: true, // Separate query to avoid cartesian product
+                order: [['order_index', 'ASC']],
+              }
+            ],
             order: [['order_index', 'ASC']],
           },
         ],
@@ -139,7 +174,12 @@ class CourseController {
         }
       }
 
-      return ApiResponse.success(res, { course, isEnrolled, progress });
+      const responseData = { course, isEnrolled, progress };
+
+      // Cache for 2 minutes (shorter for logged-in users)
+      await cache.set('course_details', cacheKey, responseData, 120);
+
+      return ApiResponse.success(res, responseData);
     } catch (error) {
       next(error);
     }

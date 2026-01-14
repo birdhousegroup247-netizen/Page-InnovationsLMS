@@ -9,6 +9,7 @@ const {
   KnowledgeArticle,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
+const logger = require('../../utils/logger');
 const { sequelize } = require('../../config/database');
 const { Op } = require('sequelize');
 
@@ -16,44 +17,104 @@ class StatsController {
   // Get dashboard overview stats
   static async getOverviewStats(req, res, next) {
     try {
+      logger.info('Fetching admin dashboard overview stats');
+
       // User stats
-      const totalUsers = await User.count();
-      const activeUsers = await User.count({ where: { is_active: true } });
-      const students = await User.count({ where: { role: 'student' } });
-      const instructors = await User.count({ where: { role: 'instructor' } });
+      let totalUsers = 0, activeUsers = 0, students = 0, instructors = 0;
+      try {
+        totalUsers = await User.count();
+        activeUsers = await User.count({ where: { is_active: true } });
+        students = await User.count({ where: { role: 'student' } });
+        instructors = await User.count({ where: { role: 'instructor' } });
+        logger.info(`User stats - Total: ${totalUsers}, Active: ${activeUsers}, Students: ${students}, Instructors: ${instructors}`);
+      } catch (error) {
+        logger.error('Error fetching user stats:', error.message);
+        throw new Error(`Failed to fetch user stats: ${error.message}`);
+      }
 
       // Course stats
-      const totalCourses = await Course.count();
-      const publishedCourses = await Course.count({ where: { status: 'published' } });
-      const draftCourses = await Course.count({ where: { status: 'draft' } });
+      let totalCourses = 0, publishedCourses = 0, draftCourses = 0;
+      try {
+        totalCourses = await Course.count();
+        publishedCourses = await Course.count({ where: { status: 'published' } });
+        draftCourses = await Course.count({ where: { status: 'draft' } });
+        logger.info(`Course stats - Total: ${totalCourses}, Published: ${publishedCourses}, Draft: ${draftCourses}`);
+      } catch (error) {
+        logger.error('Error fetching course stats:', error.message);
+        throw new Error(`Failed to fetch course stats: ${error.message}`);
+      }
 
       // Enrollment stats
-      const totalEnrollments = await Enrollment.count();
-      const completedEnrollments = await Enrollment.count({
-        where: { completed_at: { [Op.ne]: null } },
-      });
+      let totalEnrollments = 0, completedEnrollments = 0;
+      try {
+        totalEnrollments = await Enrollment.count();
+        completedEnrollments = await Enrollment.count({
+          where: { completed_at: { [Op.ne]: null } },
+        });
+        logger.info(`Enrollment stats - Total: ${totalEnrollments}, Completed: ${completedEnrollments}`);
+      } catch (error) {
+        logger.error('Error fetching enrollment stats:', error.message);
+        throw new Error(`Failed to fetch enrollment stats: ${error.message}`);
+      }
 
       // Certificate stats
-      const totalCertificates = await Certificate.count();
+      let totalCertificates = 0;
+      try {
+        totalCertificates = await Certificate.count();
+        logger.info(`Certificate stats - Total: ${totalCertificates}`);
+      } catch (error) {
+        logger.error('Error fetching certificate stats:', error.message);
+        throw new Error(`Failed to fetch certificate stats: ${error.message}`);
+      }
 
       // Question bank stats
-      const totalQuestions = await QuestionBank.count();
-      const approvedQuestions = await QuestionBank.count({ where: { is_approved: true } });
+      let totalQuestions = 0, approvedQuestions = 0;
+      try {
+        totalQuestions = await QuestionBank.count();
+        approvedQuestions = await QuestionBank.count({ where: { is_approved: true } });
+        logger.info(`Question bank stats - Total: ${totalQuestions}, Approved: ${approvedQuestions}`);
+      } catch (error) {
+        logger.error('Error fetching question bank stats:', error.message);
+        // Don't throw, continue with 0 values
+      }
 
       // Practice test stats
-      const totalPracticeTests = await PracticeTestAttempt.count();
-      const completedPracticeTests = await PracticeTestAttempt.count({
-        where: { status: 'completed' },
-      });
+      let totalPracticeTests = 0, completedPracticeTests = 0;
+      try {
+        totalPracticeTests = await PracticeTestAttempt.count();
+        completedPracticeTests = await PracticeTestAttempt.count({
+          where: { status: 'completed' },
+        });
+        logger.info(`Practice test stats - Total: ${totalPracticeTests}, Completed: ${completedPracticeTests}`);
+      } catch (error) {
+        logger.error('Error fetching practice test stats:', error.message);
+        // Don't throw, continue with 0 values
+      }
 
       // Assigned test stats
-      const totalAssignedTests = await AssignedTest.count();
+      let totalAssignedTests = 0;
+      try {
+        totalAssignedTests = await AssignedTest.count();
+        logger.info(`Assigned test stats - Total: ${totalAssignedTests}`);
+      } catch (error) {
+        logger.error('Error fetching assigned test stats:', error.message);
+        // Don't throw, continue with 0 values
+      }
 
       // Knowledge articles stats
-      const totalArticles = await KnowledgeArticle.count();
-      const publishedArticles = await KnowledgeArticle.count({
-        where: { status: 'published' },
-      });
+      let totalArticles = 0, publishedArticles = 0;
+      try {
+        totalArticles = await KnowledgeArticle.count();
+        publishedArticles = await KnowledgeArticle.count({
+          where: { status: 'published' },
+        });
+        logger.info(`Knowledge article stats - Total: ${totalArticles}, Published: ${publishedArticles}`);
+      } catch (error) {
+        logger.error('Error fetching knowledge article stats:', error.message);
+        // Don't throw, continue with 0 values
+      }
+
+      logger.info('Successfully fetched all admin dashboard stats');
 
       return ApiResponse.success(res, {
         users: {
@@ -92,6 +153,10 @@ class StatsController {
         },
       });
     } catch (error) {
+      logger.error('Error in admin getOverviewStats:', {
+        message: error.message,
+        stack: error.stack
+      });
       next(error);
     }
   }

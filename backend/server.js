@@ -19,7 +19,8 @@ const { metricsMiddleware, metricsEndpoint } = require('./middleware/metrics');
 const { getApiVersionInfo } = require('./middleware/apiVersion');
 const { performHealthCheck, performReadinessCheck, performLivenessCheck } = require('./utils/healthCheck');
 const { securityHeaders, detectAttackPatterns } = require('./middleware/security');
-const { sanitizeInput, preventRateLimitBypass } = require('./middleware/requestValidator');
+const { preventRateLimitBypass } = require('./middleware/requestValidator');
+const { smartSanitizer } = require('./middleware/smartSanitizer');
 
 // Initialize Express app
 const app = express();
@@ -110,7 +111,7 @@ app.use('/api/', globalApiLimiter);
 
 // Security middleware
 app.use(securityHeaders);
-app.use(sanitizeInput);
+app.use(smartSanitizer); // Context-aware sanitization
 app.use(preventRateLimitBypass);
 app.use(detectAttackPatterns);
 

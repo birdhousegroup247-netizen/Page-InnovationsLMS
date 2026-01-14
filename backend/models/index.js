@@ -61,27 +61,27 @@ Category.hasMany(QuestionBank, { foreignKey: 'category_id', as: 'questions' });
 Category.hasMany(KnowledgeArticle, { foreignKey: 'category_id', as: 'articles' });
 
 // Course relationships
-Course.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
-Course.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor' });
-Course.hasMany(CourseModule, { foreignKey: 'course_id', as: 'modules' });
-Course.hasMany(Enrollment, { foreignKey: 'course_id', as: 'enrollments' });
-Course.hasMany(QuestionBank, { foreignKey: 'course_id', as: 'questions' });
+Course.belongsTo(Category, { foreignKey: 'category_id', as: 'category', onDelete: 'SET NULL' });
+Course.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor', onDelete: 'SET NULL' });
+Course.hasMany(CourseModule, { foreignKey: 'course_id', as: 'modules', onDelete: 'CASCADE' });
+Course.hasMany(Enrollment, { foreignKey: 'course_id', as: 'enrollments', onDelete: 'CASCADE' });
+Course.hasMany(QuestionBank, { foreignKey: 'course_id', as: 'questions', onDelete: 'CASCADE' });
 
 // Module relationships
-CourseModule.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
-CourseModule.hasMany(ModuleContent, { foreignKey: 'module_id', as: 'contents' });
+CourseModule.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
+CourseModule.hasMany(ModuleContent, { foreignKey: 'module_id', as: 'contents', onDelete: 'CASCADE' });
 
 // Content relationships
-ModuleContent.belongsTo(CourseModule, { foreignKey: 'module_id', as: 'module' });
-ModuleContent.hasMany(ContentProgress, { foreignKey: 'content_id', as: 'progress' });
+ModuleContent.belongsTo(CourseModule, { foreignKey: 'module_id', as: 'module', onDelete: 'CASCADE' });
+ModuleContent.hasMany(ContentProgress, { foreignKey: 'content_id', as: 'progress', onDelete: 'CASCADE' });
 
 // Enrollment relationships
-Enrollment.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
-Enrollment.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+Enrollment.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CASCADE' });
+Enrollment.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
 
 // Content Progress relationships
-ContentProgress.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
-ContentProgress.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'content' });
+ContentProgress.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CASCADE' });
+ContentProgress.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'content', onDelete: 'CASCADE' });
 
 // Question Bank relationships
 QuestionBank.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
@@ -126,11 +126,11 @@ AssignedTestAnswer.belongsTo(AssignedTestAttempt, { foreignKey: 'attempt_id', as
 AssignedTestAnswer.belongsTo(QuestionBank, { foreignKey: 'question_id', as: 'question' });
 
 // Certificate relationships
-Certificate.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
-Certificate.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+Certificate.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CASCADE' });
+Certificate.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
 
-User.hasMany(Certificate, { foreignKey: 'student_id', as: 'certificates' });
-Course.hasMany(Certificate, { foreignKey: 'course_id', as: 'certificates' });
+User.hasMany(Certificate, { foreignKey: 'student_id', as: 'certificates', onDelete: 'CASCADE' });
+Course.hasMany(Certificate, { foreignKey: 'course_id', as: 'certificates', onDelete: 'CASCADE' });
 
 // Course Review relationships
 CourseReview.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });

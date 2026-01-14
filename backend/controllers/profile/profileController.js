@@ -150,112 +150,187 @@ class ProfileController {
   static async getStats(req, res, next) {
     try {
       const userId = req.user.id;
+      logger.info(`Fetching stats for user ${userId}`);
 
       // Enrolled courses count
-      const enrolledCoursesCount = await Enrollment.count({
-        where: { student_id: userId },
-      });
+      let enrolledCoursesCount = 0;
+      try {
+        enrolledCoursesCount = await Enrollment.count({
+          where: { student_id: userId },
+        });
+        logger.info(`User ${userId} - Enrollments: ${enrolledCoursesCount}`);
+      } catch (error) {
+        logger.error(`Error fetching enrollments for user ${userId}:`, error.message);
+        throw new Error(`Failed to fetch enrollments: ${error.message}`);
+      }
 
       // Completed courses count
-      const completedCoursesCount = await Enrollment.count({
-        where: {
-          student_id: userId,
-          completed_at: { [Op.ne]: null },
-        },
-      });
+      let completedCoursesCount = 0;
+      try {
+        completedCoursesCount = await Enrollment.count({
+          where: {
+            student_id: userId,
+            completed_at: { [Op.ne]: null },
+          },
+        });
+        logger.info(`User ${userId} - Completed courses: ${completedCoursesCount}`);
+      } catch (error) {
+        logger.error(`Error fetching completed courses for user ${userId}:`, error.message);
+        throw new Error(`Failed to fetch completed courses: ${error.message}`);
+      }
 
       // Certificates earned
-      const certificatesCount = await Certificate.count({
-        where: { student_id: userId },
-      });
+      let certificatesCount = 0;
+      try {
+        certificatesCount = await Certificate.count({
+          where: { student_id: userId },
+        });
+        logger.info(`User ${userId} - Certificates: ${certificatesCount}`);
+      } catch (error) {
+        logger.error(`Error fetching certificates for user ${userId}:`, error.message);
+        throw new Error(`Failed to fetch certificates: ${error.message}`);
+      }
 
       // Tests taken
-      const testsTaken = await AssignedTestAttempt.count({
-        where: {
-          student_id: userId,
-          completed_at: { [Op.ne]: null },
-        },
-      });
+      let testsTaken = 0;
+      try {
+        testsTaken = await AssignedTestAttempt.count({
+          where: {
+            student_id: userId,
+            completed_at: { [Op.ne]: null },
+          },
+        });
+        logger.info(`User ${userId} - Tests taken: ${testsTaken}`);
+      } catch (error) {
+        logger.error(`Error fetching tests for user ${userId}:`, error.message);
+        throw new Error(`Failed to fetch tests: ${error.message}`);
+      }
 
       // Average test score
-      const testAttempts = await AssignedTestAttempt.findAll({
-        where: {
-          student_id: userId,
-          completed_at: { [Op.ne]: null },
-        },
-        attributes: ['score'],
-      });
-
       let averageScore = 0;
-      if (testAttempts.length > 0) {
-        const totalScore = testAttempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0);
-        averageScore = (totalScore / testAttempts.length).toFixed(2);
+      try {
+        const testAttempts = await AssignedTestAttempt.findAll({
+          where: {
+            student_id: userId,
+            completed_at: { [Op.ne]: null },
+          },
+          attributes: ['score'],
+        });
+
+        if (testAttempts.length > 0) {
+          const totalScore = testAttempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0);
+          averageScore = (totalScore / testAttempts.length).toFixed(2);
+        }
+        logger.info(`User ${userId} - Average score: ${averageScore}`);
+      } catch (error) {
+        logger.error(`Error calculating average score for user ${userId}:`, error.message);
+        // Don't throw, just set to 0
       }
 
       // Content progress count
-      const contentProgressCount = await ContentProgress.count({
-        where: {
-          student_id: userId,
-          is_completed: true,
-        },
-      });
+      let contentProgressCount = 0;
+      try {
+        contentProgressCount = await ContentProgress.count({
+          where: {
+            student_id: userId,
+            completed: true,
+          },
+        });
+        logger.info(`User ${userId} - Content completed: ${contentProgressCount}`);
+      } catch (error) {
+        logger.error(`Error fetching content progress for user ${userId}:`, error.message);
+        // Don't throw, just set to 0
+      }
 
       // Get enrollments this month
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const enrollmentsThisMonth = await Enrollment.count({
-        where: {
-          student_id: userId,
-          enrollment_date: { [Op.gte]: startOfMonth }
-        }
-      });
+      let enrollmentsThisMonth = 0;
+      try {
+        enrollmentsThisMonth = await Enrollment.count({
+          where: {
+            student_id: userId,
+            enrollment_date: { [Op.gte]: startOfMonth }
+          }
+        });
+      } catch (error) {
+        logger.error(`Error fetching monthly enrollments for user ${userId}:`, error.message);
+      }
 
       // Get completed courses this month
-      const coursesCompletedThisMonth = await Enrollment.count({
-        where: {
-          student_id: userId,
-          completed_at: {
-            [Op.gte]: startOfMonth,
-            [Op.ne]: null
+      let coursesCompletedThisMonth = 0;
+      try {
+        coursesCompletedThisMonth = await Enrollment.count({
+          where: {
+            student_id: userId,
+            completed_at: {
+              [Op.gte]: startOfMonth,
+              [Op.ne]: null
+            }
           }
-        }
-      });
+        });
+      } catch (error) {
+        logger.error(`Error fetching monthly completed courses for user ${userId}:`, error.message);
+      }
 
       // Get certificates this month
-      const certificatesThisMonth = await Certificate.count({
-        where: {
-          student_id: userId,
-          issue_date: { [Op.gte]: startOfMonth }
-        }
-      });
+      let certificatesThisMonth = 0;
+      try {
+        certificatesThisMonth = await Certificate.count({
+          where: {
+            student_id: userId,
+            issue_date: { [Op.gte]: startOfMonth }
+          }
+        });
+      } catch (error) {
+        logger.error(`Error fetching monthly certificates for user ${userId}:`, error.message);
+      }
 
       // Calculate average progress across all enrollments
-      const enrollments = await Enrollment.findAll({
-        where: { student_id: userId },
-        attributes: ['progress_percentage']
-      });
-
       let averageProgress = 0;
-      if (enrollments.length > 0) {
-        const totalProgress = enrollments.reduce((sum, e) => sum + (parseFloat(e.progress_percentage) || 0), 0);
-        averageProgress = totalProgress / enrollments.length;
+      try {
+        const enrollments = await Enrollment.findAll({
+          where: { student_id: userId },
+          attributes: ['progress_percentage']
+        });
+
+        if (enrollments.length > 0) {
+          const totalProgress = enrollments.reduce((sum, e) => sum + (parseFloat(e.progress_percentage) || 0), 0);
+          averageProgress = totalProgress / enrollments.length;
+        }
+      } catch (error) {
+        logger.error(`Error calculating average progress for user ${userId}:`, error.message);
       }
 
       // Recent activity (last 7 days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      let recentActivityCount = 0;
+      try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      const recentActivityCount = await ActivityLog.count({
-        where: {
-          user_id: userId,
-          created_at: { [Op.gte]: sevenDaysAgo },
-        },
-      });
+        recentActivityCount = await ActivityLog.count({
+          where: {
+            user_id: userId,
+            created_at: { [Op.gte]: sevenDaysAgo },
+          },
+        });
+      } catch (error) {
+        logger.error(`Error fetching activity log for user ${userId}:`, error.message);
+        // Don't throw, just set to 0
+      }
 
       // Calculate learning streak (simplified - consecutive days with activity)
-      const learningStreak = await ProfileController.calculateLearningStreak(userId);
+      let learningStreak = 0;
+      try {
+        learningStreak = await ProfileController.calculateLearningStreak(userId);
+      } catch (error) {
+        logger.error(`Error calculating learning streak for user ${userId}:`, error.message);
+        // Don't throw, just set to 0
+      }
+
+      logger.info(`Successfully fetched all stats for user ${userId}`);
 
       return ApiResponse.success(res, {
         // Dashboard fields (frontend expects these)
@@ -278,6 +353,10 @@ class ProfileController {
         learning_streak: learningStreak,
       });
     } catch (error) {
+      logger.error(`Error in getStats for user ${req.user?.id}:`, {
+        message: error.message,
+        stack: error.stack
+      });
       next(error);
     }
   }

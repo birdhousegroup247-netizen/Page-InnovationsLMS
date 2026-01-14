@@ -1,0 +1,133 @@
+TekyPro LMS - Current Issues Summary
+Date: 2026-01-11
+Status: Multiple backend API failures
+
+🔴 Critical Issues
+1. Cloudinary Image Upload Failing
+Location: Both frontends - Course creation page
+Error: Failed to upload image to cloud storage (HTTP 500)
+URL: POST https://tekypro-api.onrender.com/api/upload/course-thumbnail
+
+Status:
+
+✅ Environment variables set on Render backend:
+CLOUDINARY_CLOUD_NAME = dmlplegqw
+CLOUDINARY_API_KEY = 179935235522448
+CLOUDINARY_API_SECRET = (hidden, set)
+❌ Upload still failing with generic 500 error
+⚠️ Need backend logs to see actual Cloudinary error
+Code:
+
+Frontend: 
+…/src/components/common/CloudinaryUpload.jsx
+Backend: 
+…/controllers/upload/uploadController.js
+Service: 
+…/backend/services/storage/cloudinaryService.js
+2. Student Dashboard Data Not Loading
+Location: Student frontend
+URL: https://tekyprolms.onrender.com/dashboard
+Error: Failed to load dashboard data. Please try again.
+API: GET /api/profile/stats
+
+Status:
+
+✅ Backend code looks correct (all models imported)
+❌ API call failing
+⚠️ Need backend logs to see database/API error
+Code:
+
+Frontend: 
+…/frontend/src/pages/Dashboard.jsx
+Backend: 
+…/controllers/profile/profileController.js
+3. Admin Dashboard Data Not Loading
+Location: Admin frontend
+URL: https://admin-tekyprolms.onrender.com/dashboard
+Error: Failing to fetch data
+API: Likely /api/admin/stats or similar
+
+Status:
+
+❌ API call failing
+⚠️ Need backend logs to identify exact endpoint and error
+📋 Platform Architecture (Clarified)
+Student/Instructor App
+URL: https://tekyprolms.onrender.com
+Users: Students + Instructors
+Features:
+Browse courses
+Student dashboard
+Instructor section (/admin/*) - limited features:
+Dashboard (instructor stats)
+Instructor Applications
+Manage own courses
+Full Admin Panel
+URL: https://admin-tekyprolms.onrender.com
+Users: System Administrators (admin, super_admin roles)
+Features: ALL admin features (9 navigation tabs)
+Dashboard
+Users
+Courses
+Categories
+Question Bank
+Tests
+Analytics
+Activity Logs
+Instructor Applications
+🔧 Required Actions to Fix
+Immediate: Get Backend Logs
+Steps:
+
+Go to Render Dashboard → tekypro-api service
+Click "Logs" tab
+Scroll to the bottom (latest logs)
+Keep the page open
+Perform these actions:
+Try uploading an image on course creation
+Try loading student dashboard
+Try loading admin dashboard
+Copy the error messages that appear in real-time
+Look for:
+
+Lines containing: error, 
+Cloudinary
+, Failed, 500, database
+Stack traces
+SQL errors
+Connection errors
+Backend Issues to Check
+Database Connection:
+
+Verify all tables exist (Certificate, ActivityLog, etc.)
+Check if database migrations ran successfully
+Cloudinary Configuration:
+
+Verify API key is exactly correct (check for typos)
+Test credentials directly with Cloudinary SDK
+Check if account has restrictions
+Environment Variables:
+
+Confirm all env vars loaded correctly
+Check deployment completed successfully
+🎯 Priority Order
+Get backend logs (required for all fixes)
+Fix dashboard data loading (affects all users)
+Fix Cloudinary uploads (blocks course creation)
+💡 Temporary Workarounds
+For Course Creation (no image):
+
+Create courses without thumbnails first
+Add thumbnails later once Cloudinary is fixed
+For Dashboard:
+
+Use direct API endpoints if needed
+Check individual features (courses, enrollments still work)
+📝 Next Session Checklist
+ Get backend error logs from Render
+ Verify Cloudinary credentials are 100% correct
+ Check database tables exist
+ Test backend API endpoints directly
+ Fix identified issues
+ Verify all fixes on production
+Without backend logs, we cannot proceed with fixes. The logs will show the exact errors that are causing all 3 issues.

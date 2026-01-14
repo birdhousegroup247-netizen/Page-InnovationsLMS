@@ -6,11 +6,28 @@
 const cloudinary = require('cloudinary').v2;
 const logger = require('../../utils/logger');
 
+// Validate environment variables
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  logger.error('Cloudinary configuration error: Missing environment variables', {
+    hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+    hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+    hasApiSecret: !!process.env.CLOUDINARY_API_SECRET
+  });
+}
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Log configuration status (without exposing secrets)
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+logger.info('Cloudinary configuration loaded', {
+  cloud_name: cloudName ? `${cloudName.substring(0, 3)}***` : 'NOT_SET',
+  has_api_key: !!process.env.CLOUDINARY_API_KEY,
+  has_api_secret: !!process.env.CLOUDINARY_API_SECRET
 });
 
 class CloudinaryService {
@@ -51,8 +68,15 @@ class CloudinaryService {
         size: result.bytes,
       };
     } catch (error) {
-      logger.error('Cloudinary image upload error:', error);
-      throw new Error('Failed to upload image to cloud storage');
+      logger.error('Cloudinary image upload error:', {
+        message: error.message,
+        error: error.error?.message || error.message,
+        http_code: error.http_code,
+        stack: error.stack
+      });
+      // Throw the actual Cloudinary error message instead of generic one
+      const errorMessage = error.error?.message || error.message || 'Failed to upload image to cloud storage';
+      throw new Error(`Cloudinary upload failed: ${errorMessage}`);
     }
   }
 
@@ -87,8 +111,14 @@ class CloudinaryService {
         original_filename: result.original_filename,
       };
     } catch (error) {
-      logger.error('Cloudinary document upload error:', error);
-      throw new Error('Failed to upload document to cloud storage');
+      logger.error('Cloudinary document upload error:', {
+        message: error.message,
+        error: error.error?.message || error.message,
+        http_code: error.http_code,
+        stack: error.stack
+      });
+      const errorMessage = error.error?.message || error.message || 'Failed to upload document to cloud storage';
+      throw new Error(`Cloudinary upload failed: ${errorMessage}`);
     }
   }
 
@@ -124,8 +154,14 @@ class CloudinaryService {
         size: result.bytes,
       };
     } catch (error) {
-      logger.error('Cloudinary video upload error:', error);
-      throw new Error('Failed to upload video to cloud storage');
+      logger.error('Cloudinary video upload error:', {
+        message: error.message,
+        error: error.error?.message || error.message,
+        http_code: error.http_code,
+        stack: error.stack
+      });
+      const errorMessage = error.error?.message || error.message || 'Failed to upload video to cloud storage';
+      throw new Error(`Cloudinary upload failed: ${errorMessage}`);
     }
   }
 
@@ -145,8 +181,14 @@ class CloudinaryService {
 
       return result;
     } catch (error) {
-      logger.error('Cloudinary delete error:', error);
-      throw new Error('Failed to delete file from cloud storage');
+      logger.error('Cloudinary delete error:', {
+        message: error.message,
+        error: error.error?.message || error.message,
+        publicId,
+        resourceType
+      });
+      const errorMessage = error.error?.message || error.message || 'Failed to delete file from cloud storage';
+      throw new Error(`Cloudinary delete failed: ${errorMessage}`);
     }
   }
 
@@ -193,8 +235,13 @@ class CloudinaryService {
         public_id: result.public_id,
       };
     } catch (error) {
-      logger.error('Cloudinary URL upload error:', error);
-      throw new Error('Failed to upload file from URL');
+      logger.error('Cloudinary URL upload error:', {
+        message: error.message,
+        error: error.error?.message || error.message,
+        url
+      });
+      const errorMessage = error.error?.message || error.message || 'Failed to upload file from URL';
+      throw new Error(`Cloudinary upload from URL failed: ${errorMessage}`);
     }
   }
 
@@ -212,8 +259,14 @@ class CloudinaryService {
 
       return result;
     } catch (error) {
-      logger.error('Cloudinary get file details error:', error);
-      throw new Error('Failed to get file details');
+      logger.error('Cloudinary get file details error:', {
+        message: error.message,
+        error: error.error?.message || error.message,
+        publicId,
+        resourceType
+      });
+      const errorMessage = error.error?.message || error.message || 'Failed to get file details';
+      throw new Error(`Cloudinary get details failed: ${errorMessage}`);
     }
   }
 }

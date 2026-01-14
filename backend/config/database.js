@@ -12,10 +12,11 @@ if (process.env.DATABASE_URL) {
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
 
     pool: {
-      max: parseInt(process.env.DB_POOL_MAX) || 5,
-      min: parseInt(process.env.DB_POOL_MIN) || 0,
-      acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 60000, // Increased to 60s for Render
-      idle: parseInt(process.env.DB_POOL_IDLE) || 10000,
+      max: parseInt(process.env.DB_POOL_MAX) || 10, // Increased from 5 to 10 for better concurrency
+      min: parseInt(process.env.DB_POOL_MIN) || 2, // Keep 2 warm connections
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 60000, // 60s timeout for acquiring connection
+      idle: parseInt(process.env.DB_POOL_IDLE) || 30000, // Increased to 30s to reduce reconnects
+      evict: 60000, // Check for idle connections every 60s
     },
 
     retry: {
@@ -51,10 +52,11 @@ if (process.env.DATABASE_URL) {
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
 
       pool: {
-        max: parseInt(process.env.DB_POOL_MAX) || 5,
-        min: parseInt(process.env.DB_POOL_MIN) || 0,
+        max: parseInt(process.env.DB_POOL_MAX) || 10, // Increased from 5 to 10
+        min: parseInt(process.env.DB_POOL_MIN) || 2, // Keep 2 warm connections
         acquire: parseInt(process.env.DB_POOL_ACQUIRE) || 30000,
-        idle: parseInt(process.env.DB_POOL_IDLE) || 10000,
+        idle: parseInt(process.env.DB_POOL_IDLE) || 30000, // Increased to 30s
+        evict: 60000, // Check for idle connections every 60s
       },
 
       define: {
