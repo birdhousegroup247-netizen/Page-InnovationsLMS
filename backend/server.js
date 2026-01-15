@@ -282,7 +282,25 @@ const startServer = async () => {
     }
 
     // Initialize Redis
-    initRedis();
+    logger.info('🔄 Initializing Redis...');
+    try {
+      initRedis();
+      logger.info('✓ Redis initialization complete');
+    } catch (redisError) {
+      logger.error('✗ Redis initialization failed:', redisError.message);
+      logger.warn('⚠ Continuing without Redis...');
+    }
+
+    // Load all models
+    logger.info('🔄 Loading database models...');
+    try {
+      require('./models');
+      logger.info('✓ All models loaded successfully');
+    } catch (modelError) {
+      logger.error('✗ Model loading failed:', modelError.message);
+      logger.error('Full error:', modelError);
+      throw modelError;
+    }
 
     // Sync database tables if enabled
     // Set DB_SYNC_ENABLED=true in environment to create tables on first deploy
