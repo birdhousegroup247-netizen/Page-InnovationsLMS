@@ -288,9 +288,16 @@ const startServer = async () => {
     // Set DB_SYNC_ENABLED=true in environment to create tables on first deploy
     // IMPORTANT: Disable after tables are created to prevent accidental schema changes
     if (process.env.DB_SYNC_ENABLED === 'true') {
-      await sequelize.sync({ alter: false, force: false });
-      logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
-      logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
+      logger.info('🔄 Starting database table synchronization...');
+      try {
+        await sequelize.sync({ alter: false, force: false });
+        logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
+        logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
+      } catch (syncError) {
+        logger.error('✗ Database sync failed:', syncError.message);
+        logger.error('Full error:', syncError);
+        throw syncError;
+      }
     } else if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
       logger.info('✓ Database synchronized (development mode)');
