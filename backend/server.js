@@ -206,6 +206,7 @@ app.get('/api/version', getApiVersionInfo);
 
 // API Routes
 app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/seed', require('./routes/api/seed')); // One-time database seeding
 app.use('/api/categories', require('./routes/api/admin/categories')); // Public categories access
 app.use('/api/courses', require('./routes/api/courses'));
 app.use('/api/knowledge', require('./routes/api/knowledge'));

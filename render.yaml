@@ -70,6 +70,8 @@ services:
         sync: false
       - key: EMAIL_FROM
         value: TekyPro LMS <noreply@tekypro.com>
+      - key: SEED_SECRET
+        generateValue: true
 
   # Student/Instructor Frontend
   - type: web
