@@ -32,6 +32,7 @@ const QuestionReply = require('./QuestionReply');
 const CourseAnnouncement = require('./CourseAnnouncement');
 const Notification = require('./Notification');
 const ActivityLog = require('./ActivityLog');
+const Payment = require('./Payment');
 
 // ============================================================================
 // RELATIONSHIPS
@@ -184,6 +185,15 @@ ActivityLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 User.hasMany(ActivityLog, { foreignKey: 'user_id', as: 'activity_logs' });
 
+// Payment relationships
+Payment.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CASCADE' });
+Payment.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
+Payment.belongsTo(Enrollment, { foreignKey: 'enrollment_id', as: 'enrollment', onDelete: 'CASCADE' });
+
+User.hasMany(Payment, { foreignKey: 'student_id', as: 'payments', onDelete: 'CASCADE' });
+Course.hasMany(Payment, { foreignKey: 'course_id', as: 'payments', onDelete: 'CASCADE' });
+Enrollment.hasOne(Payment, { foreignKey: 'enrollment_id', as: 'payment', onDelete: 'CASCADE' });
+
 module.exports = {
   sequelize,  // Export sequelize instance
   User,
@@ -214,4 +224,5 @@ module.exports = {
   CourseAnnouncement,
   Notification,
   ActivityLog,
+  Payment,
 };
