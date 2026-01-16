@@ -320,11 +320,15 @@ const startServer = async () => {
     if (process.env.DB_SYNC_ENABLED === 'true') {
       logger.info('🔄 Starting database table synchronization...');
       try {
-        await sequelize.sync({ alter: false, force: false });
+        // Use alter: true to modify existing tables to match models
+        // This is safe for initial deployment and handles partial schema from failed deploys
+        await sequelize.sync({ alter: true, force: false });
         logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
         logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
       } catch (syncError) {
         logger.error('✗ Database sync failed:', syncError.message);
+        logger.error('Error name:', syncError.name);
+        logger.error('Error details:', JSON.stringify(syncError, null, 2));
         logger.error('Full error:', syncError);
         throw syncError;
       }
