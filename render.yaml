@@ -47,11 +47,11 @@ services:
       - key: REDIS_ENABLED
         value: false
       - key: DB_SYNC_ENABLED
-        value: true
+        value: false
       - key: FRONTEND_URL
-        value: https://tekypro-student.onrender.com
+        value: https://tekyprolms.onrender.com
       - key: ADMIN_FRONTEND_URL
-        value: https://tekypro-admin.onrender.com
+        value: https://admin-tekyprolms.onrender.com
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
