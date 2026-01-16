@@ -319,17 +319,34 @@ const startServer = async () => {
     // IMPORTANT: Disable after tables are created to prevent accidental schema changes
     if (process.env.DB_SYNC_ENABLED === 'true') {
       logger.info('🔄 Starting database table synchronization...');
+
+      // Check if force reset is requested (WARNING: This will delete all data!)
+      const forceReset = process.env.DB_FORCE_RESET === 'true';
+      if (forceReset) {
+        logger.warn('⚠️  DB_FORCE_RESET is enabled - This will DROP ALL TABLES and recreate them!');
+      }
+
       try {
         // Use alter: true to modify existing tables to match models
         // This is safe for initial deployment and handles partial schema from failed deploys
-        await sequelize.sync({ alter: true, force: false });
+        // Use force: true ONLY when DB_FORCE_RESET=true (WARNING: deletes all data!)
+        await sequelize.sync({ alter: !forceReset, force: forceReset });
         logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
         logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
       } catch (syncError) {
         logger.error('✗ Database sync failed:', syncError.message);
         logger.error('Error name:', syncError.name);
-        logger.error('Error details:', JSON.stringify(syncError, null, 2));
-        logger.error('Full error:', syncError);
+
+        // Sequelize wraps database errors in parent/original
+        if (syncError.parent) {
+          logger.error('Database error (parent):', syncError.parent.message);
+          logger.error('SQL:', syncError.parent.sql);
+        }
+        if (syncError.original) {
+          logger.error('Database error (original):', syncError.original.message);
+        }
+
+        logger.error('Full error stack:', syncError.stack);
         throw syncError;
       }
     } else if (process.env.NODE_ENV === 'development') {
