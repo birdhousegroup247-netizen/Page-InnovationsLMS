@@ -23,7 +23,7 @@ class AuthController {
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
       secure: isProduction, // HTTPS only in production
-      sameSite: 'lax', // CSRF protection
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for dev
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
@@ -31,7 +31,7 @@ class AuthController {
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for dev
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

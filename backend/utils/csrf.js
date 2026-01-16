@@ -45,11 +45,12 @@ class CSRF {
    */
   static setCookie(res) {
     const token = this.generateToken();
+    const isProduction = process.env.NODE_ENV === 'production';
 
     res.cookie('csrf-token', token, {
       httpOnly: false, // Client needs to read this to send back in header
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'lax',
+      secure: isProduction, // HTTPS only in production
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for dev
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
