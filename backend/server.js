@@ -1,4 +1,8 @@
+console.log('🚀 Starting TekyPro LMS server...');
+
+try {
 const express = require('express');
+console.log('✓ Express loaded');
 const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -6,14 +10,22 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
+console.log('✓ Core dependencies loaded');
 const passport = require('./config/passport');
+console.log('✓ Passport loaded');
 require('dotenv').config();
+console.log('✓ dotenv loaded');
 
 const { sequelize, testConnection } = require('./config/database');
+console.log('✓ Database config loaded');
 const { initRedis, closeRedis } = require('./config/redis');
+console.log('✓ Redis config loaded');
 const { initializeSocketIO } = require('./config/socket');
+console.log('✓ Socket.IO config loaded');
 const swaggerSpec = require('./config/swagger');
+console.log('✓ Swagger config loaded');
 const logger = require('./utils/logger');
+console.log('✓ Logger loaded');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { metricsMiddleware, metricsEndpoint } = require('./middleware/metrics');
 const { getApiVersionInfo } = require('./middleware/apiVersion');
@@ -21,6 +33,7 @@ const { performHealthCheck, performReadinessCheck, performLivenessCheck } = requ
 const { securityHeaders, detectAttackPatterns } = require('./middleware/security');
 const { preventRateLimitBypass } = require('./middleware/requestValidator');
 const { smartSanitizer } = require('./middleware/smartSanitizer');
+console.log('✓ All middleware loaded');
 
 // Initialize Express app
 const app = express();
@@ -370,5 +383,11 @@ process.on('SIGTERM', async () => {
 
 // Start the server
 startServer();
+
+} catch (error) {
+  console.error('💥 FATAL ERROR during server initialization:', error);
+  console.error('Stack trace:', error.stack);
+  process.exit(1);
+}
 
 module.exports = app;
