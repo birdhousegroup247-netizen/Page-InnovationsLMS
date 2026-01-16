@@ -1,6 +1,5 @@
 console.log('🚀 Starting TekyPro LMS server...');
 
-try {
 const express = require('express');
 console.log('✓ Express loaded');
 const http = require('http');
@@ -383,11 +382,5 @@ process.on('SIGTERM', async () => {
 
 // Start the server
 startServer();
-
-} catch (error) {
-  console.error('💥 FATAL ERROR during server initialization:', error);
-  console.error('Stack trace:', error.stack);
-  process.exit(1);
-}
 
 module.exports = app;
