@@ -7,9 +7,12 @@
 const express = require('express');
 const router = express.Router();
 
-// SECURITY: Completely disable seed endpoint in production
-if (process.env.NODE_ENV === 'production') {
-  // Export empty router - no seed routes in production
+// SECURITY: In production, require SEED_SECRET to be set
+const SEED_SECRET = process.env.SEED_SECRET;
+const isProduction = process.env.NODE_ENV === 'production';
+
+// If production and no SEED_SECRET configured, disable seeding
+if (isProduction && !SEED_SECRET) {
   module.exports = router;
   return;
 }
