@@ -5,8 +5,21 @@
  */
 
 const express = require('express');
-const bcrypt = require('bcrypt');
 const router = express.Router();
+
+// SECURITY: Completely disable seed endpoint in production
+if (process.env.NODE_ENV === 'production') {
+  router.all('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'Route not found',
+    });
+  });
+  module.exports = router;
+  return;
+}
+
+const bcrypt = require('bcrypt');
 
 /**
  * @route   POST /api/seed

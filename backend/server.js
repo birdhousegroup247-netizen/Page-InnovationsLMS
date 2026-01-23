@@ -1,7 +1,6 @@
-console.log('🚀 Starting TekyPro LMS server...');
+require('dotenv').config();
 
 const express = require('express');
-console.log('✓ Express loaded');
 const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,36 +8,38 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
-console.log('✓ Core dependencies loaded');
 const passport = require('./config/passport');
-console.log('✓ Passport loaded');
-require('dotenv').config();
-console.log('✓ dotenv loaded');
 
 const { sequelize, testConnection } = require('./config/database');
-console.log('✓ Database config loaded');
 const { initRedis, closeRedis } = require('./config/redis');
-console.log('✓ Redis config loaded');
 const { initializeSocketIO } = require('./config/socket');
-console.log('✓ Socket.IO config loaded');
 const swaggerSpec = require('./config/swagger');
-console.log('✓ Swagger config loaded');
 const logger = require('./utils/logger');
-console.log('✓ Logger loaded');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { metricsMiddleware, metricsEndpoint } = require('./middleware/metrics');
 const { getApiVersionInfo } = require('./middleware/apiVersion');
 const { performHealthCheck, performReadinessCheck, performLivenessCheck } = require('./utils/healthCheck');
-const { securityHeaders, detectAttackPatterns } = require('./middleware/security');
+const { securityHeaders, contentSecurityPolicy, detectAttackPatterns } = require('./middleware/security');
 const { preventRateLimitBypass } = require('./middleware/requestValidator');
 const { smartSanitizer } = require('./middleware/smartSanitizer');
-console.log('✓ All middleware loaded');
+
+logger.info('🚀 Starting TekyPro LMS server...');
 
 // Initialize Express app
 const app = express();
 
 // Trust proxy (required for Render/Heroku to get correct IP)
 app.set('trust proxy', 1);
+
+// HTTPS redirect in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -123,6 +124,7 @@ app.use('/api/', globalApiLimiter);
 
 // Security middleware
 app.use(securityHeaders);
+app.use(contentSecurityPolicy); // Enable CSP headers
 app.use(smartSanitizer); // Context-aware sanitization
 app.use(preventRateLimitBypass);
 app.use(detectAttackPatterns);
@@ -140,17 +142,24 @@ app.use(metricsMiddleware);
 // ROUTES
 // ============================================================================
 
-// API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'TekyPro LMS API Documentation',
-}));
+// API Documentation - Only available in development or with admin auth
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'TekyPro LMS API Documentation',
+  }));
 
-// Swagger JSON endpoint
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
-});
+  // Swagger JSON endpoint
+  app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+} else {
+  // In production, return 404 for API docs
+  app.use('/api-docs', (req, res) => {
+    res.status(404).json({ success: false, message: 'Route not found' });
+  });
+}
 
 // Health check endpoints
 app.get('/health', async (req, res) => {
@@ -318,41 +327,45 @@ const startServer = async () => {
     // Sync database tables if enabled
     // Set DB_SYNC_ENABLED=true in environment to create tables on first deploy
     // IMPORTANT: Disable after tables are created to prevent accidental schema changes
-    if (process.env.DB_SYNC_ENABLED === 'true') {
-      logger.info('🔄 Starting database table synchronization...');
+    try {
+      if (process.env.DB_SYNC_ENABLED === 'true') {
+        logger.info('🔄 Starting database table synchronization...');
 
-      // Check if force reset is requested (WARNING: This will delete all data!)
-      const forceReset = process.env.DB_FORCE_RESET === 'true';
-      if (forceReset) {
-        logger.warn('⚠️  DB_FORCE_RESET is enabled - This will DROP ALL TABLES and recreate them!');
-      }
-
-      try {
-        // Use alter: true to modify existing tables to match models
-        // This is safe for initial deployment and handles partial schema from failed deploys
-        // Use force: true ONLY when DB_FORCE_RESET=true (WARNING: deletes all data!)
-        await sequelize.sync({ alter: !forceReset, force: forceReset });
-        logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
-        logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
-      } catch (syncError) {
-        logger.error('✗ Database sync failed:', syncError.message);
-        logger.error('Error name:', syncError.name);
-
-        // Sequelize wraps database errors in parent/original
-        if (syncError.parent) {
-          logger.error('Database error (parent):', syncError.parent.message);
-          logger.error('SQL:', syncError.parent.sql);
-        }
-        if (syncError.original) {
-          logger.error('Database error (original):', syncError.original.message);
+        // Check if force reset is requested (WARNING: This will delete all data!)
+        const forceReset = process.env.DB_FORCE_RESET === 'true';
+        if (forceReset) {
+          logger.warn('⚠️  DB_FORCE_RESET is enabled - This will DROP ALL TABLES and recreate them!');
         }
 
-        logger.error('Full error stack:', syncError.stack);
-        throw syncError;
+        try {
+          // Use alter: true to modify existing tables to match models
+          // This is safe for initial deployment and handles partial schema from failed deploys
+          // Use force: true ONLY when DB_FORCE_RESET=true (WARNING: deletes all data!)
+          await sequelize.sync({ alter: !forceReset, force: forceReset });
+          logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
+          logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
+        } catch (syncError) {
+          logger.error('✗ Database sync failed:', syncError.message);
+          logger.error('Error name:', syncError.name);
+
+          // Sequelize wraps database errors in parent/original
+          if (syncError.parent) {
+            logger.error('Database error (parent):', syncError.parent.message);
+            logger.error('SQL:', syncError.parent.sql);
+          }
+          if (syncError.original) {
+            logger.error('Database error (original):', syncError.original.message);
+          }
+
+          logger.error('Full error stack:', syncError.stack);
+          // throw syncError; // Dont crash on sync error
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        await sequelize.sync({ alter: false });
+        logger.info('✓ Database synchronized (development mode)');
       }
-    } else if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: false });
-      logger.info('✓ Database synchronized (development mode)');
+    } catch (syncErr) {
+      logger.error('⚠ Database sync encountered an error but server will continue:', syncErr.message);
     }
 
     // Start server

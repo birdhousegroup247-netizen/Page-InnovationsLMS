@@ -7,7 +7,7 @@
     "start": "export RATE_LIMIT_SKIP_VALIDATION=true && node server.js",
     "server": "nodemon server.js",
     "client": "npm start --prefix client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev": "npm run server",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=__tests__/unit",

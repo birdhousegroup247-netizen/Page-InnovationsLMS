@@ -143,18 +143,36 @@ const permissionsPolicy = (req, res, next) => {
 
 /**
  * Detect and block common attack patterns
+ * NOTE: SQL keywords are NOT blocked because this is an LMS for database training.
+ * SQL injection is prevented by using parameterized queries via Sequelize ORM.
  */
 const detectAttackPatterns = (req, res, next) => {
-  const suspiciousPatterns = [
-    // SQL Injection
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|DECLARE)\b)/i,
-    // XSS
-    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-    // Path Traversal
-    /\.\.[\/\\]/,
-    // Command Injection
-    /[;&|`$()]/,
+  // Skip detection for content-heavy endpoints (courses, questions, knowledge articles)
+  // These legitimately contain code examples and SQL content
+  const contentEndpoints = [
+    '/api/courses',
+    '/api/questions',
+    '/api/knowledge',
+    '/api/announcements',
+    '/api/lessons',
   ];
+
+  const isContentEndpoint = contentEndpoints.some(endpoint => req.path.startsWith(endpoint));
+
+  const suspiciousPatterns = [
+    // XSS - Block script tags (but allow code blocks in markdown)
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    // Path Traversal - Always block
+    /\.\.[\/\\]/,
+  ];
+
+  // Only check command injection patterns on non-content endpoints
+  // Content endpoints may have legitimate code examples
+  if (!isContentEndpoint) {
+    // Command Injection - only block obvious shell metacharacters in sequence
+    // Be more specific to avoid false positives
+    suspiciousPatterns.push(/[;|`]\s*(rm|cat|wget|curl|bash|sh|nc|netcat)\b/i);
+  }
 
   const checkString = JSON.stringify({
     body: req.body,
@@ -164,7 +182,7 @@ const detectAttackPatterns = (req, res, next) => {
 
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(checkString)) {
-      logger.error('Potential attack detected', {
+      logger.warn('Potential attack pattern detected', {
         ip: req.ip,
         path: req.path,
         method: req.method,
