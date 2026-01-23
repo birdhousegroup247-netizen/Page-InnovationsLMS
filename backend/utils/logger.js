@@ -2,14 +2,19 @@ const winston = require('winston');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure logs directory exists
+// Check if we can create/access logs directory
 const logsDir = path.join(__dirname, '../logs');
+let canUseFileTransport = false;
+
 if (!fs.existsSync(logsDir)) {
   try {
     fs.mkdirSync(logsDir, { recursive: true });
+    canUseFileTransport = true;
   } catch (error) {
-    console.warn('Could not create logs directory:', error.message);
+    console.warn('Could not create logs directory, using console only:', error.message);
   }
+} else {
+  canUseFileTransport = true;
 }
 
 // Define log format
@@ -29,32 +34,35 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// Create logger instance
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: logFormat,
-  transports: [
-    // Write all logs to error.log
+// Build transports array - always include console
+const transports = [
+  new winston.transports.Console({
+    format: consoleFormat,
+  })
+];
+
+// Only add file transports if directory is accessible (not in Railway/cloud)
+if (canUseFileTransport && process.env.NODE_ENV !== 'production') {
+  transports.push(
     new winston.transports.File({
-      filename: path.join(__dirname, '../logs/error.log'),
+      filename: path.join(logsDir, 'error.log'),
       level: 'error',
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
-    // Write all logs to combined.log
     new winston.transports.File({
-      filename: path.join(__dirname, '../logs/combined.log'),
+      filename: path.join(logsDir, 'combined.log'),
       maxsize: 5242880, // 5MB
       maxFiles: 5,
-    }),
-  ],
-});
+    })
+  );
+}
 
-// Always add console transport (needed for Render/cloud deployments)
-logger.add(
-  new winston.transports.Console({
-    format: consoleFormat,
-  })
-);
+// Create logger instance
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: logFormat,
+  transports,
+});
 
 module.exports = logger;
