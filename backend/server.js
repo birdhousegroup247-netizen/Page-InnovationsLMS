@@ -80,9 +80,12 @@ const allowedOrigins = [
   'http://localhost:5173',  // Main app dev
   'http://localhost:5174',  // Admin app dev
   process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
-  // Production URLs (actual deployed URLs)
+  // Production URLs - Render
   'https://tekyprolms.onrender.com',
   'https://admin-tekyprolms.onrender.com',
+  // Production URLs - Railway
+  'https://tekypro-student-production.up.railway.app',
+  'https://tekypro-admin-production.up.railway.app',
 ];
 
 app.use(
