@@ -9,12 +9,7 @@ const router = express.Router();
 
 // SECURITY: Completely disable seed endpoint in production
 if (process.env.NODE_ENV === 'production') {
-  router.all('*', (req, res) => {
-    res.status(404).json({
-      success: false,
-      message: 'Route not found',
-    });
-  });
+  // Export empty router - no seed routes in production
   module.exports = router;
   return;
 }
