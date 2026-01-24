@@ -27,7 +27,7 @@ router.post('/', authenticate, authorize('instructor', 'admin', 'super_admin'), 
 router.put('/:id', authenticate, CourseController.updateCourse);
 router.delete('/:id', authenticate, CourseController.deleteCourse);
 router.post('/:id/enroll', authenticate, authorize('student'), CourseController.enrollCourse);
-router.get('/my/enrollments', authenticate, authorize('student'), CourseController.getMyCourses);
+router.get('/my/enrollments', authenticate, CourseController.getMyCourses);  // Allow all authenticated users to see their enrollments
 router.get('/my/teaching', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.getInstructorCourses);
 router.get('/my/students', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.getInstructorStudents);
 
