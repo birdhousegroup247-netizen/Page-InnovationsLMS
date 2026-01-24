@@ -34,22 +34,55 @@ export default function Login() {
 
       if (result.success) {
         const { user } = result;
+        const selectedRole = localStorage.getItem('selectedRole');
+
+        console.log('[Login] Login successful');
+        console.log('[Login] User role:', user.role);
+        console.log('[Login] Selected role from localStorage:', selectedRole);
 
         // Admins should use the admin portal
         if (user.role === 'admin' || user.role === 'super_admin') {
           await logout();
-          setError('Administrators should use the admin portal at tekypro-admin-production.up.railway.app');
+          setError('Administrators should use the admin portal.');
           return;
         }
 
-        // Instructors go to role selector (can choose Student or Instructor view)
-        if (user.role === 'instructor') {
-          navigate('/role-selector');
-          return;
+        // Check if user selected a role from landing page
+        if (selectedRole === 'student') {
+          console.log('[Login] User selected student role from landing page');
+          // User clicked "I'm a Student" - only allow students
+          if (user.role !== 'student') {
+            console.log('[Login] MISMATCH - User is not a student, logging out');
+            await logout();
+            setError('This login is for students only. If you are an instructor, please go back and select "I\'m an Instructor".');
+            return;
+          }
+          console.log('[Login] Navigating to /dashboard');
+          navigate('/dashboard');
+        } else if (selectedRole === 'instructor') {
+          console.log('[Login] User selected instructor role from landing page');
+          // User clicked "I'm an Instructor" - only allow instructors
+          if (user.role !== 'instructor') {
+            console.log('[Login] MISMATCH - User is not an instructor, logging out');
+            await logout();
+            setError('This login is for instructors only. If you are a student, please go back and select "I\'m a Student".');
+            return;
+          }
+          console.log('[Login] Navigating to /instructor/dashboard');
+          navigate('/instructor/dashboard');
+        } else {
+          console.log('[Login] No role selected (direct login) - redirecting based on actual role');
+          // No role selected (direct login link) - set selectedRole and redirect based on actual role
+          if (user.role === 'instructor') {
+            console.log('[Login] User is instructor, setting selectedRole and navigating to /instructor/dashboard');
+            localStorage.setItem('selectedRole', 'instructor');
+            navigate('/instructor/dashboard');
+          } else {
+            console.log('[Login] User is student, setting selectedRole and navigating to /dashboard');
+            localStorage.setItem('selectedRole', 'student');
+            navigate('/dashboard');
+          }
         }
-
-        // Students go directly to dashboard
-        navigate('/dashboard');
       } else {
         setError(result.error);
       }

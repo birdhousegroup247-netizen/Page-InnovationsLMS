@@ -37,9 +37,19 @@ export default function LandingPage() {
   useEffect(() => {
     setIsVisible(true);
 
-    // Redirect if already logged in
+    console.log('[LandingPage] useEffect - isAuthenticated:', isAuthenticated);
+
+    // Redirect if already logged in - go to appropriate dashboard
     if (isAuthenticated) {
-      navigate('/role-selector');
+      const selectedRole = localStorage.getItem('selectedRole');
+      console.log('[LandingPage] User is authenticated, selectedRole:', selectedRole);
+      if (selectedRole === 'instructor') {
+        console.log('[LandingPage] Redirecting to /instructor/dashboard');
+        navigate('/instructor/dashboard');
+      } else {
+        console.log('[LandingPage] Redirecting to /dashboard');
+        navigate('/dashboard');
+      }
     }
 
     // Auto-rotate testimonials
@@ -252,8 +262,13 @@ export default function LandingPage() {
               }`}
             >
               {/* Student Card */}
-              <Link
-                to="/login"
+              <button
+                onClick={() => {
+                  console.log('[LandingPage] Student card clicked');
+                  localStorage.setItem('selectedRole', 'student');
+                  console.log('[LandingPage] selectedRole set to:', localStorage.getItem('selectedRole'));
+                  navigate('/login');
+                }}
                 className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-blue/20 text-left overflow-hidden"
               >
                 {/* Shine Effect */}
@@ -276,11 +291,16 @@ export default function LandingPage() {
                     Get Started <ArrowRight className="w-6 h-6" />
                   </div>
                 </div>
-              </Link>
+              </button>
 
               {/* Instructor Card */}
-              <Link
-                to="/login"
+              <button
+                onClick={() => {
+                  console.log('[LandingPage] Instructor card clicked');
+                  localStorage.setItem('selectedRole', 'instructor');
+                  console.log('[LandingPage] selectedRole set to:', localStorage.getItem('selectedRole'));
+                  navigate('/login');
+                }}
                 className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-purple/20 text-left overflow-hidden"
               >
                 {/* Shine Effect */}
@@ -303,7 +323,7 @@ export default function LandingPage() {
                     Apply Now <ArrowRight className="w-6 h-6" />
                   </div>
                 </div>
-              </Link>
+              </button>
             </div>
 
             {/* Trust Indicators */}

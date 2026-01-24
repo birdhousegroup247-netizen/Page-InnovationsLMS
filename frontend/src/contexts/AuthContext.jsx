@@ -82,10 +82,11 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear tokens from localStorage
+      // Clear tokens and selected role from localStorage
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      
+      localStorage.removeItem('selectedRole');
+
       setUser(null);
       setIsAuthenticated(false);
     }

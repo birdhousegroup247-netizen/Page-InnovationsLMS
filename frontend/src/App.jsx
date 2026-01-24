@@ -111,7 +111,10 @@ function InstructorRoute({ children }) {
 function PublicRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
 
+  console.log('[PublicRoute] isAuthenticated:', isAuthenticated, 'loading:', loading, 'user:', user?.email);
+
   if (loading) {
+    console.log('[PublicRoute] Still loading...');
     return (
       <div className="min-h-screen bg-dark-900 flex items-center justify-center">
         <div className="text-center">
@@ -123,14 +126,18 @@ function PublicRoute({ children }) {
   }
 
   if (isAuthenticated && user) {
-    // Instructors go to role selector to choose their view
-    if (user.role === 'instructor') {
-      return <Navigate to="/role-selector" replace />;
+    // Redirect based on selected role from landing page
+    const selectedRole = localStorage.getItem('selectedRole');
+    console.log('[PublicRoute] User is authenticated, selectedRole:', selectedRole, 'user.role:', user.role);
+    if (selectedRole === 'instructor' && user.role === 'instructor') {
+      console.log('[PublicRoute] Redirecting to /instructor/dashboard');
+      return <Navigate to="/instructor/dashboard" replace />;
     }
-    // Students go directly to dashboard
+    console.log('[PublicRoute] Redirecting to /dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
+  console.log('[PublicRoute] Showing public content (login/register)');
   return children;
 }
 
@@ -171,11 +178,12 @@ function RoleBasedRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // Instructors go to role selector to choose their view
-  if (user.role === 'instructor') {
-    return <Navigate to="/role-selector" replace />;
+  // Redirect based on selectedRole from landing page or user's actual role
+  const selectedRole = localStorage.getItem('selectedRole');
+  if (selectedRole === 'instructor' && user.role === 'instructor') {
+    return <Navigate to="/instructor/dashboard" replace />;
   }
-  // Students go directly to dashboard
+  // Default to student dashboard
   return <Navigate to="/dashboard" replace />;
 }
 
