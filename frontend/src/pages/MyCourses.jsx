@@ -34,14 +34,21 @@ export default function MyCourses() {
   const fetchMyCourses = async () => {
     setLoading(true);
     try {
+      console.log('Fetching my courses...');
       const response = await enrollmentsAPI.getMyCourses();
+      console.log('API Response:', response);
+      console.log('Response data:', response?.data);
+      console.log('Response data.data:', response?.data?.data);
       // API returns 'courses' not 'enrollments'
-      const enrollments = response.data.data.courses || response.data.data.enrollments || [];
+      const enrollments = response?.data?.data?.courses || response?.data?.data?.enrollments || [];
+      console.log('Enrollments:', enrollments);
       // Filter out enrollments where course might be null/undefined (deleted courses)
-      const validEnrollments = enrollments.filter(enrollment => enrollment.course && enrollment.course.id);
+      const validEnrollments = enrollments.filter(enrollment => enrollment?.course && enrollment?.course?.id);
+      console.log('Valid enrollments:', validEnrollments);
       setCourses(validEnrollments);
     } catch (error) {
       console.error('Error fetching my courses:', error);
+      console.error('Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
