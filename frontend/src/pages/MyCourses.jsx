@@ -35,7 +35,8 @@ export default function MyCourses() {
     setLoading(true);
     try {
       const response = await enrollmentsAPI.getMyCourses();
-      setCourses(response.data.data.enrollments || []);
+      // API returns 'courses' not 'enrollments'
+      setCourses(response.data.data.courses || response.data.data.enrollments || []);
     } catch (error) {
       console.error('Error fetching my courses:', error);
     } finally {
