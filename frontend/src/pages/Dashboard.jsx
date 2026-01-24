@@ -18,7 +18,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      console.log('[Dashboard] Fetching dashboard data...');
       try {
         setLoading(true);
         setError(null);
@@ -30,26 +29,10 @@ export default function Dashboard() {
           coursesAPI.getAll({ limit: 2, exclude_enrolled: true })
         ]);
 
-        // Log results
-        console.log('[Dashboard] Stats result:', statsResult.status, statsResult.status === 'fulfilled' ? statsResult.value?.data : statsResult.reason?.message);
-        console.log('[Dashboard] My courses result:', myCoursesResult.status, myCoursesResult.status === 'fulfilled' ? myCoursesResult.value?.data : myCoursesResult.reason?.message);
-        console.log('[Dashboard] All courses result:', allCoursesResult.status, allCoursesResult.status === 'fulfilled' ? allCoursesResult.value?.data : allCoursesResult.reason?.message);
-
         // Extract responses (use null if failed)
         const statsResponse = statsResult.status === 'fulfilled' ? statsResult.value : null;
         const myCoursesResponse = myCoursesResult.status === 'fulfilled' ? myCoursesResult.value : null;
         const allCoursesResponse = allCoursesResult.status === 'fulfilled' ? allCoursesResult.value : null;
-
-        // Check if critical data failed
-        if (!statsResponse) {
-          console.error('[Dashboard] Stats API failed:', statsResult.reason);
-        }
-        if (!myCoursesResponse) {
-          console.error('[Dashboard] My courses API failed:', myCoursesResult.reason);
-        }
-        if (!allCoursesResponse) {
-          console.error('[Dashboard] All courses API failed:', allCoursesResult.reason);
-        }
 
         // Process stats data (with fallback for failed request)
         const statsData = statsResponse?.data?.data || {};
@@ -133,8 +116,6 @@ export default function Dashboard() {
           setError('Failed to load dashboard data. Please check your connection and try again.');
         }
       } catch (err) {
-        console.error('[Dashboard] Failed to fetch dashboard data:', err);
-        console.error('[Dashboard] Error details:', err.response?.data || err.message);
         setError('Failed to load dashboard data. Please try again.');
 
         // Set empty arrays on error

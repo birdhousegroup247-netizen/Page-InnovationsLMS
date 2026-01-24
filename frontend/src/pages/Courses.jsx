@@ -52,43 +52,29 @@ export default function Courses() {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
-    console.log('[Courses] Fetching data...');
-    console.log('[Courses] API URL:', import.meta.env.VITE_API_URL || 'http://localhost:5000 (default)');
     try {
       const params = {};
       if (searchQuery) params.search = searchQuery;
       if (selectedCategory) params.category = selectedCategory;
       if (selectedLevel) params.level = selectedLevel;
 
-      console.log('[Courses] API params:', params);
-
       const [coursesRes, categoriesRes] = await Promise.all([
         coursesAPI.getAll(params),
         categoriesAPI.getAll(),
       ]);
 
-      console.log('[Courses] Courses response:', coursesRes.data);
-      console.log('[Courses] Categories response:', categoriesRes.data);
-
       // Safely access nested data with fallbacks
       const coursesData = coursesRes?.data?.data?.courses || coursesRes?.data?.courses || [];
       const categoriesData = categoriesRes?.data?.data?.categories || categoriesRes?.data?.categories || [];
 
-      console.log('[Courses] Processed courses:', coursesData.length);
-      console.log('[Courses] Processed categories:', categoriesData.length);
-
       setCourses(coursesData);
       setCategories(categoriesData);
     } catch (err) {
-      console.error('[Courses] Error fetching data:', err);
-      console.error('[Courses] Error details:', err.response?.data || err.message);
-      // Set empty arrays on error to prevent crashes
       setCourses([]);
       setCategories([]);
       setError(err.response?.data?.message || err.message || 'Failed to load courses');
     } finally {
       setLoading(false);
-      console.log('[Courses] Loading complete');
     }
   };
 
@@ -103,7 +89,6 @@ export default function Courses() {
       await coursesAPI.enroll(courseId);
       navigate(`/courses/${courseId}`);
     } catch (error) {
-      console.error('Enrollment error:', error);
       alert(error.response?.data?.message || 'Failed to enroll');
     }
   };
@@ -329,7 +314,6 @@ export default function Courses() {
 function CourseCard({ course, viewMode, onEnroll, delay }) {
   // Guard against null/undefined course
   if (!course) {
-    console.error('[CourseCard] Received null/undefined course');
     return null;
   }
 
