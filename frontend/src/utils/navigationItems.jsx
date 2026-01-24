@@ -80,23 +80,10 @@ export const getNavigationItems = (role = 'student') => {
     },
   ];
 
-  const adminItems = [
-    {
-      label: 'Dashboard',
-      path: '/admin/dashboard',
-      icon: <Home className="w-5 h-5" />,
-    },
-    {
-      label: 'Instructor Applications',
-      path: '/admin/instructor-applications',
-      icon: <FileCheck className="w-5 h-5" />,
-    },
-    // Add more admin items as needed
-  ];
+  // Admin items removed - admins should use the separate admin app
+  // In this student app, admins/super_admins see instructor navigation
 
-  if (role === 'admin' || role === 'super_admin') {
-    return adminItems;
-  } else if (role === 'instructor') {
+  if (role === 'instructor' || role === 'admin' || role === 'super_admin') {
     return instructorItems;
   } else {
     return studentItems;
