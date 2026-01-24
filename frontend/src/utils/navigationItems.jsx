@@ -80,12 +80,10 @@ export const getNavigationItems = (role = 'student') => {
     },
   ];
 
-  // Admin items removed - admins should use the separate admin app
-  // In this student app, admins/super_admins see instructor navigation
-
-  if (role === 'instructor' || role === 'admin' || role === 'super_admin') {
+  // Show navigation based on selected role
+  if (role === 'instructor') {
     return instructorItems;
-  } else {
-    return studentItems;
   }
+  // Default to student navigation
+  return studentItems;
 };

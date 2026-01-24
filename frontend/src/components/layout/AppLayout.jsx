@@ -15,7 +15,10 @@ export default function AppLayout({ children }) {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navigationItems = getNavigationItems(user?.role);
+  // Use selected role from localStorage for navigation (set by RoleSelector)
+  // Fallback to user's actual role if not set
+  const selectedRole = localStorage.getItem('selectedRole') || user?.role;
+  const navigationItems = getNavigationItems(selectedRole);
 
   const handleLogout = () => {
     logout();

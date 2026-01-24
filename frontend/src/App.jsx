@@ -99,7 +99,8 @@ function InstructorRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== 'instructor' && user?.role !== 'admin' && user?.role !== 'super_admin') {
+  // Only instructors can access instructor routes
+  if (user?.role !== 'instructor') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -122,12 +123,12 @@ function PublicRoute({ children }) {
   }
 
   if (isAuthenticated && user) {
-    // Redirect to role selector for users with multiple roles, otherwise to dashboard
-    if (user.role === 'instructor' || user.role === 'admin' || user.role === 'super_admin') {
+    // Instructors go to role selector to choose their view
+    if (user.role === 'instructor') {
       return <Navigate to="/role-selector" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
     }
+    // Students go directly to dashboard
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -170,12 +171,12 @@ function RoleBasedRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to role selector for users with multiple roles, otherwise to dashboard
-  if (user.role === 'instructor' || user.role === 'admin' || user.role === 'super_admin') {
+  // Instructors go to role selector to choose their view
+  if (user.role === 'instructor') {
     return <Navigate to="/role-selector" replace />;
-  } else {
-    return <Navigate to="/dashboard" replace />;
   }
+  // Students go directly to dashboard
+  return <Navigate to="/dashboard" replace />;
 }
 
 function App() {

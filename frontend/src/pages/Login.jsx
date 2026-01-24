@@ -7,7 +7,7 @@ import logo from '../assets/logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -33,15 +33,23 @@ export default function Login() {
       const result = await login(formData.email, formData.password);
 
       if (result.success) {
-        // Redirect based on user role
         const { user } = result;
+
+        // Admins should use the admin portal
         if (user.role === 'admin' || user.role === 'super_admin') {
-          navigate('/admin/dashboard');
-        } else if (user.role === 'instructor') {
-          navigate('/instructor/dashboard');
-        } else {
-          navigate('/dashboard');
+          await logout();
+          setError('Administrators should use the admin portal at tekypro-admin-production.up.railway.app');
+          return;
         }
+
+        // Instructors go to role selector (can choose Student or Instructor view)
+        if (user.role === 'instructor') {
+          navigate('/role-selector');
+          return;
+        }
+
+        // Students go directly to dashboard
+        navigate('/dashboard');
       } else {
         setError(result.error);
       }
