@@ -51,15 +51,66 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
 
-      // Fetch all data in parallel
-      const [overviewRes, trendsRes, coursesRes, activitiesRes, healthRes, instructorRes] = await Promise.all([
-        adminStatsAPI.getOverview(),
-        adminStatsAPI.getEnrollmentTrends(30),
-        adminStatsAPI.getPopularCourses(5),
-        adminStatsAPI.getRecentActivities(10),
-        adminStatsAPI.getSystemHealth(),
-        adminInstructorAPI.getStats(),
-      ]);
+      // DEBUG: Fetch all data separately to identify which call fails
+      console.log('🔍 Starting dashboard data fetch...');
+
+      let overviewRes, trendsRes, coursesRes, activitiesRes, healthRes, instructorRes;
+
+      try {
+        console.log('📊 Fetching overview...');
+        overviewRes = await adminStatsAPI.getOverview();
+        console.log('✅ Overview:', overviewRes.data);
+      } catch (e) {
+        console.error('❌ Overview failed:', e.response?.status, e.response?.data || e.message);
+        throw e;
+      }
+
+      try {
+        console.log('📈 Fetching enrollment trends...');
+        trendsRes = await adminStatsAPI.getEnrollmentTrends(30);
+        console.log('✅ Trends:', trendsRes.data);
+      } catch (e) {
+        console.error('❌ Enrollment trends failed:', e.response?.status, e.response?.data || e.message);
+        throw e;
+      }
+
+      try {
+        console.log('📚 Fetching popular courses...');
+        coursesRes = await adminStatsAPI.getPopularCourses(5);
+        console.log('✅ Popular courses:', coursesRes.data);
+      } catch (e) {
+        console.error('❌ Popular courses failed:', e.response?.status, e.response?.data || e.message);
+        throw e;
+      }
+
+      try {
+        console.log('📋 Fetching recent activities...');
+        activitiesRes = await adminStatsAPI.getRecentActivities(10);
+        console.log('✅ Activities:', activitiesRes.data);
+      } catch (e) {
+        console.error('❌ Recent activities failed:', e.response?.status, e.response?.data || e.message);
+        throw e;
+      }
+
+      try {
+        console.log('🏥 Fetching system health...');
+        healthRes = await adminStatsAPI.getSystemHealth();
+        console.log('✅ System health:', healthRes.data);
+      } catch (e) {
+        console.error('❌ System health failed:', e.response?.status, e.response?.data || e.message);
+        throw e;
+      }
+
+      try {
+        console.log('👨‍🏫 Fetching instructor stats...');
+        instructorRes = await adminInstructorAPI.getStats();
+        console.log('✅ Instructor stats:', instructorRes.data);
+      } catch (e) {
+        console.error('❌ Instructor stats failed:', e.response?.status, e.response?.data || e.message);
+        throw e;
+      }
+
+      console.log('✅ All API calls successful, processing data...');
 
       setStats(overviewRes.data.data);
       setEnrollmentTrends(trendsRes.data.data.enrollments || []);
@@ -98,9 +149,17 @@ export default function AdminDashboard() {
 
       setSystemHealth(healthRes.data.data);
       setInstructorStats(instructorRes.data.data);
+      console.log('✅ Dashboard data loaded successfully!');
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Please try refreshing the page.');
+      console.error('❌ Error fetching dashboard data:', err);
+      console.error('❌ Error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        url: err.config?.url,
+        message: err.message
+      });
+      setError(`Failed to load dashboard data: ${err.response?.data?.message || err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
