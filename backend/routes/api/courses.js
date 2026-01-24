@@ -15,21 +15,21 @@ router.get('/categories/main', CategoryController.getMainCategories);
 router.get('/categories/:parentId/sub', CategoryController.getSubCategories);
 
 // ============================================================================
-// COURSE ROUTES (Public)
+// COURSE ROUTES (Authenticated) - Must come before /:id routes
 // ============================================================================
-router.get('/', CourseController.getAllCourses);
-router.get('/:id', CourseController.getCourseById);
-
-// ============================================================================
-// COURSE ROUTES (Authenticated)
-// ============================================================================
-router.post('/', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.createCourse);
-router.put('/:id', authenticate, CourseController.updateCourse);
-router.delete('/:id', authenticate, CourseController.deleteCourse);
-router.post('/:id/enroll', authenticate, authorize('student'), CourseController.enrollCourse);
 router.get('/my/enrollments', authenticate, CourseController.getMyCourses);  // Allow all authenticated users to see their enrollments
 router.get('/my/teaching', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.getInstructorCourses);
 router.get('/my/students', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.getInstructorStudents);
+router.post('/', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.createCourse);
+
+// ============================================================================
+// COURSE ROUTES (Public) - /:id must come after specific routes
+// ============================================================================
+router.get('/', CourseController.getAllCourses);
+router.get('/:id', CourseController.getCourseById);
+router.put('/:id', authenticate, CourseController.updateCourse);
+router.delete('/:id', authenticate, CourseController.deleteCourse);
+router.post('/:id/enroll', authenticate, authorize('student'), CourseController.enrollCourse);
 
 // ============================================================================
 // MODULE ROUTES
