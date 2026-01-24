@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Users, Shield, LogOut, ArrowRight } from 'lucide-react';
+import { BookOpen, Users, LogOut, ArrowRight } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export default function RoleSelector() {
@@ -17,7 +17,8 @@ export default function RoleSelector() {
       color: 'from-brand-blue to-blue-600',
       hoverColor: 'hover:from-blue-600 hover:to-blue-700',
       route: '/dashboard',
-      available: user?.role === 'student',
+      // Students, instructors, and admins can all access the student dashboard
+      available: true,
     },
     {
       name: 'instructor',
@@ -27,18 +28,7 @@ export default function RoleSelector() {
       color: 'from-brand-purple to-purple-600',
       hoverColor: 'hover:from-purple-600 hover:to-purple-700',
       route: '/instructor/dashboard',
-      available: user?.role === 'instructor',
-    },
-    {
-      name: 'admin',
-      title: 'Administrator',
-      icon: Shield,
-      description: 'Manage platform and users',
-      color: 'from-brand-red to-red-600',
-      hoverColor: 'hover:from-red-600 hover:to-red-700',
-      route: '/admin/dashboard',
-      available: user?.role === 'admin' || user?.role === 'super_admin',
-      badge: 'Admin Only',
+      available: user?.role === 'instructor' || user?.role === 'admin' || user?.role === 'super_admin',
     },
   ];
 

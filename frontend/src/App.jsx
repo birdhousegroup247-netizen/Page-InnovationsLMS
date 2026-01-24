@@ -58,13 +58,7 @@ const ManageTests = lazy(() => import('./pages/instructor/ManageTests'));
 const CreateTest = lazy(() => import('./pages/instructor/CreateTest'));
 const ContributeQuestions = lazy(() => import('./pages/instructor/ContributeQuestions'));
 
-// Admin pages - lazy loaded
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const Users = lazy(() => import('./pages/admin/Users'));
-const AdminCourses = lazy(() => import('./pages/admin/Courses'));
-const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
-const AdminActivity = lazy(() => import('./pages/admin/Activity'));
-const InstructorApplications = lazy(() => import('./pages/admin/InstructorApplications'));
+// Admin pages removed - admins should use the separate admin app
 
 // Protected Route Component with AppLayout
 function ProtectedRoute({ children }) {
@@ -84,31 +78,7 @@ function ProtectedRoute({ children }) {
   return isAuthenticated ? <AppLayout>{children}</AppLayout> : <Navigate to="/login" replace />;
 }
 
-// Admin Route Component
-function AdminRoute({ children }) {
-  const { isAuthenticated, loading, user } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-brand-blue border-r-transparent"></div>
-          <p className="mt-4 text-text-secondary">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user?.role !== 'admin' && user?.role !== 'super_admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <AppLayout>{children}</AppLayout>;
-}
+// Admin Route Component removed - admins should use the separate admin app
 
 // Instructor Route Component
 function InstructorRoute({ children }) {
@@ -152,11 +122,9 @@ function PublicRoute({ children }) {
   }
 
   if (isAuthenticated && user) {
-    // Redirect based on user role
-    if (user.role === 'admin' || user.role === 'super_admin') {
-      return <Navigate to="/admin/dashboard" replace />;
-    } else if (user.role === 'instructor') {
-      return <Navigate to="/instructor/dashboard" replace />;
+    // Redirect to role selector for users with multiple roles, otherwise to dashboard
+    if (user.role === 'instructor' || user.role === 'admin' || user.role === 'super_admin') {
+      return <Navigate to="/role-selector" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }
@@ -202,11 +170,9 @@ function RoleBasedRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect based on user role
-  if (user.role === 'admin' || user.role === 'super_admin') {
-    return <Navigate to="/admin/dashboard" replace />;
-  } else if (user.role === 'instructor') {
-    return <Navigate to="/instructor/dashboard" replace />;
+  // Redirect to role selector for users with multiple roles, otherwise to dashboard
+  if (user.role === 'instructor' || user.role === 'admin' || user.role === 'super_admin') {
+    return <Navigate to="/role-selector" replace />;
   } else {
     return <Navigate to="/dashboard" replace />;
   }
@@ -538,55 +504,8 @@ function App() {
             }
           />
 
-          {/* Admin Routes */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <AdminRoute>
-                <Users />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/instructor-applications"
-            element={
-              <AdminRoute>
-                <InstructorApplications />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/courses"
-            element={
-              <AdminRoute>
-                <AdminCourses />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/analytics"
-            element={
-              <AdminRoute>
-                <AdminAnalytics />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/activity"
-            element={
-              <AdminRoute>
-                <AdminActivity />
-              </AdminRoute>
-            }
-          />
+          {/* Admin Routes - Redirect to dashboard (admins should use the admin app) */}
+          <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
 
           {/* Landing Page - Root */}
           <Route path="/" element={<LandingPage />} />
