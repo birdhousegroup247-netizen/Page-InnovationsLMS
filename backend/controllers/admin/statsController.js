@@ -264,39 +264,63 @@ class StatsController {
         dbStatus = 'unhealthy';
       }
 
-      // Get database size info (MySQL specific)
-      const [dbSizeResult] = await sequelize.query(
-        `SELECT
-          table_schema AS 'database',
-          ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size_mb'
-        FROM information_schema.tables
-        WHERE table_schema = :dbName
-        GROUP BY table_schema`,
-        {
-          replacements: { dbName: process.env.DB_NAME },
-          type: sequelize.QueryTypes.SELECT
+      const dialect = sequelize.getDialect();
+      let dbSize = 0;
+      let tableCount = 0;
+
+      try {
+        if (dialect === 'postgres') {
+          // PostgreSQL queries
+          const [sizeResult] = await sequelize.query(
+            `SELECT pg_size_pretty(pg_database_size(current_database())) as size_pretty,
+                    pg_database_size(current_database()) / 1024 / 1024 as size_mb`,
+            { type: sequelize.QueryTypes.SELECT }
+          );
+          dbSize = sizeResult?.size_mb || 0;
+
+          const [tablesResult] = await sequelize.query(
+            `SELECT COUNT(*) as count FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`,
+            { type: sequelize.QueryTypes.SELECT }
+          );
+          tableCount = parseInt(tablesResult?.count || 0, 10);
+        } else {
+          // MySQL queries
+          const [dbSizeResult] = await sequelize.query(
+            `SELECT
+              table_schema AS 'database',
+              ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size_mb'
+            FROM information_schema.tables
+            WHERE table_schema = :dbName
+            GROUP BY table_schema`,
+            {
+              replacements: { dbName: process.env.DB_NAME },
+              type: sequelize.QueryTypes.SELECT
+            }
+          );
+          dbSize = dbSizeResult?.size_mb || 0;
+
+          const [tables] = await sequelize.query(
+            `SELECT COUNT(*) AS count
+            FROM information_schema.tables
+            WHERE table_schema = :dbName`,
+            {
+              replacements: { dbName: process.env.DB_NAME },
+              type: sequelize.QueryTypes.SELECT
+            }
+          );
+          tableCount = parseInt(tables?.count || 0, 10);
         }
-      );
-
-      const dbSize = dbSizeResult[0]?.size_mb || 0;
-
-      // Table counts
-      const [tables] = await sequelize.query(
-        `SELECT COUNT(*) AS count
-        FROM information_schema.tables
-        WHERE table_schema = :dbName`,
-        {
-          replacements: { dbName: process.env.DB_NAME },
-          type: sequelize.QueryTypes.SELECT
-        }
-      );
-
-      const tableCount = tables[0]?.count || 0;
+      } catch (queryError) {
+        logger.error('Error fetching database stats:', queryError.message);
+        // Continue with default values
+      }
 
       return ApiResponse.success(res, {
         database: {
           status: dbStatus,
-          name: process.env.DB_NAME,
+          name: process.env.DB_NAME || 'unknown',
+          dialect,
           sizeMs: parseFloat(dbSize),
           tables: tableCount,
         },
