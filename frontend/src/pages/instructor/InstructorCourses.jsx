@@ -32,12 +32,8 @@ export default function InstructorCourses() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
   useEffect(() => {
-    // Check if user is instructor
-    if (user && user.role !== 'instructor') {
-      navigate('/dashboard');
-      return;
-    }
-
+    // Note: Role check is handled by InstructorRoute wrapper in App.jsx
+    // No need to check here - InstructorRoute redirects non-instructors before this renders
     fetchCourses();
   }, [user]);
 

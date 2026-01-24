@@ -15,9 +15,21 @@ export default function AppLayout({ children }) {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Use selected role from localStorage for navigation (set by RoleSelector)
-  // Fallback to user's actual role if not set
-  const selectedRole = localStorage.getItem('selectedRole') || user?.role;
+  // CRITICAL: Only show instructor navigation if user is ACTUALLY an instructor
+  // Never trust localStorage alone - always verify against actual user role
+  const actualUserRole = user?.role || 'student';
+  const storedRole = localStorage.getItem('selectedRole');
+
+  // Instructor navigation ONLY if user is actually an instructor
+  const selectedRole = (actualUserRole === 'instructor' && storedRole === 'instructor')
+    ? 'instructor'
+    : 'student';
+
+  // Clean up stale localStorage if user doesn't have instructor role
+  if (storedRole === 'instructor' && actualUserRole !== 'instructor') {
+    localStorage.removeItem('selectedRole');
+  }
+
   const navigationItems = getNavigationItems(selectedRole);
 
   const handleLogout = () => {

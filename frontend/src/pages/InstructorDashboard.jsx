@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { instructorAPI, coursesAPI } from '../lib/api';
 import {
@@ -18,13 +18,14 @@ import {
   FileQuestion,
   Award,
   Megaphone,
-  UserPlus,
   ArrowRight,
+  GraduationCap,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { Container, EmptyState } from '../components/layout';
-import { Button, Spinner, StatsCard, StatsGrid } from '../components/ui';
-import emptyCourses from '../assets/empty-courses.svg';
+import { Container } from '../components/layout';
+import { Button, Spinner } from '../components/ui';
+import EmptyState from '../components/common/EmptyState';
 
 export default function InstructorDashboard() {
   const navigate = useNavigate();
@@ -34,21 +35,16 @@ export default function InstructorDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    // Check if user is instructor
-    if (user && user.role !== 'instructor') {
-      navigate('/dashboard');
-      return;
-    }
+    // Note: Role check is handled by InstructorRoute wrapper in App.jsx
+    // No need to check here - InstructorRoute redirects non-instructors before this renders
 
-    // Check for success message from navigation state
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
-      // Clear the message after 5 seconds
       setTimeout(() => setSuccessMessage(''), 5000);
-      // Clear the location state
       navigate(location.pathname, { replace: true, state: {} });
     }
 
@@ -57,60 +53,182 @@ export default function InstructorDashboard() {
 
   const fetchInstructorData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Fetch dashboard data from new API
       const [dashboardResponse, coursesResponse] = await Promise.all([
         instructorAPI.getDashboard(),
         coursesAPI.getInstructorCourses()
       ]);
 
-      const dashData = dashboardResponse.data.data;
-      const coursesData = coursesResponse.data.data.courses || [];
-
-      setDashboardData(dashData);
-      setCourses(coursesData);
-    } catch (error) {
-      console.error('Error fetching instructor data:', error);
-      // Fallback to old method if new API fails
+      setDashboardData(dashboardResponse.data.data);
+      setCourses(coursesResponse.data.data.courses || []);
+    } catch (err) {
+      setError('Failed to load dashboard data. Please try again.');
       try {
         const response = await coursesAPI.getInstructorCourses();
-        const coursesData = response.data.data.courses || [];
-        setCourses(coursesData);
+        setCourses(response.data.data.courses || []);
       } catch (fallbackError) {
-        console.error('Fallback error:', fallbackError);
+        // Silent fallback
       }
     } finally {
       setLoading(false);
     }
   };
 
+  // Stat Card Component
+  const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
+    <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 hover:border-gray-300 dark:hover:border-dark-600 transition-colors">
+      <div className="flex items-start justify-between mb-4">
+        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', color)}>
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{value}</h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
+      {subtitle && <p className="text-xs text-gray-500 mt-2">{subtitle}</p>}
+    </div>
+  );
+
+  // Quick Action Card Component
+  const QuickActionCard = ({ title, description, icon: Icon, color, onClick }) => (
+    <button
+      onClick={onClick}
+      className="group p-5 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-gray-300 dark:hover:border-dark-600 transition-all text-left w-full"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', `${color}/10`)}>
+          <Icon className={cn('w-5 h-5', color.replace('bg-', 'text-'))} />
+        </div>
+        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-1 transition-all" />
+      </div>
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{title}</h4>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
+    </button>
+  );
+
+  // Course Card Component
+  const CourseCard = ({ course, onEdit, onView, onManageContent }) => (
+    <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-gray-300 dark:hover:border-dark-600 transition-colors">
+      <div className="flex flex-col sm:flex-row">
+        {/* Thumbnail */}
+        <div className="sm:w-48 aspect-video sm:aspect-auto sm:h-full flex-shrink-0 bg-gradient-to-br from-brand-blue to-brand-purple">
+          {course.thumbnail_url ? (
+            <img
+              src={course.thumbnail_url}
+              alt={course.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full min-h-[120px] flex items-center justify-center">
+              <BookOpen className="w-10 h-10 text-white/50" />
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-5">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">
+              {course.title}
+            </h3>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {course.difficulty && (
+                <span className={cn('px-2 py-1 rounded-full text-xs font-medium', {
+                  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': course.difficulty === 'beginner',
+                  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': course.difficulty === 'intermediate',
+                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': course.difficulty === 'advanced',
+                })}>
+                  {course.difficulty}
+                </span>
+              )}
+              <span className={cn('px-2 py-1 rounded-full text-xs font-medium', {
+                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': course.status === 'draft',
+                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': course.status === 'published',
+                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': course.status === 'archived',
+              })}>
+                {course.status || 'draft'}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">
+            {course.description || 'No description available'}
+          </p>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <span className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              {course.enrolled_count || 0}
+            </span>
+            {course.average_rating > 0 && (
+              <span className="flex items-center gap-1">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                {Number(course.average_rating).toFixed(1)}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <DollarSign className="h-4 w-4" />
+              {course.price > 0 ? `$${course.price}` : 'Free'}
+            </span>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <Button variant="primary" size="sm" onClick={onManageContent} leftIcon={<Hammer className="h-4 w-4" />}>
+              Build
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onEdit} leftIcon={<Edit className="h-4 w-4" />}>
+              Edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={onView} leftIcon={<Eye className="h-4 w-4" />}>
+              View
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[60vh]">
+        <Spinner size="lg" />
+        <p className="mt-4 text-gray-600 dark:text-gray-400 font-medium">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <>
       {/* Page Header */}
       <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
 
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 animate-fade-in">
-                  Welcome back, {user?.full_name?.split(' ')[0]}!
-                </h1>
-                <p className="text-lg text-white/90 animate-fade-in">
-                  Manage your courses and track your teaching performance
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <GraduationCap className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                    Welcome back, {user?.full_name?.split(' ')[0]}!
+                  </h1>
+                  <p className="text-lg text-white/80 mt-1">
+                    Manage your courses and track performance
+                  </p>
+                </div>
               </div>
               <Button
-                variant="outline"
+                variant="secondary"
                 leftIcon={<Plus className="h-4 w-4" />}
                 onClick={() => navigate('/instructor/courses/create')}
-                className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
+                className="bg-white text-brand-blue hover:bg-gray-100"
               >
-                Create New Course
+                Create Course
               </Button>
             </div>
           </Container>
@@ -120,414 +238,210 @@ export default function InstructorDashboard() {
       <Container className="py-8">
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 dark:border-green-500/20 rounded-lg flex items-start gap-3 animate-slide-up transition-colors">
+          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-            <p className="text-green-600 dark:text-green-400 text-sm">{successMessage}</p>
+            <p className="text-green-800 dark:text-green-200">{successMessage}</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-800 dark:text-red-200">{error}</p>
           </div>
         )}
 
         {/* Stats Grid */}
-        <StatsGrid columns={4} className="mb-8">
-          <StatsCard
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <StatCard
             title="Total Courses"
             value={dashboardData?.teaching_summary?.total_courses || 0}
+            subtitle={`${dashboardData?.teaching_summary?.published_courses || 0} published`}
             icon={BookOpen}
-            iconColor="bg-brand-blue"
-            trend={`${dashboardData?.teaching_summary?.published_courses || 0} published`}
-            className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
-            style={{ animationDelay: '0s' }}
+            color="bg-brand-blue"
           />
-          <StatsCard
+          <StatCard
             title="Total Students"
             value={dashboardData?.teaching_summary?.total_students || 0}
+            subtitle={`+${dashboardData?.teaching_summary?.enrollments_this_month || 0} this month`}
             icon={Users}
-            iconColor="bg-brand-purple"
-            trend={`${dashboardData?.teaching_summary?.enrollments_this_month || 0} this month`}
-            className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
-            style={{ animationDelay: '0.1s' }}
+            color="bg-brand-purple"
           />
-          <StatsCard
+          <StatCard
             title="Total Enrollments"
             value={dashboardData?.teaching_summary?.total_enrollments || 0}
             icon={TrendingUp}
-            iconColor="bg-green-500"
-            className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
-            style={{ animationDelay: '0.2s' }}
+            color="bg-green-500"
           />
-          <StatsCard
+          <StatCard
             title="Pending Questions"
             value={dashboardData?.pending_questions || 0}
             icon={FileQuestion}
-            iconColor="bg-yellow-500"
-            className="animate-scale-in dark:bg-dark-800 dark:border-border-dark transition-colors"
-            style={{ animationDelay: '0.3s' }}
+            color="bg-yellow-500"
           />
-        </StatsGrid>
+        </div>
 
-        {/* Recent Enrollments & Course Performance */}
-        {dashboardData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Recent Enrollments */}
-            {dashboardData.recent_enrollments && dashboardData.recent_enrollments.length > 0 && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card transition-colors">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-4 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-brand-blue" />
-                  Recent Enrollments
-                </h3>
-                <div className="space-y-3">
-                  {dashboardData.recent_enrollments.slice(0, 5).map((enrollment, idx) => {
-                    // Format date safely - backend returns 'enrollment_date'
-                    const enrollmentDate = enrollment.enrollment_date
-                      ? new Date(enrollment.enrollment_date).toLocaleDateString()
-                      : 'N/A';
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate">
-                            {enrollment.student_name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">
-                            {enrollment.course_title}
-                          </p>
-                        </div>
-                        <span className="text-xs text-gray-400 dark:text-text-dark-muted ml-2">
-                          {enrollmentDate}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Course Performance */}
-            {dashboardData.course_performance && dashboardData.course_performance.length > 0 && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card transition-colors">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-4 flex items-center gap-2">
-                  <Award className="h-5 w-5 text-brand-purple" />
-                  Course Performance
-                </h3>
-                <div className="space-y-3">
-                  {dashboardData.course_performance.slice(0, 5).map((course, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate flex-1">
-                          {course.title}
-                        </p>
-                        <span className="text-xs text-gray-500 dark:text-text-dark-muted ml-2">
-                          {course.students} students
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-gray-600 dark:text-text-dark-secondary">Avg Progress</span>
-                            <span className="font-medium text-gray-900 dark:text-text-dark-primary">
-                              {course.avg_progress?.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-1.5">
-                            <div
-                              className="bg-brand-blue h-1.5 rounded-full transition-all"
-                              style={{ width: `${Math.min(course.avg_progress || 0, 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-gray-600 dark:text-text-dark-secondary">Completion</p>
-                          <p className="font-medium text-gray-900 dark:text-text-dark-primary">
-                            {course.completion_rate?.toFixed(1)}%
-                          </p>
-                        </div>
-                      </div>
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+          {/* Recent Enrollments */}
+          <div className="lg:col-span-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-brand-blue" />
+              Recent Enrollments
+            </h3>
+            {dashboardData?.recent_enrollments && dashboardData.recent_enrollments.length > 0 ? (
+              <div className="space-y-3">
+                {dashboardData.recent_enrollments.slice(0, 5).map((enrollment, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {enrollment.student_name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {enrollment.course_title}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                    <span className="text-xs text-gray-400 ml-2">
+                      {enrollment.enrollment_date ? new Date(enrollment.enrollment_date).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                No recent enrollments
+              </p>
             )}
           </div>
-        )}
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-text-dark-primary mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* View Students */}
-            <button
+          {/* Quick Actions */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
+            <QuickActionCard
+              title="My Students"
+              description="View student progress"
+              icon={Users}
+              color="bg-brand-blue"
               onClick={() => navigate('/instructor/students')}
-              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-brand-blue dark:hover:border-brand-blue hover:shadow-lg transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 rounded-lg bg-brand-blue/10 flex items-center justify-center group-hover:bg-brand-blue/20 transition-colors">
-                  <Users className="w-6 h-6 text-brand-blue" />
-                </div>
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-blue group-hover:translate-x-1 transition-all" />
-              </div>
-              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">My Students</h4>
-              <p className="text-sm text-gray-600 dark:text-text-dark-muted">View and track student progress</p>
-            </button>
-
-            {/* Announcements */}
-            <button
+            />
+            <QuickActionCard
+              title="Announcements"
+              description="Create announcements"
+              icon={Megaphone}
+              color="bg-brand-purple"
               onClick={() => navigate('/instructor/announcements')}
-              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-brand-purple dark:hover:border-brand-purple hover:shadow-lg transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 rounded-lg bg-brand-purple/10 flex items-center justify-center group-hover:bg-brand-purple/20 transition-colors">
-                  <Megaphone className="w-6 h-6 text-brand-purple" />
-                </div>
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-purple group-hover:translate-x-1 transition-all" />
-              </div>
-              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">Announcements</h4>
-              <p className="text-sm text-gray-600 dark:text-text-dark-muted">Create course announcements</p>
-            </button>
-
-            {/* My Questions */}
-            <button
+            />
+            <QuickActionCard
+              title="My Questions"
+              description="Track question status"
+              icon={FileQuestion}
+              color="bg-green-500"
               onClick={() => navigate('/instructor/questions')}
-              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-green-500 dark:hover:border-green-500 hover:shadow-lg transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                  <FileQuestion className="w-6 h-6 text-green-500" />
-                </div>
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all" />
-              </div>
-              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">My Questions</h4>
-              <p className="text-sm text-gray-600 dark:text-text-dark-muted">Track question approval status</p>
-            </button>
-
-            {/* Test Analytics */}
-            <button
+            />
+            <QuickActionCard
+              title="Test Analytics"
+              description="View test results"
+              icon={BarChart3}
+              color="bg-yellow-500"
               onClick={() => navigate('/instructor/tests')}
-              className="group p-6 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark hover:border-yellow-500 dark:hover:border-yellow-500 hover:shadow-lg transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
-                  <BarChart3 className="w-6 h-6 text-yellow-500" />
+            />
+          </div>
+        </div>
+
+        {/* Course Performance */}
+        {dashboardData?.course_performance && dashboardData.course_performance.length > 0 && (
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 mb-10">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5 text-brand-purple" />
+              Course Performance
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboardData.course_performance.slice(0, 6).map((course, idx) => (
+                <div key={idx} className="p-4 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                  <p className="font-medium text-gray-900 dark:text-white truncate mb-3">
+                    {course.title}
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Students</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{course.students}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Avg Progress</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{course.avg_progress?.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-1.5">
+                      <div
+                        className="bg-brand-blue h-1.5 rounded-full"
+                        style={{ width: `${Math.min(course.avg_progress || 0, 100)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-yellow-500 group-hover:translate-x-1 transition-all" />
-              </div>
-              <h4 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-1">Test Analytics</h4>
-              <p className="text-sm text-gray-600 dark:text-text-dark-muted">View test results & analytics</p>
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Courses Section */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
-            Recent Courses
-          </h3>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              rightIcon={<ArrowRight className="h-4 w-4" />}
-              onClick={() => navigate('/instructor/courses')}
-              className="hidden sm:flex"
-            >
-              View All Courses
-            </Button>
-            <Button
-              variant="primary"
-              leftIcon={<Plus className="h-4 w-4" />}
-              onClick={() => navigate('/instructor/courses/create')}
-              className="hidden sm:flex"
-            >
-              Create New Course
-            </Button>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex flex-col justify-center items-center py-12">
-            <Spinner size="lg" />
-            <p className="mt-4 text-gray-600 dark:text-text-dark-secondary font-medium transition-colors">
-              Loading your courses...
-            </p>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Empty State */}
-        {!loading && courses.length === 0 && (
-          <EmptyState
-            image={emptyCourses}
-            icon={<BookOpen className="w-16 h-16" />}
-            title="No courses yet"
-            description="Get started by creating your first course"
-            actionLabel="Create Your First Course"
-            onAction={() => navigate('/instructor/courses/create')}
-          />
-        )}
+        {/* Recent Courses */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Your Courses</h3>
+            <Link
+              to="/instructor/courses"
+              className="inline-flex items-center gap-1 text-sm font-medium text-brand-blue hover:text-brand-blue-600 transition-colors"
+            >
+              View all
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
 
-        {/* Recent Courses List - Show max 4 courses */}
-        {!loading && courses.length > 0 && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {courses.slice(0, 4).map((course, index) => (
+          {courses.length === 0 ? (
+            <EmptyState
+              icon={<BookOpen className="w-12 h-12" />}
+              title="No courses yet"
+              description="Get started by creating your first course"
+              action={
+                <Button
+                  variant="primary"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => navigate('/instructor/courses/create')}
+                >
+                  Create Your First Course
+                </Button>
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {courses.slice(0, 4).map((course) => (
                 <CourseCard
                   key={course.id}
                   course={course}
                   onEdit={() => navigate(`/instructor/courses/${course.id}/edit`)}
                   onView={() => navigate(`/courses/${course.id}`)}
                   onManageContent={() => navigate(`/instructor/courses/${course.id}/builder`)}
-                  delay={index * 0.1}
                 />
               ))}
             </div>
+          )}
 
-            {/* View All Courses Link - Mobile and when more than 4 courses */}
-            {courses.length > 4 && (
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  rightIcon={<ArrowRight className="h-4 w-4" />}
-                  onClick={() => navigate('/instructor/courses')}
-                  className="w-full sm:w-auto"
-                >
-                  View All {courses.length} Courses
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+          {courses.length > 4 && (
+            <div className="text-center mt-6">
+              <Button
+                variant="outline"
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+                onClick={() => navigate('/instructor/courses')}
+              >
+                View All {courses.length} Courses
+              </Button>
+            </div>
+          )}
+        </div>
       </Container>
     </>
-  );
-}
-
-// Course Card Component for Instructor
-function CourseCard({ course, onEdit, onView, onManageContent, delay }) {
-  const thumbnail =
-    course.thumbnail_url ||
-    `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(
-      course.title || 'Course'
-    )}`;
-
-  const difficultyColors = {
-    beginner: 'success',
-    intermediate: 'warning',
-    advanced: 'danger',
-  };
-
-  const statusColors = {
-    draft: 'warning',
-    published: 'success',
-    archived: 'danger',
-  };
-
-  return (
-    <div
-      className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden shadow-sm dark:shadow-card hover:shadow-md dark:hover:shadow-card-hover transition-all flex flex-col sm:flex-row gap-4 p-4 animate-slide-up"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      {/* Thumbnail */}
-      <div className="flex-shrink-0 w-full sm:w-48 aspect-video sm:aspect-auto sm:h-32 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700 transition-colors">
-        <img
-          src={thumbnail}
-          alt={course.title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary line-clamp-1 mb-1 transition-colors">
-              {course.title}
-            </h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              {course.difficulty && (
-                <span className={cn('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', {
-                  'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': course.difficulty === 'beginner',
-                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': course.difficulty === 'intermediate',
-                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': course.difficulty === 'advanced',
-                })}>
-                  {course.difficulty}
-                </span>
-              )}
-              <span className={cn('inline-flex items-center px-2 py-1 rounded-full text-xs font-medium', {
-                'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': course.status === 'draft',
-                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': course.status === 'published',
-                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': course.status === 'archived',
-                'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400': !course.status,
-              })}>
-                {course.status || 'Draft'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <p className="text-gray-600 dark:text-text-dark-secondary text-sm line-clamp-2 mb-3 transition-colors">
-          {course.description || 'No description available'}
-        </p>
-
-        {/* Stats */}
-        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-text-dark-muted mb-4 flex-wrap transition-colors">
-          <span className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            {course.enrolled_count || 0} students
-          </span>
-          {course.average_rating > 0 && (
-            <span className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              {Number(course.average_rating).toFixed(1)}
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <DollarSign className="h-4 w-4" />
-            {course.price > 0 ? `$${course.price}` : 'Free'}
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 mt-auto flex-wrap">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onManageContent}
-            leftIcon={<Hammer className="h-4 w-4" />}
-            className="flex-1 min-w-[120px]"
-          >
-            Build Course
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onEdit}
-            leftIcon={<Edit className="h-4 w-4" />}
-            className="flex-1 min-w-[80px]"
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onView}
-            leftIcon={<Eye className="h-4 w-4" />}
-            className="flex-1 min-w-[80px]"
-          >
-            View
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-2 min-w-0"
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }

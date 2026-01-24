@@ -82,6 +82,7 @@ function ProtectedRoute({ children }) {
 // Admin Route Component removed - admins should use the separate admin app
 
 // Instructor Route Component
+// Redirects non-instructors to landing page - keeps instructor/student apps separate
 function InstructorRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
 
@@ -101,8 +102,9 @@ function InstructorRoute({ children }) {
   }
 
   // Only instructors can access instructor routes
+  // Non-instructors are redirected to landing page (separate apps concept)
   if (user?.role !== 'instructor') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <AppLayout>{children}</AppLayout>;

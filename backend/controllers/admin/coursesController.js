@@ -65,11 +65,11 @@ class AdminCoursesController {
                 attributes: {
                     include: [
                         [
-                            literal('(SELECT COUNT(*) FROM course_modules WHERE course_modules.course_id = Course.id)'),
+                            literal('(SELECT COUNT(*) FROM course_modules WHERE course_modules.course_id = "Course".id)'),
                             'module_count'
                         ],
                         [
-                            literal('(SELECT COUNT(*) FROM module_contents mc INNER JOIN course_modules cm ON mc.module_id = cm.id WHERE cm.course_id = Course.id)'),
+                            literal('(SELECT COUNT(*) FROM module_contents mc INNER JOIN course_modules cm ON mc.module_id = cm.id WHERE cm.course_id = "Course".id)'),
                             'content_count'
                         ]
                     ]

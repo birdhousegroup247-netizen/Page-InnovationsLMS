@@ -78,11 +78,7 @@ export default function CreateTest() {
   });
 
   useEffect(() => {
-    if (user && user.role !== 'instructor') {
-      navigate('/dashboard');
-      return;
-    }
-
+    // Note: Role check is handled by InstructorRoute wrapper in App.jsx
     fetchInitialData();
   }, [user]);
 
