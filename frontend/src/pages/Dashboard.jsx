@@ -23,19 +23,36 @@ export default function Dashboard() {
         setLoading(true);
         setError(null);
 
-        // Fetch all data in parallel
-        const [statsResponse, myCoursesResponse, allCoursesResponse] = await Promise.all([
+        // Fetch all data in parallel with individual error handling
+        const [statsResult, myCoursesResult, allCoursesResult] = await Promise.allSettled([
           profileAPI.getStats(),
           enrollmentsAPI.getMyCourses(),
           coursesAPI.getAll({ limit: 2, exclude_enrolled: true })
         ]);
 
-        console.log('[Dashboard] Stats response:', statsResponse.data);
-        console.log('[Dashboard] My courses response:', myCoursesResponse.data);
-        console.log('[Dashboard] All courses response:', allCoursesResponse.data);
+        // Log results
+        console.log('[Dashboard] Stats result:', statsResult.status, statsResult.status === 'fulfilled' ? statsResult.value?.data : statsResult.reason?.message);
+        console.log('[Dashboard] My courses result:', myCoursesResult.status, myCoursesResult.status === 'fulfilled' ? myCoursesResult.value?.data : myCoursesResult.reason?.message);
+        console.log('[Dashboard] All courses result:', allCoursesResult.status, allCoursesResult.status === 'fulfilled' ? allCoursesResult.value?.data : allCoursesResult.reason?.message);
 
-        // Process stats data
-        const statsData = statsResponse.data.data;
+        // Extract responses (use null if failed)
+        const statsResponse = statsResult.status === 'fulfilled' ? statsResult.value : null;
+        const myCoursesResponse = myCoursesResult.status === 'fulfilled' ? myCoursesResult.value : null;
+        const allCoursesResponse = allCoursesResult.status === 'fulfilled' ? allCoursesResult.value : null;
+
+        // Check if critical data failed
+        if (!statsResponse) {
+          console.error('[Dashboard] Stats API failed:', statsResult.reason);
+        }
+        if (!myCoursesResponse) {
+          console.error('[Dashboard] My courses API failed:', myCoursesResult.reason);
+        }
+        if (!allCoursesResponse) {
+          console.error('[Dashboard] All courses API failed:', allCoursesResult.reason);
+        }
+
+        // Process stats data (with fallback for failed request)
+        const statsData = statsResponse?.data?.data || {};
         const processedStats = [
           {
             title: 'Enrolled Courses',
@@ -71,31 +88,31 @@ export default function Dashboard() {
           },
         ];
 
-        // Process recent courses (in-progress courses)
-        const coursesData = myCoursesResponse.data.data.enrollments || [];
+        // Process recent courses (in-progress courses) - with fallback
+        const coursesData = myCoursesResponse?.data?.data?.enrollments || myCoursesResponse?.data?.data?.courses || [];
         const inProgressCourses = coursesData
           .filter(enrollment => enrollment.progress_percentage > 0 && enrollment.progress_percentage < 100)
           .slice(0, 3)
           .map(enrollment => ({
-            id: enrollment.course.id,
-            title: enrollment.course.title,
+            id: enrollment.course?.id || enrollment.id,
+            title: enrollment.course?.title || enrollment.title,
             progress: Math.round(enrollment.progress_percentage || 0),
-            instructor: enrollment.course.instructor?.full_name || 'Instructor',
-            thumbnail: enrollment.course.thumbnail_url || `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(enrollment.course.title)}`,
-            duration: enrollment.course.duration || 'N/A',
+            instructor: enrollment.course?.instructor?.full_name || enrollment.instructor?.full_name || 'Instructor',
+            thumbnail: enrollment.course?.thumbnail_url || enrollment.thumbnail_url || `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(enrollment.course?.title || enrollment.title || 'Course')}`,
+            duration: enrollment.course?.duration || enrollment.duration || 'N/A',
             lessonsCompleted: enrollment.completed_contents || 0,
             totalLessons: enrollment.total_contents || 0,
           }));
 
-        // Process recommendations (all courses excluding enrolled)
-        const recommendationsData = allCoursesResponse.data.data.courses || [];
+        // Process recommendations (all courses excluding enrolled) - with fallback
+        const recommendationsData = allCoursesResponse?.data?.data?.courses || [];
         const processedRecommendations = recommendationsData.slice(0, 2).map(course => ({
           id: course.id,
           title: course.title,
           instructor: course.instructor?.full_name || 'Instructor',
           rating: course.average_rating || 4.5,
           students: course.total_enrollments || 0,
-          thumbnail: course.thumbnail_url || `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(course.title)}`,
+          thumbnail: course.thumbnail_url || `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(course.title || 'Course')}`,
           level: course.difficulty || 'Intermediate',
           price: course.price ? `$${course.price}` : 'Free',
         }));
@@ -103,6 +120,18 @@ export default function Dashboard() {
         setStats(processedStats);
         setRecentCourses(inProgressCourses);
         setRecommendations(processedRecommendations);
+
+        // Set partial error if some APIs failed but others succeeded
+        const failedAPIs = [];
+        if (!statsResponse) failedAPIs.push('profile stats');
+        if (!myCoursesResponse) failedAPIs.push('enrolled courses');
+        if (!allCoursesResponse) failedAPIs.push('recommendations');
+
+        if (failedAPIs.length > 0 && failedAPIs.length < 3) {
+          setError(`Some data couldn't be loaded: ${failedAPIs.join(', ')}`);
+        } else if (failedAPIs.length === 3) {
+          setError('Failed to load dashboard data. Please check your connection and try again.');
+        }
       } catch (err) {
         console.error('[Dashboard] Failed to fetch dashboard data:', err);
         console.error('[Dashboard] Error details:', err.response?.data || err.message);
