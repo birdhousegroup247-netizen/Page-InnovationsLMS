@@ -481,7 +481,7 @@ function CourseCard({ course, onEdit, onView, onManageContent, delay }) {
           {course.average_rating > 0 && (
             <span className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              {course.average_rating.toFixed(1)}
+              {Number(course.average_rating).toFixed(1)}
             </span>
           )}
           <span className="flex items-center gap-1">

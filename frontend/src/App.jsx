@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AppLayout from './components/layout/AppLayout';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Loading component for Suspense fallback
 const PageLoader = () => (
@@ -189,11 +190,12 @@ function RoleBasedRedirect() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <Router>
-        <AuthProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <Router>
+          <AuthProvider>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
           {/* Public Routes */}
           <Route
             path="/login"
@@ -524,8 +526,9 @@ function App() {
             </Routes>
           </Suspense>
         </AuthProvider>
-      </Router>
-    </ThemeProvider>
+        </Router>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

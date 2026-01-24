@@ -164,7 +164,7 @@ export default function CourseDetail() {
                 {course.average_rating && (
                   <span className="flex items-center gap-1.5">
                     <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                    {course.average_rating.toFixed(1)} ({course.reviews_count || 0} reviews)
+                    {Number(course.average_rating).toFixed(1)} ({course.reviews_count || 0} reviews)
                   </span>
                 )}
               </div>

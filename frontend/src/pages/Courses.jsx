@@ -12,6 +12,7 @@ import {
   Grid,
   List,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react';
 import { Container, EmptyState } from '../components/layout';
 import { Badge, Button, Spinner } from '../components/ui';
@@ -30,6 +31,7 @@ export default function Courses() {
   const [selectedLevel, setSelectedLevel] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState(null);
 
   // Read search parameter from URL
   useEffect(() => {
@@ -49,7 +51,9 @@ export default function Courses() {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     console.log('[Courses] Fetching data...');
+    console.log('[Courses] API URL:', import.meta.env.VITE_API_URL || 'http://localhost:5000 (default)');
     try {
       const params = {};
       if (searchQuery) params.search = searchQuery;
@@ -66,12 +70,22 @@ export default function Courses() {
       console.log('[Courses] Courses response:', coursesRes.data);
       console.log('[Courses] Categories response:', categoriesRes.data);
 
-      setCourses(coursesRes.data.data.courses || []);
-      setCategories(categoriesRes.data.data.categories || []);
-      console.log('[Courses] Set courses:', coursesRes.data.data.courses?.length || 0);
-    } catch (error) {
-      console.error('[Courses] Error fetching data:', error);
-      console.error('[Courses] Error details:', error.response?.data || error.message);
+      // Safely access nested data with fallbacks
+      const coursesData = coursesRes?.data?.data?.courses || coursesRes?.data?.courses || [];
+      const categoriesData = categoriesRes?.data?.data?.categories || categoriesRes?.data?.categories || [];
+
+      console.log('[Courses] Processed courses:', coursesData.length);
+      console.log('[Courses] Processed categories:', categoriesData.length);
+
+      setCourses(coursesData);
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error('[Courses] Error fetching data:', err);
+      console.error('[Courses] Error details:', err.response?.data || err.message);
+      // Set empty arrays on error to prevent crashes
+      setCourses([]);
+      setCategories([]);
+      setError(err.response?.data?.message || err.message || 'Failed to load courses');
     } finally {
       setLoading(false);
       console.log('[Courses] Loading complete');
@@ -245,6 +259,25 @@ export default function Courses() {
             </div>
           )}
 
+          {/* Error State */}
+          {error && (
+            <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-800 dark:text-red-200 font-medium">Failed to load courses</p>
+                <p className="text-red-600 dark:text-red-300 text-sm mt-1">{error}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchData()}
+                  className="mt-3"
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Loading State */}
           {loading && (
             <div className="flex flex-col justify-center items-center py-20">
@@ -294,6 +327,12 @@ export default function Courses() {
 
 // Course Card Component
 function CourseCard({ course, viewMode, onEnroll, delay }) {
+  // Guard against null/undefined course
+  if (!course) {
+    console.error('[CourseCard] Received null/undefined course');
+    return null;
+  }
+
   const difficultyColors = {
     beginner: 'success',
     intermediate: 'warning',
@@ -302,7 +341,7 @@ function CourseCard({ course, viewMode, onEnroll, delay }) {
 
   const thumbnail =
     course.thumbnail_url ||
-    `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(course.title)}`;
+    `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(course.title || 'Course')}`;
 
   if (viewMode === 'list') {
     return (
@@ -351,7 +390,7 @@ function CourseCard({ course, viewMode, onEnroll, delay }) {
               {course.average_rating && (
                 <span className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  {course.average_rating.toFixed(1)}
+                  {Number(course.average_rating).toFixed(1)}
                 </span>
               )}
             </div>
@@ -419,7 +458,7 @@ function CourseCard({ course, viewMode, onEnroll, delay }) {
           {course.average_rating && (
             <span className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              {course.average_rating.toFixed(1)}
+              {Number(course.average_rating).toFixed(1)}
             </span>
           )}
         </div>
