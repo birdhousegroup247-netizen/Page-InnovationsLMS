@@ -34,21 +34,13 @@ export default function MyCourses() {
   const fetchMyCourses = async () => {
     setLoading(true);
     try {
-      console.log('Fetching my courses...');
       const response = await enrollmentsAPI.getMyCourses();
-      console.log('API Response:', response);
-      console.log('Response data:', response?.data);
-      console.log('Response data.data:', response?.data?.data);
-      // API returns 'courses' not 'enrollments'
       const enrollments = response?.data?.data?.courses || response?.data?.data?.enrollments || [];
-      console.log('Enrollments:', enrollments);
       // Filter out enrollments where course might be null/undefined (deleted courses)
       const validEnrollments = enrollments.filter(enrollment => enrollment?.course && enrollment?.course?.id);
-      console.log('Valid enrollments:', validEnrollments);
       setCourses(validEnrollments);
     } catch (error) {
       console.error('Error fetching my courses:', error);
-      console.error('Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -60,18 +52,18 @@ export default function MyCourses() {
     switch (selectedFilter) {
       case 'in-progress':
         filtered = courses.filter((enrollment) => {
-          const progress = enrollment.progress_percentage || 0;
+          const progress = Number(enrollment.progress_percentage) || 0;
           return progress > 0 && progress < 100;
         });
         break;
       case 'completed':
         filtered = courses.filter(
-          (enrollment) => (enrollment.progress_percentage || 0) === 100
+          (enrollment) => (Number(enrollment.progress_percentage) || 0) === 100
         );
         break;
       case 'not-started':
         filtered = courses.filter(
-          (enrollment) => (enrollment.progress_percentage || 0) === 0
+          (enrollment) => (Number(enrollment.progress_percentage) || 0) === 0
         );
         break;
       default:
@@ -85,11 +77,11 @@ export default function MyCourses() {
   const stats = {
     total: courses.length,
     inProgress: courses.filter((e) => {
-      const progress = e.progress_percentage || 0;
+      const progress = Number(e.progress_percentage) || 0;
       return progress > 0 && progress < 100;
     }).length,
-    completed: courses.filter((e) => (e.progress_percentage || 0) === 100).length,
-    notStarted: courses.filter((e) => (e.progress_percentage || 0) === 0).length,
+    completed: courses.filter((e) => (Number(e.progress_percentage) || 0) === 100).length,
+    notStarted: courses.filter((e) => (Number(e.progress_percentage) || 0) === 0).length,
   };
 
   const filters = [
@@ -98,9 +90,6 @@ export default function MyCourses() {
     { id: 'completed', label: 'Completed', count: stats.completed },
     { id: 'not-started', label: 'Not Started', count: stats.notStarted },
   ];
-
-  console.log('Stats calculated:', stats);
-  console.log('Filtered courses:', filteredCourses);
 
   const statsCards = [
     {
@@ -133,11 +122,8 @@ export default function MyCourses() {
     },
   ];
 
-  console.log('About to render MyCourses JSX');
-
   return (
     <>
-      {console.log('Inside JSX render')}
       {/* Page Header */}
         <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
           {/* Animated background elements */}
@@ -271,11 +257,8 @@ export default function MyCourses() {
 
 // Course Card Component
 function CourseCard({ enrollment, onContinue, onViewDetails, delay }) {
-  console.log('CourseCard rendering, enrollment:', enrollment);
-  console.log('CourseCard course:', enrollment?.course);
   const course = enrollment.course || {};
-  const progress = enrollment.progress_percentage || 0;
-  console.log('CourseCard progress:', progress, 'course:', course);
+  const progress = Number(enrollment.progress_percentage) || 0;
   const thumbnail =
     course.thumbnail_url ||
     `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(
