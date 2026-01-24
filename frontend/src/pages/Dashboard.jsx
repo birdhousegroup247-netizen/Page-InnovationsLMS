@@ -22,12 +22,39 @@ export default function Dashboard() {
         setLoading(true);
         setError(null);
 
-        // Fetch all data in parallel
-        const [statsResponse, myCoursesResponse, allCoursesResponse] = await Promise.all([
-          profileAPI.getStats(),
-          enrollmentsAPI.getMyCourses(),
-          coursesAPI.getAll({ limit: 2, exclude_enrolled: true })
-        ]);
+        console.log('📊 Fetching dashboard data...');
+
+        // Fetch all data separately for debugging
+        let statsResponse, myCoursesResponse, allCoursesResponse;
+
+        try {
+          console.log('1️⃣ Fetching profile stats...');
+          statsResponse = await profileAPI.getStats();
+          console.log('✅ Profile stats:', statsResponse.data);
+        } catch (e) {
+          console.error('❌ Profile stats failed:', e.response?.status, e.response?.data || e.message);
+          throw e;
+        }
+
+        try {
+          console.log('2️⃣ Fetching my courses...');
+          myCoursesResponse = await enrollmentsAPI.getMyCourses();
+          console.log('✅ My courses:', myCoursesResponse.data);
+        } catch (e) {
+          console.error('❌ My courses failed:', e.response?.status, e.response?.data || e.message);
+          throw e;
+        }
+
+        try {
+          console.log('3️⃣ Fetching all courses...');
+          allCoursesResponse = await coursesAPI.getAll({ limit: 2, exclude_enrolled: true });
+          console.log('✅ All courses:', allCoursesResponse.data);
+        } catch (e) {
+          console.error('❌ All courses failed:', e.response?.status, e.response?.data || e.message);
+          throw e;
+        }
+
+        console.log('✅ All API calls successful!');
 
         // Process stats data
         const statsData = statsResponse.data.data;
