@@ -99,6 +99,9 @@ export default function MyCourses() {
     { id: 'not-started', label: 'Not Started', count: stats.notStarted },
   ];
 
+  console.log('Stats calculated:', stats);
+  console.log('Filtered courses:', filteredCourses);
+
   const statsCards = [
     {
       label: 'Total Enrolled',
@@ -130,8 +133,11 @@ export default function MyCourses() {
     },
   ];
 
+  console.log('About to render MyCourses JSX');
+
   return (
     <>
+      {console.log('Inside JSX render')}
       {/* Page Header */}
         <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
           {/* Animated background elements */}
@@ -265,8 +271,11 @@ export default function MyCourses() {
 
 // Course Card Component
 function CourseCard({ enrollment, onContinue, onViewDetails, delay }) {
+  console.log('CourseCard rendering, enrollment:', enrollment);
+  console.log('CourseCard course:', enrollment?.course);
   const course = enrollment.course || {};
   const progress = enrollment.progress_percentage || 0;
+  console.log('CourseCard progress:', progress, 'course:', course);
   const thumbnail =
     course.thumbnail_url ||
     `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(
