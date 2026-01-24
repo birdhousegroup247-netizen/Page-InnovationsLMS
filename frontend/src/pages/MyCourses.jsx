@@ -36,7 +36,10 @@ export default function MyCourses() {
     try {
       const response = await enrollmentsAPI.getMyCourses();
       // API returns 'courses' not 'enrollments'
-      setCourses(response.data.data.courses || response.data.data.enrollments || []);
+      const enrollments = response.data.data.courses || response.data.data.enrollments || [];
+      // Filter out enrollments where course might be null/undefined (deleted courses)
+      const validEnrollments = enrollments.filter(enrollment => enrollment.course && enrollment.course.id);
+      setCourses(validEnrollments);
     } catch (error) {
       console.error('Error fetching my courses:', error);
     } finally {
