@@ -87,7 +87,7 @@ export default function Dashboard() {
             title: enrollment.course?.title || enrollment.title,
             progress: Math.round(enrollment.progress_percentage || 0),
             instructor: enrollment.course?.instructor?.full_name || enrollment.instructor?.full_name || 'Instructor',
-            thumbnail: enrollment.course?.thumbnail_url || enrollment.thumbnail_url || `https://placehold.co/400x225/1e3a5f/ffffff?text=${encodeURIComponent(enrollment.course?.title || enrollment.title || 'Course')}`,
+            thumbnail: enrollment.course?.thumbnail_url || enrollment.thumbnail_url || null,
             lessonsCompleted: enrollment.completed_contents || 0,
             totalLessons: enrollment.total_contents || 0,
           }));
@@ -99,7 +99,7 @@ export default function Dashboard() {
           instructor: course.instructor?.full_name || 'Instructor',
           rating: course.average_rating || 0,
           students: course.total_enrollments || 0,
-          thumbnail: course.thumbnail_url || `https://placehold.co/400x225/1e3a5f/ffffff?text=${encodeURIComponent(course.title || 'Course')}`,
+          thumbnail: course.thumbnail_url || null,
           level: course.difficulty || 'Beginner',
           price: course.price ? `$${course.price}` : 'Free',
         }));
@@ -154,12 +154,18 @@ export default function Dashboard() {
   const CourseProgressCard = ({ course }) => (
     <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-brand-blue dark:hover:border-brand-blue transition-colors group">
       {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-dark-700">
-        <img
-          src={course.thumbnail}
-          alt={course.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-brand-blue to-brand-purple">
+        {course.thumbnail ? (
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <BookOpen className="w-12 h-12 text-white/50" />
+          </div>
+        )}
         {/* Progress Badge */}
         <div className="absolute top-3 right-3 px-3 py-1.5 bg-white dark:bg-dark-800 rounded-full shadow-sm">
           <span className="text-sm font-semibold text-brand-blue">{course.progress}%</span>
@@ -206,14 +212,20 @@ export default function Dashboard() {
   const RecommendationCard = ({ course }) => (
     <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-brand-purple dark:hover:border-brand-purple transition-colors group">
       {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-dark-700">
-        <img
-          src={course.thumbnail}
-          alt={course.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-brand-purple to-brand-red">
+        {course.thumbnail ? (
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <BookOpen className="w-12 h-12 text-white/50" />
+          </div>
+        )}
         {/* Level Badge */}
-        <div className="absolute top-3 left-3 px-3 py-1.5 bg-brand-purple/90 text-white text-xs font-medium rounded-full">
+        <div className="absolute top-3 left-3 px-3 py-1.5 bg-white/90 dark:bg-dark-800/90 text-brand-purple text-xs font-semibold rounded-full">
           {course.level}
         </div>
       </div>
