@@ -49,23 +49,32 @@ export default function Courses() {
 
   const fetchData = async () => {
     setLoading(true);
+    console.log('[Courses] Fetching data...');
     try {
       const params = {};
       if (searchQuery) params.search = searchQuery;
       if (selectedCategory) params.category = selectedCategory;
       if (selectedLevel) params.level = selectedLevel;
 
+      console.log('[Courses] API params:', params);
+
       const [coursesRes, categoriesRes] = await Promise.all([
         coursesAPI.getAll(params),
         categoriesAPI.getAll(),
       ]);
 
+      console.log('[Courses] Courses response:', coursesRes.data);
+      console.log('[Courses] Categories response:', categoriesRes.data);
+
       setCourses(coursesRes.data.data.courses || []);
       setCategories(categoriesRes.data.data.categories || []);
+      console.log('[Courses] Set courses:', coursesRes.data.data.courses?.length || 0);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('[Courses] Error fetching data:', error);
+      console.error('[Courses] Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
+      console.log('[Courses] Loading complete');
     }
   };
 

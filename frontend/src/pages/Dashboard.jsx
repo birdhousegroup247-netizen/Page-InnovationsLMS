@@ -18,6 +18,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      console.log('[Dashboard] Fetching dashboard data...');
       try {
         setLoading(true);
         setError(null);
@@ -28,6 +29,10 @@ export default function Dashboard() {
           enrollmentsAPI.getMyCourses(),
           coursesAPI.getAll({ limit: 2, exclude_enrolled: true })
         ]);
+
+        console.log('[Dashboard] Stats response:', statsResponse.data);
+        console.log('[Dashboard] My courses response:', myCoursesResponse.data);
+        console.log('[Dashboard] All courses response:', allCoursesResponse.data);
 
         // Process stats data
         const statsData = statsResponse.data.data;
@@ -99,7 +104,8 @@ export default function Dashboard() {
         setRecentCourses(inProgressCourses);
         setRecommendations(processedRecommendations);
       } catch (err) {
-        console.error('Failed to fetch dashboard data:', err);
+        console.error('[Dashboard] Failed to fetch dashboard data:', err);
+        console.error('[Dashboard] Error details:', err.response?.data || err.message);
         setError('Failed to load dashboard data. Please try again.');
 
         // Set empty arrays on error
