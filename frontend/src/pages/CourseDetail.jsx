@@ -33,6 +33,7 @@ export default function CourseDetail() {
   const [expandedModules, setExpandedModules] = useState({});
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [enrollmentSuccess, setEnrollmentSuccess] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     fetchCourse();
@@ -42,11 +43,13 @@ export default function CourseDetail() {
     setLoading(true);
     try {
       const response = await coursesAPI.getById(id);
-      setCourse(response.data.data.course);
+      const data = response.data.data;
+      setCourse(data.course);
+      setIsEnrolled(data.isEnrolled || false);
 
       // Expand first module by default
-      if (response.data.data.course?.modules?.length > 0) {
-        setExpandedModules({ [response.data.data.course.modules[0].id]: true });
+      if (data.course?.modules?.length > 0) {
+        setExpandedModules({ [data.course.modules[0].id]: true });
       }
     } catch (error) {
       console.error('Error fetching course:', error);
@@ -69,6 +72,7 @@ export default function CourseDetail() {
       await coursesAPI.enroll(id);
       setShowPaymentModal(false);
       setEnrollmentSuccess(true);
+      setIsEnrolled(true);
 
       // Show success message briefly then redirect
       setTimeout(() => {
@@ -101,10 +105,24 @@ export default function CourseDetail() {
   }
 
   if (!course) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center transition-colors">
+        <div className="text-center">
+          <BookOpen className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+            Course not found
+          </h3>
+          <p className="text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors">
+            The course could not be loaded. It may have been removed or is unavailable.
+          </p>
+          <Link to="/courses">
+            <Button variant="primary">Back to Courses</Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  const isEnrolled = course.is_enrolled || false;
   const thumbnail =
     course.thumbnail_url ||
     `https://placehold.co/1200x600/0e2b5c/ffffff?text=${encodeURIComponent(course.title)}`;

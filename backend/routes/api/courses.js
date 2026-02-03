@@ -5,7 +5,7 @@ const CategoryController = require('../../controllers/courses/categoryController
 const ModuleController = require('../../controllers/courses/moduleController');
 const ContentController = require('../../controllers/courses/contentController');
 const ProgressController = require('../../controllers/courses/progressController');
-const { authenticate, authorize } = require('../../middleware/auth/authMiddleware');
+const { authenticate, optionalAuthenticate, authorize } = require('../../middleware/auth/authMiddleware');
 
 // ============================================================================
 // CATEGORY ROUTES
@@ -26,7 +26,7 @@ router.post('/', authenticate, authorize('instructor', 'admin', 'super_admin'), 
 // COURSE ROUTES (Public) - /:id must come after specific routes
 // ============================================================================
 router.get('/', CourseController.getAllCourses);
-router.get('/:id', CourseController.getCourseById);
+router.get('/:id', optionalAuthenticate, CourseController.getCourseById);
 router.put('/:id', authenticate, CourseController.updateCourse);
 router.delete('/:id', authenticate, CourseController.deleteCourse);
 router.post('/:id/enroll', authenticate, authorize('student'), CourseController.enrollCourse);
