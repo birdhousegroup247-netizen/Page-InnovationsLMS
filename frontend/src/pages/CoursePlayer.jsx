@@ -31,6 +31,7 @@ export default function CoursePlayer() {
   const [currentContent, setCurrentContent] = useState(null);
   const [progress, setProgress] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [markingComplete, setMarkingComplete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -42,16 +43,26 @@ export default function CoursePlayer() {
   const fetchCourseData = async () => {
     setLoading(true);
     try {
-      const [courseRes, progressRes] = await Promise.all([
-        coursesAPI.getById(id),
-        progressAPI.getProgress(id),
-      ]);
+      // Fetch course data first
+      const courseRes = await coursesAPI.getById(id);
+      const courseData = courseRes.data?.data?.course;
 
-      const courseData = courseRes.data.data.course;
+      if (!courseData) {
+        console.error('No course data returned');
+        setLoading(false);
+        return;
+      }
+
       setCourse(courseData);
 
-      // Set progress data
-      const progressData = progressRes.data.data.progress || {};
+      // Fetch progress separately so it doesn't break course loading
+      let progressData = {};
+      try {
+        const progressRes = await progressAPI.getProgress(id);
+        progressData = progressRes.data?.data?.progress || {};
+      } catch (progressError) {
+        console.error('Error fetching progress (continuing without it):', progressError);
+      }
       setProgress(progressData);
 
       // Find first incomplete lesson or first lesson
@@ -61,11 +72,13 @@ export default function CoursePlayer() {
       } else if (courseData.modules?.[0]?.contents?.[0]) {
         setCurrentContent(courseData.modules[0].contents[0]);
       }
-    } catch (error) {
-      console.error('Error fetching course data:', error);
-      if (error.response?.status === 403) {
+    } catch (err) {
+      console.error('Error fetching course data:', err);
+      if (err.response?.status === 403) {
         alert('You must enroll in this course first');
         navigate(`/courses/${id}`);
+      } else {
+        setError(err.message || 'Failed to load course');
       }
     } finally {
       setLoading(false);
@@ -190,6 +203,30 @@ export default function CoursePlayer() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center transition-colors">
+        <div className="text-center max-w-md">
+          <FileText className="h-16 w-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+            Failed to load course
+          </h3>
+          <p className="text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors">
+            {error}
+          </p>
+          <div className="flex gap-3 justify-center">
+            <Button variant="primary" onClick={() => { setError(null); fetchCourseData(); }}>
+              Try Again
+            </Button>
+            <Link to="/my-courses">
+              <Button variant="outline">Back to My Courses</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!course || !currentContent) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center transition-colors">
@@ -198,6 +235,9 @@ export default function CoursePlayer() {
           <h3 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
             Course not found
           </h3>
+          <p className="text-gray-600 dark:text-text-dark-secondary mb-2 transition-colors">
+            This course has no content yet or could not be loaded.
+          </p>
           <Link to="/my-courses">
             <Button variant="primary" className="mt-4">
               Back to My Courses
