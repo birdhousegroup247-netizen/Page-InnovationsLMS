@@ -34,18 +34,22 @@ function decodeEntities(text) {
 }
 
 // Build YouTube embed URL from a youtube_url or youtube_video_id
+const YT_PARAMS = 'modestbranding=1&rel=0&showinfo=0&iv_load_policy=3';
 function getYouTubeEmbedUrl(content) {
   if (content.youtube_video_id) {
-    return `https://www.youtube.com/embed/${content.youtube_video_id}`;
+    return `https://www.youtube.com/embed/${content.youtube_video_id}?${YT_PARAMS}`;
   }
   if (content.youtube_url) {
     // Extract video ID from various YouTube URL formats
     const match = content.youtube_url.match(
       /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/
     );
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
-    // If it's already an embed URL, return as-is
-    if (content.youtube_url.includes('/embed/')) return content.youtube_url;
+    if (match) return `https://www.youtube.com/embed/${match[1]}?${YT_PARAMS}`;
+    // If it's already an embed URL, append params
+    if (content.youtube_url.includes('/embed/')) {
+      const sep = content.youtube_url.includes('?') ? '&' : '?';
+      return `${content.youtube_url}${sep}${YT_PARAMS}`;
+    }
     return content.youtube_url;
   }
   return null;
