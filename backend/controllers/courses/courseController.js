@@ -144,7 +144,7 @@ class CourseController {
                 model: ModuleContent,
                 as: 'contents',
                 // Only load essential fields for preview
-                attributes: ['id', 'title', 'type', 'order_index', 'duration_minutes', 'is_preview'],
+                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview'],
                 limit: 5, // Only first 5 items
                 separate: true, // Separate query to avoid cartesian product
                 order: [['order_index', 'ASC']],
