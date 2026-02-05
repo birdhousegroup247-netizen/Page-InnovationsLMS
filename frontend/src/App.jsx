@@ -144,6 +144,24 @@ function PublicRoute({ children }) {
   return children;
 }
 
+// Protected route WITHOUT AppLayout (for pages with their own chrome, e.g. CoursePlayer)
+function ProtectedRouteNoLayout({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-brand-blue border-r-transparent"></div>
+          <p className="mt-4 text-text-secondary">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
+
 // Role Selector Route (authenticated but no AppLayout)
 function RoleSelectorRoute() {
   const { isAuthenticated, loading } = useAuth();
@@ -271,9 +289,9 @@ function App() {
           <Route
             path="/courses/:id/learn"
             element={
-              <ProtectedRoute>
+              <ProtectedRouteNoLayout>
                 <CoursePlayer />
-              </ProtectedRoute>
+              </ProtectedRouteNoLayout>
             }
           />
           <Route
