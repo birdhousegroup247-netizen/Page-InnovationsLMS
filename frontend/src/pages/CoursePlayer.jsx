@@ -33,6 +33,57 @@ function decodeEntities(text) {
   return textarea.value;
 }
 
+// Format plain text article content into readable HTML
+function formatArticleContent(text) {
+  if (typeof text !== 'string') return '';
+  // If content already has HTML block tags, return as-is
+  if (/<(p|div|h[1-6]|ul|ol|br)\b/i.test(text)) return text;
+
+  // Escape HTML for safety since we're building our own HTML
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const raw = decodeEntities(text);
+
+  // Split into paragraphs by double newlines, or if none exist treat sentences as flow
+  let paragraphs = raw.split(/\n\s*\n/);
+
+  // If no double newlines at all (wall of text), try splitting on known patterns
+  if (paragraphs.length <= 1) {
+    // Try to split on numbered items like "1." "2." at the start of sentences
+    paragraphs = raw.split(/(?=\d+\.\s+[A-Z])/).filter(Boolean);
+  }
+
+  // If still one block, try splitting on sentence-ending patterns followed by capitals
+  if (paragraphs.length <= 1 && raw.length > 500) {
+    // Split on ". " followed by a capital letter (new topic) — but group into ~3 sentence chunks
+    const sentences = raw.split(/(?<=\.)\s+(?=[A-Z])/);
+    paragraphs = [];
+    for (let i = 0; i < sentences.length; i += 3) {
+      paragraphs.push(sentences.slice(i, i + 3).join(' '));
+    }
+  }
+
+  return paragraphs
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      // Check if paragraph starts with a number pattern like "1." or "Step 1:"
+      const numMatch = p.match(/^(\d+)\.\s+(.*)/);
+      if (numMatch) {
+        const heading = numMatch[2].split(/[.:]/, 1)[0];
+        const rest = numMatch[2].slice(heading.length).replace(/^[.:\s]+/, '');
+        return `<h3>${esc(numMatch[1] + '. ' + heading)}</h3>${rest ? `<p>${esc(rest)}</p>` : ''}`;
+      }
+      // Check for label-like patterns "Title: rest"
+      const labelMatch = p.match(/^([A-Z][A-Za-z\s&-]{2,40}):\s+(.*)/);
+      if (labelMatch) {
+        return `<h3>${esc(labelMatch[1])}</h3><p>${esc(labelMatch[2])}</p>`;
+      }
+      // Single newlines → <br>
+      return `<p>${esc(p).replace(/\n/g, '<br>')}</p>`;
+    })
+    .join('\n');
+}
+
 // Build YouTube embed URL from a youtube_url or youtube_video_id
 const YT_PARAMS = 'modestbranding=1&rel=0&showinfo=0&iv_load_policy=3';
 function getYouTubeEmbedUrl(content) {
@@ -461,8 +512,8 @@ export default function CoursePlayer() {
                 <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
                   {currentContent.article_content ? (
                     <div
-                      className="prose dark:prose-invert max-w-none p-6 sm:p-8"
-                      dangerouslySetInnerHTML={{ __html: currentContent.article_content }}
+                      className="max-w-none p-6 sm:p-8 text-gray-800 dark:text-gray-200 leading-relaxed [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:dark:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:mb-4 [&_p]:text-base [&_p]:leading-7 transition-colors"
+                      dangerouslySetInnerHTML={{ __html: formatArticleContent(currentContent.article_content) }}
                     />
                   ) : (
                     <div className="p-8 text-center">
