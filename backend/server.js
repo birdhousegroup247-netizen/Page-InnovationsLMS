@@ -10,6 +10,7 @@ const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
 const passport = require('./config/passport');
 
+const { Sequelize } = require('sequelize');
 const { sequelize, testConnection } = require('./config/database');
 const { initRedis, closeRedis } = require('./config/redis');
 const { initializeSocketIO } = require('./config/socket');
@@ -327,29 +328,23 @@ const startServer = async () => {
       throw modelError;
     }
 
-    // Auto-migration: ensure critical columns exist (idempotent, runs every startup)
+    // Auto-migration: ensure critical columns exist (dialect-agnostic, runs every startup)
     try {
       logger.info('🔄 Running auto-migrations...');
-      await sequelize.query(`
-        DO $$ BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name='users' AND column_name='deleted_at'
-          ) THEN
-            ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL;
-          END IF;
-        END $$;
-      `);
-      await sequelize.query(`
-        DO $$ BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name='courses' AND column_name='deleted_at'
-          ) THEN
-            ALTER TABLE courses ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL;
-          END IF;
-        END $$;
-      `);
+      const qi = sequelize.getQueryInterface();
+
+      for (const table of ['users', 'courses']) {
+        const desc = await qi.describeTable(table);
+        if (!desc.deleted_at) {
+          await qi.addColumn(table, 'deleted_at', {
+            type: Sequelize.DATE,
+            allowNull: true,
+            defaultValue: null,
+          });
+          logger.info(`  ✓ Added deleted_at column to ${table}`);
+        }
+      }
+
       logger.info('✓ Auto-migrations complete');
     } catch (migrationErr) {
       logger.error('⚠ Auto-migration failed (continuing):', migrationErr.message);
