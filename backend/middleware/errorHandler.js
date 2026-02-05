@@ -37,6 +37,11 @@ const errorHandler = (err, req, res, next) => {
 
   // Sequelize Database Error
   if (err.name === 'SequelizeDatabaseError') {
+    logger.error('SequelizeDatabaseError details:', {
+      message: err.message,
+      sql: err.sql || err.parent?.sql,
+      original: err.original?.message || err.parent?.message,
+    });
     return ApiResponse.serverError(res, 'Database error occurred');
   }
 

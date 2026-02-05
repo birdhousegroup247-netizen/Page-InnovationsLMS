@@ -327,6 +327,34 @@ const startServer = async () => {
       throw modelError;
     }
 
+    // Auto-migration: ensure critical columns exist (idempotent, runs every startup)
+    try {
+      logger.info('🔄 Running auto-migrations...');
+      await sequelize.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name='users' AND column_name='deleted_at'
+          ) THEN
+            ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL;
+          END IF;
+        END $$;
+      `);
+      await sequelize.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name='courses' AND column_name='deleted_at'
+          ) THEN
+            ALTER TABLE courses ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL;
+          END IF;
+        END $$;
+      `);
+      logger.info('✓ Auto-migrations complete');
+    } catch (migrationErr) {
+      logger.error('⚠ Auto-migration failed (continuing):', migrationErr.message);
+    }
+
     // Sync database tables if enabled
     // Set DB_SYNC_ENABLED=true in environment to create tables on first deploy
     // IMPORTANT: Disable after tables are created to prevent accidental schema changes
