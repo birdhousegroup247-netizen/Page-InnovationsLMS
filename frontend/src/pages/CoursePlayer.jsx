@@ -431,32 +431,26 @@ export default function CoursePlayer() {
                 );
               })()}
 
-              {/* Document content */}
+              {/* Document content — embedded viewer, no download */}
               {currentContent.content_type === 'document' && (
                 currentContent.document_url ? (
-                  <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card p-8 text-center transition-colors">
-                    <FileDown className="h-16 w-16 text-brand-blue mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-                      Document Resource
-                    </h3>
-                    <p className="text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors">
-                      This lesson includes a downloadable document.
-                    </p>
-                    <a
-                      href={currentContent.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="primary" leftIcon={<Download className="h-4 w-4" />}>
-                        Open Document
-                      </Button>
-                    </a>
+                  <div className="bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 dark:bg-dark-700 text-sm text-gray-300">
+                      <FileDown className="h-4 w-4 text-brand-blue" />
+                      <span>{decodeEntities(currentContent.title)}</span>
+                    </div>
+                    <iframe
+                      src={`https://docs.google.com/gview?url=${encodeURIComponent(currentContent.document_url)}&embedded=true`}
+                      title={decodeEntities(currentContent.title)}
+                      className="w-full border-0"
+                      style={{ height: '80vh' }}
+                    ></iframe>
                   </div>
                 ) : (
                   <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card p-8 text-center transition-colors">
                     <FileText className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
                     <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
-                      Document URL not available for this lesson
+                      Document not available for this lesson
                     </p>
                   </div>
                 )
