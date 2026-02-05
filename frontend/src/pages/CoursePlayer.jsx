@@ -16,23 +16,54 @@ import {
   Home,
   MessageCircle,
   BookOpen,
+  Video,
+  FileDown,
+  AlignLeft,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button, Spinner } from '../components/ui';
 import QuestionDiscussion from '../components/course/QuestionDiscussion';
 import logo from '../assets/logo.png';
 
+// Decode HTML entities that may be stored escaped in the DB
+function decodeEntities(text) {
+  if (typeof text !== 'string') return text;
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+// Build YouTube embed URL from a youtube_url or youtube_video_id
+function getYouTubeEmbedUrl(content) {
+  if (content.youtube_video_id) {
+    return `https://www.youtube.com/embed/${content.youtube_video_id}`;
+  }
+  if (content.youtube_url) {
+    // Extract video ID from various YouTube URL formats
+    const match = content.youtube_url.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/
+    );
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    // If it's already an embed URL, return as-is
+    if (content.youtube_url.includes('/embed/')) return content.youtube_url;
+    return content.youtube_url;
+  }
+  return null;
+}
+
 export default function CoursePlayer() {
   const { id } = useParams(); // Course ID
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Default sidebar closed on mobile so content shows first
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
   const [course, setCourse] = useState(null);
   const [currentContent, setCurrentContent] = useState(null);
   const [progress, setProgress] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [markingComplete, setMarkingComplete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -269,7 +300,7 @@ export default function CoursePlayer() {
             </Link>
             <div className="hidden sm:block">
               <h1 className="text-sm sm:text-base font-medium text-gray-900 dark:text-text-dark-primary line-clamp-1 transition-colors">
-                {course.title}
+                {decodeEntities(course.title)}
               </h1>
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-text-dark-muted transition-colors">
                 <span>{courseProgress}% Complete</span>
@@ -316,7 +347,7 @@ export default function CoursePlayer() {
                     {moduleIndex + 1}
                   </span>
                   <h3 className="text-sm font-medium text-gray-900 dark:text-text-dark-primary transition-colors">
-                    {module.title}
+                    {decodeEntities(module.title)}
                   </h3>
                 </div>
 
@@ -327,7 +358,11 @@ export default function CoursePlayer() {
                   return (
                     <button
                       key={content.id}
-                      onClick={() => setCurrentContent(content)}
+                      onClick={() => {
+                        setCurrentContent(content);
+                        // Auto-close sidebar on mobile so content is visible
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                      }}
                       className={cn(
                         'w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all',
                         isActive
@@ -345,10 +380,14 @@ export default function CoursePlayer() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-clamp-2">{content.title}</p>
-                        {content.duration_minutes && (
-                          <p className="text-xs opacity-75">{content.duration_minutes} min</p>
-                        )}
+                        <p className="text-sm font-medium line-clamp-2">{decodeEntities(content.title)}</p>
+                        <div className="flex items-center gap-2 text-xs opacity-75">
+                          {content.content_type === 'video' && <Video className="h-3 w-3" />}
+                          {content.content_type === 'document' && <FileDown className="h-3 w-3" />}
+                          {content.content_type === 'article' && <AlignLeft className="h-3 w-3" />}
+                          <span>{content.content_type}</span>
+                          {content.duration_minutes && <span>• {content.duration_minutes} min</span>}
+                        </div>
                       </div>
                     </button>
                   );
@@ -363,38 +402,98 @@ export default function CoursePlayer() {
           <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
             {/* Video/Content Player */}
             <div className="mb-6">
-              <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
-                {currentContent.video_url ? (
-                  <iframe
-                    src={currentContent.video_url}
-                    title={currentContent.title}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  ></iframe>
-                ) : currentContent.content_url ? (
-                  <iframe
-                    src={currentContent.content_url}
-                    title={currentContent.title}
-                    className="w-full h-full"
-                  ></iframe>
+              {/* Video content */}
+              {currentContent.content_type === 'video' && (() => {
+                const embedUrl = getYouTubeEmbedUrl(currentContent);
+                return embedUrl ? (
+                  <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
+                    <iframe
+                      src={embedUrl}
+                      title={decodeEntities(currentContent.title)}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    ></iframe>
+                  </div>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
+                  <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card flex items-center justify-center transition-colors">
                     <div className="text-center">
-                      <FileText className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
-                      <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
-                        No video available for this lesson
+                      <Video className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
+                      <p className="text-gray-400 dark:text-text-dark-secondary transition-colors">
+                        Video URL not available for this lesson
                       </p>
                     </div>
                   </div>
-                )}
-              </div>
+                );
+              })()}
+
+              {/* Document content */}
+              {currentContent.content_type === 'document' && (
+                currentContent.document_url ? (
+                  <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card p-8 text-center transition-colors">
+                    <FileDown className="h-16 w-16 text-brand-blue mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+                      Document Resource
+                    </h3>
+                    <p className="text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors">
+                      This lesson includes a downloadable document.
+                    </p>
+                    <a
+                      href={currentContent.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="primary" leftIcon={<Download className="h-4 w-4" />}>
+                        Open Document
+                      </Button>
+                    </a>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card p-8 text-center transition-colors">
+                    <FileText className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
+                    <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
+                      Document URL not available for this lesson
+                    </p>
+                  </div>
+                )
+              )}
+
+              {/* Article content */}
+              {currentContent.content_type === 'article' && (
+                <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
+                  {currentContent.article_content ? (
+                    <div
+                      className="prose dark:prose-invert max-w-none p-6 sm:p-8"
+                      dangerouslySetInnerHTML={{ __html: currentContent.article_content }}
+                    />
+                  ) : (
+                    <div className="p-8 text-center">
+                      <AlignLeft className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
+                      <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
+                        Article content not available for this lesson
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Fallback if content_type is missing */}
+              {!['video', 'document', 'article'].includes(currentContent.content_type) && (
+                <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card flex items-center justify-center transition-colors">
+                  <div className="text-center">
+                    <FileText className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
+                    <p className="text-gray-400 dark:text-text-dark-secondary transition-colors">
+                      No content available for this lesson
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Lesson Title and Actions */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-                    {currentContent.title}
+                    {decodeEntities(currentContent.title)}
                   </h1>
                   {currentContent.duration_minutes && (
                     <p className="text-gray-600 dark:text-text-dark-secondary text-sm transition-colors">

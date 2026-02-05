@@ -131,7 +131,7 @@ class CourseController {
         return ApiResponse.success(res, cachedCourse);
       }
 
-      // Fetch course with limited content preview (only first 5 items per module)
+      // Fetch course with full content data (CoursePlayer needs all lessons with URLs)
       const course = await Course.findByPk(id, {
         include: [
           { model: Category, as: 'category' },
@@ -143,9 +143,7 @@ class CourseController {
               {
                 model: ModuleContent,
                 as: 'contents',
-                // Only load essential fields for preview
-                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview'],
-                limit: 5, // Only first 5 items
+                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview', 'youtube_url', 'youtube_video_id', 'document_url', 'article_content'],
                 separate: true, // Separate query to avoid cartesian product
                 order: [['order_index', 'ASC']],
               }

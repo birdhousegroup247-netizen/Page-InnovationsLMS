@@ -25,10 +25,9 @@ const CODE_FIELDS = [
 ];
 
 // Fields that should be escaped (user-generated plain text)
+// Note: 'title' and 'name' removed — React already escapes text in JSX,
+// so server-side HTML escaping causes double-encoding (e.g. & → &amp;)
 const PLAIN_TEXT_FIELDS = [
-  'name',
-  'title',
-  'full_name',
   'email',
   'subject',
 ];
