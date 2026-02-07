@@ -7,7 +7,7 @@ class ProgressController {
   static async markContentComplete(req, res, next) {
     try {
       const { contentId } = req.params;
-      const { watch_time_seconds, last_position_seconds } = req.body;
+      const { watch_time_seconds, last_position_seconds } = req.body || {};
 
       const content = await ModuleContent.findByPk(contentId);
       if (!content) throw new NotFoundError('Content not found');
@@ -48,7 +48,7 @@ class ProgressController {
   static async updateProgress(req, res, next) {
     try {
       const { contentId } = req.params;
-      const { watch_time_seconds, last_position_seconds } = req.body;
+      const { watch_time_seconds, last_position_seconds } = req.body || {};
 
       await ContentProgress.upsert({
         student_id: req.user.id,
