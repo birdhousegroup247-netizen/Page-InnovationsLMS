@@ -492,14 +492,8 @@ export default function CoursePlayer() {
                     </div>
                     {(() => {
                       const url = decodeEntities(currentContent.document_url);
-                      const ext = url.split('.').pop().split('?')[0].toLowerCase();
-                      const isViewable = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)
-                        || url.toLowerCase().includes('.pdf');
-                      // Use Office Online viewer for PDFs and Office docs (no download button);
-                      // for other URLs (e.g. Cloudinary collections) embed directly
-                      const viewerSrc = isViewable
-                        ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
-                        : url;
+                      // Always use Office Online viewer for document content (no download button)
+                      const viewerSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
                       return (
                         <>
                           <iframe

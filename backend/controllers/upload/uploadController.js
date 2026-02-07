@@ -78,16 +78,17 @@ class UploadController {
       }
 
       const courseId = req.body.courseId || Date.now();
-      const fileName = req.file.originalname.replace(/\.[^/.]+$/, ''); // Remove extension
+      const ext = req.file.originalname.match(/\.([^/.]+)$/)?.[1] || '';
+      const fileName = req.file.originalname.replace(/\.[^/.]+$/, ''); // Remove extension for public_id
 
       // Convert buffer to base64
       const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary (include extension in public_id so URL has it)
       const result = await CloudinaryService.uploadDocument(
         base64File,
         'course-documents',
-        `course_${courseId}_${fileName}_${Date.now()}`
+        `course_${courseId}_${fileName}_${Date.now()}${ext ? '.' + ext : ''}`
       );
 
       logger.info(`Course document uploaded: ${result.url}`);
@@ -96,6 +97,7 @@ class UploadController {
         res,
         {
           ...result,
+          format: ext || result.format,
           original_filename: req.file.originalname,
           size_mb: (result.size / (1024 * 1024)).toFixed(2),
         },
