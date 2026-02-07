@@ -95,15 +95,23 @@ export default function CloudinaryUpload({
         formData.append('folder', folder);
       }
 
-      // Upload to backend API
-      const token = localStorage.getItem('accessToken');
+      // Upload to backend API (admin uses cookie-based auth)
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf-token='))
+        ?.split('=')[1];
+
+      const headers = {};
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}${uploadEndpoint}`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+          headers,
+          credentials: 'include',
           body: formData,
         }
       );
