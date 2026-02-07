@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './components/ui';
 import AppLayout from './components/layout/AppLayout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
@@ -212,6 +213,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        <ToastProvider>
         <Router>
           <AuthProvider>
             <Suspense fallback={<PageLoader />}>
@@ -547,6 +549,7 @@ function App() {
           </Suspense>
         </AuthProvider>
         </Router>
+        </ToastProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

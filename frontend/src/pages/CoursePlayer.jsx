@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { coursesAPI, progressAPI } from '../lib/api';
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button, Spinner } from '../components/ui';
+import { useToast } from '../components/ui/Toast';
 import QuestionDiscussion from '../components/course/QuestionDiscussion';
 import logo from '../assets/logo.png';
 
@@ -106,10 +107,23 @@ function getYouTubeEmbedUrl(content) {
   return null;
 }
 
+// Extract just the YouTube video ID (for YT IFrame Player API)
+function getYouTubeVideoId(content) {
+  if (content.youtube_video_id) return content.youtube_video_id;
+  if (content.youtube_url) {
+    const match = content.youtube_url.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/
+    );
+    if (match) return match[1];
+  }
+  return null;
+}
+
 export default function CoursePlayer() {
   const { id } = useParams(); // Course ID
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   // Default sidebar closed on mobile so content shows first
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
@@ -122,9 +136,161 @@ export default function CoursePlayer() {
   const [markingComplete, setMarkingComplete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // --- Progress tracking state ---
+  const [ytApiLoaded, setYtApiLoaded] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [articleRead, setArticleRead] = useState(false);
+  const playerRef = useRef(null);
+  const playerWrapperRef = useRef(null);
+  const articleEndRef = useRef(null);
+  const autoCompletedRef = useRef(new Set());
+
   useEffect(() => {
     fetchCourseData();
   }, [id]);
+
+  // Load YouTube IFrame Player API once
+  useEffect(() => {
+    if (window.YT?.Player) { setYtApiLoaded(true); return; }
+    window.onYouTubeIframeAPIReady = () => setYtApiLoaded(true);
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+  }, []);
+
+  // Reset tracking when switching lessons
+  useEffect(() => {
+    setVideoProgress(0);
+    setArticleRead(false);
+  }, [currentContent?.id]);
+
+  // YouTube player: create, track progress, save position, auto-complete
+  useEffect(() => {
+    if (!ytApiLoaded || !currentContent || currentContent.content_type !== 'video') return;
+    const videoId = getYouTubeVideoId(currentContent);
+    if (!videoId) return;
+
+    const contentId = currentContent.id;
+    const lastPos = progress[contentId]?.last_position_seconds || 0;
+    const alreadyDone = isLessonCompleted(contentId);
+
+    // Small delay to ensure wrapper div is in the DOM
+    const initTimer = setTimeout(() => {
+      if (!playerWrapperRef.current) return;
+      if (playerRef.current?.destroy) { playerRef.current.destroy(); playerRef.current = null; }
+      playerWrapperRef.current.innerHTML = '<div id="yt-player-el"></div>';
+
+      try {
+        playerRef.current = new window.YT.Player('yt-player-el', {
+          videoId,
+          width: '100%',
+          height: '100%',
+          playerVars: { modestbranding: 1, rel: 0, showinfo: 0, iv_load_policy: 3 },
+          events: {
+            onReady: (e) => {
+              if (lastPos > 0 && !alreadyDone) {
+                e.target.seekTo(lastPos, true);
+                showToast('Resuming from where you left off', 'info', 3000);
+              }
+            },
+          },
+        });
+      } catch (err) {
+        console.error('YT Player init error:', err);
+      }
+    }, 200);
+
+    // Poll playback position every 3s
+    const trackInterval = setInterval(() => {
+      try {
+        if (playerRef.current?.getCurrentTime && playerRef.current?.getDuration) {
+          const ct = playerRef.current.getCurrentTime();
+          const dur = playerRef.current.getDuration();
+          if (dur > 0) setVideoProgress((ct / dur) * 100);
+        }
+      } catch (_) {}
+    }, 3000);
+
+    // Save watch position to backend every 30s
+    const saveInterval = setInterval(() => {
+      try {
+        if (playerRef.current?.getCurrentTime) {
+          const s = Math.floor(playerRef.current.getCurrentTime());
+          if (s > 0) {
+            progressAPI.updateProgress(contentId, {
+              watch_time_seconds: s,
+              last_position_seconds: s,
+            }).catch(() => {});
+          }
+        }
+      } catch (_) {}
+    }, 30000);
+
+    return () => {
+      clearTimeout(initTimer);
+      clearInterval(trackInterval);
+      clearInterval(saveInterval);
+      // Save final position on cleanup
+      try {
+        if (playerRef.current?.getCurrentTime) {
+          const s = Math.floor(playerRef.current.getCurrentTime());
+          if (s > 0) {
+            progressAPI.updateProgress(contentId, {
+              watch_time_seconds: s,
+              last_position_seconds: s,
+            }).catch(() => {});
+          }
+        }
+        if (playerRef.current?.destroy) { playerRef.current.destroy(); playerRef.current = null; }
+      } catch (_) {}
+    };
+  }, [ytApiLoaded, currentContent?.id]);
+
+  // Article read tracking — observe sentinel at bottom of article
+  useEffect(() => {
+    if (!currentContent || currentContent.content_type !== 'article') return;
+    let observer;
+    const timer = setTimeout(() => {
+      if (!articleEndRef.current) return;
+      observer = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) setArticleRead(true);
+      }, { threshold: 0.5 });
+      observer.observe(articleEndRef.current);
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+      if (observer) observer.disconnect();
+    };
+  }, [currentContent?.id]);
+
+  // Auto-complete when video 90%+ watched or article fully scrolled
+  useEffect(() => {
+    if (!currentContent || isLessonCompleted(currentContent.id)) return;
+    const contentId = currentContent.id;
+
+    const shouldAutoComplete =
+      (currentContent.content_type === 'video' && videoProgress >= 90) ||
+      (currentContent.content_type === 'article' && articleRead);
+
+    if (shouldAutoComplete && !autoCompletedRef.current.has(contentId)) {
+      autoCompletedRef.current.add(contentId);
+      (async () => {
+        try {
+          await progressAPI.markComplete(contentId);
+          setProgress((prev) => ({
+            ...prev,
+            [contentId]: { completed: true, completed_at: new Date().toISOString() },
+          }));
+          showToast('Lesson completed!', 'success');
+        } catch (err) {
+          console.error('Auto-complete failed:', err);
+          autoCompletedRef.current.delete(contentId);
+        }
+      })();
+    }
+  }, [videoProgress, articleRead, currentContent?.id]);
 
   const fetchCourseData = async () => {
     setLoading(true);
@@ -161,7 +327,7 @@ export default function CoursePlayer() {
     } catch (err) {
       console.error('Error fetching course data:', err);
       if (err.response?.status === 403) {
-        alert('You must enroll in this course first');
+        showToast('You must enroll in this course first', 'warning');
         navigate(`/courses/${id}`);
       } else {
         setError(err.message || 'Failed to load course');
@@ -204,7 +370,7 @@ export default function CoursePlayer() {
       }, 500);
     } catch (error) {
       console.error('Error marking complete:', error);
-      alert('Failed to mark lesson as complete');
+      showToast('Failed to mark lesson as complete', 'error');
     } finally {
       setMarkingComplete(false);
     }
@@ -459,17 +625,41 @@ export default function CoursePlayer() {
             <div className="mb-6">
               {/* Video content */}
               {currentContent.content_type === 'video' && (() => {
+                const videoId = getYouTubeVideoId(currentContent);
                 const embedUrl = getYouTubeEmbedUrl(currentContent);
-                return embedUrl ? (
-                  <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
-                    <iframe
-                      src={embedUrl}
-                      title={decodeEntities(currentContent.title)}
-                      className="w-full h-full"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    ></iframe>
-                  </div>
+                return (videoId || embedUrl) ? (
+                  <>
+                    <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-2 shadow-lg dark:shadow-card transition-colors">
+                      {ytApiLoaded && videoId ? (
+                        <div ref={playerWrapperRef} className="w-full h-full" />
+                      ) : (
+                        <iframe
+                          src={embedUrl}
+                          title={decodeEntities(currentContent.title)}
+                          className="w-full h-full"
+                          allowFullScreen
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        ></iframe>
+                      )}
+                    </div>
+                    {/* Video watch progress bar */}
+                    {!isLessonCompleted(currentContent.id) && videoProgress > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          <span>{Math.round(videoProgress)}% watched</span>
+                          {videoProgress >= 90 && <span className="text-green-500 font-medium">Completing...</span>}
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-dark-700 rounded-full h-1.5">
+                          <div
+                            className={cn('h-1.5 rounded-full transition-all duration-500',
+                              videoProgress >= 90 ? 'bg-green-500' : 'bg-brand-blue'
+                            )}
+                            style={{ width: `${Math.min(videoProgress, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card flex items-center justify-center transition-colors">
                     <div className="text-center">
@@ -529,21 +719,35 @@ export default function CoursePlayer() {
 
               {/* Article content */}
               {currentContent.content_type === 'article' && (
-                <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card transition-colors">
-                  {currentContent.article_content ? (
-                    <div
-                      className="max-w-none p-6 sm:p-8 text-gray-800 dark:text-gray-200 leading-relaxed [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:dark:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:mb-4 [&_p]:text-base [&_p]:leading-7 transition-colors"
-                      dangerouslySetInnerHTML={{ __html: formatArticleContent(currentContent.article_content) }}
-                    />
-                  ) : (
-                    <div className="p-8 text-center">
-                      <AlignLeft className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
-                      <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
-                        Article content not available for this lesson
-                      </p>
-                    </div>
+                <>
+                  <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-2 shadow-lg dark:shadow-card transition-colors">
+                    {currentContent.article_content ? (
+                      <>
+                        <div
+                          className="max-w-none p-6 sm:p-8 text-gray-800 dark:text-gray-200 leading-relaxed [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:dark:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:mb-4 [&_p]:text-base [&_p]:leading-7 transition-colors"
+                          dangerouslySetInnerHTML={{ __html: formatArticleContent(currentContent.article_content) }}
+                        />
+                        {/* Sentinel — triggers auto-complete when scrolled into view */}
+                        <div ref={articleEndRef} className="h-1" />
+                      </>
+                    ) : (
+                      <div className="p-8 text-center">
+                        <AlignLeft className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
+                        <p className="text-gray-600 dark:text-text-dark-secondary transition-colors">
+                          Article content not available for this lesson
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {/* Reading progress hint */}
+                  {!isLessonCompleted(currentContent.id) && currentContent.article_content && (
+                    <p className={cn('text-xs font-medium mb-4',
+                      articleRead ? 'text-green-500' : 'text-gray-500 dark:text-gray-400'
+                    )}>
+                      {articleRead ? 'Article read — completing...' : 'Scroll to the end to complete this lesson'}
+                    </p>
                   )}
-                </div>
+                </>
               )}
 
               {/* Fallback if content_type is missing */}

@@ -31,7 +31,7 @@ class ProgressController {
       }
 
       // Update course progress
-      await this.updateCourseProgress(req.user.id, content.module_id);
+      await ProgressController.updateCourseProgress(req.user.id, content.module_id);
 
       return ApiResponse.success(res, { progress }, 'Content marked as complete');
     } catch (error) {
