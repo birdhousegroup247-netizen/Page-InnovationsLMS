@@ -202,13 +202,30 @@ export default function CoursePlayer() {
       }
     }, 200);
 
-    // Poll playback position every 3s
+    // Poll playback position every 3s + auto-complete at 90%
     const trackInterval = setInterval(() => {
       try {
         if (playerRef.current?.getCurrentTime && playerRef.current?.getDuration) {
           const ct = playerRef.current.getCurrentTime();
           const dur = playerRef.current.getDuration();
-          if (dur > 0) setVideoProgress((ct / dur) * 100);
+          if (dur > 0) {
+            const pct = (ct / dur) * 100;
+            setVideoProgress(pct);
+            // Auto-complete at 90% — contentId is captured in this closure, so it's always correct
+            if (pct >= 90 && !autoCompletedRef.current.has(contentId)) {
+              autoCompletedRef.current.add(contentId);
+              progressAPI.markComplete(contentId).then(() => {
+                setProgress((prev) => ({
+                  ...prev,
+                  [contentId]: { completed: true, completed_at: new Date().toISOString() },
+                }));
+                showToast('Lesson completed!', 'success');
+              }).catch((err) => {
+                console.error('Video auto-complete failed:', err);
+                autoCompletedRef.current.delete(contentId);
+              });
+            }
+          }
         }
       } catch (_) {}
     }, 3000);
@@ -248,14 +265,31 @@ export default function CoursePlayer() {
     };
   }, [ytApiLoaded, currentContent?.id]);
 
-  // Article read tracking — observe sentinel at bottom of article
+  // Article read tracking — observe sentinel at bottom of article + auto-complete
   useEffect(() => {
     if (!currentContent || currentContent.content_type !== 'article') return;
+    const contentId = currentContent.id;
     let observer;
     const timer = setTimeout(() => {
       if (!articleEndRef.current) return;
       observer = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) setArticleRead(true);
+        if (entry.isIntersecting) {
+          setArticleRead(true);
+          // Auto-complete — contentId captured in closure
+          if (!autoCompletedRef.current.has(contentId)) {
+            autoCompletedRef.current.add(contentId);
+            progressAPI.markComplete(contentId).then(() => {
+              setProgress((prev) => ({
+                ...prev,
+                [contentId]: { completed: true, completed_at: new Date().toISOString() },
+              }));
+              showToast('Lesson completed!', 'success');
+            }).catch((err) => {
+              console.error('Article auto-complete failed:', err);
+              autoCompletedRef.current.delete(contentId);
+            });
+          }
+        }
       }, { threshold: 0.5 });
       observer.observe(articleEndRef.current);
     }, 200);
@@ -264,35 +298,6 @@ export default function CoursePlayer() {
       if (observer) observer.disconnect();
     };
   }, [currentContent?.id]);
-
-  // Auto-complete when video 90%+ watched or article fully scrolled
-  useEffect(() => {
-    if (!currentContent || isLessonCompleted(currentContent.id)) return;
-    const contentId = currentContent.id;
-
-    const shouldAutoComplete =
-      (currentContent.content_type === 'video' && videoProgress >= 90) ||
-      (currentContent.content_type === 'article' && articleRead);
-
-    if (shouldAutoComplete && !autoCompletedRef.current.has(contentId)) {
-      autoCompletedRef.current.add(contentId);
-      (async () => {
-        try {
-          await progressAPI.markComplete(contentId);
-          setProgress((prev) => ({
-            ...prev,
-            [contentId]: { completed: true, completed_at: new Date().toISOString() },
-          }));
-          showToast('Lesson completed!', 'success');
-        } catch (err) {
-          console.error('Auto-complete failed:', err);
-          const msg = err.response?.data?.message || 'Failed to auto-complete lesson';
-          showToast(msg, 'error');
-          autoCompletedRef.current.delete(contentId);
-        }
-      })();
-    }
-  }, [videoProgress, articleRead, currentContent?.id]);
 
   const fetchCourseData = async () => {
     setLoading(true);
@@ -355,8 +360,11 @@ export default function CoursePlayer() {
 
   const handleMarkComplete = async () => {
     if (!currentContent || markingComplete) return;
+    // Skip if auto-complete already handled this lesson
+    if (autoCompletedRef.current.has(currentContent.id)) return;
 
     setMarkingComplete(true);
+    autoCompletedRef.current.add(currentContent.id);
     try {
       await progressAPI.markComplete(currentContent.id);
 
