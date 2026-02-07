@@ -23,6 +23,7 @@ import {
 import { Container } from '../../components/layout';
 import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 
 export default function CourseBuilder() {
   const { courseId } = useParams();
@@ -809,22 +810,20 @@ export default function CourseBuilder() {
           {/* Document Fields */}
           {contentForm.content_type === 'document' && (
             <>
-              <Input
-                label="Document URL"
-                value={contentForm.document_url}
-                onChange={(e) => setContentForm({ ...contentForm, document_url: e.target.value })}
-                placeholder="https://cloudinary.com/your-document.pdf"
-                required
+              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+                Upload Document *
+              </label>
+              <CloudinaryUpload
+                acceptedTypes="document"
+                maxSizeMB={10}
+                currentFile={contentForm.document_url || null}
+                uploadEndpoint="/api/upload/course-document"
+                onUploadSuccess={(url) => {
+                  const ext = url ? url.split('.').pop().split('?')[0].toLowerCase() : '';
+                  setContentForm({ ...contentForm, document_url: url || '', document_type: ext });
+                }}
+                onUploadError={(err) => showToast(err, 'error')}
               />
-              <Input
-                label="Document Type"
-                value={contentForm.document_type}
-                onChange={(e) => setContentForm({ ...contentForm, document_type: e.target.value })}
-                placeholder="pdf, docx, pptx"
-              />
-              <div className="text-sm text-gray-500 dark:text-text-dark-secondary">
-                💡 Upload your document to Cloudinary first, then paste the URL here
-              </div>
             </>
           )}
 

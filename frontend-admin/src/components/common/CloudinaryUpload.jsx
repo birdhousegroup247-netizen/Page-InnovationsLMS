@@ -12,6 +12,7 @@ import { Spinner } from '../ui';
  * @param {number} maxSizeMB - Maximum file size in MB (default: 10)
  * @param {string} currentFile - Current file URL (for showing existing file)
  * @param {string} folder - Cloudinary folder to upload to (optional)
+ * @param {string} uploadEndpoint - Backend upload endpoint path (default: '/api/upload/course-thumbnail')
  */
 export default function CloudinaryUpload({
   onUploadSuccess,
@@ -20,6 +21,7 @@ export default function CloudinaryUpload({
   maxSizeMB = 10,
   currentFile = null,
   folder = null,
+  uploadEndpoint = '/api/upload/course-thumbnail',
 }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentFile);
@@ -96,7 +98,7 @@ export default function CloudinaryUpload({
       // Upload to backend API
       const token = localStorage.getItem('accessToken');
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/upload/course-thumbnail`,
+        `${import.meta.env.VITE_API_URL}${uploadEndpoint}`,
         {
           method: 'POST',
           headers: {
