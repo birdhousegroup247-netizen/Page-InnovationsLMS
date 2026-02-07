@@ -490,12 +490,23 @@ export default function CoursePlayer() {
                       <FileDown className="h-4 w-4 text-brand-blue" />
                       <span>{decodeEntities(currentContent.title)}</span>
                     </div>
-                    <iframe
-                      src={`https://docs.google.com/gview?url=${encodeURIComponent(currentContent.document_url)}&embedded=true`}
-                      title={decodeEntities(currentContent.title)}
-                      className="w-full border-0"
-                      style={{ height: '80vh' }}
-                    ></iframe>
+                    {(() => {
+                      const url = currentContent.document_url;
+                      const docType = currentContent.document_type || url.split('.').pop().split('?')[0].toLowerCase();
+                      const isPdf = docType === 'pdf' || url.toLowerCase().includes('.pdf');
+                      // PDFs: use browser's native viewer; Office docs: use Microsoft Office Online viewer
+                      const viewerSrc = isPdf
+                        ? url
+                        : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+                      return (
+                        <iframe
+                          src={viewerSrc}
+                          title={decodeEntities(currentContent.title)}
+                          className="w-full border-0"
+                          style={{ height: '80vh' }}
+                        ></iframe>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card p-8 text-center transition-colors">

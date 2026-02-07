@@ -143,7 +143,7 @@ class CourseController {
               {
                 model: ModuleContent,
                 as: 'contents',
-                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview', 'youtube_url', 'youtube_video_id', 'document_url', 'article_content'],
+                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview', 'youtube_url', 'youtube_video_id', 'document_url', 'document_type', 'article_content'],
                 separate: true, // Separate query to avoid cartesian product
                 order: [['order_index', 'ASC']],
               }
