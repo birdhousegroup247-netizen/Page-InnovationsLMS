@@ -30,11 +30,16 @@ class ProgressController {
         });
       }
 
-      // Update course progress
-      await ProgressController.updateCourseProgress(req.user.id, content.module_id);
+      // Update course progress (non-critical — don't fail the request if this errors)
+      try {
+        await ProgressController.updateCourseProgress(req.user.id, content.module_id);
+      } catch (progressError) {
+        console.error('Failed to update course progress:', progressError.message, progressError.stack);
+      }
 
       return ApiResponse.success(res, { progress }, 'Content marked as complete');
     } catch (error) {
+      console.error('markContentComplete error:', error.message, error.stack);
       next(error);
     }
   }

@@ -286,6 +286,8 @@ export default function CoursePlayer() {
           showToast('Lesson completed!', 'success');
         } catch (err) {
           console.error('Auto-complete failed:', err);
+          const msg = err.response?.data?.message || 'Failed to auto-complete lesson';
+          showToast(msg, 'error');
           autoCompletedRef.current.delete(contentId);
         }
       })();
@@ -370,7 +372,8 @@ export default function CoursePlayer() {
       }, 500);
     } catch (error) {
       console.error('Error marking complete:', error);
-      showToast('Failed to mark lesson as complete', 'error');
+      const msg = error.response?.data?.message || 'Failed to mark lesson as complete';
+      showToast(msg, 'error');
     } finally {
       setMarkingComplete(false);
     }
