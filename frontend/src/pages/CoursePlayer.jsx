@@ -493,14 +493,13 @@ export default function CoursePlayer() {
                     {(() => {
                       const url = decodeEntities(currentContent.document_url);
                       const ext = url.split('.').pop().split('?')[0].toLowerCase();
-                      const isPdf = ext === 'pdf' || url.toLowerCase().includes('.pdf');
-                      const isOfficeDoc = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext);
-                      // PDFs: browser native viewer; Office docs: Office Online; other URLs: embed directly
-                      const viewerSrc = isPdf
-                        ? url
-                        : isOfficeDoc
-                          ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
-                          : url;
+                      const isViewable = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)
+                        || url.toLowerCase().includes('.pdf');
+                      // Use Office Online viewer for PDFs and Office docs (no download button);
+                      // for other URLs (e.g. Cloudinary collections) embed directly
+                      const viewerSrc = isViewable
+                        ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+                        : url;
                       return (
                         <>
                           <iframe
