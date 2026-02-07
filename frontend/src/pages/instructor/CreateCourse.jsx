@@ -184,8 +184,8 @@ export default function CreateCourse() {
         navigate('/instructor/dashboard', {
           state: {
             message:
-              submitStatus === 'published'
-                ? 'Course created and published successfully!'
+              submitStatus === 'pending'
+                ? 'Course submitted for review!'
                 : 'Course saved as draft successfully!',
           },
         });
@@ -424,12 +424,12 @@ export default function CreateCourse() {
             <Button
               type="button"
               variant="primary"
-              onClick={(e) => handleSubmit(e, 'published')}
+              onClick={(e) => handleSubmit(e, 'pending')}
               disabled={loading}
               loading={loading}
               leftIcon={!loading && <Send className="w-5 h-5" />}
             >
-              Create & Publish
+              Submit for Review
             </Button>
           </div>
         </form>
@@ -441,8 +441,8 @@ export default function CreateCourse() {
             <div>
               <p className="text-brand-blue font-medium mb-1">Next Steps</p>
               <p className="text-brand-blue dark:text-brand-blue text-sm">
-                After creating your course, you can add modules, lessons, and content to build your
-                curriculum.
+                After creating your course, you can add modules, lessons, and content. When ready,
+                submit for review and an admin will approve it for publishing.
               </p>
             </div>
           </div>

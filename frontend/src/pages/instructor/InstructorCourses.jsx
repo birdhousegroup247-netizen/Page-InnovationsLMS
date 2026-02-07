@@ -76,6 +76,7 @@ export default function InstructorCourses() {
   const statusOptions = [
     { value: 'all', label: 'All Courses' },
     { value: 'draft', label: 'Draft' },
+    { value: 'pending', label: 'Pending Review' },
     { value: 'published', label: 'Published' },
     { value: 'archived', label: 'Archived' },
   ];
@@ -84,6 +85,7 @@ export default function InstructorCourses() {
     total: courses.length,
     published: courses.filter((c) => c.status === 'published').length,
     draft: courses.filter((c) => c.status === 'draft').length,
+    pending: courses.filter((c) => c.status === 'pending').length,
     archived: courses.filter((c) => c.status === 'archived').length,
   };
 
@@ -121,7 +123,7 @@ export default function InstructorCourses() {
 
       <Container className="py-8">
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           <div className="bg-white dark:bg-dark-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-border-dark transition-colors">
             <p className="text-sm text-gray-600 dark:text-text-dark-secondary mb-1">Total Courses</p>
             <p className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary">{stats.total}</p>
@@ -129,6 +131,10 @@ export default function InstructorCourses() {
           <div className="bg-white dark:bg-dark-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-border-dark transition-colors">
             <p className="text-sm text-gray-600 dark:text-text-dark-secondary mb-1">Published</p>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.published}</p>
+          </div>
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-border-dark transition-colors">
+            <p className="text-sm text-gray-600 dark:text-text-dark-secondary mb-1">Pending Review</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.pending}</p>
           </div>
           <div className="bg-white dark:bg-dark-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-border-dark transition-colors">
             <p className="text-sm text-gray-600 dark:text-text-dark-secondary mb-1">Draft</p>
@@ -343,11 +349,11 @@ function CourseCard({ course, viewMode, onEdit, onView, onManageContent, delay }
                     'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400':
                       course.status === 'archived',
                     'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400':
-                      !course.status,
+                      course.status === 'pending',
                   }
                 )}
               >
-                {course.status || 'Draft'}
+                {course.status === 'pending' ? 'Pending Review' : (course.status || 'Draft')}
               </span>
             </div>
           </div>

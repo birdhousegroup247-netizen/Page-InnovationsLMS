@@ -421,19 +421,26 @@ export default function EditCourse() {
                 <label htmlFor="status" className="block text-sm font-medium text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
                   Course Status
                 </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
-                </select>
+                {formData.status === 'published' ? (
+                  <div className="w-full px-4 py-2 rounded-lg border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-medium">
+                    Published
+                  </div>
+                ) : (
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="pending">Submit for Review</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                )}
                 <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
-                  {formData.status === 'published' && 'Visible to all students'}
+                  {formData.status === 'published' && 'Approved by admin - visible to students'}
+                  {formData.status === 'pending' && 'Submitted for admin review'}
                   {formData.status === 'draft' && 'Not visible to students'}
                   {formData.status === 'archived' && 'Hidden from catalog'}
                 </p>

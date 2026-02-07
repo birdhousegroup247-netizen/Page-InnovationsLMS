@@ -186,7 +186,15 @@ class CourseController {
   // Create course (instructor/admin)
   static async createCourse(req, res, next) {
     try {
-      const { title, description, category_id, duration_hours, difficulty, thumbnail } = req.body;
+      const { title, description, category_id, duration_hours, difficulty, thumbnail, status } = req.body;
+
+      // Determine course status - instructors cannot directly publish
+      let courseStatus = 'draft';
+      if (status === 'pending') {
+        courseStatus = 'pending';
+      } else if (status === 'published' && ['admin', 'super_admin'].includes(req.user.role)) {
+        courseStatus = 'published';
+      }
 
       const course = await Course.create({
         title,
@@ -196,7 +204,7 @@ class CourseController {
         duration_hours,
         difficulty,
         thumbnail,
-        status: 'draft',
+        status: courseStatus,
       });
 
       logger.info(`Course created: ${title} by ${req.user.email}`);
@@ -222,6 +230,11 @@ class CourseController {
       // Check if user owns the course or is admin
       if (course.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role)) {
         throw new ForbiddenError('You can only update your own courses');
+      }
+
+      // Instructors cannot set status to 'published' — must go through admin approval
+      if (!['admin', 'super_admin'].includes(req.user.role) && updates.status === 'published') {
+        throw new ForbiddenError('Only admins can publish courses. Submit for review instead.');
       }
 
       await course.update(updates);
