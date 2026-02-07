@@ -492,8 +492,8 @@ export default function CoursePlayer() {
                     </div>
                     {(() => {
                       const url = decodeEntities(currentContent.document_url);
-                      // Always use Office Online viewer for document content (no download button)
-                      const viewerSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+                      // Google Docs viewer renders PDFs/docs inline without download buttons
+                      const viewerSrc = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
                       return (
                         <>
                           <iframe
