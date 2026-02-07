@@ -24,6 +24,19 @@ const CODE_FIELDS = [
   'solution',
 ];
 
+// Fields that contain URLs and should not be HTML-escaped
+// (escaping breaks URLs by converting / to &#x2F;)
+const URL_FIELDS = [
+  'document_url',
+  'youtube_url',
+  'thumbnail_url',
+  'profile_picture',
+  'url',
+  'image_url',
+  'video_url',
+  'callback_url',
+];
+
 // Fields that should be escaped (user-generated plain text)
 // Note: 'title' and 'name' removed — React already escapes text in JSX,
 // so server-side HTML escaping causes double-encoding (e.g. & → &amp;)
@@ -88,6 +101,10 @@ function getSanitizationStrategy(key) {
 
   if (RICH_TEXT_FIELDS.some(field => lowerKey.includes(field))) {
     return 'rich_text';
+  }
+
+  if (URL_FIELDS.some(field => lowerKey === field)) {
+    return 'none';
   }
 
   if (PLAIN_TEXT_FIELDS.some(field => lowerKey.includes(field))) {

@@ -491,20 +491,36 @@ export default function CoursePlayer() {
                       <span>{decodeEntities(currentContent.title)}</span>
                     </div>
                     {(() => {
-                      const url = currentContent.document_url;
-                      const docType = currentContent.document_type || url.split('.').pop().split('?')[0].toLowerCase();
-                      const isPdf = docType === 'pdf' || url.toLowerCase().includes('.pdf');
-                      // PDFs: use browser's native viewer; Office docs: use Microsoft Office Online viewer
+                      const url = decodeEntities(currentContent.document_url);
+                      const ext = url.split('.').pop().split('?')[0].toLowerCase();
+                      const isPdf = ext === 'pdf' || url.toLowerCase().includes('.pdf');
+                      const isOfficeDoc = ['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext);
+                      // PDFs: browser native viewer; Office docs: Office Online; other URLs: embed directly
                       const viewerSrc = isPdf
                         ? url
-                        : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`;
+                        : isOfficeDoc
+                          ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+                          : url;
                       return (
-                        <iframe
-                          src={viewerSrc}
-                          title={decodeEntities(currentContent.title)}
-                          className="w-full border-0"
-                          style={{ height: '80vh' }}
-                        ></iframe>
+                        <>
+                          <iframe
+                            src={viewerSrc}
+                            title={decodeEntities(currentContent.title)}
+                            className="w-full border-0"
+                            style={{ height: '80vh' }}
+                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                          ></iframe>
+                          <div className="px-4 py-2 bg-gray-800 dark:bg-dark-700 text-center">
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-brand-blue hover:underline"
+                            >
+                              Having trouble viewing? Open in new tab
+                            </a>
+                          </div>
+                        </>
                       );
                     })()}
                   </div>
