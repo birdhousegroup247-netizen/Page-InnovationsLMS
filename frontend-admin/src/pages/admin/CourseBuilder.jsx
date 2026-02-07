@@ -773,10 +773,10 @@ export default function CourseBuilder() {
                       : 'border-gray-200 dark:border-border-dark hover:border-brand-blue/50'
                   )}
                 >
-                  {type === 'video' && <Video className="w-6 h-6 mx-auto mb-1" />}
-                  {type === 'document' && <File className="w-6 h-6 mx-auto mb-1" />}
-                  {type === 'article' && <FileText className="w-6 h-6 mx-auto mb-1" />}
-                  <span className="text-sm capitalize">{type}</span>
+                  {type === 'video' && <Video className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />}
+                  {type === 'document' && <File className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />}
+                  {type === 'article' && <FileText className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />}
+                  <span className="text-sm capitalize text-gray-700 dark:text-white">{type}</span>
                 </button>
               ))}
             </div>
