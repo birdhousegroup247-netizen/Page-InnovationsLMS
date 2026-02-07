@@ -20,6 +20,7 @@ import { contentsAPI, modulesAPI, coursesAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 
 export default function ManageLessons() {
   const { courseId, moduleId } = useParams();
@@ -632,22 +633,20 @@ function LessonForm({ formData, setFormData, validationErrors, setValidationErro
         {formData.content_type === 'document' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
-              Document URL *
+              Upload Document *
             </label>
-            <input
-              type="url"
-              value={formData.document_url}
-              onChange={(e) => {
-                setFormData({ ...formData, document_url: e.target.value });
+            <CloudinaryUpload
+              acceptedTypes="document"
+              maxSizeMB={10}
+              currentFile={formData.document_url || null}
+              uploadEndpoint="/api/upload/course-document"
+              onUploadSuccess={(url) => {
+                setFormData({ ...formData, document_url: url || '' });
                 setValidationErrors({ ...validationErrors, document_url: '' });
               }}
-              className={cn(
-                'w-full px-4 py-2 border rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors',
-                validationErrors.document_url
-                  ? 'border-red-500 dark:border-red-500'
-                  : 'border-gray-300 dark:border-border-dark'
-              )}
-              placeholder="https://example.com/document.pdf"
+              onUploadError={(err) => {
+                setValidationErrors({ ...validationErrors, document_url: err });
+              }}
             />
             {validationErrors.document_url && (
               <p className="text-red-500 dark:text-red-400 text-sm mt-1 transition-colors">{validationErrors.document_url}</p>
