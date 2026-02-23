@@ -14,8 +14,9 @@ import {
   AlertCircle,
   CheckCircle,
   Copy,
+  Upload,
 } from 'lucide-react';
-import { instructorAPI, coursesAPI } from '../../lib/api';
+import { instructorAPI, coursesAPI, bulkEnrollAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
@@ -37,6 +38,12 @@ export default function EnrollmentManagement() {
   // Modals
   const [showEnrollmentLink, setShowEnrollmentLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Bulk Enroll
+  const [showBulkEnroll, setShowBulkEnroll] = useState(false);
+  const [bulkEmails, setBulkEmails] = useState('');
+  const [bulkResult, setBulkResult] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   useEffect(() => {
     if (courseId) {
@@ -71,6 +78,22 @@ export default function EnrollmentManagement() {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const handleBulkEnroll = async () => {
+    const emails = bulkEmails.split(/[\n,;]+/).map((e) => e.trim()).filter(Boolean);
+    if (!emails.length) return;
+    setBulkLoading(true);
+    setBulkResult(null);
+    try {
+      const r = await bulkEnrollAPI.bulkEnroll(courseId, emails);
+      setBulkResult(r.data?.data?.results);
+      // Refresh enrollment list
+      const updated = await instructorAPI.getCourseEnrollments(courseId);
+      setEnrollments(updated.data.data.enrollments || []);
+    } catch (err) {
+      setBulkResult({ error: err.response?.data?.message || 'Failed to enroll' });
+    } finally { setBulkLoading(false); }
   };
 
   const handleCopyEnrollmentLink = () => {
@@ -205,6 +228,14 @@ export default function EnrollmentManagement() {
                   className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20"
                 >
                   Share Link
+                </Button>
+                <Button
+                  variant="outline"
+                  leftIcon={<Upload className="w-4 h-4" />}
+                  onClick={() => { setShowBulkEnroll(true); setBulkResult(null); setBulkEmails(''); }}
+                  className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20"
+                >
+                  Bulk Enroll
                 </Button>
                 <Button
                   variant="outline"
@@ -509,6 +540,56 @@ export default function EnrollmentManagement() {
 
             <div className="flex items-center justify-end pt-4">
               <Button onClick={() => setShowEnrollmentLink(false)}>Close</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Bulk Enroll Modal */}
+      {showBulkEnroll && (
+        <Modal
+          isOpen={showBulkEnroll}
+          onClose={() => setShowBulkEnroll(false)}
+          title="Bulk Enroll Students"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Paste student emails below — one per line, or comma/semicolon separated. Only registered student accounts will be enrolled.
+            </p>
+            <textarea
+              value={bulkEmails}
+              onChange={(e) => setBulkEmails(e.target.value)}
+              placeholder="student1@email.com&#10;student2@email.com&#10;student3@email.com"
+              rows={6}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30 resize-none font-mono"
+            />
+
+            {/* Results */}
+            {bulkResult && !bulkResult.error && (
+              <div className="text-sm space-y-1 bg-gray-50 dark:bg-dark-700 rounded-lg p-3">
+                <p className="text-emerald-600 font-medium">✓ Enrolled: {bulkResult.enrolled?.length || 0}</p>
+                {bulkResult.already_enrolled?.length > 0 && (
+                  <p className="text-gray-500">Already enrolled: {bulkResult.already_enrolled.length}</p>
+                )}
+                {bulkResult.not_found?.length > 0 && (
+                  <p className="text-red-500">Not found (not registered): {bulkResult.not_found.join(', ')}</p>
+                )}
+              </div>
+            )}
+            {bulkResult?.error && (
+              <p className="text-sm text-red-500">{bulkResult.error}</p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowBulkEnroll(false)}>Close</Button>
+              <Button
+                variant="primary"
+                onClick={handleBulkEnroll}
+                disabled={bulkLoading || !bulkEmails.trim()}
+                leftIcon={bulkLoading ? <Spinner className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              >
+                {bulkLoading ? 'Enrolling...' : 'Enroll'}
+              </Button>
             </div>
           </div>
         </Modal>

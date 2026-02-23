@@ -19,11 +19,13 @@ import {
   Video,
   FileDown,
   AlignLeft,
+  StickyNote,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button, Spinner } from '../components/ui';
 import { useToast } from '../components/ui/Toast';
 import QuestionDiscussion from '../components/course/QuestionDiscussion';
+import LessonNotes from '../components/course/LessonNotes';
 import logo from '../assets/logo.png';
 
 // Decode HTML entities that may be stored escaped in the DB
@@ -850,6 +852,19 @@ export default function CoursePlayer() {
                   <MessageCircle className="w-4 h-4" />
                   <span className="hidden sm:inline">Q&A</span>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                    activeTab === 'notes'
+                      ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                      : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                  )}
+                >
+                  <StickyNote className="w-4 h-4" />
+                  <span className="hidden sm:inline">Notes</span>
+                </button>
               </div>
 
               {/* Tab Content */}
@@ -921,6 +936,16 @@ export default function CoursePlayer() {
                 {activeTab === 'qa' && (
                   <div>
                     <QuestionDiscussion contentId={currentContent.id} />
+                  </div>
+                )}
+
+                {/* Notes Tab */}
+                {activeTab === 'notes' && (
+                  <div className="-m-6">
+                    <LessonNotes
+                      contentId={currentContent.id}
+                      currentTime={0}
+                    />
                   </div>
                 )}
               </div>

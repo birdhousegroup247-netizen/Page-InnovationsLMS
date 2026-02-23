@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passport = require('../../config/passport');
 const AuthController = require('../../controllers/auth/authController');
+const TwoFactorController = require('../../controllers/auth/twoFactorController');
 const { validate } = require('../../middleware/validation/authValidation');
 const { authenticate } = require('../../middleware/auth/authMiddleware');
 const {
@@ -81,5 +82,12 @@ router.get(
   }),
   (req, res, next) => AuthController.googleCallback(req, res, next)
 );
+
+// ── 2FA Routes ──────────────────────────────────────────────────────────────
+router.get('/2fa/status',        authenticate, TwoFactorController.getStatus);
+router.post('/2fa/setup',        authenticate, TwoFactorController.setup);
+router.post('/2fa/verify',       authenticate, TwoFactorController.verify);
+router.post('/2fa/disable',      authenticate, TwoFactorController.disable);
+router.post('/2fa/authenticate', TwoFactorController.authenticate); // public (used at login)
 
 module.exports = router;

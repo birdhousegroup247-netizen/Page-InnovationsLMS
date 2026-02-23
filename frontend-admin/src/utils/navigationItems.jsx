@@ -8,6 +8,7 @@ import {
   FolderTree,
   HelpCircle,
   FileText,
+  MessageSquare,
 } from 'lucide-react';
 
 /**
@@ -59,6 +60,11 @@ const adminNavigationItems = [
     label: 'Instructor Applications',
     path: '/instructor-applications',
     icon: <UserCheck className="w-5 h-5" />,
+  },
+  {
+    label: 'Chat Moderation',
+    path: '/chat',
+    icon: <MessageSquare className="w-5 h-5" />,
   },
 ];
 

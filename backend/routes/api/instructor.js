@@ -193,4 +193,14 @@ router.get(
   (req, res, next) => CourseAnalyticsController.getProgressDistribution(req, res, next)
 );
 
+// @route   POST /api/instructor/courses/:courseId/bulk-enroll
+// @desc    Bulk enroll students by email list
+// @access  Private (Instructor, Admin, Super Admin)
+router.post(
+  '/courses/:courseId/bulk-enroll',
+  authenticate,
+  authorize('instructor', 'admin', 'super_admin'),
+  (req, res, next) => StudentManagementController.bulkEnroll(req, res, next)
+);
+
 module.exports = router;

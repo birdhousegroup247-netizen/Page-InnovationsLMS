@@ -10,3 +10,17 @@ process.env.NODE_ENV = 'test';
 
 // Increase timeout for integration tests
 jest.setTimeout(30000);
+
+// Mock otplib (uses ESM @scure/base which Jest cannot parse)
+jest.mock('otplib', () => ({
+  authenticator: {
+    generate: jest.fn(() => '123456'),
+    verify: jest.fn(() => true),
+    generateSecret: jest.fn(() => 'MOCKSECRET'),
+  },
+}));
+
+// Mock qrcode (may depend on ESM sub-deps)
+jest.mock('qrcode', () => ({
+  toDataURL: jest.fn(() => Promise.resolve('data:image/png;base64,MOCK')),
+}));

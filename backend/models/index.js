@@ -33,6 +33,17 @@ const CourseAnnouncement = require('./CourseAnnouncement');
 const Notification = require('./Notification');
 const ActivityLog = require('./ActivityLog');
 const Payment = require('./Payment');
+const ChatRoom = require('./ChatRoom');
+const ChatRoomMember = require('./ChatRoomMember');
+const Conversation = require('./Conversation');
+const Message = require('./Message');
+const MessageReaction = require('./MessageReaction');
+const MutedChat = require('./MutedChat');
+const LessonNote = require('./LessonNote');
+const Badge = require('./Badge');
+const UserBadge = require('./UserBadge');
+const Assignment = require('./Assignment');
+const AssignmentSubmission = require('./AssignmentSubmission');
 
 // ============================================================================
 // RELATIONSHIPS
@@ -194,6 +205,69 @@ User.hasMany(Payment, { foreignKey: 'student_id', as: 'payments', onDelete: 'CAS
 Course.hasMany(Payment, { foreignKey: 'course_id', as: 'payments', onDelete: 'CASCADE' });
 Enrollment.hasOne(Payment, { foreignKey: 'enrollment_id', as: 'payment', onDelete: 'CASCADE' });
 
+// Chat Room relationships
+ChatRoom.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
+ChatRoom.hasMany(ChatRoomMember, { foreignKey: 'room_id', as: 'members', onDelete: 'CASCADE' });
+ChatRoom.hasMany(Message, { foreignKey: 'room_id', as: 'messages', onDelete: 'CASCADE' });
+
+Course.hasOne(ChatRoom, { foreignKey: 'course_id', as: 'chat_room', onDelete: 'CASCADE' });
+
+// Chat Room Member relationships
+ChatRoomMember.belongsTo(ChatRoom, { foreignKey: 'room_id', as: 'room', onDelete: 'CASCADE' });
+ChatRoomMember.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'CASCADE' });
+ChatRoomMember.belongsTo(User, { foreignKey: 'approved_by', as: 'approver', onDelete: 'SET NULL' });
+
+User.hasMany(ChatRoomMember, { foreignKey: 'user_id', as: 'chat_memberships', onDelete: 'CASCADE' });
+
+// Conversation (DM) relationships
+Conversation.belongsTo(User, { foreignKey: 'user_a', as: 'participant_a', onDelete: 'CASCADE' });
+Conversation.belongsTo(User, { foreignKey: 'user_b', as: 'participant_b', onDelete: 'CASCADE' });
+Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages', onDelete: 'CASCADE' });
+
+// Message relationships
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender', onDelete: 'CASCADE' });
+Message.belongsTo(ChatRoom, { foreignKey: 'room_id', as: 'room', onDelete: 'CASCADE' });
+Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation', onDelete: 'CASCADE' });
+// Self-referencing: a message can be a reply to another message
+Message.belongsTo(Message, { foreignKey: 'reply_to_id', as: 'reply_to', onDelete: 'SET NULL' });
+Message.hasMany(Message, { foreignKey: 'reply_to_id', as: 'replies' });
+
+// Message Reaction relationships
+MessageReaction.belongsTo(Message, { foreignKey: 'message_id', as: 'message', onDelete: 'CASCADE' });
+MessageReaction.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'CASCADE' });
+Message.hasMany(MessageReaction, { foreignKey: 'message_id', as: 'reactions', onDelete: 'CASCADE' });
+User.hasMany(MessageReaction, { foreignKey: 'user_id', as: 'message_reactions', onDelete: 'CASCADE' });
+
+// MutedChat relationships
+MutedChat.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'CASCADE' });
+MutedChat.belongsTo(ChatRoom, { foreignKey: 'room_id', as: 'room', onDelete: 'CASCADE' });
+MutedChat.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation', onDelete: 'CASCADE' });
+User.hasMany(MutedChat, { foreignKey: 'user_id', as: 'muted_chats', onDelete: 'CASCADE' });
+
+// Lesson Note relationships
+LessonNote.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+LessonNote.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'lesson_content' });
+User.hasMany(LessonNote, { foreignKey: 'user_id', as: 'lesson_notes' });
+ModuleContent.hasMany(LessonNote, { foreignKey: 'content_id', as: 'notes' });
+
+// Badge relationships
+Badge.hasMany(UserBadge, { foreignKey: 'badge_id', as: 'user_badges' });
+UserBadge.belongsTo(Badge, { foreignKey: 'badge_id', as: 'badge' });
+UserBadge.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+User.hasMany(UserBadge, { foreignKey: 'user_id', as: 'user_badges' });
+
+// Assignment relationships
+Assignment.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+Assignment.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'content' });
+Assignment.belongsTo(User, { foreignKey: 'created_by', as: 'instructor' });
+Assignment.hasMany(AssignmentSubmission, { foreignKey: 'assignment_id', as: 'submissions' });
+Course.hasMany(Assignment, { foreignKey: 'course_id', as: 'assignments' });
+ModuleContent.hasMany(Assignment, { foreignKey: 'content_id', as: 'assignments' });
+
+AssignmentSubmission.belongsTo(Assignment, { foreignKey: 'assignment_id', as: 'assignment' });
+AssignmentSubmission.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+User.hasMany(AssignmentSubmission, { foreignKey: 'student_id', as: 'submissions' });
+
 module.exports = {
   sequelize,  // Export sequelize instance
   User,
@@ -225,4 +299,15 @@ module.exports = {
   Notification,
   ActivityLog,
   Payment,
+  ChatRoom,
+  ChatRoomMember,
+  Conversation,
+  Message,
+  MessageReaction,
+  MutedChat,
+  LessonNote,
+  Badge,
+  UserBadge,
+  Assignment,
+  AssignmentSubmission,
 };

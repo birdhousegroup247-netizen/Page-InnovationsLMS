@@ -229,6 +229,7 @@ app.use('/api/assigned-tests', require('./routes/api/assignedTests'));
 app.use('/api/certificates', require('./routes/api/certificates'));
 app.use('/api/upload', require('./routes/api/upload'));
 app.use('/api/notifications', require('./routes/api/notifications'));
+app.use('/api/chat', require('./routes/api/chat'));
 app.use('/api', require('./routes/api/reviews'));
 app.use('/api/bookmarks', require('./routes/api/bookmarks'));
 app.use('/api', require('./routes/api/lesson-questions'));
@@ -237,6 +238,12 @@ app.use('/api/activity', require('./routes/api/activity'));
 app.use('/api/profile', require('./routes/api/profile'));
 app.use('/api/export', require('./routes/api/export'));
 // app.use('/api/users', require('./routes/api/users'));
+
+// New feature routes
+app.use('/api/notes',       require('./routes/api/notes'));
+app.use('/api/badges',      require('./routes/api/badges'));
+app.use('/api/leaderboard', require('./routes/api/leaderboard'));
+app.use('/api',             require('./routes/api/assignments'));
 
 // Instructor routes (requires instructor/admin/super_admin role)
 app.use('/api/instructor', require('./routes/api/instructor'));

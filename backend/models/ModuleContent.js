@@ -58,6 +58,11 @@ const ModuleContent = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    unlock_after_days: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

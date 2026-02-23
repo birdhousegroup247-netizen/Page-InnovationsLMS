@@ -1,4 +1,4 @@
-const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress } = require('../../models');
+const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
@@ -323,6 +323,15 @@ class CourseController {
         student_id: req.user.id,
         course_id: id,
       });
+
+      // Auto-request to join course chat room (pending instructor approval)
+      const chatRoom = await ChatRoom.findOne({ where: { course_id: id, is_active: true } });
+      if (chatRoom) {
+        await ChatRoomMember.findOrCreate({
+          where: { room_id: chatRoom.id, user_id: req.user.id },
+          defaults: { room_id: chatRoom.id, user_id: req.user.id, role: 'student', status: 'pending' },
+        });
+      }
 
       // Update course enrollment count
       await course.increment('enrollment_count');

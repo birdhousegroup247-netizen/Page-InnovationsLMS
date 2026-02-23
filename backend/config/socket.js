@@ -13,6 +13,13 @@ const { User } = require('../models');
  * @param {http.Server} server - HTTP server instance
  * @returns {Server} Socket.IO server instance
  */
+// Track online user IDs (for presence + email fallback)
+const onlineUsers = new Set();
+
+function isUserOnline(userId) {
+  return onlineUsers.has(Number(userId));
+}
+
 function initializeSocketIO(server) {
   const io = new Server(server, {
     cors: {
@@ -84,10 +91,15 @@ function initializeSocketIO(server) {
     // Join role-based room
     socket.join(`role:${socket.user.role}`);
 
+    // Track presence
+    onlineUsers.add(socket.userId);
+    io.emit('presence:online', { userId: socket.userId });
+
     // Send welcome message
     socket.emit('connected', {
       message: 'Connected to TekyPro LMS',
       user: socket.user,
+      onlineUsers: [...onlineUsers],
     });
 
     // Handle course room joining
@@ -152,8 +164,66 @@ function initializeSocketIO(server) {
       logger.info(`All notifications marked as read by user ${socket.userId}`);
     });
 
+    // -------------------------------------------------------------------------
+    // CHAT ROOM events
+    // -------------------------------------------------------------------------
+
+    socket.on('join:room', (roomId) => {
+      socket.join(`room:${roomId}`);
+      logger.info(`User ${socket.userId} joined chat room: ${roomId}`);
+      socket.emit('joined:room', { roomId });
+    });
+
+    socket.on('leave:room', (roomId) => {
+      socket.leave(`room:${roomId}`);
+      logger.info(`User ${socket.userId} left chat room: ${roomId}`);
+    });
+
+    // -------------------------------------------------------------------------
+    // DIRECT MESSAGE events
+    // -------------------------------------------------------------------------
+
+    socket.on('join:conversation', (conversationId) => {
+      socket.join(`conversation:${conversationId}`);
+      logger.info(`User ${socket.userId} joined conversation: ${conversationId}`);
+    });
+
+    socket.on('leave:conversation', (conversationId) => {
+      socket.leave(`conversation:${conversationId}`);
+      logger.info(`User ${socket.userId} left conversation: ${conversationId}`);
+    });
+
+    // -------------------------------------------------------------------------
+    // TYPING indicators (shared for rooms and DMs)
+    // -------------------------------------------------------------------------
+
+    socket.on('chat:typing', ({ roomId, conversationId }) => {
+      const target = roomId ? `room:${roomId}` : `conversation:${conversationId}`;
+      socket.to(target).emit('user:typing', {
+        userId: socket.userId,
+        userName: socket.user.full_name,
+      });
+    });
+
+    socket.on('chat:stop_typing', ({ roomId, conversationId }) => {
+      const target = roomId ? `room:${roomId}` : `conversation:${conversationId}`;
+      socket.to(target).emit('user:stopped_typing', { userId: socket.userId });
+    });
+
+    // Read receipt: client tells us they read a conversation
+    socket.on('chat:read', ({ conversationId }) => {
+      if (!conversationId) return;
+      // Notify the other participant that messages were read
+      socket.to(`conversation:${conversationId}`).emit('chat:read', {
+        conversationId,
+        readBy: socket.userId,
+      });
+    });
+
     // Handle disconnect
     socket.on('disconnect', (reason) => {
+      onlineUsers.delete(socket.userId);
+      io.emit('presence:offline', { userId: socket.userId });
       logger.info(`Client disconnected: ${socket.user.email} (Reason: ${reason})`);
     });
 
@@ -257,8 +327,67 @@ function emitToRole(io, role, event, data) {
   logger.info(`Event '${event}' sent to role: ${role}`);
 }
 
+/**
+ * Emit a new chat room message to all members in the room
+ * @param {Server} io
+ * @param {Number} roomId
+ * @param {Object} message
+ */
+function emitRoomMessage(io, roomId, message) {
+  io.to(`room:${roomId}`).emit('chat:message', { message, roomId });
+  logger.info(`Chat message broadcast to room ${roomId}`);
+}
+
+/**
+ * Notify room when a member is approved or removed
+ * @param {Server} io
+ * @param {Number} roomId
+ * @param {String} event - 'chat:member_approved' | 'chat:member_removed'
+ * @param {Number} userId
+ */
+function emitRoomMemberUpdate(io, roomId, event, userId) {
+  io.to(`room:${roomId}`).emit(event, { roomId, userId });
+  logger.info(`${event} emitted to room ${roomId} for user ${userId}`);
+}
+
+/**
+ * Notify all members of a room that it has been disabled
+ * @param {Server} io
+ * @param {Number} roomId
+ */
+function emitRoomDisabled(io, roomId) {
+  io.to(`room:${roomId}`).emit('chat:room_disabled', { roomId });
+  logger.info(`Room ${roomId} disabled — participants notified`);
+}
+
+/**
+ * Emit a direct message to both participants in a conversation
+ * @param {Server} io
+ * @param {Number} conversationId
+ * @param {Object} message
+ */
+function emitDirectMessage(io, conversationId, message) {
+  io.to(`conversation:${conversationId}`).emit('chat:message', { message, conversationId });
+  logger.info(`DM broadcast to conversation ${conversationId}`);
+}
+
+/**
+ * Emit reaction update (add/remove) to room or conversation
+ * @param {Server} io
+ * @param {Object} message - Message record (has room_id or conversation_id)
+ * @param {Object} payload - { messageId, reactions }
+ */
+function emitReactionUpdate(io, message, payload) {
+  const target = message.room_id
+    ? `room:${message.room_id}`
+    : `conversation:${message.conversation_id}`;
+  io.to(target).emit('chat:reaction', payload);
+  logger.info(`Reaction update emitted to ${target}`);
+}
+
 module.exports = {
   initializeSocketIO,
+  isUserOnline,
   emitNotification,
   emitCourseAnnouncement,
   emitLessonQuestion,
@@ -267,4 +396,9 @@ module.exports = {
   emitCertificateIssued,
   emitProgressUpdate,
   emitToRole,
+  emitRoomMessage,
+  emitRoomMemberUpdate,
+  emitRoomDisabled,
+  emitDirectMessage,
+  emitReactionUpdate,
 };

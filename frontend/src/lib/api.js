@@ -335,4 +335,90 @@ export const announcementsAPI = {
   delete: (announcementId) => api.delete(`/api/announcements/announcements/${announcementId}`),
 };
 
+// Chat API (course rooms + direct messages)
+export const chatAPI = {
+  // Admin
+  adminGetRooms: (params) => api.get('/api/chat/admin/rooms', { params }),
+  adminGetRoomMessages: (roomId, params) => api.get(`/api/chat/admin/rooms/${roomId}/messages`, { params }),
+  // Mute
+  toggleMute: (payload) => api.post('/api/chat/mute', payload),
+  getMuteStatus: (params) => api.get('/api/chat/mute', { params }),
+  // Course chat rooms
+  getRoomByCourse: (courseId) => api.get(`/api/chat/rooms/course/${courseId}`),
+  getRoomMembers: (roomId) => api.get(`/api/chat/rooms/${roomId}/members`),
+  getRoomMessages: (roomId, params) => api.get(`/api/chat/rooms/${roomId}/messages`, { params }),
+  sendRoomMessage: (roomId, formData) =>
+    api.post(`/api/chat/rooms/${roomId}/messages`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  getPendingRequests: (roomId) => api.get(`/api/chat/rooms/${roomId}/requests`),
+  handleJoinRequest: (roomId, userId, action) => api.patch(`/api/chat/rooms/${roomId}/requests/${userId}`, { action }),
+  removeMember: (roomId, userId) => api.delete(`/api/chat/rooms/${roomId}/members/${userId}`),
+  toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
+  // Messages
+  deleteMessage: (messageId) => api.delete(`/api/chat/messages/${messageId}`),
+  toggleReaction: (messageId, emoji) => api.post(`/api/chat/messages/${messageId}/reactions`, { emoji }),
+  pinMessage: (messageId) => api.patch(`/api/chat/messages/${messageId}/pin`),
+  // Direct messages
+  getConversations: () => api.get('/api/chat/conversations'),
+  getOrCreateConversation: (recipientId) => api.post('/api/chat/conversations', { recipientId }),
+  getConversationMessages: (conversationId, params) => api.get(`/api/chat/conversations/${conversationId}/messages`, { params }),
+  sendDirectMessage: (conversationId, formData) =>
+    api.post(`/api/chat/conversations/${conversationId}/messages`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  markConversationRead: (conversationId) => api.patch(`/api/chat/conversations/${conversationId}/read`),
+};
+
+// Notes API
+export const notesAPI = {
+  getNotes: (contentId) => api.get(`/api/notes/${contentId}`),
+  createNote: (contentId, data) => api.post(`/api/notes/${contentId}`, data),
+  updateNote: (noteId, data) => api.put(`/api/notes/entry/${noteId}`, data),
+  deleteNote: (noteId) => api.delete(`/api/notes/entry/${noteId}`),
+  getAllMyNotes: () => api.get('/api/notes'),
+};
+
+// Badges API
+export const badgesAPI = {
+  getAll: () => api.get('/api/badges'),
+  getMyBadges: () => api.get('/api/badges/my'),
+  getUserBadges: (userId) => api.get(`/api/badges/user/${userId}`),
+};
+
+// Leaderboard API
+export const leaderboardAPI = {
+  get: (params) => api.get('/api/leaderboard', { params }),
+  getMyRank: () => api.get('/api/leaderboard/my-rank'),
+};
+
+// Assignments API
+export const assignmentsAPI = {
+  // Instructor
+  getCourseAssignments: (courseId) => api.get(`/api/instructor/courses/${courseId}/assignments`),
+  createAssignment: (courseId, data) => api.post(`/api/instructor/courses/${courseId}/assignments`, data),
+  updateAssignment: (id, data) => api.put(`/api/instructor/assignments/${id}`, data),
+  deleteAssignment: (id) => api.delete(`/api/instructor/assignments/${id}`),
+  getSubmissions: (id) => api.get(`/api/instructor/assignments/${id}/submissions`),
+  gradeSubmission: (submissionId, data) => api.post(`/api/instructor/submissions/${submissionId}/grade`, data),
+  // Student
+  getStudentAssignments: (courseId) => api.get(`/api/courses/${courseId}/assignments`),
+  submitAssignment: (id, data) => api.post(`/api/assignments/${id}/submit`, data),
+  updateSubmission: (id, data) => api.put(`/api/assignments/${id}/submit`, data),
+};
+
+// 2FA API
+export const twoFactorAPI = {
+  getStatus: () => api.get('/api/auth/2fa/status'),
+  setup: () => api.post('/api/auth/2fa/setup'),
+  verify: (token) => api.post('/api/auth/2fa/verify', { token }),
+  disable: (token) => api.post('/api/auth/2fa/disable', { token }),
+  authenticate: (userId, token) => api.post('/api/auth/2fa/authenticate', { userId, token }),
+};
+
+// Bulk Enrollment API
+export const bulkEnrollAPI = {
+  bulkEnroll: (courseId, emails) => api.post(`/api/instructor/courses/${courseId}/bulk-enroll`, { emails }),
+};
+
 export default api;

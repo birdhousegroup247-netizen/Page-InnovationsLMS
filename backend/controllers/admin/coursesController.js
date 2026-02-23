@@ -1,4 +1,4 @@
-const { Course, User, Category, Enrollment, CourseModule, ModuleContent } = require('../../models');
+const { Course, User, Category, Enrollment, CourseModule, ModuleContent, ChatRoom, ChatRoomMember } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ForbiddenError } = require('../../utils/errors');
@@ -184,6 +184,44 @@ class AdminCoursesController {
 
             const oldStatus = course.status;
             await course.update({ status });
+
+            // Auto-create chat room when course is published for the first time
+            if (status === 'published' && oldStatus !== 'published') {
+                const [chatRoom, created] = await ChatRoom.findOrCreate({
+                    where: { course_id: course.id },
+                    defaults: { course_id: course.id, is_active: true },
+                });
+
+                if (created) {
+                    // Auto-approve instructor as a member
+                    await ChatRoomMember.create({
+                        room_id: chatRoom.id,
+                        user_id: course.instructor_id,
+                        role: 'instructor',
+                        status: 'approved',
+                        approved_by: req.user.id,
+                        joined_at: new Date(),
+                    });
+
+                    // Auto-add pending join requests for already-enrolled students
+                    const enrollments = await Enrollment.findAll({
+                        where: { course_id: course.id },
+                        attributes: ['student_id'],
+                    });
+
+                    if (enrollments.length > 0) {
+                        const memberRequests = enrollments.map((e) => ({
+                            room_id: chatRoom.id,
+                            user_id: e.student_id,
+                            role: 'student',
+                            status: 'pending',
+                        }));
+                        await ChatRoomMember.bulkCreate(memberRequests, { ignoreDuplicates: true });
+                    }
+
+                    logger.info(`Chat room created for course ${course.id} with ${enrollments.length} pending student requests`);
+                }
+            }
 
             logger.info(`Course ${id} status updated from ${oldStatus} to ${status} by admin ${req.user.email}`);
 

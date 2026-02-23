@@ -78,6 +78,14 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    two_factor_secret: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    two_factor_enabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     last_login: {
       type: DataTypes.DATE,
       allowNull: true,

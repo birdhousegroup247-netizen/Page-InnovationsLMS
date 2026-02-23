@@ -57,7 +57,9 @@ const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) 
           >
             <Bell className="w-5 h-5 text-gray-600 dark:text-text-dark-secondary transition-colors" />
             {notifications > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-brand-red rounded-full" />
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-brand-red text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                {notifications > 99 ? '99+' : notifications}
+              </span>
             )}
           </Link>
 

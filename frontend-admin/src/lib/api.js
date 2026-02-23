@@ -297,4 +297,12 @@ export const practiceTestsAPI = {
   getResults: (attemptId) => api.get(`/api/practice-tests/${attemptId}/results`),
 };
 
+// Admin: Chat Moderation
+export const chatAPI = {
+  adminGetRooms: (params) => api.get('/api/chat/admin/rooms', { params }),
+  adminGetRoomMessages: (roomId) => api.get(`/api/chat/admin/rooms/${roomId}/messages`),
+  toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
+  deleteMessage: (msgId) => api.delete(`/api/chat/messages/${msgId}`),
+};
+
 export default api;

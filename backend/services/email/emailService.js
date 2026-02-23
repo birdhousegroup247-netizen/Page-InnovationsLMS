@@ -664,6 +664,61 @@ class EmailService {
       return false;
     }
   }
+
+  /**
+   * Send chat notification email (mention or new DM when user is offline)
+   * @param {String} email - Recipient email
+   * @param {String} name - Recipient name
+   * @param {String} type - 'mention' | 'dm'
+   * @param {String} senderName - Who triggered the notification
+   * @param {String} preview - Message preview (first 100 chars)
+   */
+  async sendChatNotificationEmail(email, name, type, senderName, preview) {
+    const subject = type === 'mention'
+      ? `${senderName} mentioned you in a chat`
+      : `New message from ${senderName}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .preview { background: #fff; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; color: #555; font-style: italic; }
+            .button { display: inline-block; padding: 12px 30px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>💬 ${type === 'mention' ? 'You were mentioned' : 'New Message'}</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${name},</h2>
+              <p>${type === 'mention'
+                ? `<strong>${senderName}</strong> mentioned you in a chat on TekyPro LMS.`
+                : `You have a new direct message from <strong>${senderName}</strong>.`
+              }</p>
+              ${preview ? `<div class="preview">"${preview}"</div>` : ''}
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/messages" class="button">
+                Open Messages
+              </a>
+            </div>
+            <div class="footer">
+              <p>You received this because you were not online at the time. Log in to reply.</p>
+              <p>&copy; ${new Date().getFullYear()} TekyPro LMS</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({ to: email, subject, html, text: `${senderName}: ${preview}` });
+  }
 }
 
 // Export singleton instance

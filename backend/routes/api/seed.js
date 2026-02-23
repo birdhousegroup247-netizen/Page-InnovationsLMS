@@ -11,13 +11,12 @@ const router = express.Router();
 const SEED_SECRET = process.env.SEED_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// If production and no SEED_SECRET configured, disable seeding
+const bcrypt = require('bcrypt');
+
+// If production and no SEED_SECRET configured, skip route registration
 if (isProduction && !SEED_SECRET) {
   module.exports = router;
-  return;
-}
-
-const bcrypt = require('bcrypt');
+} else {
 
 /**
  * @route   POST /api/seed
@@ -200,4 +199,5 @@ router.get('/status', async (req, res) => {
   }
 });
 
-module.exports = router;
+  module.exports = router;
+}

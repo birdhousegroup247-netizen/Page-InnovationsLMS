@@ -31,6 +31,7 @@ const Notification = sequelize.define(
         'announcement',
         'question_reply',
         'course_update',
+        'chat_mention',
         'system'
       ),
       allowNull: false,

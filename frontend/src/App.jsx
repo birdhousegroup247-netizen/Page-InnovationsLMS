@@ -40,6 +40,8 @@ const GeneratePracticeTest = lazy(() => import('./pages/GeneratePracticeTest'));
 const TakeTest = lazy(() => import('./pages/TakeTest'));
 const TestResults = lazy(() => import('./pages/TestResults'));
 const MyAssignedTests = lazy(() => import('./pages/MyAssignedTests'));
+const Messages = lazy(() => import('./pages/Messages'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 
 // Instructor pages - lazy loaded
 const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
@@ -60,7 +62,8 @@ const ManageTests = lazy(() => import('./pages/instructor/ManageTests'));
 const CreateTest = lazy(() => import('./pages/instructor/CreateTest'));
 const ContributeQuestions = lazy(() => import('./pages/instructor/ContributeQuestions'));
 
-// Admin pages removed - admins should use the separate admin app
+// Admin pages
+const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
 
 // Protected Route Component with AppLayout
 function ProtectedRoute({ children }) {
@@ -537,7 +540,33 @@ function App() {
             }
           />
 
-          {/* Admin Routes - Redirect to dashboard (admins should use the admin app) */}
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <Messages />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Leaderboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/chat"
+            element={
+              <ProtectedRoute>
+                <AdminChatModeration />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/admin/*" element={<Navigate to="/dashboard" replace />} />
 
           {/* Landing Page - Root */}

@@ -32,6 +32,7 @@ const QuestionBank = lazy(() => import('./pages/admin/QuestionBank'));
 const Tests = lazy(() => import('./pages/admin/Tests'));
 const TestBuilder = lazy(() => import('./pages/admin/TestBuilder'));
 const TestResults = lazy(() => import('./pages/admin/TestResults'));
+const ChatModeration = lazy(() => import('./pages/admin/ChatModeration'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
@@ -227,6 +228,15 @@ function App() {
               element={
                 <AdminRoute>
                   <TestResults />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/chat"
+              element={
+                <AdminRoute>
+                  <ChatModeration />
                 </AdminRoute>
               }
             />

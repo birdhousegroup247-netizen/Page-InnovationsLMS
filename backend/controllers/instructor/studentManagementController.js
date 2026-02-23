@@ -1,4 +1,4 @@
-const { Course, Enrollment, User, ContentProgress, ModuleContent, AssignedTestAttempt, AssignedTest, sequelize } = require('../../models');
+const { Course, Enrollment, User, ContentProgress, ModuleContent, AssignedTestAttempt, AssignedTest, sequelize, Notification } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { Op } = require('sequelize');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
@@ -550,6 +550,60 @@ class StudentManagementController {
     } catch (error) {
       next(error);
     }
+  }
+  /**
+   * Bulk enroll students by email list
+   * POST /api/instructor/courses/:courseId/bulk-enroll
+   * Body: { emails: ['a@b.com', ...] }
+   */
+  static async bulkEnroll(req, res, next) {
+    try {
+      const { courseId } = req.params;
+      const { emails } = req.body;
+
+      if (!Array.isArray(emails) || emails.length === 0) {
+        return ApiResponse.error(res, 'Provide an array of emails', 400);
+      }
+      if (emails.length > 200) {
+        return ApiResponse.error(res, 'Maximum 200 emails per request', 400);
+      }
+
+      const course = await Course.findByPk(courseId);
+      if (!course) throw new NotFoundError('Course not found');
+      if (course.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('Not authorized');
+      }
+
+      const normalised = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+      const users = await User.findAll({ where: { email: normalised, role: 'student' }, attributes: ['id', 'email'] });
+
+      const results = { enrolled: [], already_enrolled: [], not_found: [] };
+
+      const notFoundEmails = normalised.filter((e) => !users.find((u) => u.email === e));
+      results.not_found = notFoundEmails;
+
+      for (const user of users) {
+        const [, created] = await Enrollment.findOrCreate({
+          where: { student_id: user.id, course_id: courseId },
+          defaults: { student_id: user.id, course_id: courseId, status: 'active' },
+        });
+        if (created) {
+          results.enrolled.push(user.email);
+          // Notify the student
+          await Notification.create({
+            user_id: user.id,
+            type: 'enrollment',
+            title: 'Enrolled in a course',
+            message: `You have been enrolled in "${course.title}" by your instructor.`,
+            link: `/courses/${courseId}`,
+          }).catch(() => {});
+        } else {
+          results.already_enrolled.push(user.email);
+        }
+      }
+
+      return ApiResponse.success(res, { results }, `Enrolled ${results.enrolled.length} student(s)`);
+    } catch (err) { next(err); }
   }
 }
 

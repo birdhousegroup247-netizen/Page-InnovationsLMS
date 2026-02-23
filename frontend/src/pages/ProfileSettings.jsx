@@ -19,6 +19,7 @@ import {
 import { profileAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner, Alert, Tabs } from '../components/ui';
+import TwoFactorSettings from '../components/auth/TwoFactorSettings';
 import { cn } from '../utils/cn';
 
 export default function ProfileSettings() {
@@ -720,6 +721,12 @@ export default function ProfileSettings() {
                   </Button>
                 </div>
               </form>
+
+              {/* 2FA Section */}
+              <div className="mt-6">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">Account Security</h3>
+                <TwoFactorSettings />
+              </div>
             )}
           </>
         )}
