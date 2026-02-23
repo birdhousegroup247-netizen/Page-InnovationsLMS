@@ -587,6 +587,7 @@ export default function ProfileSettings() {
 
             {/* Password Tab */}
             {activeTab === 'password' && (
+              <>
               <form onSubmit={handlePasswordChange} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark transition-colors">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary mb-4 transition-colors">
                   Change Password
@@ -727,6 +728,7 @@ export default function ProfileSettings() {
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">Account Security</h3>
                 <TwoFactorSettings />
               </div>
+              </>
             )}
           </>
         )}
