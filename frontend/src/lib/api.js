@@ -417,6 +417,10 @@ export const twoFactorAPI = {
 };
 
 // Bulk Enrollment API
+export const activityAPI = {
+  getStreak: () => api.get('/api/activity/streak'),
+};
+
 export const bulkEnrollAPI = {
   bulkEnroll: (courseId, emails) => api.post(`/api/instructor/courses/${courseId}/bulk-enroll`, { emails }),
 };

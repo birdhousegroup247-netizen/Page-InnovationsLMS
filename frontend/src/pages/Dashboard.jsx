@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { profileAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
+import StreakCard from '../components/dashboard/StreakCard';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { Container } from '../components/layout';
 import EmptyState from '../components/common/EmptyState';
@@ -312,10 +313,15 @@ export default function Dashboard() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {stats.map((stat, index) => (
             <StatCard key={index} stat={stat} />
           ))}
+        </div>
+
+        {/* Streak Card */}
+        <div className="mb-10">
+          <StreakCard />
         </div>
 
         {/* Continue Learning Section */}

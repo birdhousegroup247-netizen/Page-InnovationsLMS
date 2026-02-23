@@ -249,6 +249,106 @@ class ActivityController {
   /**
    * Log activity from request (captures IP and user agent)
    */
+  /**
+   * GET /api/activity/streak
+   * Returns full streak data for the authenticated user:
+   * current_streak, longest_streak, weekly_activity (7 booleans Mon-Sun),
+   * active_today, streak_at_risk, total_xp, coins
+   */
+  static async getStreak(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const QUALIFYING = ['content_view', 'lesson_complete', 'test_complete', 'course_enroll', 'login'];
+
+      // Pull all activity dates (UTC) for this user
+      const rows = await ActivityLog.findAll({
+        where: { user_id: userId, action: { [Op.in]: QUALIFYING } },
+        attributes: ['created_at'],
+        order: [['created_at', 'DESC']],
+        raw: true,
+      });
+
+      // ── Unique calendar days (local date string "YYYY-MM-DD") ───────────────
+      const toDay = (d) => new Date(d).toISOString().slice(0, 10);
+      const uniqueDays = [...new Set(rows.map((r) => toDay(r.created_at)))].sort().reverse();
+      // uniqueDays[0] is the most recent active day
+
+      // ── Today / yesterday ──────────────────────────────────────────────────
+      const todayStr = toDay(new Date());
+      const yesterdayStr = toDay(new Date(Date.now() - 86400000));
+
+      const activeToday = uniqueDays[0] === todayStr;
+
+      // ── Current streak ─────────────────────────────────────────────────────
+      let currentStreak = 0;
+      if (uniqueDays.length > 0) {
+        // Streak is alive if last activity was today or yesterday
+        if (uniqueDays[0] === todayStr || uniqueDays[0] === yesterdayStr) {
+          currentStreak = 1;
+          let prev = uniqueDays[0];
+          for (let i = 1; i < uniqueDays.length; i++) {
+            const expected = toDay(new Date(new Date(prev).getTime() - 86400000));
+            if (uniqueDays[i] === expected) {
+              currentStreak++;
+              prev = uniqueDays[i];
+            } else {
+              break;
+            }
+          }
+        }
+      }
+
+      // ── Longest streak (scan all days) ─────────────────────────────────────
+      let longestStreak = 0;
+      let run = 0;
+      const asc = [...uniqueDays].reverse(); // oldest first
+      for (let i = 0; i < asc.length; i++) {
+        if (i === 0) { run = 1; continue; }
+        const expected = toDay(new Date(new Date(asc[i - 1]).getTime() + 86400000));
+        if (asc[i] === expected) { run++; } else { run = 1; }
+        if (run > longestStreak) longestStreak = run;
+      }
+      if (asc.length > 0 && longestStreak === 0) longestStreak = 1; // single day
+
+      // ── Weekly activity (Mon=0 … Sun=6 for the CURRENT calendar week) ──────
+      const now = new Date();
+      // Start of the current week (Monday)
+      const dayOfWeek = (now.getDay() + 6) % 7; // Mon=0, Sun=6
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - dayOfWeek);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        return uniqueDays.includes(toDay(d));
+      });
+
+      // ── XP & coins ─────────────────────────────────────────────────────────
+      // 10 XP per streak day, bonus multiplier every 7 days
+      const baseXp = uniqueDays.length * 10;
+      const streakBonus = Math.floor(currentStreak / 7) * 50;
+      const totalXp = baseXp + streakBonus;
+      const coins = currentStreak * 10 + Math.floor(currentStreak / 7) * 25;
+
+      // ── Streak at risk: user has not been active today ──────────────────────
+      const streakAtRisk = currentStreak > 0 && !activeToday;
+
+      return ApiResponse.success(res, {
+        current_streak: currentStreak,
+        longest_streak: Math.max(longestStreak, currentStreak),
+        active_today: activeToday,
+        streak_at_risk: streakAtRisk,
+        weekly_activity: weeklyActivity,   // [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+        total_active_days: uniqueDays.length,
+        total_xp: totalXp,
+        coins,
+      }, 'Streak data retrieved');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   static async logFromRequest(req, action, entity_type = null, entity_id = null, metadata = null) {
     try {
       const data = {

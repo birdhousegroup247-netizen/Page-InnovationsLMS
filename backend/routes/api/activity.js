@@ -12,6 +12,9 @@ const { authenticate, authorize } = require('../../middleware/auth/authMiddlewar
 // ACTIVITY LOG ROUTES
 // ============================================================================
 
+// Get streak data (current streak, longest, weekly dots, XP, coins)
+router.get('/streak', authenticate, ActivityController.getStreak);
+
 // Get authenticated user's own activity (default route)
 router.get('/', authenticate, ActivityController.getMyActivity);
 

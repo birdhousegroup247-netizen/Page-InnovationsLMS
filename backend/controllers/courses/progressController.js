@@ -1,6 +1,7 @@
 const { ContentProgress, ModuleContent, Enrollment, CourseModule } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { NotFoundError } = require('../../utils/errors');
+const ActivityController = require('../activity/activityController');
 
 class ProgressController {
   // Mark content as complete
@@ -30,11 +31,16 @@ class ProgressController {
         });
       }
 
-      // Update course progress (non-critical — don't fail the request if this errors)
+      // Update course progress (non-critical)
       try {
         await ProgressController.updateCourseProgress(req.user.id, content.module_id);
       } catch (progressError) {
         console.error('Failed to update course progress:', progressError.message, progressError.stack);
+      }
+
+      // Log lesson_complete for streak tracking (only when newly completed)
+      if (created || !progress.completed) {
+        ActivityController.logFromRequest(req, 'lesson_complete', 'content', parseInt(contentId)).catch(() => {});
       }
 
       return ApiResponse.success(res, { progress }, 'Content marked as complete');
@@ -57,6 +63,9 @@ class ProgressController {
         last_position_seconds,
         last_accessed: new Date(),
       });
+
+      // Log activity so streak tracking picks this up
+      ActivityController.logFromRequest(req, 'content_view', 'content', parseInt(contentId)).catch(() => {});
 
       return ApiResponse.success(res, null, 'Progress saved');
     } catch (error) {
