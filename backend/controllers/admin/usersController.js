@@ -87,13 +87,10 @@ class UsersController {
         throw new BadRequestError('Email already exists');
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      const user = await User.create({
+      const user = await User.createUser({
         full_name,
         email,
-        password: hashedPassword,
+        password,
         role: role || 'student',
         phone,
         is_active: true,
@@ -124,9 +121,10 @@ class UsersController {
         throw new NotFoundError('User not found');
       }
 
-      // If updating password, hash it
+      // If updating password, hash it into the correct field
       if (updates.password) {
-        updates.password = await bcrypt.hash(updates.password, 12);
+        updates.password_hash = await bcrypt.hash(updates.password, 12);
+        delete updates.password;
       }
 
       // Prevent updating certain fields
