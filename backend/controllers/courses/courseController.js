@@ -237,7 +237,24 @@ class CourseController {
         throw new ForbiddenError('Only admins can publish courses. Submit for review instead.');
       }
 
+      const wasPublished = course.status !== 'published' && updates.status === 'published';
       await course.update(updates);
+
+      // Auto-create chat room when course is first published
+      if (wasPublished) {
+        const [room, created] = await ChatRoom.findOrCreate({
+          where: { course_id: course.id },
+          defaults: { course_id: course.id, is_active: true },
+        });
+        if (created) {
+          // Add instructor as approved member
+          await ChatRoomMember.findOrCreate({
+            where: { room_id: room.id, user_id: course.instructor_id },
+            defaults: { room_id: room.id, user_id: course.instructor_id, role: 'instructor', status: 'approved' },
+          });
+          logger.info(`Chat room created for course ${course.id}`);
+        }
+      }
 
       // Notify enrolled students if course is published
       if (course.status === 'published') {
@@ -324,12 +341,12 @@ class CourseController {
         course_id: id,
       });
 
-      // Auto-request to join course chat room (pending instructor approval)
+      // Auto-join course chat room as approved member on enrollment
       const chatRoom = await ChatRoom.findOne({ where: { course_id: id, is_active: true } });
       if (chatRoom) {
         await ChatRoomMember.findOrCreate({
           where: { room_id: chatRoom.id, user_id: req.user.id },
-          defaults: { room_id: chatRoom.id, user_id: req.user.id, role: 'student', status: 'pending' },
+          defaults: { room_id: chatRoom.id, user_id: req.user.id, role: 'student', status: 'approved' },
         });
       }
 

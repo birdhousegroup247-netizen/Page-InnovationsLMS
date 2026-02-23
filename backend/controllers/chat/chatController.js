@@ -15,7 +15,6 @@ const {
   Notification,
   User,
   Course,
-  Enrollment,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -213,43 +212,18 @@ class ChatController {
     }
   }
 
-  // Search users who share a course with the current user (for starting DMs)
+  // Search all active users for starting DMs (excludes current user)
   static async searchCoursemates(req, res, next) {
     try {
       const userId = req.user.id;
       const { q = '' } = req.query;
 
-      const [myEnrollments, myCourses] = await Promise.all([
-        Enrollment.findAll({ where: { student_id: userId }, attributes: ['course_id'] }),
-        Course.findAll({ where: { instructor_id: userId }, attributes: ['id'] }),
-      ]);
+      const where = {
+        id: { [Op.ne]: userId },
+        is_active: true,
+        role: { [Op.in]: ['student', 'instructor'] },
+      };
 
-      const courseIds = [
-        ...myEnrollments.map((e) => e.course_id),
-        ...myCourses.map((c) => c.id),
-      ];
-
-      if (courseIds.length === 0) {
-        return ApiResponse.success(res, { users: [] });
-      }
-
-      const [otherEnrollments, otherCourses] = await Promise.all([
-        Enrollment.findAll({
-          where: { course_id: { [Op.in]: courseIds }, student_id: { [Op.ne]: userId } },
-          attributes: ['student_id'],
-        }),
-        Course.findAll({
-          where: { id: { [Op.in]: courseIds }, instructor_id: { [Op.ne]: userId } },
-          attributes: ['instructor_id'],
-        }),
-      ]);
-
-      const userIds = [...new Set([
-        ...otherEnrollments.map((e) => e.student_id),
-        ...otherCourses.map((c) => c.instructor_id),
-      ])].filter(Boolean);
-
-      const where = { id: { [Op.in]: userIds }, is_active: true };
       if (q) {
         where[Op.or] = [
           { full_name: { [Op.like]: `%${q}%` } },
@@ -260,7 +234,8 @@ class ChatController {
       const users = await User.findAll({
         where,
         attributes: ['id', 'full_name', 'email', 'profile_picture', 'role'],
-        limit: 20,
+        order: [['full_name', 'ASC']],
+        limit: 30,
       });
 
       return ApiResponse.success(res, { users });
