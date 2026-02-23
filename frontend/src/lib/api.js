@@ -344,6 +344,8 @@ export const chatAPI = {
   toggleMute: (payload) => api.post('/api/chat/mute', payload),
   getMuteStatus: (params) => api.get('/api/chat/mute', { params }),
   // Course chat rooms
+  getMyRooms: () => api.get('/api/chat/rooms'),
+  searchCoursemates: (q) => api.get('/api/chat/users/search', { params: { q } }),
   getRoomByCourse: (courseId) => api.get(`/api/chat/rooms/course/${courseId}`),
   getRoomMembers: (roomId) => api.get(`/api/chat/rooms/${roomId}/members`),
   getRoomMessages: (roomId, params) => api.get(`/api/chat/rooms/${roomId}/messages`, { params }),

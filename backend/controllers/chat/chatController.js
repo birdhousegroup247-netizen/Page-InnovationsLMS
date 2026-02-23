@@ -15,6 +15,7 @@ const {
   Notification,
   User,
   Course,
+  Enrollment,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -151,6 +152,118 @@ class ChatController {
       }
 
       return ApiResponse.success(res, { room }, 'Chat room retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get all chat rooms the current user belongs to (enrolled courses / taught courses)
+  static async getMyRooms(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const role = req.user.role;
+
+      let rooms;
+
+      if (role === 'instructor') {
+        rooms = await ChatRoom.findAll({
+          where: { is_active: true },
+          include: [
+            {
+              model: Course,
+              as: 'course',
+              where: { instructor_id: userId },
+              attributes: ['id', 'title', 'instructor_id'],
+            },
+            {
+              model: ChatRoomMember,
+              as: 'members',
+              where: { status: 'approved' },
+              required: false,
+              include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'profile_picture', 'role'] }],
+            },
+          ],
+        });
+      } else {
+        const memberships = await ChatRoomMember.findAll({
+          where: { user_id: userId, status: 'approved' },
+          attributes: ['room_id'],
+        });
+        const roomIds = memberships.map((m) => m.room_id);
+        rooms = roomIds.length > 0
+          ? await ChatRoom.findAll({
+              where: { id: { [Op.in]: roomIds }, is_active: true },
+              include: [
+                { model: Course, as: 'course', attributes: ['id', 'title', 'instructor_id'] },
+                {
+                  model: ChatRoomMember,
+                  as: 'members',
+                  where: { status: 'approved' },
+                  required: false,
+                  include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'profile_picture', 'role'] }],
+                },
+              ],
+            })
+          : [];
+      }
+
+      return ApiResponse.success(res, { rooms }, 'Rooms retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Search users who share a course with the current user (for starting DMs)
+  static async searchCoursemates(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const { q = '' } = req.query;
+
+      const [myEnrollments, myCourses] = await Promise.all([
+        Enrollment.findAll({ where: { student_id: userId }, attributes: ['course_id'] }),
+        Course.findAll({ where: { instructor_id: userId }, attributes: ['id'] }),
+      ]);
+
+      const courseIds = [
+        ...myEnrollments.map((e) => e.course_id),
+        ...myCourses.map((c) => c.id),
+      ];
+
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, { users: [] });
+      }
+
+      const [otherEnrollments, otherCourses] = await Promise.all([
+        Enrollment.findAll({
+          where: { course_id: { [Op.in]: courseIds }, student_id: { [Op.ne]: userId } },
+          attributes: ['student_id'],
+        }),
+        Course.findAll({
+          where: { id: { [Op.in]: courseIds }, instructor_id: { [Op.ne]: userId } },
+          attributes: ['instructor_id'],
+        }),
+      ]);
+
+      const userIds = [...new Set([
+        ...otherEnrollments.map((e) => e.student_id),
+        ...otherCourses.map((c) => c.instructor_id),
+      ])].filter(Boolean);
+
+      const where = { id: { [Op.in]: userIds }, is_active: true };
+      if (q) {
+        where[Op.or] = [
+          { full_name: { [Op.like]: `%${q}%` } },
+          { email: { [Op.like]: `%${q}%` } },
+        ];
+      }
+
+      const users = await User.findAll({
+        where,
+        attributes: ['id', 'full_name', 'email', 'profile_picture', 'role'],
+        limit: 20,
+      });
+
+      return ApiResponse.success(res, { users });
     } catch (error) {
       next(error);
     }

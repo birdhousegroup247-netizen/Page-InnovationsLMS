@@ -865,16 +865,49 @@ export default function Messages() {
   const [showRequests, setShowRequests] = useState(false);
   const [search, setSearch]             = useState('');
   const [onlineUsers, setOnlineUsers]   = useState(new Set());
+  const [showNewDM, setShowNewDM]       = useState(false);
+  const [dmSearch, setDmSearch]         = useState('');
+  const [dmResults, setDmResults]       = useState([]);
+  const [dmSearching, setDmSearching]   = useState(false);
 
   const isInstructor = user?.role === 'instructor';
 
-  // Load convs
+  // Load rooms + convs
   useEffect(() => {
+    chatAPI.getMyRooms()
+      .then((r) => setRooms(r.data?.data?.rooms || []))
+      .catch(() => {});
     chatAPI.getConversations()
       .then((r) => setConversations(r.data?.data?.conversations || []))
       .catch(() => {})
       .finally(() => setLoadingConvs(false));
   }, []);
+
+  // Search coursemates for new DM
+  useEffect(() => {
+    if (!showNewDM) return;
+    setDmSearching(true);
+    const t = setTimeout(() => {
+      chatAPI.searchCoursemates(dmSearch)
+        .then((r) => setDmResults(r.data?.data?.users || []))
+        .catch(() => setDmResults([]))
+        .finally(() => setDmSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [dmSearch, showNewDM]);
+
+  const startDM = async (targetUser) => {
+    try {
+      const res = await chatAPI.getOrCreateConversation(targetUser.id);
+      const conv = res.data?.data?.conversation;
+      if (conv) {
+        setConversations((prev) => prev.find((c) => c.id === conv.id) ? prev : [conv, ...prev]);
+        setActiveChat({ type: 'dm', id: conv.id, title: targetUser.full_name, subtitle: targetUser.role });
+      }
+    } catch { /* silent */ }
+    setShowNewDM(false);
+    setDmSearch('');
+  };
 
   // Presence via socket
   useEffect(() => {
@@ -934,14 +967,60 @@ export default function Messages() {
       {/* Sidebar */}
       <div className="w-72 flex-shrink-0 bg-white dark:bg-dark-800 border-r border-gray-100 dark:border-border-dark flex flex-col">
         <div className="px-6 py-5 border-b border-gray-100 dark:border-border-dark">
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-brand-blue" />
-            Messages
-            {totalUnread > 0 && (
-              <span className="ml-1 bg-brand-blue text-white text-[10px] font-bold rounded-full px-2 py-0.5">{totalUnread}</span>
-            )}
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-brand-blue" />
+              Messages
+              {totalUnread > 0 && (
+                <span className="ml-1 bg-brand-blue text-white text-[10px] font-bold rounded-full px-2 py-0.5">{totalUnread}</span>
+              )}
+            </h1>
+            <button
+              onClick={() => { setShowNewDM(true); setDmSearch(''); setDmResults([]); }}
+              className="w-7 h-7 rounded-full bg-brand-blue text-white flex items-center justify-center hover:bg-blue-600 transition-colors text-lg font-bold"
+              title="New direct message"
+            >+</button>
+          </div>
         </div>
+
+        {/* New DM panel */}
+        {showNewDM && (
+          <div className="border-b border-gray-100 dark:border-border-dark bg-gray-50 dark:bg-dark-700 px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">New Message</p>
+              <button onClick={() => setShowNewDM(false)}><X className="w-4 h-4 text-gray-400 hover:text-gray-700" /></button>
+            </div>
+            <input
+              autoFocus
+              value={dmSearch}
+              onChange={(e) => setDmSearch(e.target.value)}
+              placeholder="Search classmates or instructor…"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-border-dark bg-white dark:bg-dark-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+            />
+            <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
+              {dmSearching && <p className="text-xs text-gray-400 text-center py-2">Searching…</p>}
+              {!dmSearching && dmResults.length === 0 && dmSearch.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-2">Type a name to search</p>
+              )}
+              {!dmSearching && dmResults.length === 0 && dmSearch.length > 0 && (
+                <p className="text-xs text-gray-400 text-center py-2">No results</p>
+              )}
+              {dmResults.map((u) => (
+                <button key={u.id} onClick={() => startDM(u)}
+                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white dark:hover:bg-dark-600 text-left transition-colors">
+                  <Avatar name={u.full_name} picture={u.profile_picture} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                    <p className="text-xs text-gray-400 capitalize">{u.role}</p>
+                  </div>
+                  {u.role === 'instructor' && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">Tutor</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="px-4 py-3 border-b border-gray-100 dark:border-border-dark">
           <div className="relative">
