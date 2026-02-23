@@ -371,10 +371,13 @@ const startServer = async () => {
         }
 
         try {
-          // Use alter: true to modify existing tables to match models
-          // This is safe for initial deployment and handles partial schema from failed deploys
-          // Use force: true ONLY when DB_FORCE_RESET=true (WARNING: deletes all data!)
-          await sequelize.sync({ alter: !forceReset, force: forceReset });
+          if (forceReset) {
+            // force: true drops and recreates all tables (data loss!)
+            await sequelize.sync({ force: true });
+          } else {
+            // First pass: CREATE TABLE IF NOT EXISTS for all models (safe, no data loss)
+            await sequelize.sync({ force: false, alter: false });
+          }
           logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
           logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
         } catch (syncError) {
