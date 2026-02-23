@@ -655,7 +655,7 @@ user:stopped_typing { userId }
   consistency)
   5. Global search — search across courses, lessons, and articles from a single
   search bar
-  6. Student learning analytics — personal stats page: time spent, completion
+  6. Student learning analythow ics — personal stats page: time spent, completion
   rates, test scores over time
 
   Instructor tools
@@ -672,3 +672,88 @@ user:stopped_typing { userId }
   ---
   The most impactful ones for a real LMS are #1 (auto-certificates), #2
   (prerequisites), #4 (streaks), #5 (global search), and #6 (student analytics).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Bash command                                                                            
+                                                                                         
+●  mysqled for 1 patuern (ctrl+o to expand)  dev/null <<'SQL'                            
+   SELECT TABLE_NAME, INDEX_NAME, COLUMN_NAME                                            
+● Bash(mysql -u root -pSunmboye@1 tekypro_lms 2>/dev/null <<'SQL'                        
+      SELECT TABLE_NAME,'INDEX_NAME,'COLUMN_NAME…)                                       
+  ⎿A TABLE_NAMEMINDEX_NAME      COLUMN_NAME                                              
+     activity_logs      activity_logs_action    action       ations','messages')         
+     activity_logs      activity_logs_created_at        created_at                       
+     … +41 lines (ctrl+o to expand)                                                      
+                                                                                         
+● Searched for 1 pattern, read 1 file (ctrl+o to expand)     
+                                                                                         
+● Good full picture. Here's the honest breakdown — organized by impact:                  
+                                                                                         
+  ---                                                                                    
+  Performance (Fast wins)                                                                
+                                                                                         
+  1. Cache heavy endpoints — only /api/courses and /api/courses/:id use Redis. These     
+  don't:                                                                                 
+  - /api/leaderboard (raw SQL every hit)
+  - /api/profile/stats (6 DB queries every hit)                                          
+  - /api/activity/streak (full table scan every hit)                                     
+  - Adding 60–300s TTL caching to these would cut DB load significantly                  
+                                                                                         
+  2. DB indexes on chat/messages — the messages table has no composite index on (room_id,
+   created_at) or (conversation_id, created_at). As messages grow, pagination will get   
+  slow.
+
+  3. Redundant DB indexes — activity_logs and content_progress have 3–4 duplicate indexes
+   on the same columns. This slows writes unnecessarily.
+
+  ---
+  Features that would make a real difference
+
+  4. PWA / Offline mode — your plan explicitly mentions this is critical for Nigeria.
+  Students can read course content + notes offline. Can be done with a service worker.
+
+  5. Course completion celebration — when a student hits 100%, show a confetti explosion
+  + auto-issue certificate + badge. Currently nothing happens visually.
+
+  6. Global search — search courses, knowledge articles, Q&A all from one bar. Big UX
+  win.
+
+  7. Push / browser notifications — "Your 5-day streak is at risk!" reminders. Uses the
+  browser Notification API, no extra service needed.
+
+  8. Video resume — the last_position_seconds is already saved, but CoursePlayer doesn't
+  use it to resume where you left off.
+
+  9. Instructor earnings dashboard — instructors have no revenue/payout view.
+
+  10. In-app certificate preview — currently you can download certificates but not view
+  them in the app.
+
+  ---
+  Quick quality fixes
+
+  11. Login.txt and zzzz folder — sitting untracked in the repo. Should be
+  removed/gitignored.
+
+  12. Email is unconfigured — EMAIL_USER is empty in .env. Streak reminders, welcome
+  emails, mentions all fail silently.
+
+  ---
+  Which of these do you want to tackle first? My recommendation:
+  - Immediate: #8 (video resume — already have the data), #5 (course completion
+  celebration — pure frontend)
+  - High impact: #1 (caching leaderboard/stats), #7 (push notifications for streak)
+  - Big feature: #4 (PWA offline mode) or #6 (global search)
