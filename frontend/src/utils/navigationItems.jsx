@@ -11,6 +11,11 @@ export const getNavigationItems = (role = 'student') => {
       icon: <Home className="w-5 h-5" />,
     },
     {
+      label: 'Messages',
+      path: '/messages',
+      icon: <MessageSquare className="w-5 h-5" />,
+    },
+    {
       label: 'Explore Courses',
       path: '/courses',
       icon: <Search className="w-5 h-5" />,
@@ -50,11 +55,6 @@ export const getNavigationItems = (role = 'student') => {
       path: '/leaderboard',
       icon: <Trophy className="w-5 h-5" />,
     },
-    {
-      label: 'Messages',
-      path: '/messages',
-      icon: <MessageSquare className="w-5 h-5" />,
-    },
   ];
 
   const instructorItems = [
@@ -64,14 +64,19 @@ export const getNavigationItems = (role = 'student') => {
       icon: <Home className="w-5 h-5" />,
     },
     {
+      label: 'Messages',
+      path: '/messages',
+      icon: <MessageSquare className="w-5 h-5" />,
+    },
+    {
       label: 'My Courses',
-      path: '/instructor/courses', // Separate route to fix sidebar highlighting
+      path: '/instructor/courses',
       icon: <BookOpen className="w-5 h-5" />,
     },
     {
       label: 'Create Course',
       path: '/instructor/courses/create',
-      icon: <FileCheck className="w-5 h-5" />, // Using FileCheck as a placeholder for "Plus" or similar if not imported
+      icon: <FileCheck className="w-5 h-5" />,
     },
     {
       label: 'My Tests',
@@ -87,11 +92,6 @@ export const getNavigationItems = (role = 'student') => {
       label: 'My Students',
       path: '/instructor/students',
       icon: <Award className="w-5 h-5" />,
-    },
-    {
-      label: 'Messages',
-      path: '/messages',
-      icon: <MessageSquare className="w-5 h-5" />,
     },
   ];
 

@@ -1,4 +1,4 @@
-import { Bell, User, ChevronDown, Sun, Moon, Menu, Settings, RefreshCw } from 'lucide-react';
+import { Bell, User, ChevronDown, Sun, Moon, Menu, Settings, RefreshCw, MessageSquare } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
@@ -49,6 +49,14 @@ const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) 
               <Moon className="w-5 h-5 text-gray-600 dark:text-text-dark-secondary" />
             )}
           </button>
+
+          {/* Messages */}
+          <Link
+            to="/messages"
+            className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+          >
+            <MessageSquare className="w-5 h-5 text-gray-600 dark:text-text-dark-secondary transition-colors" />
+          </Link>
 
           {/* Notifications */}
           <Link

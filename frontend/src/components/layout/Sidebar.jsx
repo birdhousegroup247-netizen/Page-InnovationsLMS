@@ -38,7 +38,7 @@ const Sidebar = ({ items = [], className, isOpen = false, onClose }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 pt-2">
+        <nav className="flex-1 overflow-y-auto px-4 pt-2 pb-4">
           <ul className="space-y-0.5">
             {items.map((item) => {
               const isActive = location.pathname === item.path;
