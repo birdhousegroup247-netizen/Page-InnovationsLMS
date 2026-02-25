@@ -375,11 +375,10 @@ const startServer = async () => {
             // force: true drops and recreates all tables (data loss!)
             await sequelize.sync({ force: true });
           } else {
-            // First pass: CREATE TABLE IF NOT EXISTS for all models (safe, no data loss)
-            await sequelize.sync({ force: false, alter: false });
+            // alter: true safely adds missing columns without dropping data
+            await sequelize.sync({ force: false, alter: true });
           }
           logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
-          logger.warn('⚠ Remember to disable DB_SYNC_ENABLED after initial setup!');
         } catch (syncError) {
           logger.error('✗ Database sync failed:', syncError.message);
           logger.error('Error name:', syncError.name);
@@ -397,7 +396,7 @@ const startServer = async () => {
           // throw syncError; // Dont crash on sync error
         }
       } else if (process.env.NODE_ENV === 'development') {
-        await sequelize.sync({ alter: false });
+        await sequelize.sync({ alter: true });
         logger.info('✓ Database synchronized (development mode)');
       }
     } catch (syncErr) {

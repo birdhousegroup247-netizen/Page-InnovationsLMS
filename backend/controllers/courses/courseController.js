@@ -186,7 +186,7 @@ class CourseController {
   // Create course (instructor/admin)
   static async createCourse(req, res, next) {
     try {
-      const { title, description, category_id, duration_hours, difficulty, thumbnail, status } = req.body;
+      const { title, description, category_id, duration_hours, difficulty, thumbnail, status, price } = req.body;
 
       // Determine course status - instructors cannot directly publish
       let courseStatus = 'draft';
@@ -205,6 +205,7 @@ class CourseController {
         difficulty,
         thumbnail,
         status: courseStatus,
+        price: price || 0,
       });
 
       logger.info(`Course created: ${title} by ${req.user.email}`);
