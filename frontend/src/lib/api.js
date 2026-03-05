@@ -427,4 +427,37 @@ export const bulkEnrollAPI = {
   bulkEnroll: (courseId, emails) => api.post(`/api/instructor/courses/${courseId}/bulk-enroll`, { emails }),
 };
 
+export const searchAPI = {
+  search: (query, type = 'all', limit = 5) => api.get('/api/search', { params: { q: query, type, limit } }),
+};
+
+export const liveSessionsAPI = {
+  getByCourse: (courseId) => api.get(`/api/courses/${courseId}/sessions`),
+  create: (courseId, data) => api.post(`/api/courses/${courseId}/sessions`, data),
+  update: (id, data) => api.put(`/api/sessions/${id}`, data),
+  delete: (id) => api.delete(`/api/sessions/${id}`),
+  updateStatus: (id, status) => api.patch(`/api/sessions/${id}/status`, { status }),
+};
+
+export const forumAPI = {
+  getPosts: (courseId, params) => api.get(`/api/courses/${courseId}/forum`, { params }),
+  createPost: (courseId, data) => api.post(`/api/courses/${courseId}/forum`, data),
+  getPost: (postId) => api.get(`/api/forum/${postId}`),
+  updatePost: (postId, data) => api.put(`/api/forum/${postId}`, data),
+  deletePost: (postId) => api.delete(`/api/forum/${postId}`),
+  addReply: (postId, data) => api.post(`/api/forum/${postId}/replies`, data),
+  updateReply: (replyId, data) => api.put(`/api/forum/replies/${replyId}`, data),
+  deleteReply: (replyId) => api.delete(`/api/forum/replies/${replyId}`),
+  pinPost: (postId) => api.post(`/api/forum/${postId}/pin`),
+  upvotePost: (postId) => api.post(`/api/forum/${postId}/upvote`),
+};
+
+export const instructorReviewsAPI = {
+  getReviews: (instructorId) => api.get(`/api/instructors/${instructorId}/reviews`),
+  getStats: (instructorId) => api.get(`/api/instructors/${instructorId}/reviews/stats`),
+  create: (instructorId, data) => api.post(`/api/instructors/${instructorId}/reviews`, data),
+  update: (instructorId, reviewId, data) => api.put(`/api/instructors/${instructorId}/reviews/${reviewId}`, data),
+  delete: (instructorId, reviewId) => api.delete(`/api/instructors/${instructorId}/reviews/${reviewId}`),
+};
+
 export default api;

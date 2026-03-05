@@ -21,6 +21,8 @@ import {
   ArrowRight,
   GraduationCap,
   AlertCircle,
+  Video,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Container } from '../components/layout';
@@ -175,7 +177,7 @@ export default function InstructorDashboard() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="primary" size="sm" onClick={onManageContent} leftIcon={<Hammer className="h-4 w-4" />}>
               Build
             </Button>
@@ -185,6 +187,18 @@ export default function InstructorDashboard() {
             <Button variant="outline" size="sm" onClick={onView} leftIcon={<Eye className="h-4 w-4" />}>
               View
             </Button>
+            <Link
+              to={`/instructor/courses/${course.id}/sessions`}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+            >
+              <Video className="h-3.5 w-3.5" /> Sessions
+            </Link>
+            <Link
+              to={`/instructor/courses/${course.id}/assignments-grading`}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-brand-purple hover:bg-brand-purple/10 rounded-lg transition-colors"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" /> Grade
+            </Link>
           </div>
         </div>
       </div>

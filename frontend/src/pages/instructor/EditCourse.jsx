@@ -21,6 +21,7 @@ export default function EditCourse() {
   const [fetchingCourse, setFetchingCourse] = useState(true);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [allCourses, setAllCourses] = useState([]);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
@@ -33,12 +34,14 @@ export default function EditCourse() {
     duration_hours: '',
     thumbnail: '',
     status: 'draft',
+    prerequisite_course_id: '',
   });
 
   // Fetch course data and categories on mount
   useEffect(() => {
     fetchCategories();
     fetchCourseData();
+    fetchAllCourses();
   }, [id]);
 
   const fetchCourseData = async () => {
@@ -63,6 +66,7 @@ export default function EditCourse() {
         duration_hours: course.duration_hours || '',
         thumbnail: course.thumbnail || '',
         status: course.status || 'draft',
+        prerequisite_course_id: course.prerequisite_course_id || '',
       });
 
       // Set thumbnail preview if exists
@@ -86,6 +90,15 @@ export default function EditCourse() {
       console.error('Failed to load categories:', err);
     } finally {
       setLoadingCategories(false);
+    }
+  };
+
+  const fetchAllCourses = async () => {
+    try {
+      const response = await coursesAPI.getAll({ limit: 100, status: 'published' });
+      setAllCourses(response.data.data.courses || []);
+    } catch (err) {
+      console.error('Failed to load courses:', err);
     }
   };
 
@@ -211,6 +224,7 @@ export default function EditCourse() {
         difficulty: formData.difficulty,
         duration_hours: formData.duration_hours ? parseInt(formData.duration_hours) : null,
         thumbnail: formData.thumbnail || null,
+        prerequisite_course_id: formData.prerequisite_course_id ? parseInt(formData.prerequisite_course_id) : null,
       };
 
       // Only update status if explicitly changing it
@@ -445,6 +459,30 @@ export default function EditCourse() {
                   {formData.status === 'archived' && 'Hidden from catalog'}
                 </p>
               </div>
+            </div>
+
+            {/* Prerequisite Course */}
+            <div>
+              <label htmlFor="prerequisite_course_id" className="block text-sm font-medium text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+                Prerequisite Course <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional)</span>
+              </label>
+              <select
+                id="prerequisite_course_id"
+                name="prerequisite_course_id"
+                value={formData.prerequisite_course_id}
+                onChange={handleChange}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+              >
+                <option value="">No prerequisite</option>
+                {allCourses.filter(c => String(c.id) !== String(id)).map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
+                Students must complete this course before enrolling
+              </p>
             </div>
 
             {/* Thumbnail Upload */}

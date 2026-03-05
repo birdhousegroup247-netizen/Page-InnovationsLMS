@@ -5,6 +5,7 @@ import Badge from '../ui/Badge';
 import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
+import GlobalSearch from '../common/GlobalSearch';
 
 /**
  * Topbar Component - Modern top navigation bar
@@ -32,8 +33,13 @@ const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) 
           <Menu className="w-6 h-6 text-gray-600 dark:text-text-dark-secondary" />
         </button>
 
-        {/* Spacer - pushes buttons to the right */}
-        <div className="flex-1"></div>
+        {/* Global Search - hidden on mobile, shown on sm+ */}
+        <div className="hidden sm:flex flex-1 items-center max-w-sm mx-4">
+          <GlobalSearch />
+        </div>
+
+        {/* Spacer for mobile */}
+        <div className="flex-1 sm:hidden"></div>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 sm:gap-4">

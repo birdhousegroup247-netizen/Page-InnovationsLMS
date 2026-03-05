@@ -244,6 +244,10 @@ app.use('/api/notes',       require('./routes/api/notes'));
 app.use('/api/badges',      require('./routes/api/badges'));
 app.use('/api/leaderboard', require('./routes/api/leaderboard'));
 app.use('/api',             require('./routes/api/assignments'));
+app.use('/api/search',      require('./routes/api/search'));
+app.use('/api/instructors', require('./routes/api/instructor-reviews'));
+app.use('/api/sessions',   require('./routes/api/sessions'));
+app.use('/api/forum',      require('./routes/api/forum-posts'));
 
 // Instructor routes (requires instructor/admin/super_admin role)
 app.use('/api/instructor', require('./routes/api/instructor'));
@@ -352,6 +356,28 @@ const startServer = async () => {
         }
       }
 
+      // Add prerequisite_course_id to courses if missing
+      const coursesDesc = await qi.describeTable('courses');
+      if (!coursesDesc.prerequisite_course_id) {
+        await qi.addColumn('courses', 'prerequisite_course_id', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          defaultValue: null,
+        });
+        logger.info('  ✓ Added prerequisite_course_id column to courses');
+      }
+
+      // Add unlock_after_days to module_contents if missing
+      const moduleContentsDesc = await qi.describeTable('module_contents');
+      if (!moduleContentsDesc.unlock_after_days) {
+        await qi.addColumn('module_contents', 'unlock_after_days', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          defaultValue: null,
+        });
+        logger.info('  ✓ Added unlock_after_days column to module_contents');
+      }
+
       logger.info('✓ Auto-migrations complete');
     } catch (migrationErr) {
       logger.error('⚠ Auto-migration failed (continuing):', migrationErr.message);
@@ -402,6 +428,42 @@ const startServer = async () => {
     } catch (syncErr) {
       logger.error('⚠ Database sync encountered an error but server will continue:', syncErr.message);
     }
+
+    // Session reminder cron: notify students 15 min before scheduled live sessions
+    setInterval(async () => {
+      try {
+        const { LiveSession, Enrollment } = require('./models');
+        const { Op: SessOp } = require('sequelize');
+        const NotificationsController = require('./controllers/notifications/notificationsController');
+        const now = new Date();
+        const soon = new Date(now.getTime() + 15 * 60 * 1000);
+        const sessions = await LiveSession.findAll({
+          where: {
+            status: 'scheduled',
+            scheduled_at: { [SessOp.between]: [now, soon] },
+          },
+        });
+        for (const session of sessions) {
+          const enrollments = await Enrollment.findAll({
+            where: { course_id: session.course_id },
+            attributes: ['student_id'],
+          });
+          if (enrollments.length > 0) {
+            const notifications = enrollments.map((e) => ({
+              user_id: e.student_id,
+              type: 'live_session',
+              title: 'Live Session Starting Soon',
+              message: `"${session.title}" starts in 15 minutes. Get ready!`,
+              link: `/courses/${session.course_id}/learn`,
+              priority: 'high',
+            }));
+            await NotificationsController.createBulkNotifications(notifications);
+          }
+        }
+      } catch (cronErr) {
+        logger.error('Session reminder cron error:', cronErr.message);
+      }
+    }, 5 * 60 * 1000); // Run every 5 minutes
 
     // Start server
     server.listen(PORT, () => {

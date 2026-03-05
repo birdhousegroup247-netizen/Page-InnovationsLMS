@@ -1,4 +1,4 @@
-# 📚 Course Management System - Complete Workflow Explained
+![alt text](image.png)# 📚 Course Management System - Complete Workflow Explained
 
 ## Overview
 Your LMS has a **3-tier structure** for organizing educational content:

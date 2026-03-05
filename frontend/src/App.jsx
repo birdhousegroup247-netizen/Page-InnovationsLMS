@@ -61,6 +61,10 @@ const EnrollmentManagement = lazy(() => import('./pages/instructor/EnrollmentMan
 const ManageTests = lazy(() => import('./pages/instructor/ManageTests'));
 const CreateTest = lazy(() => import('./pages/instructor/CreateTest'));
 const ContributeQuestions = lazy(() => import('./pages/instructor/ContributeQuestions'));
+const LiveSessions = lazy(() => import('./pages/instructor/LiveSessions'));
+const GradeAssignments = lazy(() => import('./pages/instructor/GradeAssignments'));
+const CourseAssignments = lazy(() => import('./pages/instructor/CourseAssignments'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
 
 // Admin pages
 const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
@@ -457,6 +461,38 @@ function App() {
               <InstructorRoute>
                 <ContributeQuestions />
               </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/sessions"
+            element={
+              <InstructorRoute>
+                <LiveSessions />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/assignments/:assignmentId/grade"
+            element={
+              <InstructorRoute>
+                <GradeAssignments />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/assignments-grading"
+            element={
+              <InstructorRoute>
+                <CourseAssignments />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <ProtectedRoute>
+                <SearchResults />
+              </ProtectedRoute>
             }
           />
           <Route

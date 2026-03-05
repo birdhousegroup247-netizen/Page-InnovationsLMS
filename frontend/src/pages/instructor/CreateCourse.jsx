@@ -22,6 +22,7 @@ export default function CreateCourse() {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [allCourses, setAllCourses] = useState([]);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
@@ -34,11 +35,13 @@ export default function CreateCourse() {
     duration_hours: '',
     thumbnail: '',
     status: 'draft',
+    prerequisite_course_id: '',
   });
 
   // Fetch categories on mount
   useEffect(() => {
     fetchCategories();
+    fetchAllCourses();
   }, []);
 
   const fetchCategories = async () => {
@@ -49,6 +52,15 @@ export default function CreateCourse() {
       console.error('Failed to load categories:', err);
     } finally {
       setLoadingCategories(false);
+    }
+  };
+
+  const fetchAllCourses = async () => {
+    try {
+      const response = await coursesAPI.getAll({ limit: 100, status: 'published' });
+      setAllCourses(response.data.data.courses || []);
+    } catch (err) {
+      console.error('Failed to load courses for prerequisite:', err);
     }
   };
 
@@ -175,6 +187,7 @@ export default function CreateCourse() {
         duration_hours: formData.duration_hours ? parseInt(formData.duration_hours) : null,
         thumbnail: formData.thumbnail || null, // Now using Cloudinary URL
         status: submitStatus,
+        prerequisite_course_id: formData.prerequisite_course_id ? parseInt(formData.prerequisite_course_id) : null,
       };
 
       const response = await coursesAPI.create(courseData);
@@ -370,6 +383,28 @@ export default function CreateCourse() {
               )}
               <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
                 How many hours will it take to complete this course? (Optional)
+              </p>
+            </div>
+
+            {/* Prerequisite Course */}
+            <div>
+              <label htmlFor="prerequisite_course_id" className="block text-sm font-medium text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
+                Prerequisite Course <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional)</span>
+              </label>
+              <select
+                id="prerequisite_course_id"
+                name="prerequisite_course_id"
+                value={formData.prerequisite_course_id}
+                onChange={handleChange}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+              >
+                <option value="">No prerequisite</option>
+                {allCourses.map((course) => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+                ))}
+              </select>
+              <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
+                Students must complete this course before enrolling
               </p>
             </div>
 

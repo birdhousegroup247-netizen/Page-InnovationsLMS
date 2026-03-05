@@ -44,6 +44,10 @@ const Badge = require('./Badge');
 const UserBadge = require('./UserBadge');
 const Assignment = require('./Assignment');
 const AssignmentSubmission = require('./AssignmentSubmission');
+const InstructorReview = require('./InstructorReview');
+const LiveSession = require('./LiveSession');
+const ForumPost = require('./ForumPost');
+const ForumReply = require('./ForumReply');
 
 // ============================================================================
 // RELATIONSHIPS
@@ -256,6 +260,34 @@ UserBadge.belongsTo(Badge, { foreignKey: 'badge_id', as: 'badge' });
 UserBadge.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 User.hasMany(UserBadge, { foreignKey: 'user_id', as: 'user_badges' });
 
+// Forum relationships
+Course.hasMany(ForumPost, { foreignKey: 'course_id', as: 'forum_posts', onDelete: 'CASCADE' });
+ForumPost.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+ForumPost.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
+ForumPost.hasMany(ForumReply, { foreignKey: 'post_id', as: 'replies', onDelete: 'CASCADE' });
+ForumReply.belongsTo(ForumPost, { foreignKey: 'post_id', as: 'post' });
+ForumReply.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
+User.hasMany(ForumPost, { foreignKey: 'author_id', as: 'forum_posts' });
+User.hasMany(ForumReply, { foreignKey: 'author_id', as: 'forum_replies' });
+
+// Live Session relationships
+Course.hasMany(LiveSession, { foreignKey: 'course_id', as: 'live_sessions', onDelete: 'CASCADE' });
+LiveSession.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+User.hasMany(LiveSession, { foreignKey: 'instructor_id', as: 'live_sessions' });
+LiveSession.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor' });
+
+// Instructor Review relationships
+User.hasMany(InstructorReview, { foreignKey: 'instructor_id', as: 'instructor_reviews' });
+InstructorReview.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor' });
+InstructorReview.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+InstructorReview.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+User.hasMany(InstructorReview, { foreignKey: 'student_id', as: 'given_reviews' });
+Course.hasMany(InstructorReview, { foreignKey: 'course_id', as: 'instructor_reviews' });
+
+// Course prerequisite self-referencing relationships
+Course.belongsTo(Course, { foreignKey: 'prerequisite_course_id', as: 'prerequisite' });
+Course.hasMany(Course, { foreignKey: 'prerequisite_course_id', as: 'dependent_courses' });
+
 // Assignment relationships
 Assignment.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
 Assignment.belongsTo(ModuleContent, { foreignKey: 'content_id', as: 'content' });
@@ -310,4 +342,8 @@ module.exports = {
   UserBadge,
   Assignment,
   AssignmentSubmission,
+  InstructorReview,
+  LiveSession,
+  ForumPost,
+  ForumReply,
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { coursesAPI } from '../lib/api';
+import { coursesAPI, instructorReviewsAPI, liveSessionsAPI } from '../lib/api';
 import {
   ArrowLeft,
   Clock,
@@ -16,6 +16,10 @@ import {
   Bookmark,
   Tag,
   CheckCircle2,
+  Lock,
+  Video,
+  Calendar,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Container } from '../components/layout';
 import { Card, Badge, Button, Spinner, Avatar } from '../components/ui';
@@ -34,6 +38,13 @@ export default function CourseDetail() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [enrollmentSuccess, setEnrollmentSuccess] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState('');
+  const [instructorStats, setInstructorStats] = useState(null);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
 
   useEffect(() => {
     fetchCourse();
@@ -50,6 +61,20 @@ export default function CourseDetail() {
       // Expand first module by default
       if (data.course?.modules?.length > 0) {
         setExpandedModules({ [data.course.modules[0].id]: true });
+      }
+
+      // Load instructor stats if instructor exists
+      if (data.course?.instructor?.id) {
+        instructorReviewsAPI.getStats(data.course.instructor.id)
+          .then(r => setInstructorStats(r.data.data))
+          .catch(() => {});
+      }
+
+      // Load upcoming sessions if enrolled
+      if (data.isEnrolled) {
+        liveSessionsAPI.getByCourse(id)
+          .then(r => setUpcomingSessions((r.data.data.sessions || []).filter(s => s.status !== 'ended')))
+          .catch(() => {});
       }
     } catch (error) {
       console.error('Error fetching course:', error);
@@ -89,6 +114,26 @@ export default function CourseDetail() {
       ...prev,
       [moduleId]: !prev[moduleId],
     }));
+  };
+
+  const handleSubmitInstructorReview = async () => {
+    if (!reviewRating) return;
+    setReviewSubmitting(true);
+    try {
+      await instructorReviewsAPI.create(course.instructor.id, {
+        rating: reviewRating,
+        comment: reviewComment,
+        course_id: course.id,
+      });
+      setReviewSuccess('Review submitted successfully!');
+      setShowReviewModal(false);
+      setReviewRating(0);
+      setReviewComment('');
+    } catch (err) {
+      setReviewSuccess(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -300,6 +345,44 @@ export default function CourseDetail() {
                 )}
               </div>
 
+              {/* Upcoming Live Sessions (enrolled only) */}
+              {isEnrolled && upcomingSessions.length > 0 && (
+                <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm dark:shadow-card p-6 animate-slide-up transition-colors">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary mb-4 flex items-center gap-2 transition-colors">
+                    <Video className="h-5 w-5 text-brand-blue" /> Upcoming Live Sessions
+                  </h2>
+                  <div className="space-y-3">
+                    {upcomingSessions.map((session) => (
+                      <div key={session.id} className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg transition-colors">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900 dark:text-text-dark-primary text-sm">{session.title}</p>
+                            {session.status === 'live' && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 dark:text-text-dark-muted flex items-center gap-1 mt-0.5">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(session.scheduled_at).toLocaleString()} · {session.duration_minutes} min
+                          </p>
+                        </div>
+                        <a href={session.meeting_url} target="_blank" rel="noreferrer"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 ${
+                            session.status === 'live'
+                              ? 'bg-red-500 hover:bg-red-600 text-white'
+                              : 'bg-brand-blue/10 dark:bg-brand-blue/20 text-brand-blue hover:bg-brand-blue/20'
+                          }`}>
+                          <LinkIcon className="w-3.5 h-3.5" />
+                          {session.status === 'live' ? 'Join Now' : 'Join'}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Instructor */}
               {course.instructor && (
                 <div
@@ -315,16 +398,36 @@ export default function CourseDetail() {
                       fallback={course.instructor.full_name?.charAt(0) || 'I'}
                       className="bg-gradient-to-br from-brand-blue to-brand-purple text-white"
                     />
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary transition-colors">
                         {course.instructor.full_name}
                       </h3>
+                      {instructorStats && instructorStats.total_reviews > 0 && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium text-gray-900 dark:text-text-dark-primary">
+                            {Number(instructorStats.average_rating).toFixed(1)}
+                          </span>
+                          <span className="text-xs text-gray-400 dark:text-text-dark-muted">
+                            ({instructorStats.total_reviews} review{instructorStats.total_reviews !== 1 ? 's' : ''})
+                          </span>
+                        </div>
+                      )}
                       <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-2 transition-colors">
                         {course.instructor.bio || 'Course Instructor'}
                       </p>
-                      <p className="text-gray-600 dark:text-text-dark-secondary text-sm transition-colors">
-                        {course.instructor.email}
-                      </p>
+                      {isEnrolled && (
+                        <button
+                          onClick={() => setShowReviewModal(true)}
+                          className="mt-2 text-sm text-brand-blue hover:underline flex items-center gap-1"
+                        >
+                          <Star className="h-4 w-4" />
+                          Rate this instructor
+                        </button>
+                      )}
+                      {reviewSuccess && (
+                        <p className="text-sm text-green-600 dark:text-green-400 mt-1">{reviewSuccess}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -373,6 +476,25 @@ export default function CourseDetail() {
                     </p>
                   )}
                 </div>
+
+                {/* Prerequisite Notice */}
+                {course.prerequisite && !isEnrolled && (
+                  <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">Prerequisite Required</p>
+                        <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
+                          Complete{' '}
+                          <Link to={`/courses/${course.prerequisite.id}`} className="underline font-medium">
+                            {course.prerequisite.title}
+                          </Link>{' '}
+                          first
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="space-y-3 mb-6">
@@ -453,6 +575,58 @@ export default function CourseDetail() {
         course={course}
         onSuccess={handleEnrollmentSuccess}
       />
+
+      {/* Rate Instructor Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-2xl p-6 w-full max-w-md transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary">Rate Instructor</h3>
+              <button onClick={() => setShowReviewModal(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
+                <Lock className="h-4 w-4 text-gray-400" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-text-dark-muted mb-4">
+              How would you rate <span className="font-medium text-gray-900 dark:text-text-dark-primary">{course.instructor?.full_name}</span>?
+            </p>
+            {/* Star Rating */}
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setReviewRating(star)}
+                  className="p-1"
+                >
+                  <Star className={`h-8 w-8 transition-colors ${star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                </button>
+              ))}
+            </div>
+            {/* Comment */}
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              placeholder="Share your experience (optional)"
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors resize-none mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitInstructorReview}
+                disabled={!reviewRating || reviewSubmitting}
+                className="px-4 py-2 text-sm bg-brand-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success Notification */}
       {enrollmentSuccess && (

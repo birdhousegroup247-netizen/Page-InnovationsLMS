@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { coursesAPI, progressAPI } from '../lib/api';
+import { coursesAPI, progressAPI, liveSessionsAPI, forumAPI, assignmentsAPI } from '../lib/api';
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,6 +20,13 @@ import {
   FileDown,
   AlignLeft,
   StickyNote,
+  Calendar,
+  Link as LinkIcon,
+  MessageSquare,
+  ThumbsUp,
+  Pin,
+  Send,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button, Spinner } from '../components/ui';
@@ -137,6 +144,15 @@ export default function CoursePlayer() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [markingComplete, setMarkingComplete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [liveSessions, setLiveSessions] = useState([]);
+  const [myAssignments, setMyAssignments] = useState([]);
+  const [forumPosts, setForumPosts] = useState([]);
+  const [forumPost, setForumPost] = useState(null);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [showNewPost, setShowNewPost] = useState(false);
+  const [newReply, setNewReply] = useState('');
+  const [forumLoading, setForumLoading] = useState(false);
 
   // --- Progress tracking state ---
   const [ytApiLoaded, setYtApiLoaded] = useState(false);
@@ -149,7 +165,58 @@ export default function CoursePlayer() {
 
   useEffect(() => {
     fetchCourseData();
+    fetchLiveSessions();
+    fetchMyAssignments();
   }, [id]);
+
+  const fetchLiveSessions = async () => {
+    try {
+      const res = await liveSessionsAPI.getByCourse(id);
+      setLiveSessions(res.data.data.sessions || []);
+    } catch {}
+  };
+
+  const fetchMyAssignments = async () => {
+    try {
+      const res = await assignmentsAPI.getStudentAssignments(id);
+      setMyAssignments(res.data.data.assignments || []);
+    } catch {}
+  };
+
+  const fetchForumPosts = async () => {
+    setForumLoading(true);
+    try {
+      const res = await forumAPI.getPosts(id);
+      setForumPosts(res.data.data.posts || []);
+    } catch {} finally {
+      setForumLoading(false);
+    }
+  };
+
+  const fetchForumPost = async (postId) => {
+    try {
+      const res = await forumAPI.getPost(postId);
+      setForumPost(res.data.data.post);
+    } catch {}
+  };
+
+  const handleCreatePost = async () => {
+    if (!newPostTitle.trim() || !newPostContent.trim()) return;
+    try {
+      await forumAPI.createPost(id, { title: newPostTitle, content: newPostContent });
+      setNewPostTitle(''); setNewPostContent(''); setShowNewPost(false);
+      fetchForumPosts();
+    } catch {}
+  };
+
+  const handleAddReply = async (postId) => {
+    if (!newReply.trim()) return;
+    try {
+      await forumAPI.addReply(postId, { content: newReply });
+      setNewReply('');
+      fetchForumPost(postId);
+    } catch {}
+  };
 
   // Load YouTube IFrame Player API once
   useEffect(() => {
@@ -865,6 +932,51 @@ export default function CoursePlayer() {
                   <StickyNote className="w-4 h-4" />
                   <span className="hidden sm:inline">Notes</span>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('grades')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                    activeTab === 'grades'
+                      ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                      : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                  )}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Grades</span>
+                  {myAssignments.some(a => a.submission?.status === 'graded') && (
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('sessions'); fetchLiveSessions(); }}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                    activeTab === 'sessions'
+                      ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                      : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                  )}
+                >
+                  <Video className="w-4 h-4" />
+                  <span className="hidden sm:inline">Live</span>
+                  {liveSessions.some(s => s.status === 'live') && (
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('forum'); fetchForumPosts(); }}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all',
+                    activeTab === 'forum'
+                      ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5'
+                      : 'text-gray-600 dark:text-text-dark-secondary hover:bg-gray-50 dark:hover:bg-dark-700'
+                  )}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="hidden sm:inline">Forum</span>
+                </button>
               </div>
 
               {/* Tab Content */}
@@ -946,6 +1058,217 @@ export default function CoursePlayer() {
                       contentId={currentContent.id}
                       currentTime={0}
                     />
+                  </div>
+                )}
+
+                {/* Grades Tab */}
+                {activeTab === 'grades' && (
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary mb-4">My Grades</h2>
+                    {myAssignments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <CheckCircle className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                        <p className="text-gray-500 dark:text-text-dark-muted text-sm">No assignments in this course yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {myAssignments.map((assignment) => {
+                          const sub = assignment.submission;
+                          return (
+                            <div key={assignment.id} className="border border-gray-200 dark:border-border-dark rounded-lg p-4 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-medium text-gray-900 dark:text-text-dark-primary text-sm">{assignment.title}</p>
+                                  {assignment.due_date && (
+                                    <p className="text-xs text-gray-400 dark:text-text-dark-muted">Due: {new Date(assignment.due_date).toLocaleDateString()}</p>
+                                  )}
+                                  {sub?.feedback && (
+                                    <p className="text-xs text-gray-600 dark:text-text-dark-secondary mt-1 italic">Feedback: {sub.feedback}</p>
+                                  )}
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  {!sub ? (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400">Not submitted</span>
+                                  ) : sub.status === 'graded' ? (
+                                    <div>
+                                      <span className="text-lg font-bold text-brand-blue">{sub.score}</span>
+                                      <span className="text-xs text-gray-400 dark:text-text-dark-muted">/{assignment.max_score}</span>
+                                      <div className="text-xs text-green-600 dark:text-green-400 font-medium">Graded</div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400">Pending review</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Live Sessions Tab */}
+                {activeTab === 'sessions' && (
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary mb-4">Live Sessions</h2>
+                    {liveSessions.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Video className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                        <p className="text-gray-500 dark:text-text-dark-muted text-sm">No sessions scheduled yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {liveSessions.map((session) => (
+                          <div key={session.id} className="border border-gray-200 dark:border-border-dark rounded-lg p-4 transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-medium text-gray-900 dark:text-text-dark-primary text-sm">{session.title}</p>
+                                  {session.status === 'live' && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE
+                                    </span>
+                                  )}
+                                  {session.status === 'ended' && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400">Ended</span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400 dark:text-text-dark-muted flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  {new Date(session.scheduled_at).toLocaleString()} · {session.duration_minutes} min
+                                </p>
+                              </div>
+                              {session.status !== 'ended' && (
+                                <a
+                                  href={session.meeting_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={cn(
+                                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                                    session.status === 'live'
+                                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                                      : 'bg-brand-blue/10 dark:bg-brand-blue/20 text-brand-blue hover:bg-brand-blue/20'
+                                  )}
+                                >
+                                  <LinkIcon className="w-3.5 h-3.5" />
+                                  {session.status === 'live' ? 'Join Now' : 'Join'}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Forum Tab */}
+                {activeTab === 'forum' && (
+                  <div>
+                    {forumPost ? (
+                      // Post Detail View
+                      <div>
+                        <button onClick={() => setForumPost(null)} className="text-sm text-brand-blue hover:underline mb-4 flex items-center gap-1">
+                          ← Back to posts
+                        </button>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary mb-1">{forumPost.title}</h2>
+                        <p className="text-xs text-gray-400 dark:text-text-dark-muted mb-3">
+                          by {forumPost.author?.full_name} · {new Date(forumPost.created_at).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-text-dark-secondary whitespace-pre-wrap mb-6">{forumPost.content}</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-text-dark-primary text-sm mb-3">Replies ({forumPost.replies?.length || 0})</h3>
+                        <div className="space-y-3 mb-4">
+                          {(forumPost.replies || []).map((reply) => (
+                            <div key={reply.id} className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 transition-colors">
+                              <p className="text-xs text-gray-400 dark:text-text-dark-muted mb-1">{reply.author?.full_name}</p>
+                              <p className="text-sm text-gray-700 dark:text-text-dark-secondary">{reply.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            value={newReply}
+                            onChange={(e) => setNewReply(e.target.value)}
+                            placeholder="Write a reply..."
+                            className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+                          />
+                          <button
+                            onClick={() => handleAddReply(forumPost.id)}
+                            disabled={!newReply.trim()}
+                            className="p-2 rounded-lg bg-brand-blue text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Posts List View
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h2 className="text-lg font-bold text-gray-900 dark:text-text-dark-primary">Discussion Forum</h2>
+                          <button
+                            onClick={() => setShowNewPost(!showNewPost)}
+                            className="text-sm px-3 py-1.5 bg-brand-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            + New Post
+                          </button>
+                        </div>
+
+                        {showNewPost && (
+                          <div className="mb-4 p-4 border border-gray-200 dark:border-border-dark rounded-lg space-y-3 transition-colors">
+                            <input
+                              value={newPostTitle}
+                              onChange={(e) => setNewPostTitle(e.target.value)}
+                              placeholder="Post title"
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+                            />
+                            <textarea
+                              value={newPostContent}
+                              onChange={(e) => setNewPostContent(e.target.value)}
+                              placeholder="What's on your mind?"
+                              rows={3}
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors resize-none"
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => setShowNewPost(false)} className="text-sm px-3 py-1.5 text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">Cancel</button>
+                              <button onClick={handleCreatePost} disabled={!newPostTitle.trim() || !newPostContent.trim()}
+                                className="text-sm px-3 py-1.5 bg-brand-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">Post</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {forumLoading ? (
+                          <div className="flex justify-center py-8"><Spinner size="md" /></div>
+                        ) : forumPosts.length === 0 ? (
+                          <div className="text-center py-8">
+                            <MessageSquare className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                            <p className="text-gray-500 dark:text-text-dark-muted text-sm">No posts yet. Start the conversation!</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {forumPosts.map((post) => (
+                              <button
+                                key={post.id}
+                                onClick={() => fetchForumPost(post.id)}
+                                className="w-full text-left p-4 border border-gray-200 dark:border-border-dark rounded-lg hover:border-brand-blue dark:hover:border-brand-blue transition-colors"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    {post.is_pinned && <Pin className="w-3.5 h-3.5 text-brand-blue inline mr-1" />}
+                                    <span className="font-medium text-gray-900 dark:text-text-dark-primary text-sm">{post.title}</span>
+                                    <p className="text-xs text-gray-400 dark:text-text-dark-muted mt-0.5">
+                                      {post.author?.full_name} · {post.reply_count || 0} replies
+                                    </p>
+                                  </div>
+                                  <span className="text-xs text-gray-400">{new Date(post.created_at).toLocaleDateString()}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

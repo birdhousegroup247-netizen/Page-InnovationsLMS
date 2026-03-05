@@ -136,6 +136,7 @@ class CourseController {
         include: [
           { model: Category, as: 'category' },
           { model: User, as: 'instructor', attributes: ['id', 'full_name', 'profile_picture', 'bio'] },
+          { model: Course, as: 'prerequisite', attributes: ['id', 'title', 'slug'] },
           {
             model: CourseModule,
             as: 'modules',
@@ -335,6 +336,23 @@ class CourseController {
 
       if (existingEnrollment) {
         throw new BadRequestError('Already enrolled in this course');
+      }
+
+      // Enforce prerequisite: student must have completed the prerequisite course
+      if (course.prerequisite_course_id) {
+        const prereqEnrollment = await Enrollment.findOne({
+          where: {
+            student_id: req.user.id,
+            course_id: course.prerequisite_course_id,
+            completed_at: { [Op.ne]: null },
+          },
+        });
+        if (!prereqEnrollment) {
+          const prereq = await Course.findByPk(course.prerequisite_course_id, { attributes: ['id', 'title'] });
+          throw new BadRequestError(
+            `You must complete the prerequisite course "${prereq ? prereq.title : 'required course'}" first`
+          );
+        }
       }
 
       const enrollment = await Enrollment.create({

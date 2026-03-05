@@ -116,6 +116,15 @@ const Course = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    prerequisite_course_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+      references: {
+        model: 'courses',
+        key: 'id',
+      },
+    },
   },
   {
     tableName: 'courses',

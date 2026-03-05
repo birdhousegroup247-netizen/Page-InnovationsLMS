@@ -55,4 +55,14 @@ router.get('/:courseId/progress', authenticate, authorize('student'), ProgressCo
 router.post('/contents/:contentId/complete', authenticate, authorize('student'), ProgressController.markContentComplete);
 router.post('/contents/:contentId/progress', authenticate, authorize('student'), ProgressController.updateProgress);
 
+// ============================================================================
+// LIVE SESSIONS (sub-route)
+// ============================================================================
+router.use('/:courseId/sessions', require('./live-sessions'));
+
+// ============================================================================
+// FORUM (sub-route)
+// ============================================================================
+router.use('/:courseId/forum', require('./forum'));
+
 module.exports = router;
