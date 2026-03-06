@@ -136,17 +136,42 @@ export default function AdminAnalytics() {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700">
+        <div className="bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700 text-sm">
           <p className="font-medium">{payload[0].name}</p>
-          <p className="text-sm text-gray-300">
-            {payload[0].value}
-            {payload[0].payload.percentage && ` (${payload[0].payload.percentage}%)`}
-          </p>
+          <p className="text-gray-300">{payload[0].value}{payload[0].payload.percentage && ` (${payload[0].payload.percentage}%)`}</p>
         </div>
       );
     }
     return null;
   };
+
+  const PieTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const total = payload[0].payload.total;
+      const pct = total ? ((payload[0].value / total) * 100).toFixed(1) : payload[0].payload.percent != null ? (payload[0].payload.percent * 100).toFixed(1) : '';
+      return (
+        <div className="bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700 text-sm">
+          <p className="font-medium">{payload[0].name}</p>
+          <p className="text-gray-300">{payload[0].value} {pct ? `(${pct}%)` : ''}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const PieLegend = ({ data }) => (
+    <div className="mt-4 space-y-2">
+      {data.map((entry, i) => (
+        <div key={i} className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+            <span className="text-gray-700 dark:text-gray-300 truncate">{entry.name}</span>
+          </div>
+          <span className="font-semibold text-gray-900 dark:text-white ml-3 flex-shrink-0">{entry.pct}%</span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <>
@@ -245,102 +270,87 @@ export default function AdminAnalytics() {
             </div>
 
             {/* Charts Row 1 - Pie Charts for Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {/* Courses by Category */}
-              {courseAnalytics?.coursesByCategory && courseAnalytics.coursesByCategory.length > 0 && (
-                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <PieChart className="h-5 w-5 text-brand-blue" />
-                    Courses by Category
-                  </h2>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RePieChart>
-                      <Pie
-                        data={courseAnalytics.coursesByCategory.map(cat => ({
-                          name: cat.category?.name || 'Unknown',
-                          value: parseInt(cat.course_count) || 0,
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {courseAnalytics.coursesByCategory.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              {courseAnalytics?.coursesByCategory && courseAnalytics.coursesByCategory.length > 0 && (() => {
+                const total = courseAnalytics.coursesByCategory.reduce((s, c) => s + (parseInt(c.course_count) || 0), 0);
+                const data = courseAnalytics.coursesByCategory.map(cat => ({
+                  name: cat.category?.name || 'Unknown',
+                  value: parseInt(cat.course_count) || 0,
+                  pct: total ? ((parseInt(cat.course_count) || 0) / total * 100).toFixed(0) : 0,
+                }));
+                return (
+                  <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <PieChart className="h-4 w-4 text-brand-blue" />
+                      Courses by Category
+                    </h2>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RePieChart>
+                        <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value" paddingAngle={3}>
+                          {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip content={<PieTooltip />} />
+                      </RePieChart>
+                    </ResponsiveContainer>
+                    <PieLegend data={data} />
+                  </div>
+                );
+              })()}
 
               {/* Courses by Difficulty */}
-              {courseAnalytics?.coursesByDifficulty && courseAnalytics.coursesByDifficulty.length > 0 && (
-                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <Target className="h-5 w-5 text-brand-purple" />
-                    Course Difficulty
-                  </h2>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RePieChart>
-                      <Pie
-                        data={courseAnalytics.coursesByDifficulty.map(diff => ({
-                          name: diff.difficulty?.charAt(0).toUpperCase() + diff.difficulty?.slice(1) || 'Unknown',
-                          value: parseInt(diff.count) || 0,
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {courseAnalytics.coursesByDifficulty.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              {courseAnalytics?.coursesByDifficulty && courseAnalytics.coursesByDifficulty.length > 0 && (() => {
+                const total = courseAnalytics.coursesByDifficulty.reduce((s, d) => s + (parseInt(d.count) || 0), 0);
+                const data = courseAnalytics.coursesByDifficulty.map(diff => ({
+                  name: diff.difficulty?.charAt(0).toUpperCase() + diff.difficulty?.slice(1) || 'Unknown',
+                  value: parseInt(diff.count) || 0,
+                  pct: total ? ((parseInt(diff.count) || 0) / total * 100).toFixed(0) : 0,
+                }));
+                return (
+                  <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Target className="h-4 w-4 text-brand-purple" />
+                      Course Difficulty
+                    </h2>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RePieChart>
+                        <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value" paddingAngle={3}>
+                          {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip content={<PieTooltip />} />
+                      </RePieChart>
+                    </ResponsiveContainer>
+                    <PieLegend data={data} />
+                  </div>
+                );
+              })()}
 
               {/* Questions by Type */}
-              {questionAnalytics?.questionsByType && questionAnalytics.questionsByType.length > 0 && (
-                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <Award className="h-5 w-5 text-green-500" />
-                    Question Types
-                  </h2>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RePieChart>
-                      <Pie
-                        data={questionAnalytics.questionsByType.map(type => ({
-                          name: type.question_type?.replace('_', ' ').toUpperCase() || 'Unknown',
-                          value: parseInt(type.count) || 0,
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {questionAnalytics.questionsByType.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              {questionAnalytics?.questionsByType && questionAnalytics.questionsByType.length > 0 && (() => {
+                const total = questionAnalytics.questionsByType.reduce((s, t) => s + (parseInt(t.count) || 0), 0);
+                const data = questionAnalytics.questionsByType.map(type => ({
+                  name: type.question_type?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown',
+                  value: parseInt(type.count) || 0,
+                  pct: total ? ((parseInt(type.count) || 0) / total * 100).toFixed(0) : 0,
+                }));
+                return (
+                  <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Award className="h-4 w-4 text-green-500" />
+                      Question Types
+                    </h2>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RePieChart>
+                        <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value" paddingAngle={3}>
+                          {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip content={<PieTooltip />} />
+                      </RePieChart>
+                    </ResponsiveContainer>
+                    <PieLegend data={data} />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Charts Row 2 - Line Charts for Trends */}
@@ -432,50 +442,43 @@ export default function AdminAnalytics() {
             {/* Performance Metrics */}
             {studentPerformance && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                      <Target className="h-5 w-5 text-white" />
+                {[
+                  {
+                    icon: Target, color: 'bg-blue-500', label: 'Practice Tests',
+                    value: `${parseFloat(studentPerformance.practiceTests?.avgScore || 0).toFixed(1)}%`,
+                    sub: `Avg score · ${studentPerformance.practiceTests?.totalAttempts || 0} attempts`,
+                    bar: parseFloat(studentPerformance.practiceTests?.avgScore || 0),
+                    barColor: 'bg-blue-500',
+                  },
+                  {
+                    icon: CheckCircle, color: 'bg-green-500', label: 'Assigned Tests',
+                    value: `${parseFloat(studentPerformance.assignedTests?.passRate || 0).toFixed(1)}%`,
+                    sub: `Pass rate · ${studentPerformance.assignedTests?.passedCount || 0}/${studentPerformance.assignedTests?.totalAttempts || 0} passed`,
+                    bar: parseFloat(studentPerformance.assignedTests?.passRate || 0),
+                    barColor: 'bg-green-500',
+                  },
+                  {
+                    icon: Award, color: 'bg-purple-500', label: 'Course Completion',
+                    value: `${parseFloat(studentPerformance.courseCompletion?.completionRate || 0).toFixed(1)}%`,
+                    sub: `${studentPerformance.courseCompletion?.completedEnrollments || 0} / ${studentPerformance.courseCompletion?.totalEnrollments || 0} enrollments`,
+                    bar: parseFloat(studentPerformance.courseCompletion?.completionRate || 0),
+                    barColor: 'bg-purple-500',
+                  },
+                ].map(({ icon: Icon, color, label, value, sub, bar, barColor }) => (
+                  <div key={label} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', color)}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-gray-600 dark:text-text-dark-secondary uppercase tracking-wide">{label}</h3>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">Practice Tests</h3>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
-                    {parseFloat(studentPerformance.practiceTests?.avgScore || 0).toFixed(1)}%
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
-                    Average Score ({studentPerformance.practiceTests?.totalAttempts || 0} attempts)
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                      <CheckCircle className="h-5 w-5 text-white" />
+                    <p className="text-4xl font-bold text-gray-900 dark:text-white mb-1">{value}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{sub}</p>
+                    <div className="w-full h-1.5 bg-gray-100 dark:bg-dark-700 rounded-full overflow-hidden">
+                      <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${Math.min(bar, 100)}%` }} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">Assigned Tests</h3>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
-                    {parseFloat(studentPerformance.assignedTests?.passRate || 0).toFixed(1)}%
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
-                    Pass Rate ({studentPerformance.assignedTests?.passedCount || 0}/{studentPerformance.assignedTests?.totalAttempts || 0})
-                  </p>
-                </div>
-
-                <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                      <Award className="h-5 w-5 text-white" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white transition-colors">Course Completion</h3>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
-                    {parseFloat(studentPerformance.courseCompletion?.completionRate || 0).toFixed(1)}%
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
-                    {studentPerformance.courseCompletion?.completedEnrollments || 0} / {studentPerformance.courseCompletion?.totalEnrollments || 0} enrollments
-                  </p>
-                </div>
+                ))}
               </div>
             )}
 
