@@ -378,6 +378,46 @@ const startServer = async () => {
         logger.info('  ✓ Added unlock_after_days column to module_contents');
       }
 
+      // Create any missing tables for newer models (safe: no-op if table already exists)
+      const {
+        ChatRoom, ChatRoomMember, Conversation, Message, MessageReaction, MutedChat,
+        LessonNote, LessonQuestion, QuestionReply, CourseAnnouncement,
+        InstructorReview, LiveSession, ForumPost, ForumReply,
+        Assignment, AssignmentSubmission,
+      } = require('./models');
+
+      const existingTables = await qi.showAllTables();
+
+      const newModels = [
+        [ChatRoom, 'chat_rooms'],
+        [ChatRoomMember, 'chat_room_members'],
+        [Conversation, 'conversations'],
+        [Message, 'messages'],
+        [MessageReaction, 'message_reactions'],
+        [MutedChat, 'muted_chats'],
+        [LessonNote, 'lesson_notes'],
+        [LessonQuestion, 'lesson_questions'],
+        [QuestionReply, 'question_replies'],
+        [CourseAnnouncement, 'course_announcements'],
+        [InstructorReview, 'instructor_reviews'],
+        [LiveSession, 'live_sessions'],
+        [ForumPost, 'forum_posts'],
+        [ForumReply, 'forum_replies'],
+        [Assignment, 'assignments'],
+        [AssignmentSubmission, 'assignment_submissions'],
+      ];
+
+      for (const [Model, tableName] of newModels) {
+        if (!existingTables.includes(tableName)) {
+          try {
+            await Model.sync({ force: false });
+            logger.info(`  ✓ Created missing table: ${tableName}`);
+          } catch (tableErr) {
+            logger.warn(`  ⚠ Could not create ${tableName}: ${tableErr.message}`);
+          }
+        }
+      }
+
       logger.info('✓ Auto-migrations complete');
     } catch (migrationErr) {
       logger.error('⚠ Auto-migration failed (continuing):', migrationErr.message);

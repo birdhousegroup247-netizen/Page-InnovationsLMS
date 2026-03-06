@@ -21,7 +21,7 @@ import emptyApplications from '../../assets/empty-applications.svg';
 import { cn } from '../../utils/cn';
 
 export default function InstructorApplications() {
-  const { user } = useAuth();
+  useAuth();
   const [applications, setApplications] = useState([]);
   const [stats, setStats] = useState({ pending: 0, under_review: 0, approved: 0, rejected: 0, revoked: 0, total: 0 });
   const [loading, setLoading] = useState(true);

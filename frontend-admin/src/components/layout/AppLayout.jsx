@@ -28,7 +28,7 @@ export default function AppLayout({ children }) {
       try {
         const response = await notificationsAPI.getUnreadCount();
         setNotificationCount(response.data?.data?.count || 0);
-      } catch (error) {
+      } catch {
         // Silently fail - notification count is not critical
         setNotificationCount(0);
       }
