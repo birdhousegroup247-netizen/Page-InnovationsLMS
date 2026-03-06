@@ -367,15 +367,28 @@ const startServer = async () => {
         logger.info('  ✓ Added prerequisite_course_id column to courses');
       }
 
-      // Add unlock_after_days to module_contents if missing
+      // Add missing columns to module_contents if needed
       const moduleContentsDesc = await qi.describeTable('module_contents');
-      if (!moduleContentsDesc.unlock_after_days) {
-        await qi.addColumn('module_contents', 'unlock_after_days', {
-          type: Sequelize.INTEGER,
+      const mcMissing = {
+        description: { type: Sequelize.TEXT, allowNull: true, defaultValue: null },
+        unlock_after_days: { type: Sequelize.INTEGER, allowNull: true, defaultValue: null },
+      };
+      for (const [colName, colDef] of Object.entries(mcMissing)) {
+        if (!moduleContentsDesc[colName]) {
+          await qi.addColumn('module_contents', colName, colDef);
+          logger.info(`  ✓ Added ${colName} column to module_contents`);
+        }
+      }
+
+      // Add updated_at to course_modules if missing
+      const courseModulesDesc = await qi.describeTable('course_modules');
+      if (!courseModulesDesc.updated_at) {
+        await qi.addColumn('course_modules', 'updated_at', {
+          type: Sequelize.DATE,
           allowNull: true,
           defaultValue: null,
         });
-        logger.info('  ✓ Added unlock_after_days column to module_contents');
+        logger.info('  ✓ Added updated_at column to course_modules');
       }
 
       // Add missing columns to content_progress if needed

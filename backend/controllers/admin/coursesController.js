@@ -30,8 +30,8 @@ class AdminCoursesController {
 
             if (search) {
                 where[Op.or] = [
-                    { title: { [Op.like]: `%${search}%` } },
-                    { description: { [Op.like]: `%${search}%` } },
+                    { title: { [Op.iLike]: `%${search}%` } },
+                    { description: { [Op.iLike]: `%${search}%` } },
                 ];
             }
 
@@ -65,11 +65,11 @@ class AdminCoursesController {
                 attributes: {
                     include: [
                         [
-                            literal('(SELECT COUNT(*) FROM course_modules WHERE course_modules.course_id = "Course".id)'),
+                            literal('(SELECT COUNT(*) FROM course_modules WHERE course_modules.course_id = "Course"."id")'),
                             'module_count'
                         ],
                         [
-                            literal('(SELECT COUNT(*) FROM module_contents mc INNER JOIN course_modules cm ON mc.module_id = cm.id WHERE cm.course_id = "Course".id)'),
+                            literal('(SELECT COUNT(*) FROM module_contents mc INNER JOIN course_modules cm ON mc.module_id = cm.id WHERE cm.course_id = "Course"."id")'),
                             'content_count'
                         ]
                     ]
@@ -109,10 +109,13 @@ class AdminCoursesController {
                             {
                                 model: require('../../models/ModuleContent'),
                                 as: 'contents',
-                                attributes: ['id', 'title', 'content_type', 'duration_minutes', 'order_index']
+                                attributes: ['id', 'title', 'content_type', 'duration_minutes', 'order_index'],
+                                separate: true,
+                                order: [['order_index', 'ASC']],
                             }
                         ],
-                        order: [['order_index', 'ASC']]
+                        separate: true,
+                        order: [['order_index', 'ASC']],
                     }
                 ],
             });
