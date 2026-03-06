@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { contentsAPI, modulesAPI, coursesAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
-import { Button, Spinner, Alert } from '../../components/ui';
+import { Button, Spinner, Alert, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 
@@ -33,6 +33,7 @@ export default function ManageLessons() {
   const [success, setSuccess] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState(null);
+  const [deleteLessonId, setDeleteLessonId] = useState(null);
 
   // Form state for new lesson
   const [newLesson, setNewLesson] = useState({
@@ -209,13 +210,14 @@ export default function ManageLessons() {
     }
   };
 
-  const handleDeleteLesson = async (lessonId) => {
-    if (!confirm('Are you sure you want to delete this lesson?')) {
-      return;
-    }
+  const handleDeleteLesson = (lessonId) => {
+    setDeleteLessonId(lessonId);
+  };
 
+  const confirmDeleteLesson = async () => {
     try {
-      await contentsAPI.delete(lessonId);
+      await contentsAPI.delete(deleteLessonId);
+      setDeleteLessonId(null);
       setSuccess('Lesson deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
       await fetchData();
@@ -524,6 +526,21 @@ export default function ManageLessons() {
           </>
         )}
       </Container>
+
+      <Modal
+        isOpen={!!deleteLessonId}
+        onClose={() => setDeleteLessonId(null)}
+        title="Delete Lesson"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete this lesson? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteLessonId(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDeleteLesson}>Delete Lesson</Button>
+        </div>
+      </Modal>
     </>
   );
 }

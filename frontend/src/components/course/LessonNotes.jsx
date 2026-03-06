@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { notesAPI } from '../../lib/api';
 import { StickyNote, Plus, Trash2, Edit2, Check, X, Clock } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import Button from '../ui/Button';
+import Modal from '../ui/Modal';
 
 function formatTime(seconds) {
   if (!seconds) return null;
@@ -17,6 +19,7 @@ export default function LessonNotes({ contentId, currentTime = 0, onSeek }) {
   const [editId, setEditId]     = useState(null);
   const [form, setForm]         = useState({ content: '', timestamp_seconds: 0 });
   const [saving, setSaving]     = useState(false);
+  const [deleteNoteId, setDeleteNoteId] = useState(null);
 
   useEffect(() => {
     if (!contentId) return;
@@ -60,14 +63,20 @@ export default function LessonNotes({ contentId, currentTime = 0, onSeek }) {
     }
   };
 
-  const remove = async (noteId) => {
+  const remove = (noteId) => {
+    setDeleteNoteId(noteId);
+  };
+
+  const confirmRemove = async () => {
     try {
-      await notesAPI.deleteNote(noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      await notesAPI.deleteNote(deleteNoteId);
+      setNotes((prev) => prev.filter((n) => n.id !== deleteNoteId));
+      setDeleteNoteId(null);
     } catch {}
   };
 
   return (
+    <>
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-dark-700">
@@ -177,5 +186,21 @@ export default function LessonNotes({ contentId, currentTime = 0, onSeek }) {
         ))}
       </div>
     </div>
+
+    <Modal
+      isOpen={!!deleteNoteId}
+      onClose={() => setDeleteNoteId(null)}
+      title="Delete Note"
+      size="sm"
+    >
+      <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+        Are you sure you want to delete this note?
+      </p>
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={() => setDeleteNoteId(null)}>Cancel</Button>
+        <Button variant="danger" onClick={confirmRemove}>Delete Note</Button>
+      </div>
+    </Modal>
+    </>
   );
 }

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { notificationsAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
-import { Button, Spinner, Alert } from '../components/ui';
+import { Button, Spinner, Alert, Modal } from '../components/ui';
 import emptyNotifications from '../assets/empty-notifications.svg';
 import { cn } from '../utils/cn';
 
@@ -62,6 +62,7 @@ export default function Notifications() {
   const [success, setSuccess] = useState('');
   const [filter, setFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [deleteNotifId, setDeleteNotifId] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -167,13 +168,15 @@ export default function Notifications() {
   };
 
   // Delete notification
-  const handleDelete = async (notificationId) => {
+  const handleDelete = (notificationId) => {
+    setDeleteNotifId(notificationId);
+  };
+
+  const confirmDeleteNotif = async () => {
     try {
-      await notificationsAPI.delete(notificationId);
-
-      // Remove from local state
-      setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
-
+      await notificationsAPI.delete(deleteNotifId);
+      setNotifications(prev => prev.filter(notif => notif.id !== deleteNotifId));
+      setDeleteNotifId(null);
       setSuccess('Notification deleted');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -503,6 +506,21 @@ export default function Notifications() {
           </>
         )}
       </Container>
+
+      <Modal
+        isOpen={!!deleteNotifId}
+        onClose={() => setDeleteNotifId(null)}
+        title="Delete Notification"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete this notification?
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteNotifId(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDeleteNotif}>Delete</Button>
+        </div>
+      </Modal>
     </>
   );
 }

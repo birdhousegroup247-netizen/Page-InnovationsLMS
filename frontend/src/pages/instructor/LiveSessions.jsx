@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { liveSessionsAPI, coursesAPI } from '../../lib/api';
 import { Video, Plus, Calendar, Clock, Link as LinkIcon, Edit2, Trash2, Radio } from 'lucide-react';
 import { Container } from '../../components/layout';
-import { Button, Spinner, Alert } from '../../components/ui';
+import { Button, Spinner, Alert, Modal } from '../../components/ui';
 
 const PLATFORMS = ['zoom', 'google_meet', 'other'];
 
@@ -80,6 +80,7 @@ export default function LiveSessions() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [courseName, setCourseName] = useState('');
+  const [deleteSessionId, setDeleteSessionId] = useState(null);
 
   useEffect(() => {
     fetchSessions();
@@ -133,10 +134,14 @@ export default function LiveSessions() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Cancel this session?')) return;
+  const handleDelete = (id) => {
+    setDeleteSessionId(id);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await liveSessionsAPI.delete(id);
+      await liveSessionsAPI.delete(deleteSessionId);
+      setDeleteSessionId(null);
       fetchSessions();
     } catch (err) {
       setError('Failed to cancel session');
@@ -261,6 +266,21 @@ export default function LiveSessions() {
           </div>
         )}
       </Container>
+
+      <Modal
+        isOpen={!!deleteSessionId}
+        onClose={() => setDeleteSessionId(null)}
+        title="Cancel Session"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to cancel this session? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteSessionId(null)}>Keep Session</Button>
+          <Button variant="danger" onClick={confirmDelete}>Cancel Session</Button>
+        </div>
+      </Modal>
     </>
   );
 }

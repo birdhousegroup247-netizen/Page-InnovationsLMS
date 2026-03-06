@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Star, ThumbsUp, Edit2, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { coursesAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { Button, Modal } from '../ui';
 
 export default function CourseReviews({ courseId, isEnrolled }) {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export default function CourseReviews({ courseId, isEnrolled }) {
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
+  const [deleteReviewId, setDeleteReviewId] = useState(null);
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     comment: '',
@@ -112,13 +114,14 @@ export default function CourseReviews({ courseId, isEnrolled }) {
     setShowReviewForm(true);
   };
 
-  const handleDeleteReview = async (reviewId) => {
-    if (!confirm('Are you sure you want to delete this review?')) {
-      return;
-    }
+  const handleDeleteReview = (reviewId) => {
+    setDeleteReviewId(reviewId);
+  };
 
+  const confirmDeleteReview = async () => {
     try {
-      await coursesAPI.deleteReview(courseId, reviewId);
+      await coursesAPI.deleteReview(courseId, deleteReviewId);
+      setDeleteReviewId(null);
       setSuccess('Review deleted successfully!');
       fetchReviews();
       fetchStats();
@@ -168,6 +171,7 @@ export default function CourseReviews({ courseId, isEnrolled }) {
   const canLeaveReview = isEnrolled && user?.role === 'student' && !userHasReviewed;
 
   return (
+    <>
     <div className="card p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -455,5 +459,21 @@ export default function CourseReviews({ courseId, isEnrolled }) {
         </div>
       )}
     </div>
+
+    <Modal
+      isOpen={!!deleteReviewId}
+      onClose={() => setDeleteReviewId(null)}
+      title="Delete Review"
+      size="sm"
+    >
+      <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+        Are you sure you want to delete this review?
+      </p>
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={() => setDeleteReviewId(null)}>Cancel</Button>
+        <Button variant="danger" onClick={confirmDeleteReview}>Delete Review</Button>
+      </div>
+    </Modal>
+    </>
   );
 }

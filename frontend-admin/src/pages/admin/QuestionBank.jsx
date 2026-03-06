@@ -68,6 +68,7 @@ export default function QuestionBank() {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [questionToDelete, setQuestionToDelete] = useState(null);
 
@@ -207,20 +208,20 @@ export default function QuestionBank() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedQuestions.length === 0) {
       showToast('No questions selected', 'warning');
       return;
     }
+    setShowBulkDeleteModal(true);
+  };
 
-    if (!confirm(`Delete ${selectedQuestions.length} selected questions?`)) {
-      return;
-    }
-
+  const confirmBulkDelete = async () => {
     try {
       await adminQuestionsAPI.bulkDelete(selectedQuestions);
       showToast(`${selectedQuestions.length} questions deleted`, 'success');
       setSelectedQuestions([]);
+      setShowBulkDeleteModal(false);
       fetchQuestions();
     } catch (error) {
       showToast('Failed to delete questions', 'error');
@@ -704,6 +705,22 @@ export default function QuestionBank() {
         }}
       />
     </Container>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        title="Delete Questions"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete <strong>{selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''}</strong>? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setShowBulkDeleteModal(false)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmBulkDelete}>Delete</Button>
+        </div>
+      </Modal>
   </>
   );
 }

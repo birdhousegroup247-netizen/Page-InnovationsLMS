@@ -72,6 +72,7 @@ export default function AdminCourses() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Bulk selection
@@ -270,16 +271,17 @@ export default function AdminCourses() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedCourses.length} course(s)? This action cannot be undone.`)) {
-      return;
-    }
+  const handleBulkDelete = () => {
+    setIsBulkDeleteModalOpen(true);
+  };
 
+  const confirmBulkDelete = async () => {
     try {
       setActionLoading(true);
       await adminCoursesAPI.bulkDelete(selectedCourses);
       showToast(`Successfully deleted ${selectedCourses.length} course(s)`, 'success');
       setSelectedCourses([]);
+      setIsBulkDeleteModalOpen(false);
       fetchCourses();
       fetchStats();
     } catch (error) {
@@ -1581,6 +1583,34 @@ export default function AdminCourses() {
             isLoading={actionLoading}
           >
             Delete Course
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        title="Delete Courses"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Are you sure you want to delete <strong>{selectedCourses.length} course(s)</strong>? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setIsBulkDeleteModalOpen(false)}
+            disabled={actionLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={confirmBulkDelete}
+            isLoading={actionLoading}
+          >
+            Delete Courses
           </Button>
         </div>
       </Modal>

@@ -43,6 +43,7 @@ export default function Categories() {
     is_active: true,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -135,14 +136,14 @@ export default function Categories() {
     }
   };
 
-  const handleDelete = async (category) => {
-    if (!window.confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDelete = (category) => setDeleteTarget(category);
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await adminCategoriesAPI.delete(category.id);
-      setSuccessMessage(`Category "${category.name}" deleted successfully!`);
+      await adminCategoriesAPI.delete(deleteTarget.id);
+      setSuccessMessage(`Category "${deleteTarget.name}" deleted successfully!`);
+      setDeleteTarget(null);
       fetchData();
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
@@ -550,6 +551,22 @@ export default function Categories() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Category"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete <strong>"{deleteTarget?.name}"</strong>? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+        </div>
       </Modal>
     </>
   );

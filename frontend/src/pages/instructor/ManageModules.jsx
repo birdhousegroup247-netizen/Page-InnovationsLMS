@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { modulesAPI, coursesAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
-import { Button, Spinner, Alert } from '../../components/ui';
+import { Button, Spinner, Alert, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 
 export default function ManageModules() {
@@ -44,6 +44,7 @@ export default function ManageModules() {
 
   // Validation errors
   const [validationErrors, setValidationErrors] = useState({});
+  const [deleteModuleTarget, setDeleteModuleTarget] = useState(null);
 
   useEffect(() => {
     fetchCourseAndModules();
@@ -148,13 +149,14 @@ export default function ManageModules() {
     }
   };
 
-  const handleDeleteModule = async (moduleId) => {
-    if (!confirm('Are you sure you want to delete this module? All lessons in this module will also be deleted.')) {
-      return;
-    }
+  const handleDeleteModule = (moduleId) => {
+    setDeleteModuleTarget(moduleId);
+  };
 
+  const confirmDeleteModule = async () => {
     try {
-      await modulesAPI.delete(moduleId);
+      await modulesAPI.delete(deleteModuleTarget);
+      setDeleteModuleTarget(null);
       await fetchCourseAndModules();
       setSuccess('Module deleted successfully!');
       setTimeout(() => setSuccess(''), 3000);
@@ -515,6 +517,21 @@ export default function ManageModules() {
           </div>
         )}
       </Container>
+
+      <Modal
+        isOpen={!!deleteModuleTarget}
+        onClose={() => setDeleteModuleTarget(null)}
+        title="Delete Module"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete this module? All lessons in this module will also be deleted.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteModuleTarget(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDeleteModule}>Delete Module</Button>
+        </div>
+      </Modal>
     </>
   );
 }

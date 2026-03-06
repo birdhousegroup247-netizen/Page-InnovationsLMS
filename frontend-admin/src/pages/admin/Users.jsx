@@ -64,6 +64,7 @@ export default function Users() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Bulk selection
@@ -226,16 +227,17 @@ export default function Users() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedUsers.length} user(s)? This action cannot be undone.`)) {
-      return;
-    }
+  const handleBulkDelete = () => {
+    setIsBulkDeleteModalOpen(true);
+  };
 
+  const confirmBulkDelete = async () => {
     try {
       setActionLoading(true);
       await Promise.all(selectedUsers.map(id => adminUsersAPI.delete(id)));
       showToast(`Successfully deleted ${selectedUsers.length} user(s)`, 'success');
       setSelectedUsers([]);
+      setIsBulkDeleteModalOpen(false);
       fetchUsers();
       fetchStats();
     } catch (error) {
@@ -1294,6 +1296,34 @@ export default function Users() {
             isLoading={actionLoading}
           >
             Delete User
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        title="Delete Users"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete <strong>{selectedUsers.length} user(s)</strong>? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setIsBulkDeleteModalOpen(false)}
+            disabled={actionLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={confirmBulkDelete}
+            isLoading={actionLoading}
+          >
+            Delete Users
           </Button>
         </div>
       </Modal>

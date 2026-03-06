@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Bookmark, Trash2, BookOpen, FileText, ArrowLeft, CheckCircle } from 'lucide-react';
 import { bookmarksAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
-import { Button, Spinner, Badge, Alert } from '../components/ui';
+import { Button, Spinner, Badge, Alert, Modal } from '../components/ui';
 import emptyBookmarks from '../assets/empty-bookmarks.svg';
 import { cn } from '../utils/cn';
 
@@ -16,6 +16,7 @@ export default function Bookmarks() {
   const [filter, setFilter] = useState('all'); // all, lessons, articles
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     fetchBookmarks();
@@ -68,16 +69,18 @@ export default function Bookmarks() {
     }
   };
 
-  const handleDelete = async (bookmark) => {
-    if (!confirm('Remove this bookmark?')) return;
+  const handleDelete = (bookmark) => {
+    setDeleteTarget(bookmark);
+  };
 
+  const confirmDelete = async () => {
     try {
-      if (bookmark.type === 'lesson') {
-        await bookmarksAPI.deleteLessonBookmark(bookmark.id);
+      if (deleteTarget.type === 'lesson') {
+        await bookmarksAPI.deleteLessonBookmark(deleteTarget.id);
       } else {
-        await bookmarksAPI.deleteArticleBookmark(bookmark.id);
+        await bookmarksAPI.deleteArticleBookmark(deleteTarget.id);
       }
-
+      setDeleteTarget(null);
       setSuccess('Bookmark removed');
       fetchBookmarks();
       setTimeout(() => setSuccess(''), 3000);
@@ -263,6 +266,21 @@ export default function Bookmarks() {
           </div>
         )}
       </Container>
+
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Remove Bookmark"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to remove this bookmark?
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDelete}>Remove Bookmark</Button>
+        </div>
+      </Modal>
     </>
   );
 }

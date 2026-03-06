@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
+import Modal from '../ui/Modal';
 import { cn } from '../../utils/cn';
 
 export default function QuestionDiscussion({ contentId }) {
@@ -25,6 +26,7 @@ export default function QuestionDiscussion({ contentId }) {
   const [expandedQuestions, setExpandedQuestions] = useState(new Set());
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [deleteQuestionId, setDeleteQuestionId] = useState(null);
 
   useEffect(() => {
     fetchQuestions();
@@ -132,12 +134,15 @@ export default function QuestionDiscussion({ contentId }) {
     }
   };
 
-  const handleDeleteQuestion = async (questionId) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+  const handleDeleteQuestion = (questionId) => {
+    setDeleteQuestionId(questionId);
+  };
 
+  const confirmDeleteQuestion = async () => {
     try {
-      await lessonQuestionsAPI.deleteQuestion(questionId);
-      setQuestions(questions.filter(q => q.id !== questionId));
+      await lessonQuestionsAPI.deleteQuestion(deleteQuestionId);
+      setQuestions(questions.filter(q => q.id !== deleteQuestionId));
+      setDeleteQuestionId(null);
       setSuccess('Question deleted successfully!');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -391,6 +396,21 @@ export default function QuestionDiscussion({ contentId }) {
           ))
         )}
       </div>
+
+      <Modal
+        isOpen={!!deleteQuestionId}
+        onClose={() => setDeleteQuestionId(null)}
+        title="Delete Question"
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+          Are you sure you want to delete this question?
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeleteQuestionId(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDeleteQuestion}>Delete Question</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

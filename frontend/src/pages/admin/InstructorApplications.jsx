@@ -16,7 +16,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { Container, EmptyState } from '../../components/layout';
-import { Button, Spinner, Alert, Badge } from '../../components/ui';
+import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 
 export default function InstructorApplications() {
@@ -28,6 +28,7 @@ export default function InstructorApplications() {
   const [processingId, setProcessingId] = useState(null);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [actionModal, setActionModal] = useState({ open: false, type: '', userId: null, userName: '', reason: '' });
 
   useEffect(() => {
     fetchData();
@@ -51,56 +52,40 @@ export default function InstructorApplications() {
     }
   };
 
-  const handleApprove = async (userId, userName) => {
-    if (!window.confirm(`Approve instructor application for ${userName}?`)) {
-      return;
-    }
-
-    setProcessingId(userId);
-    setError('');
-    try {
-      await adminInstructorAPI.approveApplication(userId);
-      setSuccessMessage(`${userName} has been approved as an instructor!`);
-      fetchData(); // Refresh list
-      setTimeout(() => setSuccessMessage(''), 5000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to approve application');
-    } finally {
-      setProcessingId(null);
-    }
+  const handleApprove = (userId, userName) => {
+    setActionModal({ open: true, type: 'approve', userId, userName, reason: '' });
   };
 
-  const handleReject = async (userId, userName) => {
-    const reason = window.prompt(`Reject instructor application for ${userName}?\n\nOptional reason for rejection:`);
-    if (reason === null) return; // User cancelled
-
-    setProcessingId(userId);
-    setError('');
-    try {
-      await adminInstructorAPI.rejectApplication(userId, reason);
-      setSuccessMessage(`Application from ${userName} has been rejected.`);
-      fetchData(); // Refresh list
-      setTimeout(() => setSuccessMessage(''), 5000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reject application');
-    } finally {
-      setProcessingId(null);
-    }
+  const handleReject = (userId, userName) => {
+    setActionModal({ open: true, type: 'reject', userId, userName, reason: '' });
   };
 
-  const handleRevoke = async (userId, userName) => {
-    const reason = window.prompt(`Revoke instructor status for ${userName}?\n\nReason for revocation (required):`);
-    if (!reason || reason.trim() === '') return;
+  const handleRevoke = (userId, userName) => {
+    setActionModal({ open: true, type: 'revoke', userId, userName, reason: '' });
+  };
+
+  const confirmAction = async () => {
+    const { type, userId, userName, reason } = actionModal;
+    if ((type === 'revoke') && !reason.trim()) return;
 
     setProcessingId(userId);
     setError('');
+    setActionModal({ open: false, type: '', userId: null, userName: '', reason: '' });
     try {
-      await adminInstructorAPI.revokeInstructor(userId, reason);
-      setSuccessMessage(`Instructor status revoked for ${userName}.`);
-      fetchData(); // Refresh list
+      if (type === 'approve') {
+        await adminInstructorAPI.approveApplication(userId);
+        setSuccessMessage(`${userName} has been approved as an instructor!`);
+      } else if (type === 'reject') {
+        await adminInstructorAPI.rejectApplication(userId, reason);
+        setSuccessMessage(`Application from ${userName} has been rejected.`);
+      } else if (type === 'revoke') {
+        await adminInstructorAPI.revokeInstructor(userId, reason);
+        setSuccessMessage(`Instructor status revoked for ${userName}.`);
+      }
+      fetchData();
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to revoke instructor status');
+      setError(err.response?.data?.message || `Failed to ${type} application`);
     } finally {
       setProcessingId(null);
     }
@@ -371,6 +356,48 @@ export default function InstructorApplications() {
           </div>
         )}
       </Container>
+
+      <Modal
+        isOpen={actionModal.open}
+        onClose={() => setActionModal({ open: false, type: '', userId: null, userName: '', reason: '' })}
+        title={
+          actionModal.type === 'approve' ? 'Approve Application' :
+          actionModal.type === 'reject' ? 'Reject Application' : 'Revoke Instructor Status'
+        }
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-4">
+          {actionModal.type === 'approve' && `Approve instructor application for ${actionModal.userName}?`}
+          {actionModal.type === 'reject' && `Reject instructor application for ${actionModal.userName}?`}
+          {actionModal.type === 'revoke' && `Revoke instructor status for ${actionModal.userName}?`}
+        </p>
+        {(actionModal.type === 'reject' || actionModal.type === 'revoke') && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">
+              {actionModal.type === 'revoke' ? 'Reason (required)' : 'Reason (optional)'}
+            </label>
+            <textarea
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+              rows={3}
+              value={actionModal.reason}
+              onChange={(e) => setActionModal(m => ({ ...m, reason: e.target.value }))}
+              placeholder="Enter reason..."
+            />
+          </div>
+        )}
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setActionModal({ open: false, type: '', userId: null, userName: '', reason: '' })}>
+            Cancel
+          </Button>
+          <Button
+            variant={actionModal.type === 'approve' ? 'primary' : 'danger'}
+            onClick={confirmAction}
+            disabled={actionModal.type === 'revoke' && !actionModal.reason.trim()}
+          >
+            {actionModal.type === 'approve' ? 'Approve' : actionModal.type === 'reject' ? 'Reject' : 'Revoke'}
+          </Button>
+        </div>
+      </Modal>
     </>
   );
 }

@@ -6,6 +6,8 @@ import { chatAPI, notificationsAPI } from '../../lib/api';
 import { connectSocket, getSocket } from '../../lib/socket';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import { Modal, Button } from '../ui';
+import { LogOut } from 'lucide-react';
 
 /**
  * AppLayout - Main authenticated layout wrapper
@@ -18,6 +20,7 @@ export default function AppLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const actualUserRole = user?.role || 'student';
   const storedRole = localStorage.getItem('selectedRole');
@@ -74,7 +77,9 @@ export default function AppLayout({ children }) {
       : item
   );
 
-  const handleLogout = () => {
+  const handleLogout = () => setShowLogoutConfirm(true);
+
+  const confirmLogout = () => {
     logout();
     navigate('/login');
   };
@@ -100,6 +105,31 @@ export default function AppLayout({ children }) {
       <main className="lg:ml-[220px] pt-16">
         {children}
       </main>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Sign Out"
+        size="sm"
+      >
+        <div className="flex flex-col items-center text-center py-2">
+          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+            <LogOut className="w-6 h-6 text-red-600 dark:text-red-400" />
+          </div>
+          <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+            Are you sure you want to sign out of your account?
+          </p>
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" className="flex-1" onClick={() => setShowLogoutConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={confirmLogout}>
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
