@@ -64,6 +64,7 @@ class ForumController {
             model: ForumReply,
             as: 'replies',
             include: [authorInclude],
+            separate: true,
             order: [['created_at', 'ASC']],
           },
         ],

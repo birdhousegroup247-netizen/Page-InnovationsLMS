@@ -321,7 +321,7 @@ export default function QuestionDiscussion({ contentId }) {
                           <div className="flex-shrink-0">
                             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-dark-700 flex items-center justify-center">
                               <span className="text-gray-700 dark:text-text-dark-secondary font-medium text-xs">
-                                {reply.responder?.full_name?.charAt(0).toUpperCase()}
+                                {reply.user?.full_name?.charAt(0).toUpperCase()}
                               </span>
                             </div>
                           </div>
@@ -329,7 +329,7 @@ export default function QuestionDiscussion({ contentId }) {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-medium text-sm text-gray-900 dark:text-text-dark-primary">
-                                {reply.responder?.full_name}
+                                {reply.user?.full_name}
                               </p>
                               {reply.is_instructor && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-blue/10 text-brand-blue text-xs font-medium rounded-full">

@@ -378,6 +378,26 @@ const startServer = async () => {
         logger.info('  ✓ Added unlock_after_days column to module_contents');
       }
 
+      // Add missing columns to content_progress if needed
+      try {
+        const cpDesc = await qi.describeTable('content_progress');
+        const cpMissing = {
+          watch_time_seconds: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+          last_position_seconds: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+          completed_at: { type: Sequelize.DATE, allowNull: true, defaultValue: null },
+          last_accessed: { type: Sequelize.DATE, allowNull: true, defaultValue: null },
+          completed: { type: Sequelize.BOOLEAN, allowNull: true, defaultValue: false },
+        };
+        for (const [colName, colDef] of Object.entries(cpMissing)) {
+          if (!cpDesc[colName]) {
+            await qi.addColumn('content_progress', colName, colDef);
+            logger.info(`  ✓ Added ${colName} column to content_progress`);
+          }
+        }
+      } catch (cpErr) {
+        logger.warn(`  ⚠ content_progress column check failed: ${cpErr.message}`);
+      }
+
       // Create any missing tables for newer models (safe: no-op if table already exists)
       const {
         ChatRoom, ChatRoomMember, Conversation, Message, MessageReaction, MutedChat,
@@ -385,8 +405,6 @@ const startServer = async () => {
         InstructorReview, LiveSession, ForumPost, ForumReply,
         Assignment, AssignmentSubmission,
       } = require('./models');
-
-      const existingTables = await qi.showAllTables();
 
       const newModels = [
         [ChatRoom, 'chat_rooms'],
@@ -408,13 +426,11 @@ const startServer = async () => {
       ];
 
       for (const [Model, tableName] of newModels) {
-        if (!existingTables.includes(tableName)) {
-          try {
-            await Model.sync({ force: false });
-            logger.info(`  ✓ Created missing table: ${tableName}`);
-          } catch (tableErr) {
-            logger.warn(`  ⚠ Could not create ${tableName}: ${tableErr.message}`);
-          }
+        try {
+          await Model.sync({ force: false });
+          logger.info(`  ✓ Ensured table exists: ${tableName}`);
+        } catch (tableErr) {
+          logger.warn(`  ⚠ Could not ensure ${tableName}: ${tableErr.message}`);
         }
       }
 
