@@ -67,38 +67,47 @@ export default function AdminAnalytics() {
   }, [timeRange]);
 
   const fetchAnalytics = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      const [
-        studentRes,
-        courseRes,
-        questionRes,
-        instructorRes,
-        enrollmentRes,
-        overviewRes,
-      ] = await Promise.all([
-        adminAnalyticsAPI.getStudentPerformance(),
-        adminAnalyticsAPI.getCourseAnalytics(),
-        adminAnalyticsAPI.getQuestionAnalytics(),
-        adminAnalyticsAPI.getInstructorAnalytics(),
-        adminAnalyticsAPI.getEnrollmentAnalytics(parseInt(timeRange)),
-        adminStatsAPI.getOverview(),
-      ]);
+    const [
+      studentRes,
+      courseRes,
+      questionRes,
+      instructorRes,
+      enrollmentRes,
+      overviewRes,
+    ] = await Promise.allSettled([
+      adminAnalyticsAPI.getStudentPerformance(),
+      adminAnalyticsAPI.getCourseAnalytics(),
+      adminAnalyticsAPI.getQuestionAnalytics(),
+      adminAnalyticsAPI.getInstructorAnalytics(),
+      adminAnalyticsAPI.getEnrollmentAnalytics(parseInt(timeRange)),
+      adminStatsAPI.getOverview(),
+    ]);
 
-      setStudentPerformance(studentRes.data.data);
-      setCourseAnalytics(courseRes.data.data);
-      setQuestionAnalytics(questionRes.data.data);
-      setInstructorAnalytics(instructorRes.data.data);
-      setEnrollmentAnalytics(enrollmentRes.data.data);
-      setOverview(overviewRes.data.data);
-    } catch (err) {
-      console.error('Error fetching analytics:', err);
+    const failed = [studentRes, courseRes, questionRes, instructorRes, enrollmentRes, overviewRes]
+      .filter((r) => r.status === 'rejected');
+
+    if (failed.length === 6) {
+      // All failed — show error
       setError('Failed to load analytics data. Please try refreshing the page.');
-    } finally {
       setLoading(false);
+      return;
     }
+
+    if (failed.length > 0) {
+      console.warn(`${failed.length} analytics endpoint(s) failed`);
+    }
+
+    if (studentRes.status === 'fulfilled') setStudentPerformance(studentRes.value.data.data);
+    if (courseRes.status === 'fulfilled') setCourseAnalytics(courseRes.value.data.data);
+    if (questionRes.status === 'fulfilled') setQuestionAnalytics(questionRes.value.data.data);
+    if (instructorRes.status === 'fulfilled') setInstructorAnalytics(instructorRes.value.data.data);
+    if (enrollmentRes.status === 'fulfilled') setEnrollmentAnalytics(enrollmentRes.value.data.data);
+    if (overviewRes.status === 'fulfilled') setOverview(overviewRes.value.data.data);
+
+    setLoading(false);
   };
 
   const MetricCard = ({ title, value, subtitle, icon: Icon, color, change }) => (

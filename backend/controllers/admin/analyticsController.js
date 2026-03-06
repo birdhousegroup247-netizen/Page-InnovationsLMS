@@ -25,13 +25,17 @@ class AnalyticsController {
         raw: true,
       });
 
-      // Average assigned test scores
+      // Average assigned test scores — use dialect-aware boolean-to-int cast
+      const isPg = sequelize.getDialect() === 'postgres';
+      const passedCastFn = isPg
+        ? sequelize.literal('SUM(CASE WHEN "passed" THEN 1 ELSE 0 END)')
+        : sequelize.literal('SUM(CAST(passed AS SIGNED))');
       const assignedTestAvg = await AssignedTestAttempt.findAll({
         where: { completed_at: { [Op.ne]: null } },
         attributes: [
           [sequelize.fn('AVG', sequelize.col('percentage')), 'avg_score'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'total_attempts'],
-          [sequelize.fn('SUM', sequelize.cast(sequelize.col('passed'), 'INTEGER')), 'passed_count'],
+          [passedCastFn, 'passed_count'],
         ],
         raw: true,
       });
@@ -130,19 +134,25 @@ class AnalyticsController {
         limit: 10,
       });
 
-      // Course creation trends (last 12 months)
+      // Course creation trends (last 12 months) — dialect-aware date formatting
+      const isPostgres = sequelize.getDialect() === 'postgres';
+      const monthFn = isPostgres
+        ? sequelize.fn('TO_CHAR', sequelize.col('Course.created_at'), 'YYYY-MM')
+        : sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m');
+      const twelveMonthsAgo = isPostgres
+        ? sequelize.literal("NOW() - INTERVAL '12 months'")
+        : sequelize.literal('DATE_SUB(NOW(), INTERVAL 12 MONTH)');
+
       const courseCreationTrends = await Course.findAll({
         attributes: [
-          [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'month'],
-          [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+          [monthFn, 'month'],
+          [sequelize.fn('COUNT', sequelize.col('Course.id')), 'count'],
         ],
         where: {
-          created_at: {
-            [Op.gte]: sequelize.literal('DATE_SUB(NOW(), INTERVAL 12 MONTH)'),
-          },
+          created_at: { [Op.gte]: twelveMonthsAgo },
         },
-        group: [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m')],
-        order: [[sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'ASC']],
+        group: [monthFn],
+        order: [[monthFn, 'ASC']],
         raw: true,
       });
 
