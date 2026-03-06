@@ -404,6 +404,7 @@ export const assignmentsAPI = {
   getSubmissions: (id) => api.get(`/api/instructor/assignments/${id}/submissions`),
   gradeSubmission: (submissionId, data) => api.post(`/api/instructor/submissions/${submissionId}/grade`, data),
   // Student
+  getAllStudentAssignments: () => api.get('/api/student/assignments'),
   getStudentAssignments: (courseId) => api.get(`/api/courses/${courseId}/assignments`),
   submitAssignment: (id, data) => api.post(`/api/assignments/${id}/submit`, data),
   updateSubmission: (id, data) => api.put(`/api/assignments/${id}/submit`, data),

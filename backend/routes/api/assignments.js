@@ -36,6 +36,12 @@ router.post(
 );
 
 // ── Student ────────────────────────────────────────────────────────────────
+// All assignments across all enrolled courses
+router.get(
+  '/student/assignments',
+  authenticate,
+  AssignmentsController.getAllStudentAssignments
+);
 router.get(
   '/courses/:courseId/assignments',
   authenticate,

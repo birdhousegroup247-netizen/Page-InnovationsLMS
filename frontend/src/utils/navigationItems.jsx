@@ -1,4 +1,4 @@
-import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy } from 'lucide-react';
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote } from 'lucide-react';
 
 // Shared navigation items for all authenticated pages
 export const getNavigationItems = (role = 'student') => {
@@ -49,6 +49,16 @@ export const getNavigationItems = (role = 'student') => {
       label: 'Certificates',
       path: '/certificates',
       icon: <Award className="w-5 h-5" />,
+    },
+    {
+      label: 'My Assignments',
+      path: '/my-assignments',
+      icon: <ClipboardList className="w-5 h-5" />,
+    },
+    {
+      label: 'My Notes',
+      path: '/my-notes',
+      icon: <StickyNote className="w-5 h-5" />,
     },
     {
       label: 'Leaderboard',

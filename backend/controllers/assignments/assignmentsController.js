@@ -153,6 +153,33 @@ class AssignmentsController {
     } catch (err) { next(err); }
   }
 
+  // GET /api/student/assignments - all assignments across all enrolled courses
+  static async getAllStudentAssignments(req, res, next) {
+    try {
+      const enrollments = await Enrollment.findAll({
+        where: { student_id: req.user.id },
+        attributes: ['course_id'],
+      });
+      const courseIds = enrollments.map((e) => e.course_id);
+      if (courseIds.length === 0) return ApiResponse.success(res, { assignments: [] });
+
+      const assignments = await Assignment.findAll({
+        where: { course_id: { [Op.in]: courseIds } },
+        include: [
+          { model: Course, as: 'course', attributes: ['id', 'title'] },
+          { model: ModuleContent, as: 'content', attributes: ['id', 'title'] },
+          {
+            model: AssignmentSubmission, as: 'submissions',
+            where: { student_id: req.user.id },
+            required: false,
+          },
+        ],
+        order: [['due_date', 'ASC'], ['created_at', 'DESC']],
+      });
+      return ApiResponse.success(res, { assignments });
+    } catch (err) { next(err); }
+  }
+
   // PUT /api/assignments/:id/submit  (update submission before grading)
   static async updateSubmission(req, res, next) {
     try {

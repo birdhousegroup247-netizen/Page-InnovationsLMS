@@ -42,6 +42,8 @@ const TestResults = lazy(() => import('./pages/TestResults'));
 const MyAssignedTests = lazy(() => import('./pages/MyAssignedTests'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const MyAssignments = lazy(() => import('./pages/MyAssignments'));
+const MyNotes = lazy(() => import('./pages/MyNotes'));
 
 // Instructor pages - lazy loaded
 const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
@@ -590,6 +592,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Leaderboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-assignments"
+            element={
+              <ProtectedRoute>
+                <MyAssignments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-notes"
+            element={
+              <ProtectedRoute>
+                <MyNotes />
               </ProtectedRoute>
             }
           />
