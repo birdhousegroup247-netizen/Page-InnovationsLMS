@@ -39,6 +39,7 @@ class ContentController {
       const { moduleId } = req.params;
       const {
         title,
+        description,
         content_type,
         youtube_url,
         youtube_video_id,
@@ -65,6 +66,7 @@ class ContentController {
       const content = await ModuleContent.create({
         module_id: moduleId,
         title,
+        description,
         content_type,
         youtube_url,
         youtube_video_id,

@@ -54,6 +54,7 @@ export default function CourseBuilder() {
   const [moduleForm, setModuleForm] = useState({ title: '', description: '' });
   const [contentForm, setContentForm] = useState({
     title: '',
+    description: '',
     content_type: 'video',
     youtube_url: '',
     youtube_video_id: '',
@@ -204,6 +205,7 @@ export default function CourseBuilder() {
     setSelectedModule(modules.find(m => m.id === moduleId));
     setContentForm({
       title: '',
+      description: '',
       content_type: 'video',
       youtube_url: '',
       youtube_video_id: '',
@@ -221,6 +223,7 @@ export default function CourseBuilder() {
     setSelectedContent(content);
     setContentForm({
       title: content.title || '',
+      description: content.description || '',
       content_type: content.content_type || 'video',
       youtube_url: content.youtube_url || '',
       youtube_video_id: content.youtube_video_id || '',
@@ -260,6 +263,7 @@ export default function CourseBuilder() {
 
       const contentData = {
         title: contentForm.title,
+        description: contentForm.description,
         content_type: contentForm.content_type,
         is_preview: contentForm.is_preview,
         order_index: selectedModule.contents ? selectedModule.contents.length + 1 : 1
@@ -296,6 +300,7 @@ export default function CourseBuilder() {
       setSelectedContent(null);
       setContentForm({
         title: '',
+        description: '',
         content_type: 'video',
         youtube_url: '',
         youtube_video_id: '',
@@ -748,6 +753,19 @@ export default function CourseBuilder() {
             placeholder="e.g., Introduction to Variables"
             required
           />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              value={contentForm.description}
+              onChange={(e) => setContentForm({ ...contentForm, description: e.target.value })}
+              rows="2"
+              className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none"
+              placeholder="Brief description of what this lesson covers"
+            />
+          </div>
 
           {/* Content Type Selector */}
           <div>

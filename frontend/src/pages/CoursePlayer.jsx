@@ -169,6 +169,7 @@ export default function CoursePlayer() {
   const [showNewPost, setShowNewPost] = useState(false);
   const [newReply, setNewReply] = useState('');
   const [forumLoading, setForumLoading] = useState(false);
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
 
   // --- Progress tracking state ---
   const [ytApiLoaded, setYtApiLoaded] = useState(false);
@@ -189,14 +190,18 @@ export default function CoursePlayer() {
     try {
       const res = await liveSessionsAPI.getByCourse(id);
       setLiveSessions(res.data.data.sessions || []);
-    } catch {}
+    } catch {
+      showToast('Failed to load live sessions', 'error');
+    }
   };
 
   const fetchMyAssignments = async () => {
     try {
       const res = await assignmentsAPI.getStudentAssignments(id);
       setMyAssignments(res.data.data.assignments || []);
-    } catch {}
+    } catch {
+      showToast('Failed to load assignments', 'error');
+    }
   };
 
   const fetchForumPosts = async () => {
@@ -204,7 +209,9 @@ export default function CoursePlayer() {
     try {
       const res = await forumAPI.getPosts(id);
       setForumPosts(res.data.data.posts || []);
-    } catch {} finally {
+    } catch {
+      showToast('Failed to load forum posts', 'error');
+    } finally {
       setForumLoading(false);
     }
   };
@@ -213,7 +220,9 @@ export default function CoursePlayer() {
     try {
       const res = await forumAPI.getPost(postId);
       setForumPost(res.data.data.post);
-    } catch {}
+    } catch {
+      showToast('Failed to load post', 'error');
+    }
   };
 
   const handleCreatePost = async () => {
@@ -222,7 +231,9 @@ export default function CoursePlayer() {
       await forumAPI.createPost(id, { title: newPostTitle, content: newPostContent });
       setNewPostTitle(''); setNewPostContent(''); setShowNewPost(false);
       fetchForumPosts();
-    } catch {}
+    } catch {
+      showToast('Failed to create post', 'error');
+    }
   };
 
   const handleAddReply = async (postId) => {
@@ -231,7 +242,9 @@ export default function CoursePlayer() {
       await forumAPI.addReply(postId, { content: newReply });
       setNewReply('');
       fetchForumPost(postId);
-    } catch {}
+    } catch {
+      showToast('Failed to post reply', 'error');
+    }
   };
 
   // Load YouTube IFrame Player API once
@@ -248,6 +261,7 @@ export default function CoursePlayer() {
   // Reset tracking when switching lessons
   useEffect(() => {
     setVideoProgress(0);
+    setVideoCurrentTime(0);
     setArticleRead(false);
   }, [currentContent?.id]);
 
@@ -296,6 +310,7 @@ export default function CoursePlayer() {
           if (dur > 0) {
             const pct = (ct / dur) * 100;
             setVideoProgress(pct);
+            setVideoCurrentTime(ct);
             // Auto-complete at 90% — contentId is captured in this closure, so it's always correct
             if (pct >= 90 && !autoCompletedRef.current.has(contentId)) {
               autoCompletedRef.current.add(contentId);
@@ -1096,7 +1111,8 @@ export default function CoursePlayer() {
                   <div className="-m-6">
                     <LessonNotes
                       contentId={currentContent.id}
-                      currentTime={0}
+                      currentTime={videoCurrentTime}
+                      onSeek={(t) => playerRef.current?.seekTo?.(t, true)}
                     />
                   </div>
                 )}
