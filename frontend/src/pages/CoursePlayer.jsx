@@ -111,7 +111,6 @@ function getYouTubeEmbedUrl(content) {
       const sep = content.youtube_url.includes('?') ? '&' : '?';
       return `${content.youtube_url}${sep}${YT_PARAMS}`;
     }
-    return content.youtube_url;
   }
   return null;
 }
@@ -125,6 +124,23 @@ function getYouTubeVideoId(content) {
     );
     if (match) return match[1];
   }
+  return null;
+}
+
+// Convert Google Drive share URL to embed URL
+function getGoogleDriveEmbedUrl(url) {
+  const match = url.match(/\/file\/d\/([^/?\s]+)/);
+  if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  return null;
+}
+
+// Detect video source type
+function getVideoType(content) {
+  if (content.youtube_video_id) return 'youtube';
+  const url = content.youtube_url || '';
+  if (/(?:youtube\.com|youtu\.be)/i.test(url)) return 'youtube';
+  if (/drive\.google\.com/i.test(url)) return 'gdrive';
+  if (url) return 'direct';
   return null;
 }
 
@@ -705,14 +721,31 @@ export default function CoursePlayer() {
             <div className="mb-6">
               {/* Video content */}
               {currentContent.content_type === 'video' && (() => {
+                const videoType = getVideoType(currentContent);
                 const videoId = getYouTubeVideoId(currentContent);
                 const embedUrl = getYouTubeEmbedUrl(currentContent);
-                return (videoId || embedUrl) ? (
+                const driveUrl = videoType === 'gdrive' ? getGoogleDriveEmbedUrl(currentContent.youtube_url) : null;
+                const directUrl = videoType === 'direct' ? currentContent.youtube_url : null;
+
+                if (!videoType) {
+                  return (
+                    <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card flex items-center justify-center transition-colors">
+                      <div className="text-center">
+                        <Video className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
+                        <p className="text-gray-400 dark:text-text-dark-secondary transition-colors">
+                          Video URL not available for this lesson
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
                   <>
                     <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-2 shadow-lg dark:shadow-card transition-colors">
-                      {ytApiLoaded && videoId ? (
+                      {videoType === 'youtube' && ytApiLoaded && videoId ? (
                         <div ref={playerWrapperRef} className="w-full h-full" />
-                      ) : (
+                      ) : videoType === 'youtube' ? (
                         <iframe
                           src={embedUrl}
                           title={decodeEntities(currentContent.title)}
@@ -720,10 +753,26 @@ export default function CoursePlayer() {
                           allowFullScreen
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         ></iframe>
+                      ) : videoType === 'gdrive' ? (
+                        <iframe
+                          src={driveUrl}
+                          title={decodeEntities(currentContent.title)}
+                          className="w-full h-full"
+                          allowFullScreen
+                          allow="autoplay"
+                        ></iframe>
+                      ) : (
+                        <video
+                          src={directUrl}
+                          className="w-full h-full"
+                          controls
+                          controlsList="nodownload"
+                          title={decodeEntities(currentContent.title)}
+                        />
                       )}
                     </div>
-                    {/* Video watch progress bar */}
-                    {!isLessonCompleted(currentContent.id) && videoProgress > 0 && (
+                    {/* Video watch progress bar (YouTube only — others use native controls) */}
+                    {videoType === 'youtube' && !isLessonCompleted(currentContent.id) && videoProgress > 0 && (
                       <div className="mb-4">
                         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                           <span>{Math.round(videoProgress)}% watched</span>
@@ -740,15 +789,6 @@ export default function CoursePlayer() {
                       </div>
                     )}
                   </>
-                ) : (
-                  <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card flex items-center justify-center transition-colors">
-                    <div className="text-center">
-                      <Video className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />
-                      <p className="text-gray-400 dark:text-text-dark-secondary transition-colors">
-                        Video URL not available for this lesson
-                      </p>
-                    </div>
-                  </div>
                 );
               })()}
 
