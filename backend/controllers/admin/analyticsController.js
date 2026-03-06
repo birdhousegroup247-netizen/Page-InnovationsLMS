@@ -11,6 +11,12 @@ const ApiResponse = require('../../utils/response');
 const { sequelize } = require('../../config/database');
 const { Op } = require('sequelize');
 
+// Helper: returns true when connected to PostgreSQL
+const isPg = () => sequelize.getDialect() === 'postgres';
+
+// Cast a column/expression to DATE (works on both MySQL and PostgreSQL)
+const toDate = (col) => sequelize.cast(col, 'DATE');
+
 class AnalyticsController {
   // Get student performance analytics
   static async getStudentPerformance(req, res, next) {
@@ -25,17 +31,17 @@ class AnalyticsController {
         raw: true,
       });
 
-      // Average assigned test scores — use dialect-aware boolean-to-int cast
-      const isPg = sequelize.getDialect() === 'postgres';
-      const passedCastFn = isPg
+      // Average assigned test scores — dialect-aware boolean sum
+      const passedSum = isPg()
         ? sequelize.literal('SUM(CASE WHEN "passed" THEN 1 ELSE 0 END)')
         : sequelize.literal('SUM(CAST(passed AS SIGNED))');
+
       const assignedTestAvg = await AssignedTestAttempt.findAll({
         where: { completed_at: { [Op.ne]: null } },
         attributes: [
           [sequelize.fn('AVG', sequelize.col('percentage')), 'avg_score'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'total_attempts'],
-          [passedCastFn, 'passed_count'],
+          [passedSum, 'passed_count'],
         ],
         raw: true,
       });
@@ -50,25 +56,27 @@ class AnalyticsController {
         ? ((completedEnrollments / totalEnrollments) * 100).toFixed(2)
         : 0;
 
-      // Top performing students (based on practice test average)
-      const topStudents = await PracticeTestAttempt.findAll({
+      // Top performing students — aggregate first, then fetch user data separately
+      // (avoids GROUP BY + JOIN strictness issue in PostgreSQL)
+      const rawTopStudents = await PracticeTestAttempt.findAll({
         where: { status: 'completed' },
         attributes: [
           'student_id',
           [sequelize.fn('AVG', sequelize.col('percentage')), 'avg_score'],
-          [sequelize.fn('COUNT', sequelize.col('PracticeTestAttempt.id')), 'attempts'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'attempts'],
         ],
         group: ['student_id'],
         order: [[sequelize.fn('AVG', sequelize.col('percentage')), 'DESC']],
         limit: 10,
-        include: [
-          {
-            model: User,
-            as: 'student',
-            attributes: ['id', 'full_name', 'email'],
-          },
-        ],
+        raw: true,
       });
+
+      const studentIds = rawTopStudents.map((r) => r.student_id);
+      const studentUsers = studentIds.length
+        ? await User.findAll({ where: { id: studentIds }, attributes: ['id', 'full_name', 'email'] })
+        : [];
+      const studentMap = Object.fromEntries(studentUsers.map((u) => [u.id, u.toJSON()]));
+      const topStudents = rawTopStudents.map((r) => ({ ...r, student: studentMap[r.student_id] || null }));
 
       return ApiResponse.success(res, {
         practiceTests: {
@@ -99,25 +107,25 @@ class AnalyticsController {
   // Get course analytics
   static async getCourseAnalytics(req, res, next) {
     try {
-      // Courses by category
-      const coursesByCategory = await Course.findAll({
+      // Courses by category — aggregate without JOIN, then attach category data separately
+      const rawByCategory = await Course.findAll({
         attributes: [
           'category_id',
-          [sequelize.fn('COUNT', sequelize.col('Course.id')), 'course_count'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'course_count'],
           [sequelize.fn('SUM', sequelize.col('enrollment_count')), 'total_enrollments'],
         ],
-        group: ['category_id', 'category.id'],
-        include: [
-          {
-            model: Category,
-            as: 'category',
-            attributes: ['id', 'name', 'icon'],
-          },
-        ],
-        subQuery: false,
+        group: ['category_id'],
+        raw: true,
       });
 
-      // Courses by level (beginner, intermediate, advanced)
+      const catIds = rawByCategory.map((r) => r.category_id).filter(Boolean);
+      const categories = catIds.length
+        ? await Category.findAll({ where: { id: catIds }, attributes: ['id', 'name', 'icon'] })
+        : [];
+      const catMap = Object.fromEntries(categories.map((c) => [c.id, c.toJSON()]));
+      const coursesByCategory = rawByCategory.map((r) => ({ ...r, category: catMap[r.category_id] || null }));
+
+      // Courses by level
       const coursesByLevel = await Course.findAll({
         attributes: [
           'level',
@@ -126,39 +134,48 @@ class AnalyticsController {
         group: ['level'],
         raw: true,
       });
+      // Rename 'level' key to 'difficulty' to match frontend expectations
+      const coursesByDifficulty = coursesByLevel.map((r) => ({ difficulty: r.level, count: r.count }));
 
       // Most enrolled courses
       const topCourses = await Course.findAll({
         attributes: ['id', 'title', 'enrollment_count', 'completion_count', 'average_rating'],
         order: [['enrollment_count', 'DESC']],
         limit: 10,
-      });
-
-      // Course creation trends (last 12 months) — dialect-aware date formatting
-      const isPostgres = sequelize.getDialect() === 'postgres';
-      const monthFn = isPostgres
-        ? sequelize.fn('TO_CHAR', sequelize.col('Course.created_at'), 'YYYY-MM')
-        : sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m');
-      const twelveMonthsAgo = isPostgres
-        ? sequelize.literal("NOW() - INTERVAL '12 months'")
-        : sequelize.literal('DATE_SUB(NOW(), INTERVAL 12 MONTH)');
-
-      const courseCreationTrends = await Course.findAll({
-        attributes: [
-          [monthFn, 'month'],
-          [sequelize.fn('COUNT', sequelize.col('Course.id')), 'count'],
-        ],
-        where: {
-          created_at: { [Op.gte]: twelveMonthsAgo },
-        },
-        group: [monthFn],
-        order: [[monthFn, 'ASC']],
         raw: true,
       });
 
+      // Course creation trends (last 12 months) — dialect-aware month formatting
+      const twelveMonthsAgo = isPg()
+        ? sequelize.literal("NOW() - INTERVAL '12 months'")
+        : sequelize.literal('DATE_SUB(NOW(), INTERVAL 12 MONTH)');
+
+      let courseCreationTrends = [];
+      if (isPg()) {
+        courseCreationTrends = await sequelize.query(
+          `SELECT TO_CHAR(created_at, 'YYYY-MM') AS month, COUNT(id)::int AS count
+           FROM courses
+           WHERE created_at >= NOW() - INTERVAL '12 months'
+           GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+           ORDER BY month ASC`,
+          { type: sequelize.QueryTypes.SELECT }
+        );
+      } else {
+        courseCreationTrends = await Course.findAll({
+          attributes: [
+            [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'month'],
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+          ],
+          where: { created_at: { [Op.gte]: twelveMonthsAgo } },
+          group: [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m')],
+          order: [[sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'ASC']],
+          raw: true,
+        });
+      }
+
       return ApiResponse.success(res, {
         coursesByCategory,
-        coursesByLevel,
+        coursesByDifficulty,
         topCourses,
         courseCreationTrends,
       });
@@ -170,22 +187,22 @@ class AnalyticsController {
   // Get question bank analytics
   static async getQuestionAnalytics(req, res, next) {
     try {
-      // Questions by category
-      const questionsByCategory = await QuestionBank.findAll({
+      // Questions by category — aggregate without JOIN, then attach category data
+      const rawByCategory = await QuestionBank.findAll({
         attributes: [
           'category_id',
-          [sequelize.fn('COUNT', sequelize.col('QuestionBank.id')), 'question_count'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'question_count'],
         ],
-        group: ['category_id', 'category.id'],
-        include: [
-          {
-            model: Category,
-            as: 'category',
-            attributes: ['id', 'name'],
-          },
-        ],
-        subQuery: false,
+        group: ['category_id'],
+        raw: true,
       });
+
+      const catIds = rawByCategory.map((r) => r.category_id).filter(Boolean);
+      const categories = catIds.length
+        ? await Category.findAll({ where: { id: catIds }, attributes: ['id', 'name'] })
+        : [];
+      const catMap = Object.fromEntries(categories.map((c) => [c.id, c.toJSON()]));
+      const questionsByCategory = rawByCategory.map((r) => ({ ...r, category: catMap[r.category_id] || null }));
 
       // Questions by difficulty
       const questionsByDifficulty = await QuestionBank.findAll({
@@ -236,29 +253,28 @@ class AnalyticsController {
   // Get instructor analytics
   static async getInstructorAnalytics(req, res, next) {
     try {
-      // Top instructors by courses created
-      const topInstructors = await Course.findAll({
+      // Aggregate without JOIN, then fetch user data separately
+      const rawTop = await Course.findAll({
         attributes: [
           'instructor_id',
-          [sequelize.fn('COUNT', sequelize.col('Course.id')), 'courses_count'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'courses_count'],
           [sequelize.fn('SUM', sequelize.col('enrollment_count')), 'total_enrollments'],
           [sequelize.fn('AVG', sequelize.col('average_rating')), 'avg_rating'],
         ],
         group: ['instructor_id'],
-        order: [[sequelize.fn('COUNT', sequelize.col('Course.id')), 'DESC']],
+        order: [[sequelize.fn('COUNT', sequelize.col('id')), 'DESC']],
         limit: 10,
-        include: [
-          {
-            model: User,
-            as: 'instructor',
-            attributes: ['id', 'full_name', 'email'],
-          },
-        ],
+        raw: true,
       });
 
-      return ApiResponse.success(res, {
-        topInstructors,
-      });
+      const instructorIds = rawTop.map((r) => r.instructor_id).filter(Boolean);
+      const instructorUsers = instructorIds.length
+        ? await User.findAll({ where: { id: instructorIds }, attributes: ['id', 'full_name', 'email'] })
+        : [];
+      const instrMap = Object.fromEntries(instructorUsers.map((u) => [u.id, u.toJSON()]));
+      const topInstructors = rawTop.map((r) => ({ ...r, instructor: instrMap[r.instructor_id] || null }));
+
+      return ApiResponse.success(res, { topInstructors });
     } catch (error) {
       next(error);
     }
@@ -272,43 +288,32 @@ class AnalyticsController {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(days));
 
-      // Enrollments by day
+      // Use CAST(col AS DATE) instead of DATE(col) — compatible with both MySQL and PostgreSQL
       const enrollmentsByDay = await Enrollment.findAll({
-        where: {
-          enrollment_date: {
-            [Op.gte]: startDate,
-          },
-        },
+        where: { enrollment_date: { [Op.gte]: startDate } },
         attributes: [
-          [sequelize.fn('DATE', sequelize.col('enrollment_date')), 'date'],
+          [toDate(sequelize.col('enrollment_date')), 'date'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
         ],
-        group: [sequelize.fn('DATE', sequelize.col('enrollment_date'))],
-        order: [[sequelize.fn('DATE', sequelize.col('enrollment_date')), 'ASC']],
+        group: [toDate(sequelize.col('enrollment_date'))],
+        order: [[toDate(sequelize.col('enrollment_date')), 'ASC']],
         raw: true,
       });
 
-      // Completions by day
       const completionsByDay = await Enrollment.findAll({
         where: {
-          completed_at: {
-            [Op.gte]: startDate,
-            [Op.ne]: null,
-          },
+          completed_at: { [Op.gte]: startDate, [Op.ne]: null },
         },
         attributes: [
-          [sequelize.fn('DATE', sequelize.col('completed_at')), 'date'],
+          [toDate(sequelize.col('completed_at')), 'date'],
           [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
         ],
-        group: [sequelize.fn('DATE', sequelize.col('completed_at'))],
-        order: [[sequelize.fn('DATE', sequelize.col('completed_at')), 'ASC']],
+        group: [toDate(sequelize.col('completed_at'))],
+        order: [[toDate(sequelize.col('completed_at')), 'ASC']],
         raw: true,
       });
 
-      return ApiResponse.success(res, {
-        enrollmentsByDay,
-        completionsByDay,
-      });
+      return ApiResponse.success(res, { enrollmentsByDay, completionsByDay });
     } catch (error) {
       next(error);
     }
