@@ -258,16 +258,6 @@ export default function CourseBuilder() {
     try {
       setSaving(true);
 
-      // Parse YouTube URL if provided
-      let videoId = contentForm.youtube_video_id;
-      if (contentForm.content_type === 'video' && contentForm.youtube_url) {
-        videoId = parseYouTubeUrl(contentForm.youtube_url);
-        if (!videoId) {
-          showToast('Invalid YouTube URL', 'error');
-          return;
-        }
-      }
-
       const contentData = {
         title: contentForm.title,
         content_type: contentForm.content_type,
@@ -276,8 +266,11 @@ export default function CourseBuilder() {
       };
 
       if (contentForm.content_type === 'video') {
-        contentData.youtube_video_id = videoId;
-        contentData.youtube_url = `https://www.youtube.com/watch?v=${videoId}`;
+        const url = contentForm.youtube_url.trim();
+        const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(url);
+        const ytId = isYouTube ? parseYouTubeUrl(url) : null;
+        contentData.youtube_url = url;
+        contentData.youtube_video_id = ytId || null;
         if (contentForm.duration_minutes) {
           contentData.duration_minutes = parseInt(contentForm.duration_minutes);
         }
@@ -786,10 +779,10 @@ export default function CourseBuilder() {
           {contentForm.content_type === 'video' && (
             <>
               <Input
-                label="YouTube URL or Video ID"
+                label="Video URL"
                 value={contentForm.youtube_url}
                 onChange={(e) => setContentForm({ ...contentForm, youtube_url: e.target.value })}
-                placeholder="https://youtube.com/watch?v=abc123 or just abc123"
+                placeholder="YouTube, Google Drive, or any video URL"
                 required
               />
               <Input
@@ -799,9 +792,13 @@ export default function CourseBuilder() {
                 onChange={(e) => setContentForm({ ...contentForm, duration_minutes: e.target.value })}
                 placeholder="15"
               />
-              {contentForm.youtube_url && parseYouTubeUrl(contentForm.youtube_url) && (
-                <div className="text-sm text-green-600 dark:text-green-400">
-                  ✓ Valid YouTube video ID: {parseYouTubeUrl(contentForm.youtube_url)}
+              {contentForm.youtube_url && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {/(?:youtube\.com|youtu\.be)/i.test(contentForm.youtube_url) && parseYouTubeUrl(contentForm.youtube_url)
+                    ? '✓ YouTube video detected'
+                    : /drive\.google\.com/i.test(contentForm.youtube_url)
+                    ? '✓ Google Drive video detected'
+                    : '✓ Video URL saved'}
                 </div>
               )}
             </>
