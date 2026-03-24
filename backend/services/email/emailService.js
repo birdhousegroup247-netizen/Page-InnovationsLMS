@@ -650,6 +650,326 @@ class EmailService {
     });
   }
 
+  // ─── Shared HTML shell ────────────────────────────────────────────────────
+  _baseTemplate({ headerColor = 'linear-gradient(135deg,#0e2b5c,#2e3192)', title, body, ctaText, ctaUrl }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const cta = ctaText && ctaUrl
+      ? `<div style="text-align:center;margin:28px 0"><a href="${ctaUrl}" style="display:inline-block;padding:14px 32px;background:#eb1c22;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;font-family:Arial,sans-serif">${ctaText}</a></div>`
+      : '';
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f6f9;color:#333}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08)}.hdr{background:${headerColor};padding:28px 40px;text-align:center}.hdr .logo{font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;margin:0}.hdr h1{margin:8px 0 0;color:#fff;font-size:20px;font-weight:600}.bd{padding:32px 40px}.bd p{line-height:1.75;margin:0 0 16px}.bd ul{padding-left:20px;line-height:1.9}.hi{background:#f0f4ff;border-left:4px solid #0e2b5c;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.wa{background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.da{background:#fff0f0;border-left:4px solid #ef4444;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.ft{background:#f9fafb;padding:20px 40px;text-align:center;color:#888;font-size:12px;border-top:1px solid #eee}.ft a{color:#0e2b5c;text-decoration:none}</style>
+</head><body><div style="padding:16px"><div class="wrap">
+<div class="hdr"><p class="logo">TekyPro</p><h1>${title}</h1></div>
+<div class="bd">${body}${cta}</div>
+<div class="ft"><p>TekyPro — Professional Database Training</p><p><a href="https://www.tekypro.com">www.tekypro.com</a> · <a href="mailto:support@tekypro.com">support@tekypro.com</a></p><p style="margin-top:10px;font-size:11px;color:#bbb">You received this because you registered on TekyPro. <a href="${FE}/unsubscribe">Unsubscribe</a></p></div>
+</div></div></body></html>`;
+  }
+
+  // ─── Lead Drip Sequence (Sequence A) ────────────────────────────────────────
+
+  async sendLeadWelcome(email, name, courseTitle = 'our courses') {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: 'Your Free Preview is Ready!',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Welcome to TekyPro! Your account is all set — you now have <strong>free preview access</strong> to all our courses.</p>
+<div class="hi"><strong>What you can do right now:</strong><ul>
+<li>Browse the full course catalogue</li>
+<li>Watch Lesson 1 of any course — completely free</li>
+<li>Explore course outlines, instructor profiles, and community forums</li>
+</ul></div>
+<p>When you're ready to unlock the full course, enrollment is just one click away — with flexible payment options including our 60/40 installment plan.</p>
+<p>Start exploring now 👇</p>`,
+      ctaText: 'Browse Courses Free',
+      ctaUrl: `${FE}/courses`,
+    });
+    return this.sendEmail({ to: email, subject: `Welcome to TekyPro, ${name} — your free preview is ready`, html, text: `Hi ${name}, your TekyPro free preview is ready. Browse courses at ${FE}/courses` });
+  }
+
+  async sendLeadFollowupD1(email, name, courseTitle = 'your course') {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: `Your course is waiting for you`,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Just checking in — <strong>${courseTitle}</strong> is ready and waiting for you on TekyPro.</p>
+<p>Thousands of database professionals have used TekyPro to advance their careers, pass certification exams, and land better-paying roles.</p>
+<div class="hi"><strong>Your free preview includes:</strong><ul>
+<li>Full course outline so you know exactly what you'll learn</li>
+<li>Lesson 1 of every module — watch before you commit</li>
+<li>Community forum access — meet your future classmates</li>
+</ul></div>
+<p>Ready to take the next step?</p>`,
+      ctaText: 'Continue to Course',
+      ctaUrl: `${FE}/courses`,
+    });
+    return this.sendEmail({ to: email, subject: `${name}, your TekyPro course is waiting for you`, html, text: `Hi ${name}, your course on TekyPro is ready. Continue at ${FE}/courses` });
+  }
+
+  async sendLeadFollowupD3(email, name) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: 'What TekyPro students are saying',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>We thought you'd like to hear from some of our graduates:</p>
+<div class="hi"><p><em>"I passed my Oracle DBA certification after completing the TekyPro course. The hands-on practice labs made all the difference."</em><br>— <strong>Adesola K., Lagos</strong></p></div>
+<div class="hi"><p><em>"I was able to negotiate a 40% salary increase after completing my PostgreSQL certification through TekyPro. Worth every penny."</em><br>— <strong>James M., Nairobi</strong></p></div>
+<div class="hi"><p><em>"The installment plan made it affordable for me. Full access from day one while I paid over time."</em><br>— <strong>Priya T., London</strong></p></div>
+<p>Your free preview is still active. Come see what the full course looks like.</p>`,
+      ctaText: 'See Course Details',
+      ctaUrl: `${FE}/courses`,
+    });
+    return this.sendEmail({ to: email, subject: `What TekyPro students say (real results)`, html, text: `Hi ${name}, see what TekyPro students are saying at ${FE}/courses` });
+  }
+
+  async sendLeadFollowupD7(email, name) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#f59e0b,#d97706)',
+      title: 'Your free preview — final week',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Your TekyPro free preview has been active for a week now. We want to make sure you're making the most of it before time runs out.</p>
+<div class="wa"><strong>You still have access to:</strong><ul>
+<li>Full course outlines for all courses</li>
+<li>Lesson 1 free in every course</li>
+<li>Community forums and Q&A</li>
+</ul></div>
+<p>To unlock <strong>all lessons, practice tests, live sessions, and your certificate</strong>, you'll need to enroll.</p>
+<p>Remember — you can start with just <strong>60% upfront</strong> and pay the rest in 21 days. No hidden fees, no surprises.</p>`,
+      ctaText: 'Enroll Now',
+      ctaUrl: `${FE}/courses`,
+    });
+    return this.sendEmail({ to: email, subject: `${name}, your free preview expires soon`, html, text: `Hi ${name}, your free preview is expiring. Enroll now at ${FE}/courses` });
+  }
+
+  async sendLeadFollowupD14(email, name, couponCode = null) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const discountBlock = couponCode
+      ? `<div class="hi"><p><strong>Special offer just for you:</strong> Use code <strong style="font-size:18px;color:#eb1c22">${couponCode}</strong> at checkout for a discount on your enrollment.</p></div>`
+      : '';
+    const html = this._baseTemplate({
+      title: 'A personal note from TekyPro',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>This is our last email in this series — we don't want to crowd your inbox.</p>
+<p>We noticed you haven't enrolled yet, and we want to understand why. Is it the price? The timing? Or maybe you'd like to see more before committing?</p>
+${discountBlock}
+<p>Whatever the reason, your free preview account will stay open. You can come back anytime.</p>
+<p>But if you're ready — even just a little curious — click below and take a look at what's inside. No commitment required.</p>
+<p>We'd love to have you in the course.</p>
+<p>— The TekyPro Team</p>`,
+      ctaText: 'Take One More Look',
+      ctaUrl: `${FE}/courses`,
+    });
+    return this.sendEmail({ to: email, subject: `${name}, this is our last message (personal note)`, html, text: `Hi ${name}, last chance to enroll. Visit ${FE}/courses` });
+  }
+
+  // ─── Payment Emails (Sequence B — Paid Users) ───────────────────────────────
+
+  async sendPaymentReceipt(email, name, { courseTitle, amountPaid, paymentPlan, remainingAmount, invoiceDate, paymentId }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const installmentNote = paymentPlan === 'installment' && remainingAmount
+      ? `<div class="wa"><p><strong>Installment Plan:</strong> Your remaining balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> is due in 21 days. We'll send a reminder before it's due.</p></div>`
+      : '';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
+      title: 'Payment Confirmed — Receipt',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Your payment has been received! Here is your receipt:</p>
+<div class="hi">
+<p><strong>Course:</strong> ${courseTitle}</p>
+<p><strong>Amount Paid:</strong> $${parseFloat(amountPaid).toFixed(2)} USD</p>
+<p><strong>Payment Plan:</strong> ${paymentPlan === 'installment' ? '60/40 Installment' : 'Full Payment'}</p>
+<p><strong>Date:</strong> ${invoiceDate || new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}</p>
+<p><strong>Reference:</strong> #${paymentId || 'TKP-' + Date.now()}</p>
+</div>
+${installmentNote}
+<p>You now have full access to your course. Start learning right now!</p>`,
+      ctaText: 'Go to My Courses',
+      ctaUrl: `${FE}/my-courses`,
+    });
+    return this.sendEmail({ to: email, subject: `TekyPro Payment Receipt — ${courseTitle}`, html, text: `Hi ${name}, your payment for ${courseTitle} ($${amountPaid}) has been received.` });
+  }
+
+  async sendPaymentCongrats(email, name, { courseTitle, courseId }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#059669,#10b981)',
+      title: `You're officially in! 🎉`,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Congratulations! You are now enrolled in <strong>${courseTitle}</strong> on TekyPro.</p>
+<p>Here's how to get started:</p>
+<div class="hi"><ol style="padding-left:20px;line-height:2">
+<li><strong>Log in</strong> to your TekyPro account</li>
+<li>Go to <strong>My Courses</strong></li>
+<li>Click on <strong>${courseTitle}</strong> to open it</li>
+<li>Start with <strong>Module 1, Lesson 1</strong> and work your way through</li>
+</ol></div>
+<p>A few tips from students who've been in your shoes:</p>
+<ul>
+<li>Set aside a regular study time each day — even 30 minutes adds up</li>
+<li>Join the course forum and introduce yourself</li>
+<li>Don't skip the practice tests — they're great exam prep</li>
+</ul>
+<p>We're rooting for you. Let's go!</p>`,
+      ctaText: 'Start Learning Now',
+      ctaUrl: courseId ? `${FE}/courses/${courseId}/learn` : `${FE}/my-courses`,
+    });
+    return this.sendEmail({ to: email, subject: `You're in! Welcome to ${courseTitle}`, html, text: `Congratulations ${name}! You're enrolled in ${courseTitle}. Start at ${FE}/my-courses` });
+  }
+
+  async sendOnboardingD1(email, name, { courseTitle, courseId }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: 'Your first 3 steps on TekyPro',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Day 1! Here are the three most important things to do right now to set yourself up for success in <strong>${courseTitle}</strong>:</p>
+<div class="hi"><p><strong>Step 1 — Watch Lesson 1</strong><br>Don't overthink it. Just click play and start. Momentum beats perfection every time.</p></div>
+<div class="hi"><p><strong>Step 2 — Join the Course Forum</strong><br>Introduce yourself in the forum. Say where you're from and what you're hoping to achieve. This small step keeps you accountable.</p></div>
+<div class="hi"><p><strong>Step 3 — Block 45 Minutes Daily</strong><br>Put it in your calendar. Students who study daily (even briefly) complete courses 4x faster than those who binge-study on weekends.</p></div>
+<p>You've got this. We'll check in with you in a couple of days.</p>`,
+      ctaText: 'Start Lesson 1',
+      ctaUrl: courseId ? `${FE}/courses/${courseId}/learn` : `${FE}/my-courses`,
+    });
+    return this.sendEmail({ to: email, subject: `Day 1: Your first 3 steps in ${courseTitle}`, html, text: `Hi ${name}, here are your first 3 steps in ${courseTitle}. Start at ${FE}/my-courses` });
+  }
+
+  async sendOnboardingD3(email, name, { courseTitle }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: 'Did you know TekyPro has these features?',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>You've been with us for 3 days. How are things going in <strong>${courseTitle}</strong>?</p>
+<p>Here are some TekyPro features many students discover <em>too late</em> — don't let that be you:</p>
+<div class="hi"><p><strong>📝 Practice Tests</strong><br>After each module, test your knowledge with AI-generated practice questions. It's the fastest way to identify gaps before the real exam.</p></div>
+<div class="hi"><p><strong>🎥 Live Sessions</strong><br>Your instructor hosts live Q&A sessions. Check the schedule in your course page — these are gold for tricky topics.</p></div>
+<div class="hi"><p><strong>📌 Lesson Bookmarks</strong><br>Bookmark any lesson and add notes. Great for revision before exams.</p></div>
+<p>Keep going — you're doing great!</p>`,
+      ctaText: 'Continue Learning',
+      ctaUrl: `${FE}/my-courses`,
+    });
+    return this.sendEmail({ to: email, subject: `Did you know TekyPro has these features? (${courseTitle})`, html, text: `Hi ${name}, discover TekyPro's hidden features. Continue at ${FE}/my-courses` });
+  }
+
+  async sendOnboardingD7(email, name, { courseTitle }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: `How's it going, ${name}?`,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>You've been on TekyPro for a week. We just wanted to check in on your progress in <strong>${courseTitle}</strong>.</p>
+<p>If everything's going well — amazing! Keep that momentum going.</p>
+<p>If you've been struggling to find time or hit a confusing topic, that's completely normal. Here's what we suggest:</p>
+<ul>
+<li><strong>Stuck on a concept?</strong> Post a question in the course forum — your instructor and classmates respond quickly</li>
+<li><strong>Short on time?</strong> Even 20 minutes a day keeps you progressing. Don't let perfect be the enemy of good</li>
+<li><strong>Need motivation?</strong> Look at your progress bar. Every lesson completed is a step closer to that certificate</li>
+</ul>
+<p>Remember why you started. We're here to help you get there.</p>
+<p>— The TekyPro Team</p>`,
+      ctaText: 'Check My Progress',
+      ctaUrl: `${FE}/my-courses`,
+    });
+    return this.sendEmail({ to: email, subject: `Week 1 check-in: How's ${courseTitle} going?`, html, text: `Hi ${name}, how's your first week going? Continue at ${FE}/my-courses` });
+  }
+
+  // ─── Installment Reminder Sequence (Sequence C) ───────────────────────────
+
+  async sendInstallmentReminderD21(email, name, { remainingAmount, dueDate, payUrl }) {
+    const html = this._baseTemplate({
+      title: 'Friendly reminder: your balance is due',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Just a friendly heads-up — your TekyPro installment balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> is now due.</p>
+<div class="hi"><p><strong>Amount due:</strong> $${parseFloat(remainingAmount).toFixed(2)}<br><strong>Due date:</strong> ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
+<p>Completing this payment takes less than 2 minutes and keeps your full course access uninterrupted.</p>
+<p>No rush — but sooner is better! 😊</p>`,
+      ctaText: 'Complete Payment',
+      ctaUrl: payUrl,
+    });
+    return this.sendEmail({ to: email, subject: `Friendly reminder: your TekyPro balance of $${parseFloat(remainingAmount).toFixed(2)} is due`, html, text: `Hi ${name}, your TekyPro balance of $${remainingAmount} is due. Pay at ${payUrl}` });
+  }
+
+  async sendInstallmentReminderD24(email, name, { remainingAmount, dueDate, payUrl }) {
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#f97316,#ea580c)',
+      title: 'Your balance is 3 days overdue',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Your TekyPro installment balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> was due on ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })} and is now 3 days overdue.</p>
+<div class="wa"><p>Your course access is still fully active for now. To avoid any interruptions, please complete your payment as soon as possible.</p></div>
+<p>It only takes a moment to sort this out:</p>`,
+      ctaText: 'Pay $' + parseFloat(remainingAmount).toFixed(2) + ' Now',
+      ctaUrl: payUrl,
+    });
+    return this.sendEmail({ to: email, subject: `Your TekyPro balance is 3 days overdue — still time to sort it out`, html, text: `Hi ${name}, your TekyPro balance of $${remainingAmount} is 3 days overdue. Pay at ${payUrl}` });
+  }
+
+  async sendInstallmentReminderD28(email, name, { remainingAmount, payUrl, lockDate }) {
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#dc2626,#ef4444)',
+      title: 'Action Required: 4 days until access is restricted',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>We need to let you know that your TekyPro account will be <strong>partially restricted on ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</strong> if your balance remains unpaid.</p>
+<div class="da"><p><strong>⚠️ Balance overdue:</strong> $${parseFloat(remainingAmount).toFixed(2)}<br><strong>Restriction date:</strong> ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
+<p>After restriction, you will lose access to:</p>
+<ul>
+<li>New lessons and modules</li>
+<li>Practice tests and assignments</li>
+<li>Forum posting</li>
+<li>Course certificates</li>
+</ul>
+<p>Your progress is always saved — one payment click restores everything instantly.</p>`,
+      ctaText: 'Pay Now to Keep Full Access',
+      ctaUrl: payUrl,
+    });
+    return this.sendEmail({ to: email, subject: `URGENT: Your TekyPro account will be restricted in 4 days`, html, text: `URGENT: Your TekyPro balance of $${remainingAmount} is overdue. Account restricted on ${lockDate}. Pay at ${payUrl}` });
+  }
+
+  async sendInstallmentReminderD32(email, name, { remainingAmount, payUrl }) {
+    const html = this._baseTemplate({
+      headerColor: '#dc2626',
+      title: 'Your account has been partially restricted',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Because your installment balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> remains unpaid, your TekyPro account has been <strong>partially restricted</strong>.</p>
+<div class="da"><p><strong>What you've lost access to:</strong><ul>
+<li>Starting new lessons or modules</li>
+<li>Practice tests and assignments</li>
+<li>Forum posting</li>
+<li>Certificate downloads</li>
+</ul></p></div>
+<div class="hi"><p><strong>What you still have:</strong> You can continue any lessons you already started, and all your progress has been saved.</p></div>
+<p>Restore full access instantly with one payment:</p>`,
+      ctaText: 'Restore Full Access — $' + parseFloat(remainingAmount).toFixed(2),
+      ctaUrl: payUrl,
+    });
+    return this.sendEmail({ to: email, subject: `Your TekyPro account has been partially restricted`, html, text: `Hi ${name}, your TekyPro account is partially restricted. Pay $${remainingAmount} to restore full access at ${payUrl}` });
+  }
+
+  async sendInstallmentReminderD35(email, name, { remainingAmount, payUrl }) {
+    const html = this._baseTemplate({
+      headerColor: '#7f1d1d',
+      title: 'Your account is on hold',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Your TekyPro account is now on hold due to an outstanding balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong>.</p>
+<p>We know life gets busy. That's why we've kept your account active for as long as possible — all your progress, notes, and bookmarks are completely safe.</p>
+<div class="da"><p>Your account is currently showing a fullscreen payment overlay. You will not be able to access course content until payment is completed.</p></div>
+<p>One click is all it takes to restore everything instantly:</p>`,
+      ctaText: 'Restore My Account — $' + parseFloat(remainingAmount).toFixed(2),
+      ctaUrl: payUrl,
+    });
+    return this.sendEmail({ to: email, subject: `Your TekyPro account is on hold — here's how to restore it`, html, text: `Hi ${name}, your TekyPro account is on hold. Pay $${remainingAmount} to restore at ${payUrl}` });
+  }
+
+  async sendInstallmentSuspendedD42(email, name, { remainingAmount, payUrl }) {
+    const html = this._baseTemplate({
+      headerColor: '#1c1c1c',
+      title: 'Account Suspended',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Your TekyPro account has been suspended due to an unpaid balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong>.</p>
+<p>We're sorry it came to this. Your account data, progress, and certificates are all still here — waiting for you.</p>
+<p>To reactivate your account and restore full access <em>immediately</em>, complete your payment below:</p>`,
+      ctaText: 'Reactivate My Account — $' + parseFloat(remainingAmount).toFixed(2),
+      ctaUrl: payUrl,
+    });
+    return this.sendEmail({ to: email, subject: `Your TekyPro account has been suspended`, html, text: `Hi ${name}, your TekyPro account has been suspended. Pay $${remainingAmount} to reactivate at ${payUrl}` });
+  }
+
   /**
    * Verify email connection
    * @returns {Promise<Boolean>} Connection status

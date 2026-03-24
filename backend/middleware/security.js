@@ -66,11 +66,12 @@ const provideCSRFToken = (req, res, next) => {
 const contentSecurityPolicy = (req, res, next) => {
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' wss: ws:",
+    "connect-src 'self' wss: ws: https://api.stripe.com https://js.stripe.com",
+    "frame-src https://js.stripe.com https://hooks.stripe.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -130,7 +131,6 @@ const permissionsPolicy = (req, res, next) => {
     'geolocation=()',
     'microphone=()',
     'camera=()',
-    'payment=()',
     'usb=()',
     'magnetometer=()',
     'gyroscope=()',

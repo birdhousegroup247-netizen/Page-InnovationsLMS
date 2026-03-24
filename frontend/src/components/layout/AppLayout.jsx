@@ -7,6 +7,8 @@ import { connectSocket, getSocket } from '../../lib/socket';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { Modal, Button } from '../ui';
+import PaymentBanner from '../ui/PaymentBanner';
+import SuspensionModal from '../ui/SuspensionModal';
 import { LogOut } from 'lucide-react';
 
 /**
@@ -103,8 +105,13 @@ export default function AppLayout({ children }) {
 
       {/* Main Content with responsive margin */}
       <main className="lg:ml-[220px] pt-16">
+        {/* Payment Banner (preview mode + installment warnings) */}
+        <PaymentBanner />
         {children}
       </main>
+
+      {/* Suspension / Soft-lock Modal */}
+      <SuspensionModal />
 
       {/* Logout Confirmation Modal */}
       <Modal

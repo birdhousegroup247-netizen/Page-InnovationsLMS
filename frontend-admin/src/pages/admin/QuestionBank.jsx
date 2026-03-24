@@ -1,19 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import {
   HelpCircle,
   Plus,
   Search,
-  Filter,
   CheckCircle,
   Clock,
   Edit,
   Trash2,
-  Eye,
-  Copy,
-  Download,
   Upload,
-  MoreVertical
+  MoreVertical,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { adminQuestionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { Button, Input, Select, Badge, Spinner, Modal, Dropdown, Table } from '../../components/ui';
@@ -27,141 +24,139 @@ import QuestionModal from '../../components/questions/QuestionModal';
 import BulkImport from '../../components/questions/BulkImport';
 
 export default function QuestionBank() {
-  const navigate = useNavigate();
   const { showToast } = useToast();
+  const expandedRef = useRef(new Set());
 
-  // State
-  const [questions, setQuestions] = useState([]);
-  const [courses, setCourses] = useState([]);
+  const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, multiple_choice: 0, true_false: 0, fill_blank: 0 });
   const [categories, setCategories] = useState([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    approved: 0,
-    pending: 0,
-    multiple_choice: 0,
-    true_false: 0,
-    fill_blank: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState([]);
+  const [breakdown, setBreakdown] = useState({ category_counts: [], uncategorized_count: 0 });
+  const [loadingInit, setLoadingInit] = useState(true);
+
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
+  const [categoryData, setCategoryData] = useState({});
+
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
-  // Filters
-  const [filters, setFilters] = useState({
-    search: '',
-    course_id: '',
-    category_id: '',
-    difficulty: '',
-    question_type: '',
-    is_approved: '',
-  });
+  const [filters, setFilters] = useState({ search: '', course_id: '', difficulty: '', question_type: '', is_approved: '' });
 
-  // Pagination
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 0
-  });
-
-  // Modals
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [questionToDelete, setQuestionToDelete] = useState(null);
+  const [modalDefaultCategoryId, setModalDefaultCategoryId] = useState(null);
 
-  // Fetch courses and categories
   useEffect(() => {
-    fetchCourses();
-    fetchCategories();
+    initData();
   }, []);
 
-  // Fetch questions when filters or pagination change
-  useEffect(() => {
-    fetchQuestions();
-  }, [filters, pagination.page]);
-
-  const fetchCourses = async () => {
+  const initData = async () => {
+    setLoadingInit(true);
     try {
-      const response = await coursesAPI.getAll();
-      setCourses(response.data.data.courses || []);
-    } catch (error) {
-      console.error('Failed to fetch courses:', error);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await categoriesAPI.getAll();
-      setCategories(Array.isArray(response.data.data?.categories) ? response.data.data.categories : []);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      setCategories([]);
-    }
-  };
-
-  const fetchQuestions = async () => {
-    try {
-      setLoading(true);
-      const params = {
-        ...filters,
-        page: pagination.page,
-        limit: pagination.limit
-      };
-
-      const response = await adminQuestionsAPI.getAll(params);
-      const data = response.data.data;
-
-      setQuestions(data.questions || []);
-      setPagination(prev => ({
-        ...prev,
-        total: data.pagination?.total || 0,
-        pages: data.pagination?.pages || 0
-      }));
-
-      // Update stats
-      if (data.stats) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Failed to fetch questions:', error);
-      showToast('Failed to load questions', 'error');
+      const [catRes, courseRes, breakdownRes, statsRes] = await Promise.all([
+        categoriesAPI.getAll(),
+        coursesAPI.getAll(),
+        adminQuestionsAPI.getCategoryBreakdown(),
+        adminQuestionsAPI.getAll({ page: 1, limit: 1 }),
+      ]);
+      setCategories(Array.isArray(catRes.data.data?.categories) ? catRes.data.data.categories : []);
+      setCourses(courseRes.data.data?.courses || []);
+      const bd = breakdownRes.data.data;
+      setBreakdown({ category_counts: bd.category_counts || [], uncategorized_count: bd.uncategorized_count || 0 });
+      if (statsRes.data.data?.stats) setStats(statsRes.data.data.stats);
+    } catch (e) {
+      console.error('Init failed:', e);
     } finally {
-      setLoading(false);
+      setLoadingInit(false);
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+  const buildParams = (catKey, page, activeFilters) => {
+    const f = activeFilters || filters;
+    const params = {
+      page,
+      limit: 20,
+      ...(catKey === 'uncategorized' ? { no_category: 'true' } : { category: catKey }),
+    };
+    // Only include non-empty filter values
+    if (f.search) params.search = f.search;
+    if (f.course_id) params.course_id = f.course_id;
+    if (f.difficulty) params.difficulty = f.difficulty;
+    if (f.question_type) params.type = f.question_type;
+    if (f.is_approved !== '') params.is_approved = f.is_approved;
+    return params;
   };
 
-  const handleSelectQuestion = (questionId) => {
-    setSelectedQuestions(prev => {
-      if (prev.includes(questionId)) {
-        return prev.filter(id => id !== questionId);
+  const fetchCategoryQuestions = async (catKey, page = 1, activeFilters = null) => {
+    setCategoryData(prev => ({ ...prev, [catKey]: { ...prev[catKey], loading: true } }));
+    try {
+      const res = await adminQuestionsAPI.getAll(buildParams(catKey, page, activeFilters));
+      const d = res.data.data;
+      setCategoryData(prev => ({
+        ...prev,
+        [catKey]: {
+          questions: d.questions || [],
+          page,
+          pages: d.pagination?.pages || 0,
+          total: d.pagination?.total || 0,
+          loading: false,
+        },
+      }));
+    } catch {
+      setCategoryData(prev => ({ ...prev, [catKey]: { ...prev[catKey], loading: false, questions: [] } }));
+    }
+  };
+
+  const toggleAccordion = (catKey) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(catKey)) {
+        next.delete(catKey);
+      } else {
+        next.add(catKey);
+        if (!categoryData[catKey]) {
+          fetchCategoryQuestions(catKey, 1);
+        }
       }
-      return [...prev, questionId];
+      expandedRef.current = next;
+      return next;
     });
   };
 
-  const handleSelectAll = () => {
-    if (selectedQuestions.length === questions.length) {
-      setSelectedQuestions([]);
+  const handleFilterChange = (key, value) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    setCategoryData({});
+    expandedRef.current.forEach(catKey => fetchCategoryQuestions(catKey, 1, newFilters));
+  };
+
+  const handleSelectQuestion = (id) => {
+    setSelectedQuestions(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleSelectAllInCategory = (catKey) => {
+    const qs = categoryData[catKey]?.questions || [];
+    const ids = qs.map(q => q.id);
+    const allSelected = ids.every(id => selectedQuestions.includes(id));
+    if (allSelected) {
+      setSelectedQuestions(prev => prev.filter(id => !ids.includes(id)));
     } else {
-      setSelectedQuestions(questions.map(q => q.id));
+      setSelectedQuestions(prev => [...new Set([...prev, ...ids])]);
     }
   };
 
-  const handleAddQuestion = () => {
+  const handleAddQuestion = (categoryId = null) => {
     setSelectedQuestion(null);
+    setModalDefaultCategoryId(categoryId);
     setShowQuestionModal(true);
   };
 
   const handleEditQuestion = (question) => {
     setSelectedQuestion(question);
+    setModalDefaultCategoryId(null);
     setShowQuestionModal(true);
   };
 
@@ -173,47 +168,35 @@ export default function QuestionBank() {
   const confirmDelete = async () => {
     try {
       await adminQuestionsAPI.delete(questionToDelete.id);
-      showToast('Question deleted successfully', 'success');
+      showToast('Question deleted', 'success');
       setShowDeleteModal(false);
       setQuestionToDelete(null);
-      fetchQuestions();
-    } catch (error) {
+      refreshAll();
+    } catch {
       showToast('Failed to delete question', 'error');
     }
   };
 
-  const handleApprove = async (questionId) => {
+  const handleApprove = async (id) => {
     try {
-      await adminQuestionsAPI.approve(questionId);
-      showToast('Question approved successfully', 'success');
-      fetchQuestions();
-    } catch (error) {
+      await adminQuestionsAPI.approve(id);
+      showToast('Question approved', 'success');
+      refreshAll();
+    } catch {
       showToast('Failed to approve question', 'error');
     }
   };
 
   const handleBulkApprove = async () => {
-    if (selectedQuestions.length === 0) {
-      showToast('No questions selected', 'warning');
-      return;
-    }
-
+    if (!selectedQuestions.length) return showToast('No questions selected', 'warning');
     try {
       await adminQuestionsAPI.bulkApprove(selectedQuestions);
       showToast(`${selectedQuestions.length} questions approved`, 'success');
       setSelectedQuestions([]);
-      fetchQuestions();
-    } catch (error) {
+      refreshAll();
+    } catch {
       showToast('Failed to approve questions', 'error');
     }
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedQuestions.length === 0) {
-      showToast('No questions selected', 'warning');
-      return;
-    }
-    setShowBulkDeleteModal(true);
   };
 
   const confirmBulkDelete = async () => {
@@ -222,43 +205,49 @@ export default function QuestionBank() {
       showToast(`${selectedQuestions.length} questions deleted`, 'success');
       setSelectedQuestions([]);
       setShowBulkDeleteModal(false);
-      fetchQuestions();
-    } catch (error) {
+      refreshAll();
+    } catch {
       showToast('Failed to delete questions', 'error');
     }
   };
 
-  const toggleBulkSelectMode = () => {
-    setBulkSelectMode(!bulkSelectMode);
-    if (bulkSelectMode) {
-      // Exiting bulk mode - clear selections
-      setSelectedQuestions([]);
-    }
+  const refreshAll = async () => {
+    const openKeys = Array.from(expandedRef.current);
+    setCategoryData({});
+    openKeys.forEach(key => fetchCategoryQuestions(key, 1));
+    try {
+      const [bdRes, statsRes] = await Promise.all([
+        adminQuestionsAPI.getCategoryBreakdown(),
+        adminQuestionsAPI.getAll({ page: 1, limit: 1 }),
+      ]);
+      const bd = bdRes.data.data;
+      setBreakdown({ category_counts: bd.category_counts || [], uncategorized_count: bd.uncategorized_count || 0 });
+      if (statsRes.data.data?.stats) setStats(statsRes.data.data.stats);
+    } catch {}
   };
 
-  const getDifficultyVariant = (difficulty) => {
-    const variants = {
-      easy: 'success',
-      medium: 'warning',
-      hard: 'danger'
-    };
-    return variants[difficulty?.toLowerCase()] || 'default';
+  const getCountForCat = (catKey) => {
+    if (catKey === 'uncategorized') return breakdown.uncategorized_count;
+    return breakdown.category_counts.find(c => String(c.category_id) === catKey)?.question_count || 0;
   };
 
-  const getQuestionTypeLabel = (type) => {
-    const labels = {
-      multiple_choice: 'MCQ',
-      true_false: 'T/F',
-      fill_blank: 'Fill Blank'
-    };
-    return labels[type] || type;
-  };
+  const getDifficultyVariant = (d) => ({ easy: 'success', medium: 'warning', hard: 'danger' }[d?.toLowerCase()] || 'default');
+  const getTypeLabel = (t) => ({ multiple_choice: 'MCQ', true_false: 'T/F', fill_blank: 'Fill Blank' }[t] || t);
+  const truncate = (t, n = 80) => t && t.length > n ? t.slice(0, n) + '...' : t || '';
 
-  const truncateText = (text, maxLength = 60) => {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
+  // Build accordion list: all categories + uncategorized at the bottom
+  const accordionRows = [
+    ...categories.map(c => ({ key: String(c.id), label: c.name, color: c.color, catId: c.id })),
+    { key: 'uncategorized', label: 'Uncategorized', color: null, catId: null },
+  ];
+
+  if (loadingInit) {
+    return (
+      <div className="flex items-center justify-center min-h-64 py-32">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -266,7 +255,6 @@ export default function QuestionBank() {
       <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
             <div className="flex items-center justify-between mb-3">
@@ -279,7 +267,7 @@ export default function QuestionBank() {
                     Question Bank
                   </h1>
                   <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Manage your question repository for tests and exams
+                    Browse and manage questions by category
                   </p>
                 </div>
               </div>
@@ -293,7 +281,7 @@ export default function QuestionBank() {
                   Import CSV
                 </Button>
                 <Button
-                  onClick={handleAddQuestion}
+                  onClick={() => handleAddQuestion()}
                   variant="ghost"
                   leftIcon={<Plus className="h-4 w-4" />}
                   className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
@@ -307,363 +295,310 @@ export default function QuestionBank() {
       </div>
 
       <Container className="py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+          <StatsCard title="Total Questions" value={stats.total} icon={HelpCircle} color="blue" />
+          <StatsCard title="Approved" value={stats.approved} icon={CheckCircle} color="green" />
+          <StatsCard title="Pending" value={stats.pending} icon={Clock} color="yellow" />
+          <StatsCard title="MCQ" value={stats.multiple_choice} icon={HelpCircle} color="purple" />
+          <StatsCard title="True/False" value={stats.true_false} icon={HelpCircle} color="indigo" />
+          <StatsCard title="Fill Blank" value={stats.fill_blank} icon={HelpCircle} color="pink" />
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-        <StatsCard
-          title="Total Questions"
-          value={stats.total}
-          icon={HelpCircle}
-          color="blue"
-        />
-        <StatsCard
-          title="Approved"
-          value={stats.approved}
-          icon={CheckCircle}
-          color="green"
-        />
-        <StatsCard
-          title="Pending"
-          value={stats.pending}
-          icon={Clock}
-          color="yellow"
-        />
-        <StatsCard
-          title="MCQ"
-          value={stats.multiple_choice}
-          icon={HelpCircle}
-          color="purple"
-        />
-        <StatsCard
-          title="True/False"
-          value={stats.true_false}
-          icon={HelpCircle}
-          color="indigo"
-        />
-        <StatsCard
-          title="Fill Blank"
-          value={stats.fill_blank}
-          icon={HelpCircle}
-          color="pink"
-        />
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {/* Search */}
-          <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+        {/* Filters */}
+        <div className="bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="md:col-span-2 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <Input
-                type="text"
                 placeholder="Search questions..."
                 value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                onChange={e => handleFilterChange('search', e.target.value)}
                 className="pl-10 !h-12"
               />
             </div>
+            <Select
+              value={filters.course_id}
+              onChange={e => handleFilterChange('course_id', e.target.value)}
+              className="!h-12"
+              options={[{ value: '', label: 'All Courses' }, ...courses.map(c => ({ value: c.id, label: c.title }))]}
+            />
+            <Select
+              value={filters.difficulty}
+              onChange={e => handleFilterChange('difficulty', e.target.value)}
+              className="!h-12"
+              options={[
+                { value: '', label: 'All Difficulties' },
+                { value: 'easy', label: 'Easy' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'hard', label: 'Hard' },
+              ]}
+            />
+            <Select
+              value={filters.question_type}
+              onChange={e => handleFilterChange('question_type', e.target.value)}
+              className="!h-12"
+              options={[
+                { value: '', label: 'All Types' },
+                { value: 'multiple_choice', label: 'Multiple Choice' },
+                { value: 'true_false', label: 'True/False' },
+                { value: 'fill_blank', label: 'Fill in the Blank' },
+              ]}
+            />
           </div>
-
-          {/* Course Filter */}
-          <Select
-            value={filters.course_id}
-            onChange={(e) => handleFilterChange('course_id', e.target.value)}
-            placeholder="Filter by course"
-            className="!h-12"
-            options={[
-              { value: '', label: 'All Courses' },
-              ...courses.map(course => ({ value: course.id, label: course.title }))
-            ]}
-          />
-
-          {/* Difficulty Filter */}
-          <Select
-            value={filters.difficulty}
-            onChange={(e) => handleFilterChange('difficulty', e.target.value)}
-            placeholder="Filter by difficulty"
-            className="!h-12"
-            options={[
-              { value: '', label: 'All Difficulties' },
-              { value: 'easy', label: 'Easy' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'hard', label: 'Hard' }
-            ]}
-          />
-
-          {/* Type Filter */}
-          <Select
-            value={filters.question_type}
-            onChange={(e) => handleFilterChange('question_type', e.target.value)}
-            placeholder="Filter by question type"
-            className="!h-12"
-            options={[
-              { value: '', label: 'All Types' },
-              { value: 'multiple_choice', label: 'Multiple Choice' },
-              { value: 'true_false', label: 'True/False' },
-              { value: 'fill_blank', label: 'Fill in the Blank' }
-            ]}
-          />
-        </div>
-
-        {/* Approval Filter and Bulk Select Toggle */}
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
-            <div className="flex gap-2">
-              <Button
-                className="!h-12 !min-h-[48px]"
-                variant={filters.is_approved === '' ? 'primary' : 'outline'}
-                onClick={() => handleFilterChange('is_approved', '')}
-              >
-                All
-              </Button>
-              <Button
-                className="!h-12 !min-h-[48px]"
-                variant={filters.is_approved === 'true' ? 'primary' : 'outline'}
-                onClick={() => handleFilterChange('is_approved', 'true')}
-              >
-                Approved
-              </Button>
-              <Button
-                className="!h-12 !min-h-[48px]"
-                variant={filters.is_approved === 'false' ? 'primary' : 'outline'}
-                onClick={() => handleFilterChange('is_approved', 'false')}
-              >
-                Pending
-              </Button>
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+              {[['', 'All'], ['true', 'Approved'], ['false', 'Pending']].map(([val, label]) => (
+                <Button
+                  key={val}
+                  className="!h-10"
+                  variant={filters.is_approved === val ? 'primary' : 'outline'}
+                  onClick={() => handleFilterChange('is_approved', val)}
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
+            <Button
+              className="!h-10"
+              variant={bulkSelectMode ? 'primary' : 'outline'}
+              onClick={() => {
+                setBulkSelectMode(b => !b);
+                if (bulkSelectMode) setSelectedQuestions([]);
+              }}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              {bulkSelectMode ? 'Exit Select' : 'Select Multiple'}
+            </Button>
           </div>
-
-          {/* Bulk Select Toggle */}
-          <Button
-            className="!h-12 !min-h-[48px]"
-            variant={bulkSelectMode ? 'primary' : 'outline'}
-            onClick={toggleBulkSelectMode}
-          >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            {bulkSelectMode ? 'Exit Select Mode' : 'Select Multiple'}
-          </Button>
         </div>
-      </div>
 
-      {/* Bulk Actions */}
-      {bulkSelectMode && selectedQuestions.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-          <div className="flex items-center justify-between">
+        {/* Bulk Actions */}
+        {bulkSelectMode && selectedQuestions.length > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 flex items-center justify-between">
             <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              {selectedQuestions.length} question(s) selected
+              {selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''} selected
             </span>
             <div className="flex gap-2">
               <Button size="sm" variant="success" onClick={handleBulkApprove}>
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Approve Selected
               </Button>
-              <Button size="sm" variant="danger" onClick={handleBulkDelete}>
+              <Button size="sm" variant="danger" onClick={() => setShowBulkDeleteModal(true)}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Selected
               </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Questions Table */}
-      <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Spinner size="lg" />
-          </div>
-        ) : questions.length === 0 ? (
-          <EmptyState
-            image={emptyQuestions}
-            icon={<HelpCircle className="w-16 h-16" />}
-            title="No questions found"
-            description={filters.search || filters.course_id || filters.difficulty ? "No questions match your current filters." : "Get started by adding your first question to the bank."}
-            action={
-              <Button onClick={handleAddQuestion}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Question
-              </Button>
-            }
-          />
-        ) : (
-          <>
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  {bulkSelectMode && (
-                    <Table.Head className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={selectedQuestions.length === questions.length && questions.length > 0}
-                        onChange={handleSelectAll}
-                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400"
-                      />
-                    </Table.Head>
-                  )}
-                  <Table.Head className="min-w-[300px]">Question</Table.Head>
-                  <Table.Head>Type</Table.Head>
-                  <Table.Head>Difficulty</Table.Head>
-                  <Table.Head>Marks</Table.Head>
-                  <Table.Head>Category</Table.Head>
-                  <Table.Head>Status</Table.Head>
-                  <Table.Head className="w-20">Actions</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {questions.map((question) => (
-                  <Table.Row key={question.id}>
-                    {/* Checkbox */}
-                    {bulkSelectMode && (
-                      <Table.Cell>
-                        <input
-                          type="checkbox"
-                          checked={selectedQuestions.includes(question.id)}
-                          onChange={() => handleSelectQuestion(question.id)}
-                          className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400"
-                        />
-                      </Table.Cell>
-                    )}
-
-                    {/* Question Text */}
-                    <Table.Cell>
-                      <div className="max-w-md">
-                        <span
-                          className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                          title={question.question_text}
-                        >
-                          {truncateText(question.question_text, 80)}
-                        </span>
-                      </div>
-                    </Table.Cell>
-
-                    {/* Type */}
-                    <Table.Cell>
-                      <Badge variant="primary" size="sm">
-                        {getQuestionTypeLabel(question.question_type)}
-                      </Badge>
-                    </Table.Cell>
-
-                    {/* Difficulty */}
-                    <Table.Cell>
-                      <Badge variant={getDifficultyVariant(question.difficulty)} size="sm">
-                        {question.difficulty}
-                      </Badge>
-                    </Table.Cell>
-
-                    {/* Marks */}
-                    <Table.Cell>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {question.marks}
-                      </span>
-                    </Table.Cell>
-
-                    {/* Category */}
-                    <Table.Cell>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {question.category?.name || question.course?.title || '-'}
-                      </span>
-                    </Table.Cell>
-
-                    {/* Status */}
-                    <Table.Cell>
-                      <Badge variant={question.is_approved ? 'success' : 'warning'} size="sm">
-                        {question.is_approved ? 'Approved' : 'Pending'}
-                      </Badge>
-                    </Table.Cell>
-
-                    {/* Actions */}
-                    <Table.Cell>
-                      <Dropdown>
-                        {({ isOpen, setIsOpen, menuRef }) => (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setIsOpen(!isOpen)}
-                              aria-label="More actions"
-                              className="text-gray-600 dark:text-gray-400"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                            {isOpen && (
-                              <Dropdown.Menu align="right" menuRef={menuRef}>
-                                {!question.is_approved && (
-                                  <>
-                                    <Dropdown.Item
-                                      icon={CheckCircle}
-                                      onClick={() => {
-                                        setIsOpen(false);
-                                        handleApprove(question.id);
-                                      }}
-                                    >
-                                      Approve
-                                    </Dropdown.Item>
-                                    <Dropdown.Separator />
-                                  </>
-                                )}
-                                <Dropdown.Item
-                                  icon={Edit}
-                                  onClick={() => {
-                                    setIsOpen(false);
-                                    handleEditQuestion(question);
-                                  }}
-                                >
-                                  Edit
-                                </Dropdown.Item>
-                                <Dropdown.Item
-                                  icon={Eye}
-                                  onClick={() => {
-                                    setIsOpen(false);
-                                    // Preview functionality
-                                  }}
-                                >
-                                  Preview
-                                </Dropdown.Item>
-                                <Dropdown.Separator />
-                                <Dropdown.Item
-                                  icon={Trash2}
-                                  onClick={() => {
-                                    setIsOpen(false);
-                                    handleDeleteQuestion(question);
-                                  }}
-                                  danger
-                                >
-                                  Delete
-                                </Dropdown.Item>
-                              </Dropdown.Menu>
-                            )}
-                          </>
-                        )}
-                      </Dropdown>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
-
-            {/* Pagination */}
-            <div className="px-4 py-4 border-t border-gray-200 dark:border-border-dark">
-              <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.pages}
-                onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
-              />
-            </div>
-          </>
         )}
-      </div>
+
+        {/* Category Accordions */}
+        <div className="space-y-3">
+          {accordionRows.map(({ key, label, color, catId }) => {
+            const isExpanded = expandedCategories.has(key);
+            const count = getCountForCat(key);
+            const data = categoryData[key];
+            const questions = data?.questions || [];
+
+            return (
+              <div
+                key={key}
+                className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark shadow-sm overflow-hidden"
+              >
+                {/* Accordion Header */}
+                <button
+                  onClick={() => toggleAccordion(key)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    {isExpanded
+                      ? <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      : <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />}
+                    {color && (
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    )}
+                    <span className="font-semibold text-gray-900 dark:text-white">{label}</span>
+                    <span className="bg-gray-100 dark:bg-dark-600 text-gray-600 dark:text-gray-300 text-xs font-medium px-2 py-0.5 rounded-full">
+                      {count} question{count !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {/* Add button — stop propagation so it doesn't toggle the accordion */}
+                  <div onClick={e => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<Plus className="w-3 h-3" />}
+                      onClick={() => handleAddQuestion(catId ? String(catId) : null)}
+                      className="text-gray-500 hover:text-blue-600"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </button>
+
+                {/* Accordion Body */}
+                {isExpanded && (
+                  <div className="border-t border-gray-200 dark:border-border-dark">
+                    {data?.loading ? (
+                      <div className="flex justify-center py-10">
+                        <Spinner />
+                      </div>
+                    ) : questions.length === 0 ? (
+                      <div className="py-10 text-center">
+                        <p className="text-gray-400 text-sm">
+                          No questions in this category
+                          {(filters.search || filters.course_id || filters.difficulty || filters.question_type)
+                            ? ' matching the current filters'
+                            : ''}
+                          .
+                        </p>
+                        <Button
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => handleAddQuestion(catId ? String(catId) : null)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Question
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Table>
+                          <Table.Header>
+                            <Table.Row>
+                              {bulkSelectMode && (
+                                <Table.Head className="w-10">
+                                  <input
+                                    type="checkbox"
+                                    checked={questions.length > 0 && questions.every(q => selectedQuestions.includes(q.id))}
+                                    onChange={() => handleSelectAllInCategory(key)}
+                                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
+                                  />
+                                </Table.Head>
+                              )}
+                              <Table.Head className="min-w-[280px]">Question</Table.Head>
+                              <Table.Head>Course</Table.Head>
+                              <Table.Head>Type</Table.Head>
+                              <Table.Head>Difficulty</Table.Head>
+                              <Table.Head>Marks</Table.Head>
+                              <Table.Head>Status</Table.Head>
+                              <Table.Head className="w-16">Actions</Table.Head>
+                            </Table.Row>
+                          </Table.Header>
+                          <Table.Body>
+                            {questions.map(q => (
+                              <Table.Row key={q.id}>
+                                {bulkSelectMode && (
+                                  <Table.Cell>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedQuestions.includes(q.id)}
+                                      onChange={() => handleSelectQuestion(q.id)}
+                                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
+                                    />
+                                  </Table.Cell>
+                                )}
+                                <Table.Cell>
+                                  <span
+                                    className="text-sm font-medium text-gray-900 dark:text-white"
+                                    title={q.question_text}
+                                  >
+                                    {truncate(q.question_text, 80)}
+                                  </span>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    {q.course?.title || <span className="text-gray-400 italic text-xs">No course</span>}
+                                  </span>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Badge variant="primary" size="sm">{getTypeLabel(q.question_type)}</Badge>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Badge variant={getDifficultyVariant(q.difficulty)} size="sm">{q.difficulty}</Badge>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{q.marks}</span>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Badge variant={q.is_approved ? 'success' : 'warning'} size="sm">
+                                    {q.is_approved ? 'Approved' : 'Pending'}
+                                  </Badge>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Dropdown>
+                                    {({ isOpen, setIsOpen, menuRef }) => (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setIsOpen(!isOpen)}
+                                          className="text-gray-600 dark:text-gray-400"
+                                        >
+                                          <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                        {isOpen && (
+                                          <Dropdown.Menu align="right" menuRef={menuRef}>
+                                            {!q.is_approved && (
+                                              <>
+                                                <Dropdown.Item
+                                                  icon={CheckCircle}
+                                                  onClick={() => { setIsOpen(false); handleApprove(q.id); }}
+                                                >
+                                                  Approve
+                                                </Dropdown.Item>
+                                                <Dropdown.Separator />
+                                              </>
+                                            )}
+                                            <Dropdown.Item
+                                              icon={Edit}
+                                              onClick={() => { setIsOpen(false); handleEditQuestion(q); }}
+                                            >
+                                              Edit
+                                            </Dropdown.Item>
+                                            <Dropdown.Separator />
+                                            <Dropdown.Item
+                                              icon={Trash2}
+                                              onClick={() => { setIsOpen(false); handleDeleteQuestion(q); }}
+                                              danger
+                                            >
+                                              Delete
+                                            </Dropdown.Item>
+                                          </Dropdown.Menu>
+                                        )}
+                                      </>
+                                    )}
+                                  </Dropdown>
+                                </Table.Cell>
+                              </Table.Row>
+                            ))}
+                          </Table.Body>
+                        </Table>
+                        {data.pages > 1 && (
+                          <div className="px-4 py-4 border-t border-gray-200 dark:border-border-dark">
+                            <Pagination
+                              currentPage={data.page}
+                              totalPages={data.pages}
+                              onPageChange={page => fetchCategoryQuestions(key, page)}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Container>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <Modal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          title="Delete Question"
-        >
+        <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Question">
           <div className="p-6">
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
               Are you sure you want to delete this question? This action cannot be undone.
             </p>
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6">
@@ -672,41 +607,34 @@ export default function QuestionBank() {
               </p>
             </div>
             <Modal.Footer>
-              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="danger" onClick={confirmDelete}>
-                Delete Question
-              </Button>
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+              <Button variant="danger" onClick={confirmDelete}>Delete Question</Button>
             </Modal.Footer>
           </div>
         </Modal>
       )}
 
-      {/* Question Modal (Add/Edit) */}
+      {/* Question Add/Edit Modal */}
       <QuestionModal
         isOpen={showQuestionModal}
         onClose={() => {
           setShowQuestionModal(false);
           setSelectedQuestion(null);
+          setModalDefaultCategoryId(null);
         }}
         question={selectedQuestion}
-        onSuccess={() => {
-          fetchQuestions();
-        }}
+        onSuccess={refreshAll}
+        defaultCategoryId={modalDefaultCategoryId}
       />
 
       {/* Bulk Import Modal */}
       <BulkImport
         isOpen={showBulkImportModal}
         onClose={() => setShowBulkImportModal(false)}
-        onSuccess={() => {
-          fetchQuestions();
-        }}
+        onSuccess={refreshAll}
       />
-    </Container>
 
-      {/* Bulk Delete Confirmation Modal */}
+      {/* Bulk Delete Modal */}
       <Modal
         isOpen={showBulkDeleteModal}
         onClose={() => setShowBulkDeleteModal(false)}
@@ -714,13 +642,13 @@ export default function QuestionBank() {
         size="sm"
       >
         <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
-          Are you sure you want to delete <strong>{selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''}</strong>? This action cannot be undone.
+          Delete <strong>{selectedQuestions.length} question{selectedQuestions.length !== 1 ? 's' : ''}</strong>? This cannot be undone.
         </p>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => setShowBulkDeleteModal(false)}>Cancel</Button>
           <Button variant="danger" onClick={confirmBulkDelete}>Delete</Button>
         </div>
       </Modal>
-  </>
+    </>
   );
 }

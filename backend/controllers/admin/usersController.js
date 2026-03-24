@@ -1,4 +1,4 @@
-const { User, Course, Enrollment, Certificate } = require('../../models');
+const { User, Course, Enrollment, Certificate, Payment } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
@@ -187,6 +187,52 @@ class UsersController {
       logger.info(`User activated by admin: ${user.email}`);
 
       return ApiResponse.success(res, null, 'User activated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PATCH /api/admin/users/:userId/registration-status
+   * Override a user's registration_status (unlock suspended, promote preview → active, etc.)
+   * Optionally clears installment overdue lock on their payment record.
+   */
+  static async setRegistrationStatus(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const { registration_status, clear_installment_lock, note } = req.body;
+
+      const VALID = ['preview', 'active', 'suspended'];
+      if (!VALID.includes(registration_status)) {
+        throw new BadRequestError(`registration_status must be one of: ${VALID.join(', ')}`);
+      }
+
+      const user = await User.findByPk(userId);
+      if (!user) throw new NotFoundError('User not found');
+
+      await user.update({ registration_status });
+
+      // Optionally clear overdue installment lock so banner/modal disappear
+      if (clear_installment_lock) {
+        const { Op } = require('sequelize');
+        await Payment.update(
+          { installment_status: 'pending' },
+          {
+            where: {
+              student_id: userId,
+              payment_plan: 'installment',
+              installment_status: 'overdue',
+            },
+          }
+        );
+      }
+
+      logger.info(
+        `[Admin] registration_status of user ${userId} set to '${registration_status}' by admin ${req.user.id}${note ? ` — ${note}` : ''}`
+      );
+
+      return ApiResponse.success(res, { user: { id: user.id, email: user.email, registration_status } },
+        `User access updated to '${registration_status}'`);
     } catch (error) {
       next(error);
     }

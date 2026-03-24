@@ -4,7 +4,7 @@ import { Modal, Button, Input, Select, Badge } from '../ui';
 import { adminQuestionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { useToast } from '../ui/Toast';
 
-export default function QuestionModal({ isOpen, onClose, question, onSuccess }) {
+export default function QuestionModal({ isOpen, onClose, question, onSuccess, defaultCategoryId }) {
   const { showToast } = useToast();
   const isEditing = !!question;
 
@@ -47,9 +47,9 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess }) 
         time_limit_seconds: question.time_limit_seconds || 60
       });
     } else {
-      resetForm();
+      resetForm(defaultCategoryId);
     }
-  }, [question]);
+  }, [question, defaultCategoryId]);
 
   // Fetch courses and categories
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess }) 
     }
   };
 
-  const resetForm = () => {
+  const resetForm = (categoryId = '') => {
     setFormData({
       question_text: '',
       question_type: 'multiple_choice',
@@ -84,7 +84,7 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess }) 
       correct_answer: '',
       explanation: '',
       course_id: '',
-      category_id: '',
+      category_id: categoryId || '',
       subcategory: '',
       difficulty: 'medium',
       tags: '',

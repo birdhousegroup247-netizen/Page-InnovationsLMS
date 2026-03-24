@@ -20,6 +20,7 @@ import { profileAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner, Alert, Tabs } from '../components/ui';
 import TwoFactorSettings from '../components/auth/TwoFactorSettings';
+import CloudinaryUpload from '../components/common/CloudinaryUpload';
 import { cn } from '../utils/cn';
 
 export default function ProfileSettings() {
@@ -336,11 +337,30 @@ export default function ProfileSettings() {
                       </div>
                     </div>
 
-                    {/* Avatar URL Input */}
+                    {/* Profile Picture Upload */}
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
-                        Avatar URL
-                      </label>
+                      <CloudinaryUpload
+                        onUploadSuccess={async (url) => {
+                          if (!url) return;
+                          try {
+                            await profileAPI.updateAvatar(url);
+                            setAvatarPreview(url);
+                            setSuccess('Profile picture updated!');
+                            setTimeout(() => setSuccess(''), 5000);
+                          } catch {
+                            setError('Failed to update profile picture');
+                          }
+                        }}
+                        onUploadError={(err) => setError(err)}
+                        acceptedTypes="image"
+                        maxSizeMB={5}
+                        currentFile={avatarPreview}
+                        uploadEndpoint="/api/upload/profile-picture"
+                        folder="tekyprolms/avatars"
+                      />
+                      <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-3 mb-1 transition-colors">
+                        Or paste a URL directly:
+                      </p>
                       <div className="flex gap-2">
                         <input
                           type="url"
@@ -353,13 +373,11 @@ export default function ProfileSettings() {
                           onClick={handleAvatarUpdate}
                           disabled={saving || !avatarUrl}
                           loading={saving && avatarUrl}
+                          size="sm"
                         >
-                          Update
+                          Use URL
                         </Button>
                       </div>
-                      <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
-                        Enter a URL to your profile picture (e.g., from Gravatar, Imgur, etc.)
-                      </p>
                     </div>
                   </div>
                 </div>

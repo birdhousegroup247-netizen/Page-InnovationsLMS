@@ -87,8 +87,13 @@ export default function CourseDetail() {
   };
 
   const handleEnrollClick = () => {
-    // Open payment modal for both free and paid courses
-    setShowPaymentModal(true);
+    if (course.price > 0) {
+      // Redirect to Stripe checkout for paid courses
+      navigate(`/checkout?course_id=${id}`);
+    } else {
+      // Free enrollment via modal
+      setShowPaymentModal(true);
+    }
   };
 
   const handleEnrollmentSuccess = async () => {
