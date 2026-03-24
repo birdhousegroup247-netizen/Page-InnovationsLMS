@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { adminUsersAPI } from '../../lib/api';
@@ -22,7 +23,13 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
-  Send
+  Send,
+  ShieldCheck,
+  Upload,
+  FileUp,
+  CheckCircle2,
+  AlertCircle,
+  GraduationCap,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import {
@@ -45,6 +52,7 @@ import { validateUserForm, formatErrors } from '../../utils/validation';
 export default function Users() {
   const { user: currentUser } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
@@ -66,6 +74,10 @@ export default function Users() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   // Bulk selection
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -441,6 +453,28 @@ export default function Users() {
     }
   };
 
+  // Unlock / override registration_status for special preference
+  const handleUnlockUser = async (user) => {
+    const confirmed = confirm(
+      `Unlock full access for ${user.full_name}?\n\nThis will set their account to "active" and clear any installment overdue lock. Use this to grant special preference.`
+    );
+    if (!confirmed) return;
+    try {
+      setActionLoading(true);
+      await adminUsersAPI.setRegistrationStatus(user.id, {
+        registration_status: 'active',
+        clear_installment_lock: true,
+        note: `Admin override by ${currentUser?.email}`,
+      });
+      showToast(`Access unlocked for ${user.full_name}`, 'success');
+      fetchUsers();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Failed to unlock user', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Export to CSV
   const handleExportCSV = () => {
     try {
@@ -470,6 +504,35 @@ export default function Users() {
     } catch (error) {
       console.error('Error exporting users:', error);
       showToast('Failed to export users', 'error');
+    }
+  };
+
+  const handleImportUsers = async () => {
+    if (!importFile) return showToast('Please select a CSV file', 'error');
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/users/import`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+          body: formData,
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setImportResult(data.data);
+        fetchUsers();
+      } else {
+        showToast(data.message || 'Import failed', 'error');
+      }
+    } catch (err) {
+      showToast('Import failed', 'error');
+    } finally {
+      setImportLoading(false);
     }
   };
 
@@ -515,6 +578,15 @@ export default function Users() {
                 </div>
               </div>
               <div className="flex gap-2">
+                <Button
+                  onClick={() => { setImportFile(null); setImportResult(null); setIsImportModalOpen(true); }}
+                  variant="ghost"
+                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+                  title="Import users from CSV"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import
+                </Button>
                 <Button
                   onClick={handleExportCSV}
                   disabled={users.length === 0}
@@ -860,6 +932,18 @@ export default function Users() {
                                       View / Edit
                                     </Dropdown.Item>
 
+                                    {user.role === 'student' && (
+                                      <Dropdown.Item
+                                        icon={GraduationCap}
+                                        onClick={() => {
+                                          setIsOpen(false);
+                                          navigate(`/enrollments?student_id=${user.id}`);
+                                        }}
+                                      >
+                                        View Enrollments
+                                      </Dropdown.Item>
+                                    )}
+
                                     {user.status === 'active' ? (
                                       <Dropdown.Item
                                         icon={UserX}
@@ -896,6 +980,17 @@ export default function Users() {
                                         Send Verification Email
                                       </Dropdown.Item>
                                     )}
+
+                                    <Dropdown.Item
+                                      icon={ShieldCheck}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        handleUnlockUser(user);
+                                      }}
+                                      disabled={actionLoading}
+                                    >
+                                      Unlock Access
+                                    </Dropdown.Item>
 
                                     {currentUser?.role === 'super_admin' && user.id !== currentUser?.id && (
                                       <>
@@ -1325,6 +1420,103 @@ export default function Users() {
           >
             Delete Users
           </Button>
+        </div>
+      </Modal>
+
+      {/* Import Users Modal */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Import Users from CSV"
+        size="md"
+      >
+        <div className="space-y-4">
+          {!importResult ? (
+            <>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Upload a CSV file with columns: <code className="bg-gray-100 dark:bg-dark-700 px-1 rounded text-xs">full_name, email, password, role, phone</code>
+              </p>
+              <p className="text-xs text-gray-400">Max 500 rows. Duplicate emails will be skipped. Role defaults to "student" if empty.</p>
+
+              {/* Download template link */}
+              <button
+                onClick={() => {
+                  const csv = 'full_name,email,password,role,phone\nJohn Doe,john@example.com,Pass@123,student,+1234567890\nJane Smith,jane@example.com,Pass@123,student,';
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                  a.download = 'import_template.csv'; a.click();
+                }}
+                className="text-xs text-brand-blue hover:underline"
+              >
+                Download CSV template
+              </button>
+
+              <div
+                className="border-2 border-dashed border-gray-200 dark:border-dark-600 rounded-xl p-8 text-center cursor-pointer hover:border-brand-blue transition-colors"
+                onClick={() => document.getElementById('csv-upload-input').click()}
+              >
+                <FileUp className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {importFile ? importFile.name : 'Click to choose a CSV file'}
+                </p>
+                <input
+                  id="csv-upload-input"
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(e) => setImportFile(e.target.files[0] || null)}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>Cancel</Button>
+                <Button
+                  onClick={handleImportUsers}
+                  isLoading={importLoading}
+                  disabled={!importFile || importLoading}
+                  leftIcon={<Upload className="h-4 w-4" />}
+                >
+                  Import
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-green-600">{importResult.created}</p>
+                    <p className="text-xs text-green-700 dark:text-green-400">Created</p>
+                  </div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-yellow-600">{importResult.skipped}</p>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-400">Skipped</p>
+                  </div>
+                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-red-600">{importResult.errors?.length || 0}</p>
+                    <p className="text-xs text-red-700 dark:text-red-400">Errors</p>
+                  </div>
+                </div>
+
+                {importResult.errors?.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border border-red-200 dark:border-red-800 rounded-lg divide-y divide-red-100 dark:divide-red-900">
+                    {importResult.errors.map((e, i) => (
+                      <div key={i} className="px-3 py-2 text-xs">
+                        <span className="text-gray-500">Line {e.line} · {e.email}</span>
+                        <span className="text-red-600 ml-2">{e.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => { setIsImportModalOpen(false); setImportResult(null); }}>
+                  Done
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </>

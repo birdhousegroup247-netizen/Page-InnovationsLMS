@@ -9,6 +9,12 @@ import {
   HelpCircle,
   FileText,
   MessageSquare,
+  Tag,
+  UserPlus,
+  Package,
+  GraduationCap,
+  DollarSign,
+  Megaphone,
 } from 'lucide-react';
 
 /**
@@ -65,6 +71,36 @@ const adminNavigationItems = [
     label: 'Chat Moderation',
     path: '/chat',
     icon: <MessageSquare className="w-5 h-5" />,
+  },
+  {
+    label: 'Coupons',
+    path: '/coupons',
+    icon: <Tag className="w-5 h-5" />,
+  },
+  {
+    label: 'Leads',
+    path: '/leads',
+    icon: <UserPlus className="w-5 h-5" />,
+  },
+  {
+    label: 'Bundles',
+    path: '/bundles',
+    icon: <Package className="w-5 h-5" />,
+  },
+  {
+    label: 'Enrollments',
+    path: '/enrollments',
+    icon: <GraduationCap className="w-5 h-5" />,
+  },
+  {
+    label: 'Payments',
+    path: '/payments',
+    icon: <DollarSign className="w-5 h-5" />,
+  },
+  {
+    label: 'Announcements',
+    path: '/announcements',
+    icon: <Megaphone className="w-5 h-5" />,
   },
 ];
 

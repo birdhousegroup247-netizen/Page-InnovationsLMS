@@ -60,6 +60,14 @@ const AssignedTest = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    show_correct_answers: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    show_explanations: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     allow_retake: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

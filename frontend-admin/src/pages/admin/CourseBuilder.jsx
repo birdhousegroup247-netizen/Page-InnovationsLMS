@@ -62,7 +62,9 @@ export default function CourseBuilder() {
     document_type: '',
     article_content: '',
     duration_minutes: '',
-    is_preview: false
+    is_preview: false,
+    unlock_date: '',
+    unlock_after_days: '',
   });
 
   useEffect(() => {
@@ -213,7 +215,9 @@ export default function CourseBuilder() {
       document_type: '',
       article_content: '',
       duration_minutes: '',
-      is_preview: false
+      is_preview: false,
+      unlock_date: '',
+      unlock_after_days: '',
     });
     setIsAddContentOpen(true);
   };
@@ -231,7 +235,9 @@ export default function CourseBuilder() {
       document_type: content.document_type || '',
       article_content: content.article_content || '',
       duration_minutes: content.duration_minutes || '',
-      is_preview: content.is_preview || false
+      is_preview: content.is_preview || false,
+      unlock_date: content.unlock_date || '',
+      unlock_after_days: content.unlock_after_days || '',
     });
     setIsEditContentOpen(true);
   };
@@ -266,6 +272,8 @@ export default function CourseBuilder() {
         description: contentForm.description,
         content_type: contentForm.content_type,
         is_preview: contentForm.is_preview,
+        unlock_date: contentForm.unlock_date || null,
+        unlock_after_days: contentForm.unlock_after_days ? parseInt(contentForm.unlock_after_days) : null,
         order_index: selectedModule.contents ? selectedModule.contents.length + 1 : 1
       };
 
@@ -871,6 +879,38 @@ export default function CourseBuilder() {
               Mark as preview (students can view without enrolling)
             </span>
           </label>
+
+          {/* Drip Scheduling */}
+          <div className="border border-gray-200 dark:border-border-dark rounded-lg p-4 space-y-3">
+            <p className="text-sm font-medium text-gray-700 dark:text-white">Drip Scheduling (optional)</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Set one of the below to control when enrolled students can access this lesson.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Unlock on specific date
+                </label>
+                <input
+                  type="date"
+                  value={contentForm.unlock_date || ''}
+                  onChange={(e) => setContentForm({ ...contentForm, unlock_date: e.target.value || null, unlock_after_days: '' })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-border-dark rounded-lg text-sm dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Unlock after N days from enrollment
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 7"
+                  value={contentForm.unlock_after_days || ''}
+                  onChange={(e) => setContentForm({ ...contentForm, unlock_after_days: e.target.value || null, unlock_date: '' })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-border-dark rounded-lg text-sm dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                />
+              </div>
+            </div>
+          </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-border-dark">
             <Button

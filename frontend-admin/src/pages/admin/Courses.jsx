@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ui/Toast';
-import { adminCoursesAPI, categoriesAPI, adminQuestionsAPI } from '../../lib/api';
+import { adminCoursesAPI, adminUsersAPI, categoriesAPI, adminQuestionsAPI } from '../../lib/api';
 import {
   BookOpen,
   Search,
@@ -24,7 +24,8 @@ import {
   Eye,
   Hammer,
   HelpCircle,
-  MoreVertical
+  MoreVertical,
+  Copy,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import {
@@ -65,6 +66,7 @@ export default function AdminCourses() {
     sortOrder: 'desc'
   });
   const [pagination, setPagination] = useState(null);
+  const [instructors, setInstructors] = useState([]);
 
   // Modal states
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -88,7 +90,8 @@ export default function AdminCourses() {
     level: '',
     price: '',
     duration_hours: '',
-    thumbnail_url: ''
+    thumbnail_url: '',
+    instructor_id: ''
   });
 
   // Create form state
@@ -99,7 +102,8 @@ export default function AdminCourses() {
     level: 'beginner',
     price: 0,
     duration_hours: '',
-    thumbnail_url: ''
+    thumbnail_url: '',
+    instructor_id: ''
   });
 
   // Form validation errors
@@ -110,6 +114,7 @@ export default function AdminCourses() {
     fetchStats();
     fetchCategories();
     fetchQuestionStats();
+    fetchInstructors();
   }, [filters.page, filters.limit, filters.status, filters.category_id, filters.level, filters.sortBy, filters.sortOrder, filters.dateFrom, filters.dateTo]);
 
   // Debounce search
@@ -152,6 +157,15 @@ export default function AdminCourses() {
     } catch (error) {
       console.error('Error fetching categories:', error);
       setCategories([]);
+    }
+  };
+
+  const fetchInstructors = async () => {
+    try {
+      const response = await adminUsersAPI.getAll({ role: 'instructor', limit: 500, status: 'active' });
+      setInstructors(response.data.data?.users || []);
+    } catch (error) {
+      console.error('Error fetching instructors:', error);
     }
   };
 
@@ -338,6 +352,31 @@ export default function AdminCourses() {
     }
   };
 
+  const handleCloneCourse = async (course) => {
+    if (!confirm(`Clone "${course.title}"? A draft copy will be created.`)) return;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses/${course.id}/clone`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        showToast('Course cloned successfully', 'success');
+        fetchCourses();
+      } else {
+        showToast(data.message || 'Clone failed', 'error');
+      }
+    } catch {
+      showToast('Failed to clone course', 'error');
+    }
+  };
+
   const handleDeleteCourse = async () => {
     if (!selectedCourse) return;
 
@@ -386,7 +425,8 @@ export default function AdminCourses() {
         level: courseData.level || 'beginner',
         price: courseData.price || 0,
         duration_hours: courseData.duration_hours || '',
-        thumbnail_url: courseData.thumbnail_url || ''
+        thumbnail_url: courseData.thumbnail_url || '',
+        instructor_id: courseData.instructor_id || ''
       });
       setFormErrors({});
       setIsEditModalOpen(true);
@@ -423,7 +463,12 @@ export default function AdminCourses() {
 
     try {
       setActionLoading(true);
-      await adminCoursesAPI.update(selectedCourse.id, editForm);
+      const { instructor_id, ...courseFields } = editForm;
+      await adminCoursesAPI.update(selectedCourse.id, courseFields);
+      // If instructor changed, use the dedicated endpoint
+      if (instructor_id && String(instructor_id) !== String(selectedCourse.instructor_id)) {
+        await adminCoursesAPI.assignInstructor(selectedCourse.id, instructor_id);
+      }
       setIsEditModalOpen(false);
       setFormErrors({});
       showToast('Course updated successfully', 'success');
@@ -449,7 +494,14 @@ export default function AdminCourses() {
 
     try {
       setActionLoading(true);
-      await adminCoursesAPI.create(createForm);
+      const response = await adminCoursesAPI.create(createForm);
+      // If instructor selected on creation, assign them
+      if (createForm.instructor_id) {
+        const newCourseId = response.data.data?.course?.id || response.data.data?.id;
+        if (newCourseId) {
+          await adminCoursesAPI.assignInstructor(newCourseId, createForm.instructor_id);
+        }
+      }
       setIsCreateModalOpen(false);
       setCreateForm({
         title: '',
@@ -458,7 +510,8 @@ export default function AdminCourses() {
         level: 'beginner',
         price: 0,
         duration_hours: '',
-        thumbnail_url: ''
+        thumbnail_url: '',
+        instructor_id: ''
       });
       setFormErrors({});
       showToast('Course created successfully', 'success');
@@ -1059,6 +1112,26 @@ export default function AdminCourses() {
                                       Edit Course
                                     </Dropdown.Item>
 
+                                    <Dropdown.Item
+                                      icon={Copy}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        handleCloneCourse(course);
+                                      }}
+                                    >
+                                      Clone Course
+                                    </Dropdown.Item>
+
+                                    <Dropdown.Item
+                                      icon={Users}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        navigate(`/enrollments?course_id=${course.id}`);
+                                      }}
+                                    >
+                                      View Students
+                                    </Dropdown.Item>
+
                                     {course.status === 'pending' && (
                                       <>
                                         <Dropdown.Separator />
@@ -1390,6 +1463,17 @@ export default function AdminCourses() {
             />
           </div>
 
+          <Select
+            label="Assign Instructor"
+            name="instructor_id"
+            value={createForm.instructor_id}
+            onChange={handleCreateFormChange}
+            options={[
+              { value: '', label: 'Select Instructor (optional)' },
+              ...instructors.map(u => ({ value: u.id, label: `${u.full_name} — ${u.email}` }))
+            ]}
+          />
+
           <Input
             label="Thumbnail URL (Optional)"
             name="thumbnail_url"
@@ -1518,6 +1602,17 @@ export default function AdminCourses() {
                 error={formErrors.duration_hours}
               />
             </div>
+
+            <Select
+              label="Assign Instructor"
+              name="instructor_id"
+              value={editForm.instructor_id}
+              onChange={handleEditFormChange}
+              options={[
+                { value: '', label: 'Keep current instructor' },
+                ...instructors.map(u => ({ value: u.id, label: `${u.full_name} — ${u.email}` }))
+              ]}
+            />
 
             <Input
               label="Thumbnail URL"

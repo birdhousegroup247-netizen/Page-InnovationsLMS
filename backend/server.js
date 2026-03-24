@@ -109,6 +109,14 @@ app.use(
   })
 );
 
+// ── STRIPE WEBHOOK (must be before JSON body parser AND rate limiter) ─────────
+// Stripe signature verification requires the raw, unparsed request body.
+// express.raw() captures it for this path only before express.json() runs.
+app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
+// Webhook route registered here so it is exempt from the global rate limiter below.
+app.use('/api/webhooks', require('./routes/api/webhooks'));
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Body parsers with reasonable limits
 // Most API endpoints don't need more than 1MB
 // File uploads should use multipart/form-data through upload middleware
@@ -248,6 +256,13 @@ app.use('/api/search',      require('./routes/api/search'));
 app.use('/api/instructors', require('./routes/api/instructor-reviews'));
 app.use('/api/sessions',   require('./routes/api/sessions'));
 app.use('/api/forum',      require('./routes/api/forum-posts'));
+app.use('/api/wishlist',   require('./routes/api/wishlist'));
+app.use('/api/bundles',    require('./routes/api/bundles'));
+app.use('/api/referrals', require('./routes/api/referrals'));
+
+// Payment routes
+app.use('/api/payments', require('./routes/api/payments'));
+app.use('/api/coupons',  require('./routes/api/coupons'));
 
 // Instructor routes (requires instructor/admin/super_admin role)
 app.use('/api/instructor', require('./routes/api/instructor'));
@@ -259,6 +274,13 @@ app.use('/api/admin/stats', require('./routes/api/admin/stats'));
 app.use('/api/admin/analytics', require('./routes/api/admin/analytics'));
 app.use('/api/admin/instructor-applications', require('./routes/admin/instructorApplicationRoutes'));
 app.use('/api/admin/courses', require('./routes/api/admin/courses'));
+app.use('/api/admin/coupons', require('./routes/api/admin/coupons'));
+app.use('/api/admin/leads', require('./routes/api/admin/leads'));
+app.use('/api/admin/bundles', require('./routes/api/admin/bundles'));
+app.use('/api/admin/referrals', require('./routes/api/admin/referrals'));
+app.use('/api/admin/enrollments', require('./routes/api/admin/enrollments'));
+app.use('/api/admin/payments', require('./routes/api/admin/payments'));
+app.use('/api/admin/announcements', require('./routes/api/admin/announcements'));
 
 // API root
 app.get('/api', (req, res) => {
@@ -416,7 +438,7 @@ const startServer = async () => {
         ChatRoom, ChatRoomMember, Conversation, Message, MessageReaction, MutedChat,
         LessonNote, LessonQuestion, QuestionReply, CourseAnnouncement,
         InstructorReview, LiveSession, ForumPost, ForumReply,
-        Assignment, AssignmentSubmission,
+        Assignment, AssignmentSubmission, AdminAnnouncement,
       } = require('./models');
 
       const newModels = [
@@ -436,6 +458,7 @@ const startServer = async () => {
         [ForumReply, 'forum_replies'],
         [Assignment, 'assignments'],
         [AssignmentSubmission, 'assignment_submissions'],
+        [AdminAnnouncement, 'admin_announcements'],
       ];
 
       for (const [Model, tableName] of newModels) {
@@ -496,6 +519,14 @@ const startServer = async () => {
       }
     } catch (syncErr) {
       logger.error('⚠ Database sync encountered an error but server will continue:', syncErr.message);
+    }
+
+    // Start drip email scheduler (lead sequence, onboarding, installment reminders)
+    try {
+      const { startDripScheduler } = require('./services/drip/dripScheduler');
+      startDripScheduler();
+    } catch (dripErr) {
+      logger.error('Failed to start drip scheduler:', dripErr.message);
     }
 
     // Session reminder cron: notify students 15 min before scheduled live sessions

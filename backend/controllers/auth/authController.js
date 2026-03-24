@@ -1,4 +1,4 @@
-const { User, PasswordReset, InstructorApplication } = require('../../models');
+const { User, Lead, PasswordReset, InstructorApplication, Referral } = require('../../models');
 const JWT = require('../../utils/jwt');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -54,7 +54,7 @@ class AuthController {
    */
   static async register(req, res, next) {
     try {
-      const { full_name, email, password, role } = req.body;
+      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref } = req.body;
 
       // Check if user already exists
       const existingUser = await User.findByEmail(email);
@@ -75,14 +75,36 @@ class AuthController {
         logger.info(`New instructor application from: ${email}`);
       }
 
-      // Create user
+      // Create user (phone stored on User for profile use)
       const user = await User.createUser({
         full_name,
         email,
         password,
         role: userRole,
         instructor_status: instructorStatus,
+        phone: phone || null,
       });
+
+      // Create lead record for marketing funnel (fire-and-forget — don't block registration)
+      try {
+        const lead = await Lead.create({
+          full_name,
+          email,
+          phone: phone || null,
+          country: country || null,
+          experience_level: experience_level || null,
+          referral_source: referral_source || null,
+          drip_status: 'registered',
+          registered_at: new Date(),
+          ip_address: req.ip || req.connection?.remoteAddress || null,
+          utm_source: utm_source || null,
+          utm_medium: utm_medium || null,
+          utm_campaign: utm_campaign || null,
+        });
+        await user.update({ lead_id: lead.id });
+      } catch (leadErr) {
+        logger.warn(`Failed to create lead for ${email}: ${leadErr.message}`);
+      }
 
       // Generate tokens
       const tokens = JWT.generateTokens(user);
@@ -119,6 +141,18 @@ class AuthController {
           ip_address: req.ip || req.connection.remoteAddress,
           user_agent: req.get('user-agent'),
         });
+      }
+
+      // Handle referral code (fire-and-forget)
+      if (ref) {
+        try {
+          const referrer = await User.findOne({ where: { referral_code: ref } });
+          if (referrer && referrer.id !== user.id) {
+            await Referral.create({ referrer_id: referrer.id, referred_id: user.id });
+          }
+        } catch (refErr) {
+          logger.warn(`Failed to create referral record for ref=${ref}: ${refErr.message}`);
+        }
       }
 
       // Log activity

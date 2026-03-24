@@ -1,4 +1,4 @@
-import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote } from 'lucide-react';
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package } from 'lucide-react';
 
 // Shared navigation items for all authenticated pages
 export const getNavigationItems = (role = 'student') => {
@@ -41,6 +41,11 @@ export const getNavigationItems = (role = 'student') => {
       icon: <Zap className="w-5 h-5" />,
     },
     {
+      label: 'Wishlist',
+      path: '/wishlist',
+      icon: <Heart className="w-5 h-5" />,
+    },
+    {
       label: 'Bookmarks',
       path: '/bookmarks',
       icon: <Bookmark className="w-5 h-5" />,
@@ -64,6 +69,16 @@ export const getNavigationItems = (role = 'student') => {
       label: 'Leaderboard',
       path: '/leaderboard',
       icon: <Trophy className="w-5 h-5" />,
+    },
+    {
+      label: 'Bundles',
+      path: '/bundles',
+      icon: <Package className="w-5 h-5" />,
+    },
+    {
+      label: 'Refer & Earn',
+      path: '/referrals',
+      icon: <Gift className="w-5 h-5" />,
     },
   ];
 

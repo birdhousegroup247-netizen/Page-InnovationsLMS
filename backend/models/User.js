@@ -86,6 +86,28 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    registration_status: {
+      type: DataTypes.ENUM('preview', 'active', 'suspended'),
+      defaultValue: 'preview',
+      allowNull: false,
+      comment: 'preview=registered but not paid, active=paid, suspended=payment overdue hard lock',
+    },
+    lead_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Links user back to their original lead record before registration',
+    },
+    referral_code: {
+      type: DataTypes.STRING(12),
+      allowNull: true,
+      unique: true,
+      comment: 'Unique referral code generated on first login/register',
+    },
+    referral_credits: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      comment: 'Accumulated referral credits (each successful referral = 1 credit)',
+    },
     last_login: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -113,6 +135,7 @@ const User = sequelize.define(
       { fields: ['role'] },
       { fields: ['google_id'] },
       { fields: ['is_active'] },
+      { fields: ['registration_status'] },
       { fields: ['deleted_at'] }, // Index for soft delete queries
     ],
   }

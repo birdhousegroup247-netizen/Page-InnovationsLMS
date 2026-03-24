@@ -32,6 +32,8 @@ class AssignedTestController {
         start_date,
         end_date,
         show_results_immediately,
+        show_correct_answers,
+        show_explanations,
         allow_retake,
         max_attempts,
         randomize_questions,
@@ -58,6 +60,8 @@ class AssignedTestController {
         start_date,
         end_date,
         show_results_immediately: show_results_immediately !== false,
+        show_correct_answers: show_correct_answers !== false,
+        show_explanations: show_explanations !== false,
         allow_retake: allow_retake || false,
         max_attempts: max_attempts || 1,
         randomize_questions: randomize_questions !== false,
@@ -235,19 +239,69 @@ class AssignedTestController {
     }
   }
 
-  // Get my assigned tests (student)
+  // Get my assigned tests (student) — legacy route
   static async getMyAssignments(req, res, next) {
+    return AssignedTestController.getStudentTests(req, res, next);
+  }
+
+  // Get all tests assigned to the logged-in student (test-centric view)
+  static async getStudentTests(req, res, next) {
     try {
-      const { status } = req.query;
-
-      const where = { student_id: req.user.id };
-
-      if (status && status !== 'all') {
-        where.status = status;
-      }
-
       const assignments = await TestAssignment.findAll({
-        where,
+        where: { student_id: req.user.id },
+        include: [
+          {
+            model: AssignedTest,
+            as: 'test',
+            where: { status: 'published' },
+            include: [
+              { model: User, as: 'instructor', attributes: ['id', 'full_name'] },
+              { model: Course, as: 'course', attributes: ['id', 'title'] },
+            ],
+          },
+          {
+            model: AssignedTestAttempt,
+            as: 'attempts',
+            separate: true,
+            order: [['started_at', 'DESC']],
+          },
+        ],
+        order: [['assigned_date', 'DESC']],
+      });
+
+      // Shape response as test-centric for the frontend
+      const tests = assignments.map((a) => ({
+        id: a.test.id,
+        assignment_id: a.id,
+        test_name: a.test.test_name,
+        description: a.test.description,
+        course: a.test.course,
+        instructor: a.test.instructor,
+        time_limit_minutes: a.test.time_limit_minutes,
+        passing_score: a.test.passing_score,
+        max_attempts: a.test.max_attempts,
+        allow_retake: a.test.allow_retake,
+        start_date: a.test.start_date,
+        end_date: a.test.end_date,
+        due_date: a.due_date,
+        status: a.status,
+        assigned_date: a.assigned_date,
+        attempts: a.attempts || [],
+      }));
+
+      return ApiResponse.success(res, { tests });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get a single test (student view)
+  static async getStudentTest(req, res, next) {
+    try {
+      const { testId } = req.params;
+
+      const assignment = await TestAssignment.findOne({
+        where: { student_id: req.user.id, test_id: testId },
         include: [
           {
             model: AssignedTest,
@@ -260,14 +314,123 @@ class AssignedTestController {
           {
             model: AssignedTestAttempt,
             as: 'attempts',
+            separate: true,
             order: [['started_at', 'DESC']],
           },
         ],
-        order: [['assigned_date', 'DESC']],
       });
 
-      return ApiResponse.success(res, { assignments });
+      if (!assignment) throw new NotFoundError('Test not found or not assigned to you');
+
+      return ApiResponse.success(res, {
+        test: {
+          ...assignment.test.toJSON(),
+          assignment_id: assignment.id,
+          due_date: assignment.due_date,
+          assignment_status: assignment.status,
+          attempts: assignment.attempts,
+        },
+      });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get student attempt details
+  static async getStudentAttempt(req, res, next) {
+    try {
+      const { attemptId } = req.params;
+
+      const attempt = await AssignedTestAttempt.findByPk(attemptId, {
+        include: [{ model: AssignedTest, as: 'test' }],
+      });
+
+      if (!attempt) throw new NotFoundError('Attempt not found');
+      if (attempt.student_id !== req.user.id) throw new ForbiddenError('Unauthorized');
+
+      return ApiResponse.success(res, { attempt });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Start a test by testId (student) — finds assignment automatically
+  static async startTestByTestId(req, res, next) {
+    const t = await sequelize.transaction();
+    try {
+      const { testId } = req.params;
+
+      const assignment = await TestAssignment.findOne({
+        where: { student_id: req.user.id, test_id: testId },
+        include: [
+          {
+            model: AssignedTest,
+            as: 'test',
+            include: [
+              {
+                model: AssignedTestQuestion,
+                as: 'test_questions',
+                include: [{ model: QuestionBank, as: 'question' }],
+                separate: true,
+                order: [['order_index', 'ASC']],
+              },
+            ],
+          },
+          { model: AssignedTestAttempt, as: 'attempts', separate: true },
+        ],
+      });
+
+      if (!assignment) throw new NotFoundError('Test not assigned to you');
+
+      const test = assignment.test;
+
+      if (test.start_date && new Date() < new Date(test.start_date))
+        throw new BadRequestError('Test has not started yet');
+      if (test.end_date && new Date() > new Date(test.end_date))
+        throw new BadRequestError('Test has ended');
+
+      const attemptCount = assignment.attempts.length;
+      if (!test.allow_retake && attemptCount > 0)
+        throw new BadRequestError('You have already attempted this test');
+      if (attemptCount >= test.max_attempts)
+        throw new BadRequestError(`Maximum attempts (${test.max_attempts}) reached`);
+
+      const attempt = await AssignedTestAttempt.create(
+        {
+          assignment_id: assignment.id,
+          student_id: req.user.id,
+          test_id: test.id,
+          attempt_number: attemptCount + 1,
+          total_marks: test.total_marks,
+        },
+        { transaction: t }
+      );
+
+      await assignment.update({ status: 'in_progress' }, { transaction: t });
+      await t.commit();
+
+      let questions = test.test_questions.map((tq) => tq.question);
+      if (test.randomize_questions) questions = questions.sort(() => Math.random() - 0.5);
+
+      const questionsForTest = questions.map((q) => {
+        let options = q.options;
+        if (test.randomize_options && options) options = [...options].sort(() => Math.random() - 0.5);
+        return {
+          id: q.id,
+          question_text: q.question_text,
+          question_type: q.question_type,
+          options,
+          marks: q.marks || 1,
+        };
+      });
+
+      return ApiResponse.success(res, {
+        attempt: { id: attempt.id, assignment_id: assignment.id, test_id: test.id, attempt_number: attempt.attempt_number, started_at: attempt.started_at },
+        test: { test_name: test.test_name, description: test.description, total_questions: test.total_questions, total_marks: test.total_marks, time_limit_minutes: test.time_limit_minutes, passing_score: test.passing_score },
+        questions: questionsForTest,
+      });
+    } catch (error) {
+      await t.rollback();
       next(error);
     }
   }
@@ -564,13 +727,14 @@ class AssignedTestController {
       }
 
       // Format results with questions and answers
+      const isAdmin = ['instructor', 'admin', 'super_admin'].includes(req.user.role);
       const questionsWithAnswers = attempt.answers.map((answer) => ({
         id: answer.question.id,
         question_text: answer.question.question_text,
         question_type: answer.question.question_type,
         options: answer.question.options,
-        correct_answer: answer.question.correct_answer,
-        explanation: answer.question.explanation,
+        correct_answer: (isAdmin || test.show_correct_answers) ? answer.question.correct_answer : undefined,
+        explanation: (isAdmin || test.show_explanations) ? answer.question.explanation : undefined,
         student_answer: answer.student_answer,
         is_correct: answer.is_correct,
         marks_awarded: answer.marks_awarded,
@@ -598,10 +762,19 @@ class AssignedTestController {
   // Get all tests created by instructor
   static async getInstructorTests(req, res, next) {
     try {
+      const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const where = isAdmin ? {} : { instructor_id: req.user.id };
+
+      const { status, course_id, search } = req.query;
+      if (status && status !== 'all') where.status = status;
+      if (course_id) where.course_id = course_id;
+      if (search) where.test_name = { [Op.iLike]: `%${search}%` };
+
       const tests = await AssignedTest.findAll({
-        where: { instructor_id: req.user.id },
+        where,
         include: [
           { model: Course, as: 'course', attributes: ['id', 'title'] },
+          { model: User, as: 'instructor', attributes: ['id', 'full_name'] },
         ],
         order: [['created_at', 'DESC']],
       });
@@ -634,6 +807,87 @@ class AssignedTestController {
       }
 
       return ApiResponse.success(res, { test });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Publish test + assign to students
+  static async publishTest(req, res, next) {
+    const t = await sequelize.transaction();
+    try {
+      const { testId } = req.params;
+      const { assign_to, student_ids, due_date } = req.body; // assign_to: 'all' | 'selected'
+
+      const test = await AssignedTest.findByPk(testId);
+      if (!test) throw new NotFoundError('Test not found');
+
+      if (test.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role))
+        throw new ForbiddenError('You can only publish your own tests');
+
+      if (test.status === 'published') throw new BadRequestError('Test is already published');
+
+      await test.update({ status: 'published' }, { transaction: t });
+
+      let studentsToAssign = [];
+
+      if (assign_to === 'all' && test.course_id) {
+        const { Enrollment } = require('../../models');
+        const enrollments = await Enrollment.findAll({
+          where: { course_id: test.course_id },
+          attributes: ['student_id'],
+        });
+        studentsToAssign = enrollments.map((e) => e.student_id);
+      } else if (assign_to === 'selected' && Array.isArray(student_ids)) {
+        studentsToAssign = student_ids;
+      }
+
+      const newAssignments = [];
+      for (const student_id of studentsToAssign) {
+        const [assignment, created] = await TestAssignment.findOrCreate({
+          where: { test_id: test.id, student_id },
+          defaults: { test_id: test.id, student_id, due_date: due_date || null, status: 'pending' },
+          transaction: t,
+        });
+        if (created) newAssignments.push(assignment);
+      }
+
+      await t.commit();
+
+      if (newAssignments.length > 0) {
+        const notifications = newAssignments.map((a) => ({
+          user_id: a.student_id,
+          type: 'test_assignment',
+          title: 'New Test Assigned',
+          message: `You have been assigned a new test: "${test.test_name}"`,
+          link: `/my-assigned-tests`,
+          priority: 'normal',
+        }));
+        await NotificationsController.createBulkNotifications(notifications);
+      }
+
+      logger.info(`Test ${testId} published and assigned to ${newAssignments.length} students`);
+
+      return ApiResponse.success(res, { test, assignedCount: newAssignments.length }, `Test published and assigned to ${newAssignments.length} students`);
+    } catch (error) {
+      await t.rollback();
+      next(error);
+    }
+  }
+
+  // Archive test
+  static async archiveTest(req, res, next) {
+    try {
+      const { testId } = req.params;
+
+      const test = await AssignedTest.findByPk(testId);
+      if (!test) throw new NotFoundError('Test not found');
+
+      if (test.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role))
+        throw new ForbiddenError('You can only archive your own tests');
+
+      await test.update({ status: 'archived' });
+      return ApiResponse.success(res, { test }, 'Test archived successfully');
     } catch (error) {
       next(error);
     }

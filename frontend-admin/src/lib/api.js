@@ -193,6 +193,8 @@ export const adminUsersAPI = {
   getRolesStats: () => api.get('/api/admin/users/stats/roles'),
   sendPasswordReset: (userId) => api.post(`/api/admin/users/${userId}/send-password-reset`),
   sendVerificationEmail: (userId) => api.post(`/api/admin/users/${userId}/send-verification-email`),
+  // Override user access (unlock suspended, clear preview, etc.)
+  setRegistrationStatus: (userId, data) => api.patch(`/api/admin/users/${userId}/registration-status`, data),
 };
 
 // Admin: Course Management
@@ -211,6 +213,8 @@ export const adminCoursesAPI = {
   bulkUpdateStatus: (courseIds, status) => api.post('/api/admin/courses/bulk/status', { courseIds, status }),
   bulkDelete: (courseIds) => api.post('/api/admin/courses/bulk/delete', { courseIds }),
   bulkUpdateField: (courseIds, field, value) => api.post('/api/admin/courses/bulk/update-field', { courseIds, field, value }),
+  // Instructor assignment
+  assignInstructor: (courseId, instructor_id) => api.patch(`/api/admin/courses/${courseId}/instructor`, { instructor_id }),
 };
 
 // Admin: Instructor Application Management
@@ -271,6 +275,7 @@ export const adminQuestionsAPI = {
   bulkDelete: (questionIds) => api.post('/api/questions/bulk/delete', { question_ids: questionIds }),
   getStats: () => api.get('/api/questions/stats'),
   getCourseStats: () => api.get('/api/questions/stats/by-course'),
+  getCategoryBreakdown: () => api.get('/api/questions/stats/by-category'),
 };
 
 // Admin: Test Management
@@ -284,7 +289,7 @@ export const adminTestsAPI = {
   assignStudents: (testId, data) => api.post(`/api/assigned-tests/${testId}/assign`, data),
   getResults: (testId, params) => api.get(`/api/assigned-tests/${testId}/results`, { params }),
   getStudentResult: (attemptId) => api.get(`/api/assigned-tests/attempts/${attemptId}`),
-  publish: (testId) => api.patch(`/api/assigned-tests/${testId}/publish`),
+  publish: (testId, data) => api.patch(`/api/assigned-tests/${testId}/publish`, data),
   archive: (testId) => api.patch(`/api/assigned-tests/${testId}/archive`),
 };
 
@@ -297,12 +302,61 @@ export const practiceTestsAPI = {
   getResults: (attemptId) => api.get(`/api/practice-tests/${attemptId}/results`),
 };
 
+// Admin: Coupon Manager
+export const adminCouponsAPI = {
+  getAll: (params) => api.get('/api/admin/coupons', { params }),
+  getStats: () => api.get('/api/admin/coupons/stats'),
+  getById: (id) => api.get(`/api/admin/coupons/${id}`),
+  create: (data) => api.post('/api/admin/coupons', data),
+  update: (id, data) => api.put(`/api/admin/coupons/${id}`, data),
+  delete: (id) => api.delete(`/api/admin/coupons/${id}`),
+};
+
+// Admin: Leads Dashboard
+export const adminLeadsAPI = {
+  getAll: (params) => api.get('/api/admin/leads', { params }),
+  getStats: () => api.get('/api/admin/leads/stats'),
+  getById: (id) => api.get(`/api/admin/leads/${id}`),
+  markConverted: (id) => api.patch(`/api/admin/leads/${id}/convert`),
+  delete: (id) => api.delete(`/api/admin/leads/${id}`),
+};
+
 // Admin: Chat Moderation
 export const chatAPI = {
   adminGetRooms: (params) => api.get('/api/chat/admin/rooms', { params }),
   adminGetRoomMessages: (roomId) => api.get(`/api/chat/admin/rooms/${roomId}/messages`),
   toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
   deleteMessage: (msgId) => api.delete(`/api/chat/messages/${msgId}`),
+};
+
+// Admin: Enrollment Management
+export const adminEnrollmentsAPI = {
+  getAll: (params) => api.get('/api/admin/enrollments', { params }),
+  getStats: () => api.get('/api/admin/enrollments/stats'),
+  create: (data) => api.post('/api/admin/enrollments', data),
+  remove: (id) => api.delete(`/api/admin/enrollments/${id}`),
+  updateProgress: (id, progress_percentage) => api.patch(`/api/admin/enrollments/${id}/progress`, { progress_percentage }),
+};
+
+// Admin: Payments Dashboard
+export const adminPaymentsAPI = {
+  getAll: (params) => api.get('/api/admin/payments', { params }),
+  getStats: () => api.get('/api/admin/payments/stats'),
+  issueRefund: (id, reason) => api.post(`/api/admin/payments/${id}/refund`, { reason }),
+};
+
+// Admin: Global Announcements
+export const adminAnnouncementsAPI = {
+  getAll: (params) => api.get('/api/admin/announcements', { params }),
+  getRecipientCount: (target, course_id) => api.get('/api/admin/announcements/recipient-count', { params: { target, course_id } }),
+  send: (data) => api.post('/api/admin/announcements', data),
+};
+
+export const adminBundlesAPI = {
+  getAll: () => api.get('/api/admin/bundles'),
+  create: (data) => api.post('/api/admin/bundles', data),
+  update: (id, data) => api.put(`/api/admin/bundles/${id}`, data),
+  delete: (id) => api.delete(`/api/admin/bundles/${id}`),
 };
 
 export default api;

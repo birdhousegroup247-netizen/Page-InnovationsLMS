@@ -1,4 +1,4 @@
-const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember } = require('../../models');
+const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
@@ -144,7 +144,7 @@ class CourseController {
               {
                 model: ModuleContent,
                 as: 'contents',
-                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview', 'youtube_url', 'youtube_video_id', 'document_url', 'document_type', 'article_content'],
+                attributes: ['id', 'title', 'content_type', 'order_index', 'duration_minutes', 'is_preview', 'unlock_date', 'unlock_after_days', 'youtube_url', 'youtube_video_id', 'document_url', 'document_type', 'article_content'],
                 separate: true, // Separate query to avoid cartesian product
                 order: [['order_index', 'ASC']],
               }
@@ -171,6 +171,41 @@ class CourseController {
           isEnrolled = true;
           progress = enrollment.progress_percentage;
         }
+      }
+
+      // Compute drip lock status per content item
+      const now = new Date();
+      const enrolledAt = isEnrolled
+        ? (await Enrollment.findOne({ where: { student_id: req.user?.id, course_id: id } }))?.created_at
+        : null;
+
+      if (course.modules) {
+        course.modules.forEach((mod) => {
+          if (mod.contents) {
+            mod.contents.forEach((content) => {
+              let dripLocked = false;
+              let dripUnlockDate = null;
+
+              if (content.unlock_date) {
+                const unlockAt = new Date(content.unlock_date);
+                if (unlockAt > now) {
+                  dripLocked = true;
+                  dripUnlockDate = content.unlock_date;
+                }
+              } else if (content.unlock_after_days && enrolledAt) {
+                const unlockAt = new Date(enrolledAt);
+                unlockAt.setDate(unlockAt.getDate() + content.unlock_after_days);
+                if (unlockAt > now) {
+                  dripLocked = true;
+                  dripUnlockDate = unlockAt.toISOString().split('T')[0];
+                }
+              }
+
+              content.dataValues.is_drip_locked = dripLocked;
+              content.dataValues.drip_unlock_date = dripUnlockDate;
+            });
+          }
+        });
       }
 
       const responseData = { course, isEnrolled, progress };
@@ -355,6 +390,30 @@ class CourseController {
         }
       }
 
+      // Payment gate — if course has a price, verify payment before enrolling
+      if (course.price && parseFloat(course.price) > 0) {
+        const completedPayment = await Payment.findOne({
+          where: {
+            student_id: req.user.id,
+            course_id: id,
+            payment_status: 'completed',
+          },
+        });
+
+        if (!completedPayment) {
+          return res.status(402).json({
+            success: false,
+            message: 'Payment required to enroll in this course',
+            data: {
+              course_id: id,
+              course_title: course.title,
+              price: course.price,
+              checkout_url: `/courses/${id}`,
+            },
+          });
+        }
+      }
+
       const enrollment = await Enrollment.create({
         student_id: req.user.id,
         course_id: id,
@@ -381,6 +440,31 @@ class CourseController {
         link: `/courses/${course.id}`,
         priority: 'normal',
       });
+
+      // Auto-assign any published tests for this course
+      try {
+        const { AssignedTest, TestAssignment } = require('../../models');
+        const publishedTests = await AssignedTest.findAll({
+          where: { course_id: id, status: 'published' },
+          attributes: ['id', 'test_name', 'end_date'],
+        });
+
+        for (const test of publishedTests) {
+          // Skip if test has already ended
+          if (test.end_date && new Date() > new Date(test.end_date)) continue;
+
+          await TestAssignment.findOrCreate({
+            where: { test_id: test.id, student_id: req.user.id },
+            defaults: { test_id: test.id, student_id: req.user.id, due_date: test.end_date || null, status: 'pending' },
+          });
+        }
+
+        if (publishedTests.length > 0) {
+          logger.info(`Auto-assigned ${publishedTests.length} test(s) to student ${req.user.id} on enrollment in course ${id}`);
+        }
+      } catch (testErr) {
+        logger.warn(`Failed to auto-assign tests on enrollment: ${testErr.message}`);
+      }
 
       // Log activity
       await ActivityController.logFromRequest(req, 'course_enroll', 'course', course.id, {
@@ -488,6 +572,88 @@ class CourseController {
       });
 
       return ApiResponse.success(res, { students: enrollments });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // POST /api/courses/:id/clone — deep clone a course
+  static async cloneCourse(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      const original = await Course.findByPk(id, {
+        include: [
+          {
+            model: CourseModule,
+            as: 'modules',
+            include: [
+              {
+                model: ModuleContent,
+                as: 'contents',
+                order: [['order_index', 'ASC']],
+              },
+            ],
+            order: [['order_index', 'ASC']],
+          },
+        ],
+      });
+
+      if (!original) throw new NotFoundError('Course not found');
+
+      // Only instructor who owns it or admin can clone
+      if (original.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('You can only clone your own courses');
+      }
+
+      // Create new course as draft
+      const cloned = await Course.create({
+        title: `Copy of ${original.title}`,
+        slug: `${original.slug}-copy-${Date.now()}`,
+        description: original.description,
+        thumbnail: original.thumbnail,
+        category_id: original.category_id,
+        instructor_id: req.user.id,
+        difficulty: original.difficulty,
+        duration_hours: original.duration_hours,
+        price: original.price,
+        status: 'draft',
+        prerequisite_course_id: null, // don't clone prerequisites
+      });
+
+      // Clone modules and contents
+      for (const mod of original.modules || []) {
+        const newMod = await CourseModule.create({
+          course_id: cloned.id,
+          title: mod.title,
+          description: mod.description,
+          order_index: mod.order_index,
+        });
+
+        for (const content of mod.contents || []) {
+          await ModuleContent.create({
+            module_id: newMod.id,
+            title: content.title,
+            description: content.description,
+            content_type: content.content_type,
+            youtube_url: content.youtube_url,
+            youtube_video_id: content.youtube_video_id,
+            document_url: content.document_url,
+            document_type: content.document_type,
+            file_size_mb: content.file_size_mb,
+            article_content: content.article_content,
+            order_index: content.order_index,
+            duration_minutes: content.duration_minutes,
+            is_preview: content.is_preview,
+            unlock_date: null, // don't copy drip schedule — instructor can reset
+            unlock_after_days: content.unlock_after_days,
+          });
+        }
+      }
+
+      logger.info(`Course cloned: ${original.title} → ${cloned.title} by ${req.user.email}`);
+
+      return ApiResponse.created(res, { course: cloned }, 'Course cloned successfully');
     } catch (error) {
       next(error);
     }

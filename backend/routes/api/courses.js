@@ -30,6 +30,7 @@ router.get('/:id', optionalAuthenticate, CourseController.getCourseById);
 router.put('/:id', authenticate, CourseController.updateCourse);
 router.delete('/:id', authenticate, CourseController.deleteCourse);
 router.post('/:id/enroll', authenticate, authorize('student'), CourseController.enrollCourse);
+router.post('/:id/clone', authenticate, authorize('instructor', 'admin', 'super_admin'), CourseController.cloneCourse);
 
 // ============================================================================
 // MODULE ROUTES

@@ -315,6 +315,40 @@ class AdminCoursesController {
         }
     }
 
+    // Assign instructor to course
+    static async assignInstructor(req, res, next) {
+        try {
+            const { id } = req.params;
+            const { instructor_id } = req.body;
+
+            if (!instructor_id) {
+                throw new BadRequestError('instructor_id is required');
+            }
+
+            const course = await Course.findByPk(id);
+            if (!course) throw new NotFoundError('Course not found');
+
+            // Validate the instructor exists and has an appropriate role
+            const instructor = await User.findOne({
+                where: { id: instructor_id, role: ['instructor', 'admin', 'super_admin'] }
+            });
+            if (!instructor) {
+                throw new BadRequestError('User not found or does not have instructor role');
+            }
+
+            await course.update({ instructor_id });
+
+            logger.info(`Course ${id} instructor changed to user ${instructor_id} by admin ${req.user.email}`);
+
+            return ApiResponse.success(res, {
+                course: { id: course.id, title: course.title, instructor_id: course.instructor_id },
+                instructor: { id: instructor.id, full_name: instructor.full_name, email: instructor.email }
+            }, 'Instructor assigned successfully');
+        } catch (error) {
+            next(error);
+        }
+    }
+
     // Bulk update course field (price, category, etc.)
     static async bulkUpdateField(req, res, next) {
         try {

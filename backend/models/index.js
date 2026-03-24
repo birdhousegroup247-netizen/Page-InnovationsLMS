@@ -5,6 +5,10 @@
 
 const { sequelize } = require('../config/database');
 const User = require('./User');
+const Lead = require('./Lead');
+const CouponCode = require('./CouponCode');
+const CouponCodeCourse = require('./CouponCodeCourse');
+const CouponRedemption = require('./CouponRedemption');
 const PasswordReset = require('./PasswordReset');
 const InstructorApplication = require('./InstructorApplication');
 const Category = require('./Category');
@@ -48,6 +52,11 @@ const InstructorReview = require('./InstructorReview');
 const LiveSession = require('./LiveSession');
 const ForumPost = require('./ForumPost');
 const ForumReply = require('./ForumReply');
+const Wishlist = require('./Wishlist');
+const Bundle = require('./Bundle');
+const BundleCourse = require('./BundleCourse');
+const Referral = require('./Referral');
+const AdminAnnouncement = require('./AdminAnnouncement');
 
 // ============================================================================
 // RELATIONSHIPS
@@ -204,10 +213,35 @@ User.hasMany(ActivityLog, { foreignKey: 'user_id', as: 'activity_logs' });
 Payment.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CASCADE' });
 Payment.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
 Payment.belongsTo(Enrollment, { foreignKey: 'enrollment_id', as: 'enrollment', onDelete: 'CASCADE' });
+Payment.belongsTo(CouponCode, { foreignKey: 'coupon_code_id', as: 'coupon', onDelete: 'SET NULL' });
 
 User.hasMany(Payment, { foreignKey: 'student_id', as: 'payments', onDelete: 'CASCADE' });
 Course.hasMany(Payment, { foreignKey: 'course_id', as: 'payments', onDelete: 'CASCADE' });
 Enrollment.hasOne(Payment, { foreignKey: 'enrollment_id', as: 'payment', onDelete: 'CASCADE' });
+
+// Lead relationships
+Lead.belongsTo(Course, { foreignKey: 'course_interest_id', as: 'course_interest', onDelete: 'SET NULL' });
+Course.hasMany(Lead, { foreignKey: 'course_interest_id', as: 'leads' });
+User.belongsTo(Lead, { foreignKey: 'lead_id', as: 'lead' });
+Lead.hasOne(User, { foreignKey: 'lead_id', as: 'user' });
+
+// CouponCode relationships
+CouponCode.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(CouponCode, { foreignKey: 'created_by', as: 'created_coupons' });
+CouponCode.hasMany(CouponCodeCourse, { foreignKey: 'coupon_code_id', as: 'applicable_courses', onDelete: 'CASCADE' });
+CouponCode.hasMany(CouponRedemption, { foreignKey: 'coupon_code_id', as: 'redemptions', onDelete: 'CASCADE' });
+CouponCode.hasMany(Payment, { foreignKey: 'coupon_code_id', as: 'payments' });
+
+// CouponCodeCourse relationships
+CouponCodeCourse.belongsTo(CouponCode, { foreignKey: 'coupon_code_id', as: 'coupon' });
+CouponCodeCourse.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+Course.hasMany(CouponCodeCourse, { foreignKey: 'course_id', as: 'coupon_courses' });
+
+// CouponRedemption relationships
+CouponRedemption.belongsTo(CouponCode, { foreignKey: 'coupon_code_id', as: 'coupon' });
+CouponRedemption.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+CouponRedemption.belongsTo(Payment, { foreignKey: 'payment_id', as: 'payment' });
+User.hasMany(CouponRedemption, { foreignKey: 'user_id', as: 'coupon_redemptions' });
 
 // Chat Room relationships
 ChatRoom.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
@@ -284,9 +318,34 @@ InstructorReview.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
 User.hasMany(InstructorReview, { foreignKey: 'student_id', as: 'given_reviews' });
 Course.hasMany(InstructorReview, { foreignKey: 'course_id', as: 'instructor_reviews' });
 
+// Referral relationships
+Referral.belongsTo(User, { foreignKey: 'referrer_id', as: 'referrer' });
+Referral.belongsTo(User, { foreignKey: 'referred_id', as: 'referred' });
+User.hasMany(Referral, { foreignKey: 'referrer_id', as: 'referrals_made' });
+User.hasOne(Referral, { foreignKey: 'referred_id', as: 'referral_source' });
+
+// Bundle relationships
+Bundle.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Bundle, { foreignKey: 'created_by', as: 'bundles' });
+Bundle.belongsToMany(Course, { through: BundleCourse, foreignKey: 'bundle_id', otherKey: 'course_id', as: 'courses' });
+Course.belongsToMany(Bundle, { through: BundleCourse, foreignKey: 'course_id', otherKey: 'bundle_id', as: 'bundles' });
+BundleCourse.belongsTo(Bundle, { foreignKey: 'bundle_id', as: 'bundle' });
+BundleCourse.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+
+// Wishlist relationships
+Wishlist.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CASCADE' });
+Wishlist.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
+User.hasMany(Wishlist, { foreignKey: 'student_id', as: 'wishlist', onDelete: 'CASCADE' });
+Course.hasMany(Wishlist, { foreignKey: 'course_id', as: 'wishlist_entries', onDelete: 'CASCADE' });
+
 // Course prerequisite self-referencing relationships
 Course.belongsTo(Course, { foreignKey: 'prerequisite_course_id', as: 'prerequisite' });
 Course.hasMany(Course, { foreignKey: 'prerequisite_course_id', as: 'dependent_courses' });
+
+// AdminAnnouncement relationships
+AdminAnnouncement.belongsTo(User, { foreignKey: 'admin_id', as: 'admin' });
+AdminAnnouncement.belongsTo(Course, { foreignKey: 'course_id', as: 'course', required: false });
+User.hasMany(AdminAnnouncement, { foreignKey: 'admin_id', as: 'admin_announcements' });
 
 // Assignment relationships
 Assignment.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
@@ -303,6 +362,10 @@ User.hasMany(AssignmentSubmission, { foreignKey: 'student_id', as: 'submissions'
 module.exports = {
   sequelize,  // Export sequelize instance
   User,
+  Lead,
+  CouponCode,
+  CouponCodeCourse,
+  CouponRedemption,
   PasswordReset,
   InstructorApplication,
   Category,
@@ -346,4 +409,9 @@ module.exports = {
   LiveSession,
   ForumPost,
   ForumReply,
+  Wishlist,
+  Bundle,
+  BundleCourse,
+  Referral,
+  AdminAnnouncement,
 };

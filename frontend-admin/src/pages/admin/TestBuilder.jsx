@@ -13,7 +13,7 @@ import {
   X,
   Trash2
 } from 'lucide-react';
-import { adminTestsAPI, adminQuestionsAPI, coursesAPI, adminUsersAPI } from '../../lib/api';
+import { adminTestsAPI, adminQuestionsAPI, adminCategoriesAPI, coursesAPI, adminUsersAPI } from '../../lib/api';
 import { Button, Input, Select, Badge, Spinner } from '../../components/ui';
 import Container from '../../components/layout/Container';
 import { useToast } from '../../components/ui/Toast';
@@ -27,17 +27,21 @@ export default function TestBuilder() {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
+  // Assignment mode: 'all' = all course students, 'selected' = manual pick
+  const [assignmentMode, setAssignmentMode] = useState('all');
+
   // Form data
   const [formData, setFormData] = useState({
-    title: '',
+    test_name: '',
     description: '',
     course_id: '',
     due_date: '',
     time_limit_minutes: 60,
     passing_score: 70,
     max_attempts: 1,
-    shuffle_questions: true,
-    shuffle_options: true,
+    allow_retake: false,
+    randomize_questions: true,
+    randomize_options: true,
     show_results_immediately: true,
     show_correct_answers: true,
     show_explanations: true,
@@ -48,7 +52,11 @@ export default function TestBuilder() {
   // Selection method for questions
   const [selectionMethod, setSelectionMethod] = useState('manual'); // 'manual' or 'auto'
 
-  // Manual selection filter
+  // Category-first browsing
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [questionFilters, setQuestionFilters] = useState({ search: '', difficulty: '', type: '', course_id: '' });
+
+  // Legacy manual filter (kept for auto-config)
   const [manualFilter, setManualFilter] = useState({
     course_id: '',
     search: ''
@@ -78,6 +86,7 @@ export default function TestBuilder() {
   // Load initial data
   useEffect(() => {
     fetchCourses();
+    fetchCategories();
     fetchQuestions();
     fetchStudents();
     if (isEditing) {
@@ -94,16 +103,18 @@ export default function TestBuilder() {
     }
   };
 
-  const fetchQuestions = async (courseFilter = null) => {
+  const fetchCategories = async () => {
     try {
-      const params = { limit: 1000, is_approved: 'true' };
+      const response = await adminCategoriesAPI.getAll();
+      setCategories(response.data.data?.categories || []);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
 
-      // Add course filter if provided
-      if (courseFilter && courseFilter.length > 0) {
-        params.courses = courseFilter.join(',');
-      }
-
-      const response = await adminQuestionsAPI.getAll(params);
+  const fetchQuestions = async () => {
+    try {
+      const response = await adminQuestionsAPI.getAll({ limit: 2000, is_approved: 'true' });
       setQuestions(response.data.data?.questions || []);
     } catch (error) {
       console.error('Failed to fetch questions:', error);
@@ -126,20 +137,21 @@ export default function TestBuilder() {
       const test = response.data.data;
 
       setFormData({
-        title: test.title || '',
+        test_name: test.test_name || '',
         description: test.description || '',
         course_id: test.course_id || '',
-        due_date: test.due_date ? test.due_date.split('T')[0] : '',
+        due_date: test.end_date ? test.end_date.split('T')[0] : '',
         time_limit_minutes: test.time_limit_minutes || 60,
         passing_score: test.passing_score || 70,
         max_attempts: test.max_attempts || 1,
-        shuffle_questions: test.shuffle_questions ?? true,
-        shuffle_options: test.shuffle_options ?? true,
+        allow_retake: test.allow_retake ?? false,
+        randomize_questions: test.randomize_questions ?? true,
+        randomize_options: test.randomize_options ?? true,
         show_results_immediately: test.show_results_immediately ?? true,
         show_correct_answers: test.show_correct_answers ?? true,
         show_explanations: test.show_explanations ?? true,
-        questions: test.questions || [],
-        assigned_students: test.assigned_students || []
+        questions: test.test_questions?.map(tq => tq.question) || [],
+        assigned_students: []
       });
     } catch (error) {
       console.error('Failed to fetch test data:', error);
@@ -265,14 +277,11 @@ export default function TestBuilder() {
     const newErrors = {};
 
     if (step === 1) {
-      if (!formData.title.trim()) {
-        newErrors.title = 'Test title is required';
+      if (!formData.test_name.trim()) {
+        newErrors.test_name = 'Test title is required';
       }
       if (!formData.course_id) {
         newErrors.course_id = 'Please select a course';
-      }
-      if (!formData.due_date) {
-        newErrors.due_date = 'Due date is required';
       }
     }
 
@@ -283,8 +292,11 @@ export default function TestBuilder() {
     }
 
     if (step === 4) {
-      if (formData.assigned_students.length === 0) {
-        newErrors.assigned_students = 'Please assign at least one student';
+      if (assignmentMode === 'all' && !formData.course_id) {
+        newErrors.course_id = 'Please select a course in Step 1 to use "All course students"';
+      }
+      if (assignmentMode === 'selected' && formData.assigned_students.length === 0) {
+        newErrors.assigned_students = 'Please select at least one student';
       }
     }
 
@@ -304,6 +316,11 @@ export default function TestBuilder() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  // Generate a test code from the test name
+  const generateTestCode = (name) => {
+    return name.toUpperCase().replace(/[^A-Z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20) + '-' + Date.now().toString(36).toUpperCase();
+  };
+
   const handleSubmit = async (status = 'draft') => {
     if (!validateStep(4)) {
       showToast('Please fix the errors before submitting', 'error');
@@ -313,41 +330,57 @@ export default function TestBuilder() {
     setLoading(true);
 
     try {
-      const testData = {
-        ...formData,
-        status,
-        question_ids: formData.questions.map(q => q.id),
-        student_ids: formData.assigned_students.map(s => s.id)
+      const question_ids = formData.questions.map(q => q.id);
+
+      const testPayload = {
+        test_name: formData.test_name,
+        test_code: generateTestCode(formData.test_name),
+        description: formData.description,
+        course_id: formData.course_id || null,
+        end_date: formData.due_date || null,
+        time_limit_minutes: formData.time_limit_minutes,
+        passing_score: formData.passing_score,
+        max_attempts: formData.max_attempts,
+        allow_retake: formData.allow_retake,
+        randomize_questions: formData.randomize_questions,
+        randomize_options: formData.randomize_options,
+        show_results_immediately: formData.show_results_immediately,
+        show_correct_answers: formData.show_correct_answers,
+        show_explanations: formData.show_explanations,
+        status: 'draft', // always create as draft first
       };
 
-      let response;
+      let savedTestId = testId;
+
       if (isEditing) {
-        response = await adminTestsAPI.update(testId, testData);
+        await adminTestsAPI.update(testId, testPayload);
+        // Re-add questions on edit
+        if (question_ids.length > 0) {
+          await adminTestsAPI.addQuestions(testId, { question_ids });
+        }
         showToast('Test updated successfully', 'success');
       } else {
-        response = await adminTestsAPI.create(testData);
-        const createdTest = response.data.data;
+        const response = await adminTestsAPI.create(testPayload);
+        const createdTest = response.data.data?.test || response.data.data;
+        savedTestId = createdTest.id;
 
-        // Add questions to test
-        if (testData.question_ids.length > 0) {
-          await adminTestsAPI.addQuestions(createdTest.id, {
-            question_ids: testData.question_ids
-          });
+        if (question_ids.length > 0) {
+          await adminTestsAPI.addQuestions(savedTestId, { question_ids });
         }
-
-        // Assign students
-        if (testData.student_ids.length > 0) {
-          await adminTestsAPI.assignStudents(createdTest.id, {
-            student_ids: testData.student_ids
-          });
-        }
-
-        showToast('Test created successfully', 'success');
+        showToast('Test saved successfully', 'success');
       }
 
-      setTimeout(() => {
-        navigate('/tests');
-      }, 1500);
+      // If publishing, use the publish endpoint which handles assignment
+      if (status === 'published') {
+        await adminTestsAPI.publish(savedTestId, {
+          assign_to: assignmentMode,
+          student_ids: assignmentMode === 'selected' ? formData.assigned_students.map(s => s.id) : [],
+          due_date: formData.due_date || null,
+        });
+        showToast('Test published and assigned successfully!', 'success');
+      }
+
+      setTimeout(() => navigate('/tests'), 1500);
     } catch (error) {
       console.error('Failed to save test:', error);
       showToast(error.response?.data?.message || 'Failed to save test', 'error');
@@ -478,13 +511,13 @@ export default function TestBuilder() {
                 Test Title *
               </label>
               <Input
-                value={formData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
+                value={formData.test_name}
+                onChange={(e) => handleChange('test_name', e.target.value)}
                 placeholder="e.g., Week 5 Quiz - JavaScript Fundamentals"
-                className={errors.title ? 'border-red-500' : ''}
+                className={errors.test_name ? 'border-red-500' : ''}
               />
-              {errors.title && (
-                <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+              {errors.test_name && (
+                <p className="mt-1 text-sm text-red-600">{errors.test_name}</p>
               )}
             </div>
 
@@ -521,21 +554,6 @@ export default function TestBuilder() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Due Date *
-                </label>
-                <Input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => handleChange('due_date', e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className={errors.due_date ? 'border-red-500' : ''}
-                />
-                {errors.due_date && (
-                  <p className="mt-1 text-sm text-red-600">{errors.due_date}</p>
-                )}
-              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -570,285 +588,168 @@ export default function TestBuilder() {
 
         {/* Step 2: Question Selection */}
         {currentStep === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Select Questions
-            </h2>
-
-            {/* Selection Method */}
-            <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Selection Method
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectionMethod('manual')}
-                  className={`p-4 rounded-lg border-2 transition-colors ${
-                    selectionMethod === 'manual'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-600'
-                  }`}
-                >
-                  <p className="font-medium text-gray-900 dark:text-white">Manual Selection</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Choose specific questions from the question bank
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectionMethod('auto')}
-                  className={`p-4 rounded-lg border-2 transition-colors ${
-                    selectionMethod === 'auto'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-200 dark:border-gray-600'
-                  }`}
-                >
-                  <p className="font-medium text-gray-900 dark:text-white">Auto-Generate</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Randomly select questions by difficulty and category
-                  </p>
-                </button>
-              </div>
-            </div>
-
-            {/* Auto-Selection Config */}
-            {selectionMethod === 'auto' && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-4">
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  Auto-Generation Settings
-                </h3>
-
-                {/* Multi-Course Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Courses *
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-dark-800">
-                    {courses.map(course => (
-                      <label
-                        key={course.id}
-                        className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-dark-700 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={autoConfig.selected_courses.includes(course.id)}
-                          onChange={(e) => {
-                            const newCourses = e.target.checked
-                              ? [...autoConfig.selected_courses, course.id]
-                              : autoConfig.selected_courses.filter(id => id !== course.id);
-                            handleAutoConfigChange('selected_courses', newCourses);
-                          }}
-                          className="w-4 h-4 text-blue-600 dark:text-blue-500 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                        />
-                        <span className="text-sm text-gray-900 dark:text-white">
-                          {course.title}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  {autoConfig.selected_courses.length > 0 && (
-                    <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                      ✓ Mixing {autoConfig.selected_courses.length} course(s): {
-                        courses
-                          .filter(c => autoConfig.selected_courses.includes(c.id))
-                          .map(c => c.title)
-                          .join(', ')
-                      }
-                    </p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Select one or multiple courses to mix questions
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Category (Optional)
-                  </label>
-                  <Select
-                    value={autoConfig.category_id}
-                    onChange={(e) => handleAutoConfigChange('category_id', e.target.value)}
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Difficulty Distribution
-                  </label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        Easy
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="50"
-                        value={autoConfig.difficulty.easy}
-                        onChange={(e) => handleAutoConfigChange('difficulty.easy', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        Medium
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="50"
-                        value={autoConfig.difficulty.medium}
-                        onChange={(e) => handleAutoConfigChange('difficulty.medium', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        Hard
-                      </label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="50"
-                        value={autoConfig.difficulty.hard}
-                        onChange={(e) => handleAutoConfigChange('difficulty.hard', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    Total: {autoConfig.total_questions} questions
-                  </p>
-                </div>
-
-                <Button onClick={handleAutoSelectQuestions} className="w-full">
-                  Generate Questions
-                </Button>
-              </div>
-            )}
-
-            {/* Selected Questions Summary */}
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Selected Questions
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {formData.questions.length} question(s) selected
-                  </p>
-                </div>
-                {formData.questions.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, questions: [] }))}
-                  >
-                    Clear All
+          <div className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Select Questions</h2>
+              {formData.questions.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    {formData.questions.length} selected
+                  </span>
+                  <Button variant="outline" size="sm" onClick={() => setFormData(prev => ({ ...prev, questions: [] }))}>
+                    Clear all
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {errors.questions && (
               <p className="text-sm text-red-600">{errors.questions}</p>
             )}
 
-            {/* Manual Question List */}
-            {selectionMethod === 'manual' && (
-              <>
-                {/* Filter Controls */}
-                <div className="flex gap-3 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search questions..."
-                      value={manualFilter.search}
-                      onChange={(e) => setManualFilter(prev => ({ ...prev, search: e.target.value }))}
-                    />
-                  </div>
-                  <div className="w-64">
-                    <Select
-                      value={manualFilter.course_id}
-                      onChange={(e) => setManualFilter(prev => ({ ...prev, course_id: e.target.value }))}
+            {/* Category chips — primary filter */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Category</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('')}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    selectedCategory === ''
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white dark:bg-dark-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                  }`}
+                >
+                  All ({questions.length})
+                </button>
+                {categories.map(cat => {
+                  const count = questions.filter(q => q.category_id === cat.id).length;
+                  if (count === 0) return null;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(String(cat.id))}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                        selectedCategory === String(cat.id)
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-dark-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                      }`}
                     >
-                      <option value="">All Courses</option>
-                      {courses.map(course => (
-                        <option key={course.id} value={course.id}>{course.title}</option>
-                      ))}
-                    </Select>
-                  </div>
-                </div>
+                      {cat.name} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                <div className="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {questions
-                      .filter(q => {
-                        // Filter by course
-                        if (manualFilter.course_id && q.course_id !== parseInt(manualFilter.course_id)) {
-                          return false;
-                        }
-                        // Filter by search
-                        if (manualFilter.search && !q.question_text.toLowerCase().includes(manualFilter.search.toLowerCase())) {
-                          return false;
-                        }
-                        return true;
-                      })
-                      .map(question => {
-                    const isSelected = formData.questions.find(q => q.id === question.id);
-                    return (
-                      <div
-                        key={question.id}
-                        className={`p-4 hover:bg-gray-50 dark:hover:bg-dark-700 cursor-pointer ${
-                          isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                        }`}
-                        onClick={() => handleSelectQuestion(question)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {question.question_text}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                              {question.course && (
-                                <Badge color="purple">
-                                  📚 {question.course.title}
-                                </Badge>
-                              )}
-                              <Badge
-                                color={
-                                  question.difficulty === 'easy'
-                                    ? 'green'
-                                    : question.difficulty === 'medium'
-                                    ? 'yellow'
-                                    : 'red'
-                                }
-                              >
-                                {question.difficulty}
-                              </Badge>
-                              <Badge color="blue">
-                                {question.question_type.replace('_', ' ')}
-                              </Badge>
-                              <span className="text-xs text-gray-500">
-                                {question.marks} mark(s)
-                              </span>
+            {/* Secondary filters */}
+            <div className="flex flex-wrap gap-3">
+              <div className="flex-1 min-w-[160px]">
+                <Input
+                  placeholder="Search questions..."
+                  value={questionFilters.search}
+                  onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))}
+                />
+              </div>
+              <Select
+                value={questionFilters.difficulty}
+                onChange={(e) => setQuestionFilters(prev => ({ ...prev, difficulty: e.target.value }))}
+                className="w-36"
+              >
+                <option value="">All levels</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </Select>
+              <Select
+                value={questionFilters.type}
+                onChange={(e) => setQuestionFilters(prev => ({ ...prev, type: e.target.value }))}
+                className="w-44"
+              >
+                <option value="">All types</option>
+                <option value="multiple_choice">Multiple choice</option>
+                <option value="true_false">True / False</option>
+                <option value="fill_blank">Fill in blank</option>
+              </Select>
+              <Select
+                value={questionFilters.course_id}
+                onChange={(e) => setQuestionFilters(prev => ({ ...prev, course_id: e.target.value }))}
+                className="w-44"
+              >
+                <option value="">All courses</option>
+                {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </Select>
+            </div>
+
+            {/* Question list */}
+            {(() => {
+              const filtered = questions.filter(q => {
+                if (selectedCategory && q.category_id !== parseInt(selectedCategory)) return false;
+                if (questionFilters.difficulty && q.difficulty !== questionFilters.difficulty) return false;
+                if (questionFilters.type && q.question_type !== questionFilters.type) return false;
+                if (questionFilters.course_id && q.course_id !== parseInt(questionFilters.course_id)) return false;
+                if (questionFilters.search && !q.question_text.toLowerCase().includes(questionFilters.search.toLowerCase())) return false;
+                return true;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    No questions match the selected filters.
+                  </div>
+                );
+              }
+
+              return (
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700">
+                    {filtered.map(question => {
+                      const isSelected = !!formData.questions.find(q => q.id === question.id);
+                      return (
+                        <div
+                          key={question.id}
+                          onClick={() => handleSelectQuestion(question)}
+                          className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-dark-700 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-gray-600'}`}>
+                              {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 dark:text-white">{question.question_text}</p>
+                              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                {question.category && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                    {question.category.name}
+                                  </span>
+                                )}
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  question.difficulty === 'easy' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                  question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                }`}>
+                                  {question.difficulty}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {question.question_type.replace('_', ' ')}
+                                </span>
+                                <span className="text-xs text-gray-400">{question.marks} pt</span>
+                              </div>
                             </div>
                           </div>
-                          {isSelected && (
-                            <CheckCircle className="w-5 h-5 text-blue-600 ml-4" />
-                          )}
                         </div>
-                      </div>
-                    );
-                      })}
+                      );
+                    })}
+                  </div>
+                  <div className="px-4 py-2 bg-gray-50 dark:bg-dark-700 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+                    Showing {filtered.length} question{filtered.length !== 1 ? 's' : ''}
                   </div>
                 </div>
-              </>
-            )}
+              );
+            })()}
 
-            {/* Selected Questions List */}
+            {/* Selected Questions summary */}
             {formData.questions.length > 0 && (
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <h3 className="font-medium text-gray-900 dark:text-white mb-3">
@@ -914,8 +815,8 @@ export default function TestBuilder() {
               <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700">
                 <input
                   type="checkbox"
-                  checked={formData.shuffle_questions}
-                  onChange={(e) => handleChange('shuffle_questions', e.target.checked)}
+                  checked={formData.randomize_questions}
+                  onChange={(e) => handleChange('randomize_questions', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <div>
@@ -931,8 +832,8 @@ export default function TestBuilder() {
               <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700">
                 <input
                   type="checkbox"
-                  checked={formData.shuffle_options}
-                  onChange={(e) => handleChange('shuffle_options', e.target.checked)}
+                  checked={formData.randomize_options}
+                  onChange={(e) => handleChange('randomize_options', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <div>
@@ -1012,69 +913,122 @@ export default function TestBuilder() {
               Assign Students
             </h2>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Selected Students
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {formData.assigned_students.length} student(s) selected
-                  </p>
+            {/* Assignment mode selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setAssignmentMode('all')}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  assignmentMode === 'all'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${assignmentMode === 'all' ? 'border-blue-500' : 'border-gray-400'}`}>
+                    {assignmentMode === 'all' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">All course students</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Every student currently enrolled in the selected course will receive this test automatically. New enrollees will also get it.
+                    </p>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAllStudents}
-                >
-                  {formData.assigned_students.length === students.length
-                    ? 'Deselect All'
-                    : 'Select All'}
-                </Button>
-              </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAssignmentMode('selected')}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  assignmentMode === 'selected'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${assignmentMode === 'selected' ? 'border-blue-500' : 'border-gray-400'}`}>
+                    {assignmentMode === 'selected' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Select specific students</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Manually choose which students get this test.
+                    </p>
+                  </div>
+                </div>
+              </button>
             </div>
 
-            {errors.assigned_students && (
-              <p className="text-sm text-red-600">{errors.assigned_students}</p>
-            )}
+            {/* Due date (optional) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Due Date <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <Input
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => handleChange('due_date', e.target.value)}
+              />
+            </div>
 
-            <div className="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {students.map(student => {
-                  const isSelected = formData.assigned_students.find(s => s.id === student.id);
-                  return (
-                    <div
-                      key={student.id}
-                      className={`p-4 hover:bg-gray-50 dark:hover:bg-dark-700 cursor-pointer ${
-                        isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                      }`}
-                      onClick={() => handleSelectStudent(student)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {student.first_name?.[0]}{student.last_name?.[0]}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {student.first_name} {student.last_name}
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                              {student.email}
-                            </p>
+            {/* Student list — only shown when 'selected' mode */}
+            {assignmentMode === 'selected' && (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {formData.assigned_students.length} of {students.length} selected
+                  </p>
+                  <Button variant="outline" size="sm" onClick={handleSelectAllStudents}>
+                    {formData.assigned_students.length === students.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+
+                {errors.assigned_students && (
+                  <p className="text-sm text-red-600">{errors.assigned_students}</p>
+                )}
+
+                <div className="max-h-80 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {students.map(student => {
+                      const isSelected = !!formData.assigned_students.find(s => s.id === student.id);
+                      return (
+                        <div
+                          key={student.id}
+                          className={`p-4 hover:bg-gray-50 dark:hover:bg-dark-700 cursor-pointer ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                          onClick={() => handleSelectStudent(student)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                {student.full_name?.charAt(0) || student.first_name?.[0]}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {student.full_name || `${student.first_name} ${student.last_name}`}
+                                </p>
+                                <p className="text-xs text-gray-500">{student.email}</p>
+                              </div>
+                            </div>
+                            {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />}
                           </div>
                         </div>
-                        {isSelected && (
-                          <CheckCircle className="w-5 h-5 text-blue-600" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {assignmentMode === 'all' && (
+              <div className={`p-4 rounded-lg border ${errors.course_id ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'}`}>
+                <p className={`text-sm ${errors.course_id ? 'text-red-700 dark:text-red-300' : 'text-green-800 dark:text-green-300'}`}>
+                  {errors.course_id
+                    ? `⚠ ${errors.course_id}`
+                    : '✓ When published, this test will be automatically sent to all students enrolled in the selected course.'}
+                </p>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

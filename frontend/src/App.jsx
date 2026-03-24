@@ -44,6 +44,9 @@ const Messages = lazy(() => import('./pages/Messages'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const MyAssignments = lazy(() => import('./pages/MyAssignments'));
 const MyNotes = lazy(() => import('./pages/MyNotes'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Bundles = lazy(() => import('./pages/Bundles'));
+const Referrals = lazy(() => import('./pages/Referrals'));
 
 // Instructor pages - lazy loaded
 const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
@@ -67,6 +70,9 @@ const LiveSessions = lazy(() => import('./pages/instructor/LiveSessions'));
 const GradeAssignments = lazy(() => import('./pages/instructor/GradeAssignments'));
 const CourseAssignments = lazy(() => import('./pages/instructor/CourseAssignments'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
+const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 
 // Admin pages
 const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
@@ -609,6 +615,56 @@ function App() {
               <ProtectedRoute>
                 <MyNotes />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute>
+                <Wishlist />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bundles"
+            element={
+              <ProtectedRoute>
+                <Bundles />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/referrals"
+            element={
+              <ProtectedRoute>
+                <Referrals />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Payment Routes (no AppLayout — standalone pages) */}
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRouteNoLayout>
+                <Checkout />
+              </ProtectedRouteNoLayout>
+            }
+          />
+          <Route
+            path="/payment-success"
+            element={
+              <ProtectedRouteNoLayout>
+                <PaymentSuccess />
+              </ProtectedRouteNoLayout>
+            }
+          />
+          <Route
+            path="/payment-cancelled"
+            element={
+              <ProtectedRouteNoLayout>
+                <PaymentCancelled />
+              </ProtectedRouteNoLayout>
             }
           />
 

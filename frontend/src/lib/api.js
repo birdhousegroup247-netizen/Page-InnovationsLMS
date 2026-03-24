@@ -461,4 +461,21 @@ export const instructorReviewsAPI = {
   delete: (instructorId, reviewId) => api.delete(`/api/instructors/${instructorId}/reviews/${reviewId}`),
 };
 
+export const paymentsAPI = {
+  createCheckoutSession: (data) => api.post('/api/payments/checkout-session', data),
+  verifyPayment: (sessionId) => api.get('/api/payments/verify', { params: { session_id: sessionId } }),
+  getMyPayments: () => api.get('/api/payments/my'),
+};
+
+export const couponsAPI = {
+  validate: (data) => api.post('/api/coupons/validate', data),
+};
+
+export const wishlistAPI = {
+  getMyWishlist: () => api.get('/api/wishlist'),
+  add: (courseId) => api.post(`/api/wishlist/${courseId}`),
+  remove: (courseId) => api.delete(`/api/wishlist/${courseId}`),
+  check: (courseId) => api.get(`/api/wishlist/${courseId}/check`),
+};
+
 export default api;

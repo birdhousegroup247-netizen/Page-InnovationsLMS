@@ -1,13 +1,13 @@
 const { QuestionBank, Category, User, Course } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
 
 class QuestionBankController {
   // Get all questions (with filters)
   static async getAllQuestions(req, res, next) {
     try {
-      const { course_id, courses, category, difficulty, type, search, page = 1, limit = 20, is_approved } = req.query;
+      const { course_id, courses, category, no_category, difficulty, type, search, page = 1, limit = 20, is_approved } = req.query;
 
       const where = {};
 
@@ -20,19 +20,21 @@ class QuestionBankController {
         where.course_id = { [Op.in]: courseIds };
       }
 
-      if (category) where.category_id = category;
+      if (no_category === 'true') {
+        where.category_id = null;
+      } else if (category) {
+        where.category_id = category;
+      }
       if (difficulty) where.difficulty = difficulty;
       if (type) where.question_type = type;
       if (is_approved !== undefined) where.is_approved = is_approved === 'true';
       if (search) {
-        where[Op.or] = [
-          { question_text: { [Op.like]: `%${search}%` } },
-          { tags: { [Op.like]: `%${search}%` } },
-        ];
+        where.question_text = { [Op.iLike]: `%${search}%` };
       }
 
       // Non-admins can only see approved questions
-      if (!['admin', 'super_admin'].includes(req.user.role)) {
+      const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      if (!isAdmin) {
         where.is_approved = true;
       }
 
@@ -50,13 +52,37 @@ class QuestionBankController {
         order: [['created_at', 'DESC']],
       });
 
+      // Compute overall stats (unfiltered, for summary cards)
+      const statsWhere = isAdmin ? {} : { is_approved: true };
+      const [totalCount, approvedCount, pendingCount, mcqCount, tfCount, fbCount] = await Promise.all([
+        QuestionBank.count({ where: statsWhere }),
+        QuestionBank.count({ where: { ...statsWhere, is_approved: true } }),
+        QuestionBank.count({ where: { is_approved: false } }),
+        QuestionBank.count({ where: { ...statsWhere, question_type: 'multiple_choice' } }),
+        QuestionBank.count({ where: { ...statsWhere, question_type: 'true_false' } }),
+        QuestionBank.count({ where: { ...statsWhere, question_type: 'fill_blank' } }),
+      ]);
+
+      const totalPages = Math.ceil(count / limit);
+
       return ApiResponse.success(res, {
         questions: rows,
         pagination: {
           currentPage: parseInt(page),
-          totalPages: Math.ceil(count / limit),
+          totalPages,
           totalItems: count,
           itemsPerPage: parseInt(limit),
+          // aliases expected by frontend
+          total: count,
+          pages: totalPages,
+        },
+        stats: {
+          total: totalCount,
+          approved: approvedCount,
+          pending: pendingCount,
+          multiple_choice: mcqCount,
+          true_false: tfCount,
+          fill_blank: fbCount,
         },
       });
     } catch (error) {
@@ -98,6 +124,7 @@ class QuestionBankController {
         explanation,
         difficulty,
         tags,
+        marks,
         points,
       } = req.body;
 
@@ -111,7 +138,8 @@ class QuestionBankController {
         explanation,
         difficulty,
         tags,
-        points: points || 1,
+        marks: marks || points || 1,
+        points: points || marks || 1,
         created_by: req.user.id,
         is_approved: ['admin', 'super_admin'].includes(req.user.role),
       });
@@ -189,6 +217,27 @@ class QuestionBankController {
     }
   }
 
+  // Get overall stats (for summary cards)
+  static async getStats(req, res, next) {
+    try {
+      const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const baseWhere = isAdmin ? {} : { is_approved: true };
+
+      const [total, approved, pending, mcq, tf, fb] = await Promise.all([
+        QuestionBank.count({ where: baseWhere }),
+        QuestionBank.count({ where: { ...baseWhere, is_approved: true } }),
+        QuestionBank.count({ where: { is_approved: false } }),
+        QuestionBank.count({ where: { ...baseWhere, question_type: 'multiple_choice' } }),
+        QuestionBank.count({ where: { ...baseWhere, question_type: 'true_false' } }),
+        QuestionBank.count({ where: { ...baseWhere, question_type: 'fill_blank' } }),
+      ]);
+
+      return ApiResponse.success(res, { stats: { total, approved, pending, multiple_choice: mcq, true_false: tf, fill_blank: fb } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Approve question (admin only)
   static async approveQuestion(req, res, next) {
     try {
@@ -197,9 +246,99 @@ class QuestionBankController {
       const question = await QuestionBank.findByPk(id);
       if (!question) throw new NotFoundError('Question not found');
 
-      await question.update({ is_approved: true });
+      await question.update({ is_approved: true, approval_status: 'approved', reviewed_by: req.user.id, reviewed_at: new Date() });
 
       return ApiResponse.success(res, { question }, 'Question approved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Reject question (admin only)
+  static async rejectQuestion(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      const question = await QuestionBank.findByPk(id);
+      if (!question) throw new NotFoundError('Question not found');
+
+      await question.update({
+        is_approved: false,
+        approval_status: 'rejected',
+        rejection_reason: reason || null,
+        reviewed_by: req.user.id,
+        reviewed_at: new Date(),
+      });
+
+      return ApiResponse.success(res, { question }, 'Question rejected');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Bulk approve (admin only)
+  static async bulkApprove(req, res, next) {
+    try {
+      const { question_ids } = req.body;
+      if (!Array.isArray(question_ids) || question_ids.length === 0) {
+        return ApiResponse.error(res, 'question_ids array is required', 400);
+      }
+
+      const { Op } = require('sequelize');
+      const [updated] = await QuestionBank.update(
+        { is_approved: true, approval_status: 'approved', reviewed_by: req.user.id, reviewed_at: new Date() },
+        { where: { id: { [Op.in]: question_ids } } }
+      );
+
+      return ApiResponse.success(res, { updatedCount: updated }, `${updated} question(s) approved`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Bulk delete (admin only)
+  static async bulkDeleteQuestions(req, res, next) {
+    try {
+      const { question_ids } = req.body;
+      if (!Array.isArray(question_ids) || question_ids.length === 0) {
+        return ApiResponse.error(res, 'question_ids array is required', 400);
+      }
+
+      const { Op } = require('sequelize');
+      const deleted = await QuestionBank.destroy({ where: { id: { [Op.in]: question_ids } } });
+
+      return ApiResponse.success(res, { deletedCount: deleted }, `${deleted} question(s) deleted`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get question counts per category
+  static async getCategoryBreakdown(req, res, next) {
+    try {
+      const { sequelize } = require('../../config/database');
+      const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const baseWhere = isAdmin ? {} : { is_approved: true };
+
+      const counts = await QuestionBank.findAll({
+        attributes: [
+          'category_id',
+          [sequelize.fn('COUNT', sequelize.col('QuestionBank.id')), 'question_count'],
+        ],
+        where: baseWhere,
+        group: ['category_id'],
+        raw: true,
+      });
+
+      const categorized = counts
+        .filter(c => c.category_id !== null)
+        .map(c => ({ category_id: c.category_id, question_count: parseInt(c.question_count) }));
+
+      const uncatItem = counts.find(c => c.category_id === null);
+      const uncategorized_count = uncatItem ? parseInt(uncatItem.question_count) : 0;
+
+      return ApiResponse.success(res, { category_counts: categorized, uncategorized_count });
     } catch (error) {
       next(error);
     }
@@ -215,7 +354,7 @@ class QuestionBankController {
         attributes: [
           'course_id',
           [sequelize.fn('COUNT', sequelize.col('QuestionBank.id')), 'total_questions'],
-          [sequelize.fn('SUM', sequelize.cast(sequelize.col('is_approved'), 'INTEGER')), 'approved_questions'],
+          [sequelize.literal('SUM(CASE WHEN "QuestionBank"."is_approved" THEN 1 ELSE 0 END)'), 'approved_questions'],
         ],
         include: [
           {

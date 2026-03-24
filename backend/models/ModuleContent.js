@@ -67,6 +67,12 @@ const ModuleContent = sequelize.define(
       allowNull: true,
       defaultValue: null,
     },
+    unlock_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      defaultValue: null,
+      comment: 'Specific calendar date after which this lesson unlocks (drip scheduling)',
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

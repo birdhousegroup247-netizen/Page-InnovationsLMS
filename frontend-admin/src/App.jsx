@@ -33,6 +33,12 @@ const Tests = lazy(() => import('./pages/admin/Tests'));
 const TestBuilder = lazy(() => import('./pages/admin/TestBuilder'));
 const TestResults = lazy(() => import('./pages/admin/TestResults'));
 const ChatModeration = lazy(() => import('./pages/admin/ChatModeration'));
+const Coupons = lazy(() => import('./pages/admin/Coupons'));
+const Leads = lazy(() => import('./pages/admin/Leads'));
+const Bundles = lazy(() => import('./pages/admin/Bundles'));
+const Enrollments = lazy(() => import('./pages/admin/Enrollments'));
+const Payments = lazy(() => import('./pages/admin/Payments'));
+const Announcements = lazy(() => import('./pages/admin/Announcements'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
@@ -237,6 +243,56 @@ function App() {
               element={
                 <AdminRoute>
                   <ChatModeration />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/coupons"
+              element={
+                <AdminRoute>
+                  <Coupons />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/leads"
+              element={
+                <AdminRoute>
+                  <Leads />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/bundles"
+              element={
+                <AdminRoute>
+                  <Bundles />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/enrollments"
+              element={
+                <AdminRoute>
+                  <Enrollments />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <AdminRoute>
+                  <Payments />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <AdminRoute>
+                  <Announcements />
                 </AdminRoute>
               }
             />

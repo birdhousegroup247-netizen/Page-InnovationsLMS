@@ -24,4 +24,7 @@ router.get('/:id', AdminCoursesController.getCourseById);
 // Update course status
 router.patch('/:id/status', AdminCoursesController.updateCourseStatus);
 
+// Assign instructor to course
+router.patch('/:id/instructor', AdminCoursesController.assignInstructor);
+
 module.exports = router;

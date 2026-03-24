@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Container, EmptyState } from '../components/layout';
 import { Badge, Button, Spinner } from '../components/ui';
+import WishlistButton from '../components/ui/WishlistButton';
 import emptyCourses from '../assets/empty-courses.svg';
 import { cn } from '../utils/cn';
 
@@ -413,10 +414,13 @@ function CourseCard({ course, viewMode, onEnroll, delay }) {
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
           loading="lazy"
         />
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
           <Badge variant={difficultyColors[course.difficulty] || 'info'}>
             {course.difficulty}
           </Badge>
+        </div>
+        <div className="absolute top-4 left-4">
+          <WishlistButton courseId={course.id} size="sm" />
         </div>
       </div>
 
