@@ -1012,9 +1012,13 @@ export default function Messages() {
               className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-border-dark bg-white dark:bg-dark-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
             />
             <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
-              {dmSearching && <p className="text-xs text-gray-400 text-center py-2">Searching…</p>}
+              {dmSearching && <p className="text-xs text-gray-400 text-center py-2">Loading…</p>}
               {!dmSearching && dmResults.length === 0 && dmSearch.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-2">Type a name to search</p>
+                <p className="text-xs text-gray-400 text-center py-3 leading-relaxed px-2">
+                  No coursemates yet.{' '}
+                  <a href="/courses" className="text-brand-blue hover:underline">Enroll in a course</a>
+                  {' '}to connect.
+                </p>
               )}
               {!dmSearching && dmResults.length === 0 && dmSearch.length > 0 && (
                 <p className="text-xs text-gray-400 text-center py-2">No results</p>
@@ -1045,18 +1049,26 @@ export default function Messages() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {filteredRooms.length > 0 && (
-            <div>
-              <p className="px-4 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                <BookOpen className="w-3 h-3" /> Course Rooms
+          <div>
+            <p className="px-4 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+              <BookOpen className="w-3 h-3" /> Course Rooms
+            </p>
+            {filteredRooms.length === 0 && !search && (
+              <p className="px-4 py-2 text-xs text-gray-400 leading-relaxed">
+                No rooms yet.{' '}
+                <a href="/courses" className="text-brand-blue hover:underline">Enroll in a course</a>
+                {' '}to join its chat room.
               </p>
-              {filteredRooms.map((room) => (
-                <RoomItem key={room.id} room={room}
-                  isActive={activeChat?.type === 'room' && activeChat?.id === room.id}
-                  onClick={() => openRoom(room)} />
-              ))}
-            </div>
-          )}
+            )}
+            {filteredRooms.length === 0 && search && (
+              <p className="px-4 py-2 text-xs text-gray-400">No rooms match your search</p>
+            )}
+            {filteredRooms.map((room) => (
+              <RoomItem key={room.id} room={room}
+                isActive={activeChat?.type === 'room' && activeChat?.id === room.id}
+                onClick={() => openRoom(room)} />
+            ))}
+          </div>
 
           <div>
             <p className="px-4 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
@@ -1113,7 +1125,7 @@ export default function Messages() {
               <p className="text-sm mt-1">Pick a course room or direct message from the left</p>
             </div>
             <p className="text-xs text-center max-w-xs leading-relaxed text-gray-400">
-              Course chat rooms open from the course detail page. Direct messages appear here after your first exchange.
+              Course rooms appear on the left once you enroll. Use the <strong className="text-gray-500">+</strong> button to message a classmate or instructor.
             </p>
           </div>
         )}
