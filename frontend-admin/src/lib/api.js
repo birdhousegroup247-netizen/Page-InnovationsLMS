@@ -321,12 +321,19 @@ export const adminLeadsAPI = {
   delete: (id) => api.delete(`/api/admin/leads/${id}`),
 };
 
-// Admin: Chat Moderation
+// Admin: Chat Moderation + Support Inbox
 export const chatAPI = {
+  // Room moderation
   adminGetRooms: (params) => api.get('/api/chat/admin/rooms', { params }),
   adminGetRoomMessages: (roomId) => api.get(`/api/chat/admin/rooms/${roomId}/messages`),
   toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
   deleteMessage: (msgId) => api.delete(`/api/chat/messages/${msgId}`),
+  // Support DMs
+  searchUsers: (q) => api.get('/api/chat/users/search', { params: { q } }),
+  getOrCreateConversation: (recipientId) => api.post('/api/chat/conversations', { recipientId }),
+  getConversations: () => api.get('/api/chat/conversations'),
+  getConversationMessages: (convId) => api.get(`/api/chat/conversations/${convId}/messages`),
+  sendMessage: (convId, body) => api.post(`/api/chat/conversations/${convId}/messages`, { body }),
 };
 
 // Admin: Enrollment Management

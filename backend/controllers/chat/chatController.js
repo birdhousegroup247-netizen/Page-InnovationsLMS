@@ -15,6 +15,7 @@ const {
   Notification,
   User,
   Course,
+  Enrollment,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -115,6 +116,36 @@ async function validateReplyTo(replyToId, contextWhere) {
   return replied;
 }
 
+// ─── Course connection helper ─────────────────────────────────────────────────
+// Returns true if userA and userB share at least one course (as student↔instructor or classmates)
+async function _hasCourseConnection(userAId, userBId) {
+  // Case 1: userB is enrolled in a course taught by userA
+  const aIsInstructor = await Enrollment.count({
+    where: { student_id: userBId },
+    include: [{ model: Course, as: 'course', where: { instructor_id: userAId }, attributes: [] }],
+  });
+  if (aIsInstructor > 0) return true;
+
+  // Case 2: userA is enrolled in a course taught by userB
+  const bIsInstructor = await Enrollment.count({
+    where: { student_id: userAId },
+    include: [{ model: Course, as: 'course', where: { instructor_id: userBId }, attributes: [] }],
+  });
+  if (bIsInstructor > 0) return true;
+
+  // Case 3: both are enrolled in at least one common course
+  const enrollmentsA = await Enrollment.findAll({ where: { student_id: userAId }, attributes: ['course_id'] });
+  const courseIds = enrollmentsA.map((e) => e.course_id);
+  if (courseIds.length > 0) {
+    const shared = await Enrollment.count({
+      where: { student_id: userBId, course_id: { [Op.in]: courseIds } },
+    });
+    if (shared > 0) return true;
+  }
+
+  return false;
+}
+
 // ============================================================================
 // COURSE CHAT ROOMS
 // ============================================================================
@@ -212,27 +243,68 @@ class ChatController {
     }
   }
 
-  // Search all active users for starting DMs (excludes current user)
+  // Search users for DMs — scoped by role:
+  //   admin      → any active student or instructor
+  //   instructor → their enrolled students + other instructors
+  //   student    → instructors of enrolled courses + classmates from same courses
   static async searchCoursemates(req, res, next) {
     try {
       const userId = req.user.id;
+      const role = req.user.role;
       const { q = '' } = req.query;
 
-      const where = {
-        id: { [Op.ne]: userId },
-        is_active: true,
-        role: { [Op.in]: ['student', 'instructor'] },
-      };
+      const nameFilter = q ? { [Op.or]: [{ full_name: { [Op.like]: `%${q}%` } }, { email: { [Op.like]: `%${q}%` } }] } : {};
 
-      if (q) {
-        where[Op.or] = [
-          { full_name: { [Op.like]: `%${q}%` } },
-          { email: { [Op.like]: `%${q}%` } },
-        ];
+      // Admins can message any student or instructor
+      if (['admin', 'super_admin'].includes(role)) {
+        const users = await User.findAll({
+          where: { id: { [Op.ne]: userId }, is_active: true, role: { [Op.in]: ['student', 'instructor'] }, ...nameFilter },
+          attributes: ['id', 'full_name', 'email', 'profile_picture', 'role'],
+          order: [['full_name', 'ASC']],
+          limit: 30,
+        });
+        return ApiResponse.success(res, { users });
       }
 
+      const reachableIds = new Set();
+
+      if (role === 'instructor') {
+        // Their enrolled students
+        const enrollments = await Enrollment.findAll({
+          attributes: ['student_id'],
+          include: [{ model: Course, as: 'course', where: { instructor_id: userId }, attributes: [] }],
+        });
+        enrollments.forEach((e) => reachableIds.add(e.student_id));
+
+        // Other instructors (peer collaboration)
+        const peers = await User.findAll({
+          where: { id: { [Op.ne]: userId }, is_active: true, role: 'instructor' },
+          attributes: ['id'],
+        });
+        peers.forEach((u) => reachableIds.add(u.id));
+      } else {
+        // Student: instructors of their enrolled courses + classmates
+        const myEnrollments = await Enrollment.findAll({
+          where: { student_id: userId },
+          attributes: ['course_id'],
+          include: [{ model: Course, as: 'course', attributes: ['instructor_id'] }],
+        });
+        const courseIds = myEnrollments.map((e) => e.course_id);
+        myEnrollments.forEach((e) => { if (e.course?.instructor_id) reachableIds.add(e.course.instructor_id); });
+
+        if (courseIds.length > 0) {
+          const classmates = await Enrollment.findAll({
+            where: { course_id: { [Op.in]: courseIds }, student_id: { [Op.ne]: userId } },
+            attributes: ['student_id'],
+          });
+          classmates.forEach((e) => reachableIds.add(e.student_id));
+        }
+      }
+
+      if (reachableIds.size === 0) return ApiResponse.success(res, { users: [] });
+
       const users = await User.findAll({
-        where,
+        where: { id: { [Op.in]: [...reachableIds] }, is_active: true, ...nameFilter },
         attributes: ['id', 'full_name', 'email', 'profile_picture', 'role'],
         order: [['full_name', 'ASC']],
         limit: 30,
@@ -586,12 +658,22 @@ class ChatController {
     try {
       const { recipientId } = req.body;
       const userId = req.user.id;
+      const senderRole = req.user.role;
 
       if (!recipientId) throw new BadRequestError('recipientId is required');
       if (parseInt(recipientId) === userId) throw new BadRequestError('Cannot message yourself');
 
-      const recipient = await User.findByPk(recipientId, { attributes: ['id', 'full_name'] });
+      const recipient = await User.findByPk(recipientId, { attributes: ['id', 'full_name', 'role'] });
       if (!recipient) throw new NotFoundError('Recipient not found');
+
+      // Admins can message anyone; anyone can reply to admin
+      const senderIsAdmin = ['admin', 'super_admin'].includes(senderRole);
+      const recipientIsAdmin = ['admin', 'super_admin'].includes(recipient.role);
+
+      if (!senderIsAdmin && !recipientIsAdmin) {
+        const connected = await _hasCourseConnection(userId, parseInt(recipientId));
+        if (!connected) throw new ForbiddenError('You can only message people you share a course with');
+      }
 
       const user_a = Math.min(userId, parseInt(recipientId));
       const user_b = Math.max(userId, parseInt(recipientId));
