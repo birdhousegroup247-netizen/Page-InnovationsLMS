@@ -118,32 +118,20 @@ async function validateReplyTo(replyToId, contextWhere) {
 
 // ─── Course connection helper ─────────────────────────────────────────────────
 // Returns true if userA and userB share at least one course (as student↔instructor or classmates)
-async function _hasCourseConnection(userAId, userBId) {
-  // Case 1: userB is enrolled in a course taught by userA
-  const aIsInstructor = await Enrollment.count({
-    where: { student_id: userBId },
-    include: [{ model: Course, as: 'course', where: { instructor_id: userAId }, attributes: [] }],
+async function _sharesRoom(userAId, userBId) {
+  // Find all rooms where userA is an approved member
+  const aMemberships = await ChatRoomMember.findAll({
+    where: { user_id: userAId, status: 'approved' },
+    attributes: ['room_id'],
   });
-  if (aIsInstructor > 0) return true;
+  const roomIds = aMemberships.map((m) => m.room_id);
+  if (roomIds.length === 0) return false;
 
-  // Case 2: userA is enrolled in a course taught by userB
-  const bIsInstructor = await Enrollment.count({
-    where: { student_id: userAId },
-    include: [{ model: Course, as: 'course', where: { instructor_id: userBId }, attributes: [] }],
+  // Check if userB is also an approved member in any of those rooms
+  const shared = await ChatRoomMember.count({
+    where: { user_id: userBId, room_id: { [Op.in]: roomIds }, status: 'approved' },
   });
-  if (bIsInstructor > 0) return true;
-
-  // Case 3: both are enrolled in at least one common course
-  const enrollmentsA = await Enrollment.findAll({ where: { student_id: userAId }, attributes: ['course_id'] });
-  const courseIds = enrollmentsA.map((e) => e.course_id);
-  if (courseIds.length > 0) {
-    const shared = await Enrollment.count({
-      where: { student_id: userBId, course_id: { [Op.in]: courseIds } },
-    });
-    if (shared > 0) return true;
-  }
-
-  return false;
+  return shared > 0;
 }
 
 // ============================================================================
@@ -266,40 +254,21 @@ class ChatController {
         return ApiResponse.success(res, { users });
       }
 
-      const reachableIds = new Set();
+      // Find all rooms where this user is an approved member
+      const myMemberships = await ChatRoomMember.findAll({
+        where: { user_id: userId, status: 'approved' },
+        attributes: ['room_id'],
+      });
+      const roomIds = myMemberships.map((m) => m.room_id);
 
-      if (role === 'instructor') {
-        // Their enrolled students
-        const enrollments = await Enrollment.findAll({
-          attributes: ['student_id'],
-          include: [{ model: Course, as: 'course', where: { instructor_id: userId }, attributes: [] }],
-        });
-        enrollments.forEach((e) => reachableIds.add(e.student_id));
+      if (roomIds.length === 0) return ApiResponse.success(res, { users: [] });
 
-        // Other instructors (peer collaboration)
-        const peers = await User.findAll({
-          where: { id: { [Op.ne]: userId }, is_active: true, role: 'instructor' },
-          attributes: ['id'],
-        });
-        peers.forEach((u) => reachableIds.add(u.id));
-      } else {
-        // Student: instructors of their enrolled courses + classmates
-        const myEnrollments = await Enrollment.findAll({
-          where: { student_id: userId },
-          attributes: ['course_id'],
-          include: [{ model: Course, as: 'course', attributes: ['instructor_id'] }],
-        });
-        const courseIds = myEnrollments.map((e) => e.course_id);
-        myEnrollments.forEach((e) => { if (e.course?.instructor_id) reachableIds.add(e.course.instructor_id); });
-
-        if (courseIds.length > 0) {
-          const classmates = await Enrollment.findAll({
-            where: { course_id: { [Op.in]: courseIds }, student_id: { [Op.ne]: userId } },
-            attributes: ['student_id'],
-          });
-          classmates.forEach((e) => reachableIds.add(e.student_id));
-        }
-      }
+      // Find all other approved members in those same rooms
+      const roommates = await ChatRoomMember.findAll({
+        where: { room_id: { [Op.in]: roomIds }, user_id: { [Op.ne]: userId }, status: 'approved' },
+        attributes: ['user_id'],
+      });
+      const reachableIds = new Set(roommates.map((m) => m.user_id));
 
       if (reachableIds.size === 0) return ApiResponse.success(res, { users: [] });
 
@@ -671,7 +640,7 @@ class ChatController {
       const recipientIsAdmin = ['admin', 'super_admin'].includes(recipient.role);
 
       if (!senderIsAdmin && !recipientIsAdmin) {
-        const connected = await _hasCourseConnection(userId, parseInt(recipientId));
+        const connected = await _sharesRoom(userId, parseInt(recipientId));
         if (!connected) throw new ForbiddenError('You can only message people you share a course with');
       }
 

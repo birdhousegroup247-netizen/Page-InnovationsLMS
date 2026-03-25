@@ -897,9 +897,14 @@ export default function Messages() {
       .finally(() => setLoadingConvs(false));
   }, []);
 
-  // Search coursemates for new DM
+  // Search coursemates for new DM — require at least 2 chars before fetching
   useEffect(() => {
     if (!showNewDM) return;
+    if (dmSearch.trim().length < 2) {
+      setDmResults([]);
+      setDmSearching(false);
+      return;
+    }
     setDmSearching(true);
     const t = setTimeout(() => {
       chatAPI.searchCoursemates(dmSearch)
@@ -1013,15 +1018,13 @@ export default function Messages() {
             />
             <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
               {dmSearching && <p className="text-xs text-gray-400 text-center py-2">Loading…</p>}
-              {!dmSearching && dmResults.length === 0 && dmSearch.length === 0 && (
+              {!dmSearching && dmSearch.trim().length < 2 && (
                 <p className="text-xs text-gray-400 text-center py-3 leading-relaxed px-2">
-                  No coursemates yet.{' '}
-                  <a href="/courses" className="text-brand-blue hover:underline">Enroll in a course</a>
-                  {' '}to connect.
+                  Type a name to search your coursemates &amp; instructors.
                 </p>
               )}
-              {!dmSearching && dmResults.length === 0 && dmSearch.length > 0 && (
-                <p className="text-xs text-gray-400 text-center py-2">No results</p>
+              {!dmSearching && dmSearch.trim().length >= 2 && dmResults.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-2">No coursemates found for "{dmSearch}"</p>
               )}
               {dmResults.map((u) => (
                 <button key={u.id} onClick={() => startDM(u)}

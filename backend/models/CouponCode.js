@@ -41,8 +41,9 @@ const CouponCode = sequelize.define(
     },
     max_uses: {
       type: DataTypes.INTEGER,
+      defaultValue: 1,
       allowNull: true,
-      comment: 'Total times this code can be used across all users. NULL = unlimited.',
+      comment: 'Total times this code can be used across all users. 1 = one-time use. NULL = unlimited.',
     },
     uses_count: {
       type: DataTypes.INTEGER,

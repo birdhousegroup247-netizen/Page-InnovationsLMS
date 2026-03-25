@@ -14,6 +14,7 @@ export default function PracticeTests() {
   const [tests, setTests] = useState([]);
   const [assignedTests, setAssignedTests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('practice'); // practice, assigned
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function PracticeTests() {
       setAssignedTests(assignedRes.data.data.tests || []);
     } catch (err) {
       console.error('Error fetching tests:', err);
+      setError('Failed to load tests. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -172,6 +174,14 @@ export default function PracticeTests() {
             </button>
           ))}
         </div>
+
+        {/* Error State */}
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
+            <Button variant="outline" onClick={() => { setError(''); fetchTests(); }}>Retry</Button>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (

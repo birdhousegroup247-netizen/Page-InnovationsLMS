@@ -146,26 +146,30 @@ function AssignmentCard({ assignment, onSubmit }) {
           )}
           {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
           {success && <Alert variant="success" className="mb-3">{success}</Alert>}
-          {assignment.allow_text_submission && (
-            <textarea
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none transition-colors"
-              rows={5}
-              placeholder="Write your answer here..."
-              value={textContent || sub?.text_content || ''}
-              onChange={(e) => setTextContent(e.target.value)}
-            />
+          {assignment.allow_text_submission ? (
+            <>
+              <textarea
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none transition-colors"
+                rows={5}
+                placeholder="Write your answer here..."
+                value={textContent || sub?.text_content || ''}
+                onChange={(e) => setTextContent(e.target.value)}
+              />
+              <div className="flex justify-end mt-3">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSubmit}
+                  loading={submitting}
+                  leftIcon={!submitting && <Send className="w-4 h-4" />}
+                >
+                  {canSubmit ? 'Submit' : 'Update'}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400">Text submission is not enabled for this assignment.</p>
           )}
-          <div className="flex justify-end mt-3">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSubmit}
-              loading={submitting}
-              leftIcon={!submitting && <Send className="w-4 h-4" />}
-            >
-              {canSubmit ? 'Submit' : 'Update'}
-            </Button>
-          </div>
         </div>
       )}
     </div>

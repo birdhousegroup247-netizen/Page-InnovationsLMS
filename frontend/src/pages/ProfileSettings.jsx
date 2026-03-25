@@ -111,6 +111,10 @@ export default function ProfileSettings() {
       errors.github_url = 'Invalid GitHub URL';
     }
 
+    if (profileForm.phone && !/^\+?[\d\s\-().]{7,20}$/.test(profileForm.phone)) {
+      errors.phone = 'Invalid phone number format';
+    }
+
     return errors;
   };
 
@@ -378,6 +382,17 @@ export default function ProfileSettings() {
                           Use URL
                         </Button>
                       </div>
+                      {avatarUrl && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <img
+                            src={avatarUrl}
+                            alt="Preview"
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-border-dark"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                          <span className="text-xs text-gray-400">Preview</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -451,6 +466,9 @@ export default function ProfileSettings() {
                           placeholder="+1 (555) 123-4567"
                         />
                       </div>
+                      {validationErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
+                      )}
                     </div>
 
                     {/* Bio (for instructors) */}

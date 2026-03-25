@@ -164,7 +164,7 @@ export default function SearchResults() {
                       <div
                         key={lesson.id}
                         onClick={() => courseId && navigate(`/courses/${courseId}/learn`)}
-                        className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer group"
+                        className={`bg-white dark:bg-dark-800 rounded-xl shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all group ${courseId ? 'cursor-pointer' : 'cursor-default opacity-75'}`}
                       >
                         <FileText className="w-8 h-8 text-brand-purple flex-shrink-0" />
                         <div className="flex-1 min-w-0">

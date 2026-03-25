@@ -139,7 +139,7 @@ export default function Billing() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
-                          {p.course?.title || 'Course'}
+                          {p.course?.title || 'Course (no longer available)'}
                         </p>
                         <span className="text-sm font-semibold text-gray-900 dark:text-white flex-shrink-0">
                           ${parseFloat(p.amount).toFixed(2)}

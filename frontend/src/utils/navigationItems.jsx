@@ -28,7 +28,7 @@ export const getNavigationItems = (role = 'student') => {
     {
       label: 'My Assigned Tests',
       path: '/my-assigned-tests',
-      icon: <ClipboardList className="w-5 h-5" />,
+      icon: <FileText className="w-5 h-5" />,
     },
     {
       label: 'Practice Tests',

@@ -112,7 +112,7 @@ export default function Leads() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && fetchAll()}
+          onKeyDown={(e) => e.key === 'Enter' && fetchAll(1)}
           placeholder="Search name, email, phone..."
           className="flex-1 bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-blue"
         />

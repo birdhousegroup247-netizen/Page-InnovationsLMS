@@ -1402,9 +1402,17 @@ export default function Users() {
         title="Delete Users"
         size="sm"
       >
-        <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-3">
           Are you sure you want to delete <strong>{selectedUsers.length} user(s)</strong>? This action cannot be undone.
         </p>
+        <ul className="mb-6 max-h-40 overflow-y-auto space-y-1">
+          {users.filter(u => selectedUsers.includes(u.id)).map(u => (
+            <li key={u.id} className="text-sm text-gray-700 dark:text-text-dark-primary flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+              {u.full_name} <span className="text-gray-400 text-xs">({u.email})</span>
+            </li>
+          ))}
+        </ul>
         <div className="flex justify-end gap-3">
           <Button
             variant="outline"

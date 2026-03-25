@@ -315,11 +315,12 @@ export default function Notifications() {
                     </label>
                     <select
                       value={typeFilter}
+                      disabled={loading}
                       onChange={(e) => {
                         setTypeFilter(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-white focus:ring-2 focus:ring-white/50 transition-all"
+                      className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-white focus:ring-2 focus:ring-white/50 transition-all disabled:opacity-50"
                     >
                       {TYPE_FILTER_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value} className="text-gray-900">

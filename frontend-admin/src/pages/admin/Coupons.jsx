@@ -4,7 +4,7 @@ import { Tag, Plus, Pencil, Trash2, RefreshCw, X, Check } from 'lucide-react';
 
 const BLANK = {
   code: '', description: '', discount_type: 'percentage', discount_value: '',
-  min_purchase_amount: '', max_uses: '', per_user_limit: 1,
+  min_purchase_amount: '', max_uses: 1, per_user_limit: 1,
   applies_to: 'all', expires_at: '',
 };
 
@@ -223,6 +223,7 @@ export default function Coupons() {
                 <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                   disabled={!!editing}
                   className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-blue disabled:opacity-50" />
+                {editing && <p className="text-xs text-text-muted mt-1">Code cannot be changed after creation</p>}
               </div>
               <div>
                 <label className="text-xs text-text-secondary mb-1 block">Type *</label>
@@ -239,7 +240,7 @@ export default function Coupons() {
                   className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs text-text-secondary mb-1 block">Max Uses (blank = unlimited)</label>
+                <label className="text-xs text-text-secondary mb-1 block">Max Uses (1 = one-time, blank = unlimited)</label>
                 <input type="number" min="1" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
                   className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
               </div>
