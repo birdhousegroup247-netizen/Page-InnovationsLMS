@@ -1269,7 +1269,8 @@ export default function CoursePlayer() {
                           <button
                             onClick={() => handleAddReply(forumPost.id)}
                             disabled={!newReply.trim()}
-                            className="p-2 rounded-lg bg-brand-blue text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            title={!newReply.trim() ? 'Write a reply first' : 'Send reply'}
+                            className="p-2 rounded-lg bg-brand-blue text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             <Send className="w-4 h-4" />
                           </button>
@@ -1306,7 +1307,8 @@ export default function CoursePlayer() {
                             <div className="flex gap-2 justify-end">
                               <button onClick={() => setShowNewPost(false)} className="text-sm px-3 py-1.5 text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">Cancel</button>
                               <button onClick={handleCreatePost} disabled={!newPostTitle.trim() || !newPostContent.trim()}
-                                className="text-sm px-3 py-1.5 bg-brand-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">Post</button>
+                                title={!newPostTitle.trim() || !newPostContent.trim() ? 'Add a title and content to post' : 'Publish post'}
+                                className="text-sm px-3 py-1.5 bg-brand-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Post</button>
                             </div>
                           </div>
                         )}

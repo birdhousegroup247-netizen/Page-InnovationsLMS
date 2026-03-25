@@ -202,15 +202,22 @@ export default function Announcements() {
                 </div>
 
                 {form.target === 'course' && (
-                  <Select
-                    label="Select Course"
-                    value={form.course_id}
-                    onChange={(e) => setForm(prev => ({ ...prev, course_id: e.target.value }))}
-                    options={[
-                      { value: '', label: 'Choose a course...' },
-                      ...courses.map(c => ({ value: c.id, label: c.title }))
-                    ]}
-                  />
+                  <>
+                    <Select
+                      label="Select Course"
+                      value={form.course_id}
+                      onChange={(e) => setForm(prev => ({ ...prev, course_id: e.target.value }))}
+                      options={[
+                        { value: '', label: 'Choose a course...' },
+                        ...courses.map(c => ({ value: c.id, label: c.title }))
+                      ]}
+                    />
+                    {!form.course_id && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 -mt-1">
+                        <span>⚠</span> A course must be selected before sending
+                      </p>
+                    )}
+                  </>
                 )}
 
                 <Input

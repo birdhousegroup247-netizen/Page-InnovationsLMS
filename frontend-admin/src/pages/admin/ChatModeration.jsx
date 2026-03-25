@@ -432,7 +432,7 @@ function SupportInbox() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search conversations…"
+              placeholder="Search by name…"
               className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-brand-blue/30"
             />
           </div>

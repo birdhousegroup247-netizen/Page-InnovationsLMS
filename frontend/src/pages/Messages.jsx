@@ -705,7 +705,7 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
               key={msg.id} msg={msg} isOwn={isOwn} userId={userId}
               onReply={setReplyTo} onRegisterRef={registerRef} onScrollTo={scrollToMessage}
               onReact={handleReact}
-              onPin={type === 'room' && (isInstructor || true) ? handlePin : null}
+              onPin={type === 'room' && isInstructor ? handlePin : null}
               onForward={(m) => setForwardMsg(m)}
               isLastOwn={isLastOwn}
               seenBy={type === 'dm' && seenAt}
@@ -1032,7 +1032,7 @@ export default function Messages() {
                     <p className="text-xs text-gray-400 capitalize">{u.role}</p>
                   </div>
                   {u.role === 'instructor' && (
-                    <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">Tutor</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">Instructor</span>
                   )}
                 </button>
               ))}
@@ -1055,9 +1055,10 @@ export default function Messages() {
             </p>
             {filteredRooms.length === 0 && !search && (
               <p className="px-4 py-2 text-xs text-gray-400 leading-relaxed">
-                No rooms yet.{' '}
-                <a href="/courses" className="text-brand-blue hover:underline">Enroll in a course</a>
-                {' '}to join its chat room.
+                {isInstructor
+                  ? 'No rooms yet. Chat rooms are created when your course is published.'
+                  : <>No rooms yet.{' '}<a href="/courses" className="text-brand-blue hover:underline">Enroll in a course</a>{' '}to join its chat room.</>
+                }
               </p>
             )}
             {filteredRooms.length === 0 && search && (
