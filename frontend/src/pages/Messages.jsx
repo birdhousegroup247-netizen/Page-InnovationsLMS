@@ -359,6 +359,7 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
   const [pinnedMsg, setPinnedMsg]       = useState(null);
   const [forwardMsg, setForwardMsg]     = useState(null);
   const [seenAt, setSeenAt]             = useState(null); // timestamp when other person read
+  const [roomDisabled, setRoomDisabled] = useState(false);
 
   const bottomRef    = useRef(null);
   const topRef       = useRef(null);
@@ -471,7 +472,15 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
     const onTyping = ({ userId: tid, userName }) =>
       setTypers((prev) => prev.find((t) => t.userId === tid) ? prev : [...prev, { userId: tid, userName }]);
     const onStop = ({ userId: tid }) => setTypers((prev) => prev.filter((t) => t.userId !== tid));
-    const onDisabled = () => setError('This chat room has been disabled by an admin');
+    const onDisabled = () => { setError('This chat room has been disabled by an admin'); setRoomDisabled(true); };
+    const onMemberApproved = ({ roomId: rid }) => {
+      if (type === 'room' && rid === id) {
+        chatAPI.getRoomMembers(id).then((r) => setMembers(r.data?.data?.members || [])).catch(() => {});
+      }
+    };
+    const onMemberRemoved = ({ roomId: rid, userId: uid }) => {
+      if (type === 'room' && rid === id) setMembers((prev) => prev.filter((m) => m.id !== uid));
+    };
 
     socket.on('chat:message', onMessage);
     socket.on('chat:reaction', onReaction);
@@ -480,6 +489,8 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
     socket.on('user:typing', onTyping);
     socket.on('user:stopped_typing', onStop);
     socket.on('chat:room_disabled', onDisabled);
+    socket.on('chat:member_approved', onMemberApproved);
+    socket.on('chat:member_removed', onMemberRemoved);
 
     return () => {
       socket.emit(type === 'room' ? 'leave:room' : 'leave:conversation', id);
@@ -490,6 +501,8 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
       socket.off('user:typing', onTyping);
       socket.off('user:stopped_typing', onStop);
       socket.off('chat:room_disabled', onDisabled);
+      socket.off('chat:member_approved', onMemberApproved);
+      socket.off('chat:member_removed', onMemberRemoved);
     };
   }, [type, id, userId]);
 
@@ -743,10 +756,11 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
           </button>
         )}
         <textarea ref={inputRef} rows={1} value={input} onChange={handleInputChange} onKeyDown={handleKeyDown}
-          placeholder={replyTo ? 'Write your reply… (Enter to send, Esc to cancel)' : attachFile ? 'Add a caption…' : 'Type a message… (Enter to send)'}
-          className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-400 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-colors max-h-32"
+          disabled={roomDisabled}
+          placeholder={roomDisabled ? 'This room has been disabled' : replyTo ? 'Write your reply… (Enter to send, Esc to cancel)' : attachFile ? 'Add a caption…' : 'Type a message… (Enter to send)'}
+          className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-white placeholder-gray-400 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-colors max-h-32 disabled:opacity-60 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }} />
-        <button onClick={handleSend} disabled={(!input.trim() && !attachFile) || sending}
+        <button onClick={handleSend} disabled={roomDisabled || (!input.trim() && !attachFile) || sending}
           className={cn('w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all',
             (input.trim() || attachFile) && !sending ? 'bg-brand-blue text-white hover:bg-blue-600 shadow-sm' : 'bg-gray-100 dark:bg-dark-700 text-gray-400 cursor-not-allowed')}>
           {sending ? <Spinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
@@ -1074,7 +1088,7 @@ export default function Messages() {
                     <ChevronRight className="w-3.5 h-3.5 ml-auto" />
                   </button>
                 ) : (
-                  <PendingRequests roomId={activeChat.roomId} onClose={() => setShowRequests(false)} />
+                  <PendingRequests roomId={activeChat.id} onClose={() => setShowRequests(false)} />
                 )}
               </div>
             )}
