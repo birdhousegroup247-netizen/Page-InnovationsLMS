@@ -6,9 +6,19 @@
 const Stripe = require('stripe');
 const logger = require('../../utils/logger');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
-});
+// Lazy init — avoids crash on startup when STRIPE_SECRET_KEY is not yet set
+let _stripe = null;
+const getStripe = () => {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    });
+  }
+  return _stripe;
+};
 
 /**
  * Create a Stripe Checkout Session.
@@ -72,7 +82,7 @@ const createCheckoutSession = async ({
     sessionParams.discounts = [{ coupon: couponStripeId }];
   }
 
-  const session = await stripe.checkout.sessions.create(sessionParams);
+  const session = await getStripe().checkout.sessions.create(sessionParams);
   logger.info(`Stripe checkout session created: ${session.id} for user ${userId}, course ${courseId}`);
   return session;
 };
@@ -82,7 +92,7 @@ const createCheckoutSession = async ({
  * Used to verify payment after Stripe redirects back.
  */
 const retrieveCheckoutSession = async (sessionId) => {
-  return await stripe.checkout.sessions.retrieve(sessionId, {
+  return await getStripe().checkout.sessions.retrieve(sessionId, {
     expand: ['line_items', 'payment_intent'],
   });
 };
@@ -95,7 +105,7 @@ const retrieveCheckoutSession = async (sessionId) => {
  * @param {string} signature - Value of `stripe-signature` header
  */
 const constructWebhookEvent = (rawBody, signature) => {
-  return stripe.webhooks.constructEvent(
+  return getStripe().webhooks.constructEvent(
     rawBody,
     signature,
     process.env.STRIPE_WEBHOOK_SECRET
@@ -118,7 +128,7 @@ const createStripeCoupon = async ({ discountType, discountValue, name }) => {
     params.duration = 'once';
   }
 
-  const coupon = await stripe.coupons.create(params);
+  const coupon = await getStripe().coupons.create(params);
   logger.info(`Stripe coupon created: ${coupon.id}`);
   return coupon;
 };
