@@ -35,6 +35,7 @@ export default function Payments() {
   const [filters, setFilters] = useState({
     status: '',
     payment_method: '',
+    payment_gateway: '',
     date_from: '',
     date_to: '',
     search: '',
@@ -52,7 +53,7 @@ export default function Payments() {
 
   useEffect(() => {
     fetchPayments();
-  }, [filters.page, filters.status, filters.payment_method, filters.date_from, filters.date_to]);
+  }, [filters.page, filters.status, filters.payment_method, filters.payment_gateway, filters.date_from, filters.date_to]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchPayments(), 400);
@@ -203,7 +204,7 @@ export default function Payments() {
 
         {/* Filters */}
         <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Input
               placeholder="Search student name or email..."
               leftIcon={<Search className="w-4 h-4" />}
@@ -221,6 +222,15 @@ export default function Payments() {
                 { value: 'refunded', label: 'Refunded' },
               ]}
             />
+            <Select
+              value={filters.payment_gateway}
+              onChange={(e) => setFilters(prev => ({ ...prev, payment_gateway: e.target.value, page: 1 }))}
+              options={[
+                { value: '', label: 'All Gateways' },
+                { value: 'stripe', label: 'Stripe (International)' },
+                { value: 'paystack', label: 'Paystack (Nigeria)' },
+              ]}
+            />
             <Input
               label="From"
               type="date"
@@ -235,7 +245,7 @@ export default function Payments() {
             />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => setFilters({ status: '', payment_method: '', date_from: '', date_to: '', search: '', page: 1, limit: 20 })}>
+            <Button variant="outline" size="sm" onClick={() => setFilters({ status: '', payment_method: '', payment_gateway: '', date_from: '', date_to: '', search: '', page: 1, limit: 20 })}>
               <RefreshCw className="w-4 h-4 mr-1" />
               Reset Filters
             </Button>
@@ -257,7 +267,7 @@ export default function Payments() {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Student</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Course</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Method</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Gateway</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Action</th>
@@ -282,9 +292,15 @@ export default function Payments() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                            <CreditCard className="w-3.5 h-3.5" />
-                            <span className="capitalize">{payment.payment_method}</span>
+                          <div className="flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-gray-400" />
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              payment.payment_gateway === 'paystack'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                            }`}>
+                              {payment.payment_gateway === 'paystack' ? 'Paystack' : 'Stripe'}
+                            </span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -334,7 +350,7 @@ export default function Payments() {
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-700 dark:text-red-300">
               Refund <strong>{formatCurrency(refundTarget?.amount)}</strong> to <strong>{refundTarget?.student?.full_name}</strong> for <strong>{refundTarget?.course?.title}</strong>?
-              This will trigger a Stripe refund and cannot be undone.
+              This will trigger a {refundTarget?.payment_gateway === 'paystack' ? 'Paystack' : 'Stripe'} refund and cannot be undone.
             </p>
           </div>
           <div>

@@ -465,6 +465,9 @@ export const paymentsAPI = {
   createCheckoutSession: (data) => api.post('/api/payments/checkout-session', data),
   createInstallmentSession: () => api.post('/api/payments/installment-session'),
   verifyPayment: (sessionId) => api.get('/api/payments/verify', { params: { session_id: sessionId } }),
+  initializePaystackCheckout: (data) => api.post('/api/payments/paystack/initialize', data),
+  initializePaystackInstallment: () => api.post('/api/payments/paystack/installment'),
+  verifyPaystackPayment: (reference) => api.get('/api/payments/paystack/verify', { params: { reference } }),
   getMyPayments: () => api.get('/api/payments/my'),
 };
 

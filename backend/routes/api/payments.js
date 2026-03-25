@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const StripeController = require('../../controllers/payments/stripeController');
+const PaystackController = require('../../controllers/payments/paystackController');
 const { authenticate } = require('../../middleware/auth/authMiddleware');
 
 // Max 10 checkout attempts per IP per 15 minutes
@@ -13,16 +14,17 @@ const checkoutLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Create checkout session — user must be authenticated
+// ── Stripe ────────────────────────────────────────────────────────────────────
 router.post('/checkout-session', checkoutLimiter, authenticate, StripeController.createCheckoutSession);
-
-// Create checkout session for outstanding installment balance
 router.post('/installment-session', checkoutLimiter, authenticate, StripeController.createInstallmentSession);
-
-// Verify payment after Stripe redirect
 router.get('/verify', authenticate, StripeController.verifyPayment);
 
-// Get all payments for the current user
+// ── Paystack ──────────────────────────────────────────────────────────────────
+router.post('/paystack/initialize', checkoutLimiter, authenticate, PaystackController.initializeCheckout);
+router.post('/paystack/installment', checkoutLimiter, authenticate, PaystackController.initializeInstallmentCheckout);
+router.get('/paystack/verify', authenticate, PaystackController.verifyPayment);
+
+// ── Shared ────────────────────────────────────────────────────────────────────
 router.get('/my', authenticate, StripeController.getMyPayments);
 
 module.exports = router;

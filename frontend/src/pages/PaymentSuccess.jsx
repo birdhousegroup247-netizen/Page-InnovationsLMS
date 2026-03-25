@@ -7,12 +7,28 @@ import logo from '../assets/logo.png';
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const paystackRef = searchParams.get('reference');
+  const gateway = searchParams.get('gateway');
 
   const [verifying, setVerifying] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (gateway === 'paystack' && paystackRef) {
+      paymentsAPI
+        .verifyPaystackPayment(paystackRef)
+        .then((res) => setPaymentData(res.data.data))
+        .catch((e) =>
+          setError(
+            e.response?.data?.message ||
+              'Could not verify payment status. Your enrollment may still be processing — please check My Courses.'
+          )
+        )
+        .finally(() => setVerifying(false));
+      return;
+    }
+
     if (!sessionId) {
       setVerifying(false);
       setError('No payment session found. Please check My Courses.');
@@ -29,7 +45,7 @@ export default function PaymentSuccess() {
         )
       )
       .finally(() => setVerifying(false));
-  }, [sessionId]);
+  }, [sessionId, paystackRef, gateway]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col items-center justify-center p-4">

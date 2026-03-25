@@ -96,6 +96,7 @@ class AdminPaymentsController {
       const {
         status,
         payment_method,
+        payment_gateway,
         date_from,
         date_to,
         student_id,
@@ -108,6 +109,7 @@ class AdminPaymentsController {
       const where = {};
       if (status && status !== 'all') where.payment_status = status;
       if (payment_method) where.payment_method = payment_method;
+      if (payment_gateway && payment_gateway !== 'all') where.payment_gateway = payment_gateway;
       if (student_id) where.student_id = student_id;
       if (course_id) where.course_id = course_id;
       if (date_from) where.payment_date = { ...(where.payment_date || {}), [Op.gte]: new Date(date_from) };
@@ -174,10 +176,22 @@ class AdminPaymentsController {
         throw new BadRequestError('Only completed payments can be refunded');
       }
 
-      // Attempt Stripe refund if stripe credentials and charge info exist
-      if ((payment.stripe_charge_id || payment.stripe_payment_intent_id) && process.env.STRIPE_SECRET_KEY) {
+      // Issue refund via the appropriate gateway
+      if (payment.payment_gateway === 'paystack') {
+        if (payment.paystack_reference && process.env.PAYSTACK_SECRET_KEY) {
+          try {
+            const paystackService = require('../../services/payment/paystackService');
+            await paystackService.refundTransaction({
+              reference: payment.paystack_reference,
+              amount: payment.amount,
+            });
+          } catch (paystackError) {
+            logger.error(`Paystack refund failed for payment ${id}:`, paystackError.message);
+            throw new BadRequestError(`Paystack refund failed: ${paystackError.message}`);
+          }
+        }
+      } else if ((payment.stripe_charge_id || payment.stripe_payment_intent_id) && process.env.STRIPE_SECRET_KEY) {
         try {
-          const stripeService = require('../../services/payment/stripeService');
           const stripeInstance = require('stripe')(process.env.STRIPE_SECRET_KEY);
           if (payment.stripe_payment_intent_id) {
             await stripeInstance.refunds.create({ payment_intent: payment.stripe_payment_intent_id });

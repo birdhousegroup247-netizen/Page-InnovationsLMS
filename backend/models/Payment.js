@@ -123,6 +123,17 @@ const Payment = sequelize.define(
       allowNull: true,
       unique: true,
     },
+    // ── Paystack ──────────────────────────────────────────────────────────────
+    payment_gateway: {
+      type: DataTypes.ENUM('stripe', 'paystack'),
+      defaultValue: 'stripe',
+      allowNull: false,
+    },
+    paystack_reference: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
     metadata: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -143,6 +154,8 @@ const Payment = sequelize.define(
       { fields: ['transaction_id'] },
       { fields: ['installment_status'] },
       { fields: ['installment_due_date'] },
+      { fields: ['payment_gateway'] },
+      { fields: ['paystack_reference'] },
     ],
   }
 );

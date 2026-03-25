@@ -4,6 +4,18 @@ import { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
 import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
 import logo from '../assets/logo.png';
 
+// Load Paystack Inline.js from CDN
+function loadPaystackScript() {
+  return new Promise((resolve) => {
+    if (window.PaystackPop) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    script.onload = resolve;
+    document.head.appendChild(script);
+  });
+}
+
 export default function Checkout() {
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get('course_id');
@@ -18,6 +30,7 @@ export default function Checkout() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [paystackLoading, setPaystackLoading] = useState(false);
   const [error, setError] = useState('');
 
   // For installment second payment mode
@@ -96,6 +109,32 @@ export default function Checkout() {
     }
   };
 
+  const handlePaystackInstallmentCheckout = async () => {
+    setPaystackLoading(true);
+    setError('');
+    try {
+      const res = await paymentsAPI.initializePaystackInstallment();
+      const { reference, amount, email } = res.data.data;
+      await loadPaystackScript();
+      setPaystackLoading(false);
+      const handler = window.PaystackPop.setup({
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+        email,
+        amount: Math.round(amount * 100),
+        currency: 'USD',
+        ref: reference,
+        onClose: () => setError('Payment was cancelled.'),
+        callback: (response) => {
+          navigate(`/payment-success?reference=${response.reference}&gateway=paystack`);
+        },
+      });
+      handler.openIframe();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to start payment. Please try again.');
+      setPaystackLoading(false);
+    }
+  };
+
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     setError('');
@@ -109,6 +148,36 @@ export default function Checkout() {
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to start checkout. Please try again.');
       setCheckoutLoading(false);
+    }
+  };
+
+  const handlePaystackCheckout = async () => {
+    setPaystackLoading(true);
+    setError('');
+    try {
+      const res = await paymentsAPI.initializePaystackCheckout({
+        course_id: courseId,
+        payment_plan: paymentPlan,
+        coupon_code: appliedCoupon ? couponCode.trim().toUpperCase() : undefined,
+      });
+      const { reference, amount, email } = res.data.data;
+      await loadPaystackScript();
+      setPaystackLoading(false);
+      const handler = window.PaystackPop.setup({
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+        email,
+        amount: Math.round(amount * 100),
+        currency: 'USD',
+        ref: reference,
+        onClose: () => setError('Payment was cancelled.'),
+        callback: (response) => {
+          navigate(`/payment-success?reference=${response.reference}&gateway=paystack`);
+        },
+      });
+      handler.openIframe();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to start payment. Please try again.');
+      setPaystackLoading(false);
     }
   };
 
@@ -224,18 +293,30 @@ export default function Checkout() {
               </div>
             )}
 
-            <button
-              onClick={handleInstallmentCheckout}
-              disabled={checkoutLoading}
-              className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <CreditCard className="w-5 h-5" />
-              {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay $${remaining.toFixed(2)} Now`}
-            </button>
+            {/* Show only the gateway used for the first payment */}
+            {installmentPayment?.payment_gateway === 'paystack' ? (
+              <button
+                onClick={handlePaystackInstallmentCheckout}
+                disabled={paystackLoading}
+                className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <CreditCard className="w-5 h-5" />
+                {paystackLoading ? 'Loading...' : `Pay $${remaining.toFixed(2)} Now`}
+              </button>
+            ) : (
+              <button
+                onClick={handleInstallmentCheckout}
+                disabled={checkoutLoading}
+                className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <CreditCard className="w-5 h-5" />
+                {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay $${remaining.toFixed(2)} Now`}
+              </button>
+            )}
 
             <p className="text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1 mt-3">
               <Lock className="w-3 h-3" />
-              Secured by Stripe. Your payment info is never stored on our servers.
+              Your payment info is never stored on our servers.
             </p>
           </div>
         </div>
@@ -503,25 +584,44 @@ export default function Checkout() {
             </div>
           )}
 
-          {/* Checkout Button */}
-          <button
-            onClick={handleCheckout}
-            disabled={checkoutLoading}
-            className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <CreditCard className="w-5 h-5" />
-            {checkoutLoading
-              ? 'Redirecting to Secure Payment...'
-              : `Pay ${
-                  paymentPlan === 'installment'
-                    ? `$${dueNow.toFixed(2)} Now`
-                    : `$${priceAfterCoupon.toFixed(2)}`
-                }`}
-          </button>
+          {/* Payment Gateway Buttons */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 text-center">Choose your payment method</p>
+
+            {/* Stripe — International */}
+            <button
+              onClick={handleCheckout}
+              disabled={checkoutLoading || paystackLoading}
+              className="w-full py-3.5 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-between px-5 shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                {checkoutLoading
+                  ? 'Redirecting...'
+                  : `Pay ${paymentPlan === 'installment' ? `$${dueNow.toFixed(2)} Now` : `$${priceAfterCoupon.toFixed(2)}`}`}
+              </span>
+              <span className="text-xs opacity-75 font-normal">International (Stripe)</span>
+            </button>
+
+            {/* Paystack — Nigeria */}
+            <button
+              onClick={handlePaystackCheckout}
+              disabled={checkoutLoading || paystackLoading}
+              className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-between px-5 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                {paystackLoading
+                  ? 'Loading...'
+                  : `Pay ${paymentPlan === 'installment' ? `$${dueNow.toFixed(2)} Now` : `$${priceAfterCoupon.toFixed(2)}`}`}
+              </span>
+              <span className="text-xs opacity-75 font-normal">Nigeria (Paystack)</span>
+            </button>
+          </div>
 
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
             <Lock className="w-3 h-3" />
-            Secured by Stripe. Your payment info is never stored on our servers.
+            Your payment info is never stored on our servers.
           </p>
         </div>
       </div>
