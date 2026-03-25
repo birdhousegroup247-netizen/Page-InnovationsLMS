@@ -3,6 +3,7 @@ const ApiResponse = require('../../utils/response');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
 const NotificationsController = require('../notifications/notificationsController');
 const logger = require('../../utils/logger');
+const zoomService = require('../../services/zoom/zoomService');
 
 class LiveSessionController {
   // GET /api/courses/:courseId/sessions
@@ -18,7 +19,19 @@ class LiveSessionController {
         order: [['scheduled_at', 'ASC']],
       });
 
-      return ApiResponse.success(res, { sessions });
+      const isAdminOrInstructor = ['admin', 'super_admin', 'instructor'].includes(req.user?.role);
+
+      // Hide zoom_start_url from students — only visible to the session's own instructor or admin
+      const sessionsData = sessions.map((s) => {
+        const data = s.toJSON();
+        const canSeeStartUrl =
+          isAdminOrInstructor &&
+          (req.user?.id === s.instructor_id || ['admin', 'super_admin'].includes(req.user?.role));
+        if (!canSeeStartUrl) delete data.zoom_start_url;
+        return data;
+      });
+
+      return ApiResponse.success(res, { sessions: sessionsData });
     } catch (error) {
       next(error);
     }
@@ -38,21 +51,45 @@ class LiveSessionController {
         throw new ForbiddenError('Only the course instructor can create sessions');
       }
 
-      if (!title || !meeting_url || !scheduled_at) {
-        throw new BadRequestError('title, meeting_url, and scheduled_at are required');
+      const isZoom = platform === 'zoom';
+
+      if (!title || !scheduled_at) {
+        throw new BadRequestError('title and scheduled_at are required');
+      }
+      if (!isZoom && !meeting_url) {
+        throw new BadRequestError('meeting_url is required for non-Zoom sessions');
       }
 
-      const session = await LiveSession.create({
+      let sessionData = {
         course_id: parseInt(courseId),
         instructor_id: req.user.id,
         title,
         description,
-        meeting_url,
+        meeting_url: meeting_url || null,
         platform: platform || 'other',
         scheduled_at,
         duration_minutes: duration_minutes || 60,
         status: 'scheduled',
-      });
+      };
+
+      // Auto-create Zoom meeting
+      if (isZoom) {
+        try {
+          const zoom = await zoomService.createMeeting({
+            topic: title,
+            startTime: scheduled_at,
+            durationMinutes: duration_minutes || 60,
+          });
+          sessionData.meeting_url = zoom.joinUrl;
+          sessionData.zoom_meeting_id = zoom.meetingId;
+          sessionData.zoom_start_url = zoom.startUrl;
+        } catch (zoomErr) {
+          logger.error(`Zoom meeting creation failed: ${zoomErr.message}`);
+          throw new BadRequestError(`Could not create Zoom meeting: ${zoomErr.message}`);
+        }
+      }
+
+      const session = await LiveSession.create(sessionData);
 
       // Notify enrolled students
       try {
@@ -94,10 +131,24 @@ class LiveSessionController {
         throw new ForbiddenError('Only the session instructor can update it');
       }
 
+      // Sync Zoom meeting if it exists and any relevant fields changed
+      if (session.zoom_meeting_id && (title || scheduled_at || duration_minutes)) {
+        try {
+          await zoomService.updateMeeting(session.zoom_meeting_id, {
+            topic: title || session.title,
+            startTime: scheduled_at || session.scheduled_at,
+            durationMinutes: duration_minutes || session.duration_minutes,
+          });
+        } catch (zoomErr) {
+          logger.warn(`Zoom meeting update failed (non-critical): ${zoomErr.message}`);
+        }
+      }
+
       await session.update({
         title: title || session.title,
         description: description !== undefined ? description : session.description,
-        meeting_url: meeting_url || session.meeting_url,
+        // Only update meeting_url for non-Zoom sessions (Zoom URL stays the same)
+        meeting_url: session.zoom_meeting_id ? session.meeting_url : (meeting_url || session.meeting_url),
         platform: platform || session.platform,
         scheduled_at: scheduled_at || session.scheduled_at,
         duration_minutes: duration_minutes || session.duration_minutes,
@@ -120,6 +171,16 @@ class LiveSessionController {
 
       if (session.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role)) {
         throw new ForbiddenError('Only the session instructor can cancel it');
+      }
+
+      // Auto-delete Zoom meeting if one was created
+      if (session.zoom_meeting_id) {
+        try {
+          await zoomService.deleteMeeting(session.zoom_meeting_id);
+        } catch (zoomErr) {
+          logger.warn(`Zoom meeting deletion failed (non-critical): ${zoomErr.message}`);
+          // Don't block session deletion if Zoom fails
+        }
       }
 
       await session.destroy();

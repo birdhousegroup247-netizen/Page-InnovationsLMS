@@ -29,11 +29,19 @@ const LiveSession = sequelize.define(
     },
     meeting_url: {
       type: DataTypes.STRING(1000),
-      allowNull: false,
+      allowNull: true, // null until Zoom auto-generates it (or manual URL provided)
     },
     platform: {
       type: DataTypes.ENUM('zoom', 'google_meet', 'other'),
       defaultValue: 'other',
+    },
+    zoom_meeting_id: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    zoom_start_url: {
+      type: DataTypes.STRING(2000), // start URLs are long
+      allowNull: true,
     },
     scheduled_at: {
       type: DataTypes.DATE,

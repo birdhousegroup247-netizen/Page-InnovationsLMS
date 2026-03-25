@@ -9,11 +9,15 @@ const PLATFORMS = ['zoom', 'google_meet', 'other'];
 
 function SessionForm({ initial, onSubmit, onCancel, loading }) {
   const [form, setForm] = useState(initial || {
-    title: '', description: '', meeting_url: '', platform: 'other',
+    title: '', description: '', meeting_url: '', platform: 'zoom',
     scheduled_at: '', duration_minutes: 60,
   });
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const isZoom = form.platform === 'zoom';
+  const isEditingZoom = initial?.zoom_meeting_id; // editing an existing Zoom session
+
+  const canSubmit = form.title && form.scheduled_at && (isZoom || form.meeting_url);
 
   return (
     <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-6 space-y-4 transition-colors">
@@ -28,8 +32,9 @@ function SessionForm({ initial, onSubmit, onCancel, loading }) {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Platform</label>
           <select name="platform" value={form.platform} onChange={handle}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors">
-            {PLATFORMS.map(p => <option key={p} value={p}>{p.replace('_', ' ')}</option>)}
+            disabled={!!isEditingZoom}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors disabled:opacity-60">
+            {PLATFORMS.map(p => <option key={p} value={p}>{p === 'zoom' ? 'Zoom (auto-create)' : p.replace('_', ' ')}</option>)}
           </select>
         </div>
         <div>
@@ -42,12 +47,25 @@ function SessionForm({ initial, onSubmit, onCancel, loading }) {
           <input name="scheduled_at" type="datetime-local" value={form.scheduled_at} onChange={handle} required
             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Meeting URL *</label>
-          <input name="meeting_url" type="url" value={form.meeting_url} onChange={handle} required
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
-            placeholder="https://zoom.us/j/..." />
-        </div>
+
+        {/* Meeting URL — hidden for Zoom (auto-generated) */}
+        {!isZoom && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Meeting URL *</label>
+            <input name="meeting_url" type="url" value={form.meeting_url} onChange={handle}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+              placeholder="https://meet.google.com/..." />
+          </div>
+        )}
+
+        {/* Zoom info banner */}
+        {isZoom && !isEditingZoom && (
+          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+            <Video className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>A Zoom meeting will be automatically created when you schedule this session. Students will receive the join link immediately.</span>
+          </div>
+        )}
+
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Description</label>
           <textarea name="description" value={form.description} onChange={handle} rows={2}
@@ -57,7 +75,7 @@ function SessionForm({ initial, onSubmit, onCancel, loading }) {
       </div>
       <div className="flex gap-3 justify-end">
         <Button variant="ghost" onClick={onCancel} disabled={loading}>Cancel</Button>
-        <Button variant="primary" onClick={() => onSubmit(form)} loading={loading} disabled={loading || !form.title || !form.meeting_url || !form.scheduled_at}>
+        <Button variant="primary" onClick={() => onSubmit(form)} loading={loading} disabled={loading || !canSubmit}>
           {initial ? 'Update Session' : 'Schedule Session'}
         </Button>
       </div>
@@ -229,11 +247,29 @@ export default function LiveSessions() {
                             <Clock className="w-4 h-4" />
                             {session.duration_minutes} min
                           </span>
-                          <a href={session.meeting_url} target="_blank" rel="noreferrer"
-                            className="flex items-center gap-1 text-brand-blue hover:underline">
-                            <LinkIcon className="w-4 h-4" />
-                            Meeting Link
-                          </a>
+                          {/* Zoom: show Start Meeting (host) + Join link */}
+                          {session.zoom_meeting_id ? (
+                            <>
+                              {session.zoom_start_url && (
+                                <a href={session.zoom_start_url} target="_blank" rel="noreferrer"
+                                  className="flex items-center gap-1 text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-lg text-xs font-medium transition-colors">
+                                  <Video className="w-3.5 h-3.5" />
+                                  Start Meeting
+                                </a>
+                              )}
+                              <a href={session.meeting_url} target="_blank" rel="noreferrer"
+                                className="flex items-center gap-1 text-brand-blue hover:underline">
+                                <LinkIcon className="w-4 h-4" />
+                                Student Join Link
+                              </a>
+                            </>
+                          ) : (
+                            <a href={session.meeting_url} target="_blank" rel="noreferrer"
+                              className="flex items-center gap-1 text-brand-blue hover:underline">
+                              <LinkIcon className="w-4 h-4" />
+                              Meeting Link
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">

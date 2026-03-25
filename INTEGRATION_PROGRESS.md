@@ -41,25 +41,27 @@ PAYSTACK_PUBLIC_KEY=pk_live_...
 ---
 
 ## 2. Zoom Integration
-**Status: 🔲 Not Started**
+**Status: ✅ Done**
 
 Auto-create Zoom meetings when a live session is scheduled. Students get a join link directly on the Live Sessions page.
 
 ### Backend
-- [ ] Create `backend/services/zoom/zoomService.js` (OAuth token + create meeting)
-- [ ] Update Live Sessions controller: auto-create Zoom meeting on session creation
-- [ ] Store `zoom_meeting_id` and `zoom_join_url` on the LiveSession record
-- [ ] Auto-delete Zoom meeting when a session is cancelled/deleted
-- [ ] Expose join URL in the student-facing live sessions API response
+- [x] Created `backend/services/zoom/zoomService.js` (Server-to-Server OAuth + token caching)
+- [x] Auto-create Zoom meeting on session creation when platform='zoom'
+- [x] Store `zoom_meeting_id`, `zoom_start_url` on LiveSession — `meeting_url` = join URL
+- [x] Auto-update Zoom meeting when title/time/duration changes
+- [x] Auto-delete Zoom meeting when session is cancelled
+- [x] `zoom_start_url` hidden from students in API response
 
 ### Frontend (Student)
-- [ ] Show "Join Zoom Meeting" button on upcoming live sessions
-- [ ] Button only active when session is within 15 minutes of start time (or always visible)
-- [ ] Show meeting status (Scheduled / Live Now / Ended)
+- [x] Join link (meeting_url) visible immediately from the moment session is scheduled
+- [x] CourseDetail.jsx already uses meeting_url — works automatically
 
-### Frontend (Admin/Instructor)
-- [ ] Show Zoom meeting link and meeting ID on session detail
-- [ ] Show "Start Meeting" button for the instructor/host
+### Frontend (Instructor)
+- [x] Platform defaults to "Zoom (auto-create)"
+- [x] Meeting URL field hidden when Zoom is selected
+- [x] "Start Meeting" button (host link) shown on Zoom sessions
+- [x] "Student Join Link" shown separately
 
 ### Environment Variables Needed
 ```
