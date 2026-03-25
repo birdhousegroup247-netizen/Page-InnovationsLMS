@@ -5,7 +5,7 @@
 
 const { Op } = require('sequelize');
 const { Lead, User, Course } = require('../../models');
-const ApiResponse = require('../../utils/apiResponse');
+const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 
 class LeadsController {
