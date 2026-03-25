@@ -565,7 +565,7 @@ class CourseController {
           {
             model: Course,
             as: 'course',
-            attributes: ['id', 'title', 'thumbnail_url'],
+            attributes: ['id', 'title', 'thumbnail'],
           },
         ],
         order: [['enrollment_date', 'DESC']],

@@ -15,7 +15,7 @@ class WishlistController {
             model: Course,
             as: 'course',
             attributes: [
-              'id', 'title', 'description', 'thumbnail_url',
+              'id', 'title', 'description', 'thumbnail',
               'difficulty', 'duration', 'price', 'average_rating',
               'enrolled_count', 'status',
             ],

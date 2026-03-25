@@ -46,7 +46,7 @@ class AdminPaymentsController {
           [fn('COUNT', col('Payment.id')), 'sales'],
         ],
         where: { payment_status: 'completed' },
-        include: [{ model: Course, as: 'course', attributes: ['id', 'title', 'thumbnail_url'] }],
+        include: [{ model: Course, as: 'course', attributes: ['id', 'title', 'thumbnail'] }],
         group: ['Payment.course_id', 'course.id'],
         order: [[fn('SUM', col('Payment.amount')), 'DESC']],
         limit: 5,
@@ -78,7 +78,7 @@ class AdminPaymentsController {
         top_courses: topCourses.map(p => ({
           course_id: p.course_id,
           title: p.course?.title,
-          thumbnail_url: p.course?.thumbnail_url,
+          thumbnail: p.course?.thumbnail,
           revenue: parseFloat(p.getDataValue('revenue') || 0).toFixed(2),
           sales: parseInt(p.getDataValue('sales')),
         })),
@@ -173,14 +173,15 @@ class AdminPaymentsController {
         throw new BadRequestError('Only completed payments can be refunded');
       }
 
-      // Attempt Stripe refund if stripe_charge_id exists
-      if (payment.stripe_charge_id || payment.stripe_payment_intent_id) {
+      // Attempt Stripe refund if stripe credentials and charge info exist
+      if ((payment.stripe_charge_id || payment.stripe_payment_intent_id) && process.env.STRIPE_SECRET_KEY) {
         try {
-          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+          const stripeService = require('../../services/payment/stripeService');
+          const stripeInstance = require('stripe')(process.env.STRIPE_SECRET_KEY);
           if (payment.stripe_payment_intent_id) {
-            await stripe.refunds.create({ payment_intent: payment.stripe_payment_intent_id });
+            await stripeInstance.refunds.create({ payment_intent: payment.stripe_payment_intent_id });
           } else {
-            await stripe.refunds.create({ charge: payment.stripe_charge_id });
+            await stripeInstance.refunds.create({ charge: payment.stripe_charge_id });
           }
         } catch (stripeError) {
           logger.error(`Stripe refund failed for payment ${id}:`, stripeError.message);

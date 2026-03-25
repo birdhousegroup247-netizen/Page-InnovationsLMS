@@ -45,7 +45,7 @@ class AdminEnrollmentsController {
           {
             model: Course,
             as: 'course',
-            attributes: ['id', 'title', 'thumbnail_url', 'price'],
+            attributes: ['id', 'title', 'thumbnail', 'price'],
           },
         ],
         limit: parseInt(limit),
