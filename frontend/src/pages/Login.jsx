@@ -202,6 +202,11 @@ export default function Login() {
             {error && (
               <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 rounded-lg transition-colors animate-fade-in">
                 <p className="text-red-800 dark:text-red-400 text-sm transition-colors">{error}</p>
+                {(error.includes('students only') || error.includes('instructors only')) && (
+                  <a href="/" className="mt-2 inline-block text-sm text-red-700 dark:text-red-400 underline hover:no-underline">
+                    ← Go back to select the right role
+                  </a>
+                )}
               </div>
             )}
 

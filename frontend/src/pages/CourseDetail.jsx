@@ -17,6 +17,7 @@ import {
   Tag,
   CheckCircle2,
   Lock,
+  X,
   Video,
   Calendar,
   Link as LinkIcon,
@@ -587,8 +588,8 @@ export default function CourseDetail() {
           <div className="bg-white dark:bg-dark-800 rounded-xl shadow-2xl p-6 w-full max-w-md transition-colors">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary">Rate Instructor</h3>
-              <button onClick={() => setShowReviewModal(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
-                <Lock className="h-4 w-4 text-gray-400" />
+              <button onClick={() => setShowReviewModal(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors" title="Close">
+                <X className="h-4 w-4 text-gray-400" />
               </button>
             </div>
             <p className="text-sm text-gray-500 dark:text-text-dark-muted mb-4">

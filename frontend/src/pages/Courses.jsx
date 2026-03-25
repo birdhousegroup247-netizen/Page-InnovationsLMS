@@ -279,8 +279,14 @@ export default function Courses() {
             <EmptyState
               image={emptyCourses}
               icon={<BookOpen className="w-16 h-16" />}
-              title="No courses found"
-              description="Try adjusting your filters or search query"
+              title={searchQuery ? `No results for "${searchQuery}"` : 'No courses found'}
+              description={
+                searchQuery
+                  ? 'Try a different search term or browse all courses'
+                  : selectedCategory || selectedLevel
+                  ? 'No courses match the selected filters. Try clearing them.'
+                  : 'No courses are available yet. Check back soon.'
+              }
               actionLabel={selectedCategory || selectedLevel || searchQuery ? 'Clear Filters' : undefined}
               onAction={handleClearFilters}
             />

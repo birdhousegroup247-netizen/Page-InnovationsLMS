@@ -26,6 +26,7 @@ export default function TakeTest() {
   const [submitting, setSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showTimerWarning, setShowTimerWarning] = useState(false);
   const timerRef = useRef(null);
 
   const isPractice = !!attemptId;
@@ -67,6 +68,7 @@ export default function TakeTest() {
   const startTimer = () => {
     timerRef.current = setInterval(() => {
       setTimeRemaining((prev) => {
+        if (prev === 60) setShowTimerWarning(true);
         if (prev <= 1) {
           handleSubmit(true); // Auto-submit when time runs out
           return 0;
@@ -213,6 +215,17 @@ export default function TakeTest() {
               {formatTime(timeRemaining)}
             </div>
           </div>
+
+          {/* 1-minute warning banner */}
+          {showTimerWarning && timeRemaining > 0 && (
+            <div className="pb-3 flex items-center justify-between gap-3 px-1 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm font-medium">
+              <span className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                Only 1 minute left! Your test will auto-submit when the timer hits 0.
+              </span>
+              <button onClick={() => setShowTimerWarning(false)} className="text-red-400 hover:text-red-600 flex-shrink-0 text-xs underline">Dismiss</button>
+            </div>
+          )}
 
           {/* Progress Bar */}
           <div className="pb-4">

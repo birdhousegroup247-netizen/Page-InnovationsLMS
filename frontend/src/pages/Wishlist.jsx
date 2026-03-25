@@ -93,7 +93,12 @@ export default function Wishlist() {
       {!loading && wishlist.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {wishlist.map(({ wishlist_id, course, added_at }) => {
-            if (!course) return null;
+            if (!course) return (
+              <div key={wishlist_id} className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden shadow-sm border border-dashed border-gray-200 dark:border-border-dark flex flex-col items-center justify-center p-8 text-center gap-2">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Course no longer available</p>
+                <p className="text-xs text-gray-400">This course was removed by the instructor or admin.</p>
+              </div>
+            );
             const thumbnail =
               course.thumbnail_url ||
               `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(course.title || 'Course')}`;
