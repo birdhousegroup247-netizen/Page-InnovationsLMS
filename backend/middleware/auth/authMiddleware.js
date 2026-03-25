@@ -140,9 +140,24 @@ const checkOwnership = (paramName = 'id') => {
   };
 };
 
+/**
+ * Block suspended users from accessing course content.
+ * Suspended = overdue installment. They can still log in and pay.
+ */
+const checkNotSuspended = (req, res, next) => {
+  if (req.user && req.user.registration_status === 'suspended') {
+    return ApiResponse.forbidden(
+      res,
+      'Your account is suspended due to an overdue installment payment. Please complete your payment to regain access.'
+    );
+  }
+  next();
+};
+
 module.exports = {
   authenticate,
   optionalAuthenticate,
   authorize,
   checkOwnership,
+  checkNotSuspended,
 };

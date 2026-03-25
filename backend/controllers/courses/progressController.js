@@ -1,7 +1,9 @@
-const { ContentProgress, ModuleContent, Enrollment, CourseModule } = require('../../models');
+const { ContentProgress, ModuleContent, Enrollment, CourseModule, Certificate, Course, User } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { NotFoundError } = require('../../utils/errors');
 const ActivityController = require('../activity/activityController');
+const NotificationsController = require('../notifications/notificationsController');
+const CertificateService = require('../../services/certificate/certificateService');
 
 class ProgressController {
   // Mark content as complete
@@ -145,11 +147,46 @@ class ProgressController {
     });
 
     if (enrollment) {
+      const wasCompleted = !!enrollment.completed_at;
       await enrollment.update({
         progress_percentage: progressPercentage.toFixed(2),
         last_accessed: new Date(),
-        completed_at: progressPercentage === 100 ? new Date() : null,
+        completed_at: progressPercentage === 100 ? (enrollment.completed_at || new Date()) : null,
       });
+
+      // Auto-issue certificate when course first reaches 100%
+      if (progressPercentage === 100 && !wasCompleted) {
+        try {
+          const existing = await Certificate.findOne({ where: { student_id: studentId, course_id: module.course_id } });
+          if (!existing) {
+            const courseData = await Course.findByPk(module.course_id, {
+              include: [{ model: User, as: 'instructor', attributes: ['full_name'] }],
+            });
+            const studentData = await User.findByPk(studentId, { attributes: ['full_name'] });
+            if (courseData && studentData) {
+              const certificateId = CertificateService.generateCertificateId(enrollment.id, studentId);
+              await Certificate.create({
+                certificate_id: certificateId,
+                student_id: studentId,
+                course_id: module.course_id,
+                student_name: studentData.full_name,
+                course_title: courseData.title,
+                issue_date: new Date(),
+              });
+              await NotificationsController.createNotification({
+                user_id: studentId,
+                type: 'certificate_issued',
+                title: 'Certificate Earned!',
+                message: `Congratulations! You have completed "${courseData.title}" and your certificate is ready.`,
+                link: `/certificates`,
+                priority: 'high',
+              });
+            }
+          }
+        } catch (certErr) {
+          console.error('Auto-certificate failed (non-critical):', certErr.message);
+        }
+      }
     }
   }
 }

@@ -14,6 +14,7 @@ const logger = require('../../utils/logger');
 const { BadRequestError, NotFoundError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
+const emailSvc = require('../../services/email/emailService');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const INSTALLMENT_PERCENTAGE = 60; // 60% upfront
@@ -477,6 +478,28 @@ class StripeController {
       link: `/courses/${course_id}`,
       priority: 'high',
     });
+
+    // Send payment receipt + enrollment congratulations email (non-critical)
+    try {
+      const student = await User.findByPk(parseInt(user_id), { attributes: ['full_name', 'email'] });
+      const course = await Course.findByPk(parseInt(course_id), { attributes: ['title'] });
+      if (student && course) {
+        await emailSvc.sendPaymentReceipt(student.email, student.full_name, {
+          courseTitle: course.title,
+          amountPaid: payment.amount,
+          paymentPlan: payment_plan,
+          remainingAmount: payment.installment_remaining_amount,
+          invoiceDate: new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
+          paymentId: payment.id,
+        });
+        await emailSvc.sendPaymentCongrats(student.email, student.full_name, {
+          courseTitle: course.title,
+          courseId: course_id,
+        });
+      }
+    } catch (emailErr) {
+      logger.warn(`Enrollment emails failed (non-critical): ${emailErr.message}`);
+    }
 
     logger.info(
       `Payment ${payment.id} completed — user ${user_id} enrolled in course ${course_id}`

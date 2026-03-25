@@ -1,4 +1,5 @@
-const { Payment, User, Course } = require('../../models');
+const { Payment, User, Course, Enrollment, ChatRoomMember } = require('../../models');
+const emailSvc = require('../../services/email/emailService');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
@@ -196,9 +197,38 @@ class AdminPaymentsController {
         refund_reason: reason || 'Admin initiated refund',
       });
 
-      logger.info(`Admin ${req.user.email} issued refund for payment ${id}`);
+      // Revoke course access — remove enrollment and chat room membership
+      if (payment.enrollment_id) {
+        const enrollment = await Enrollment.findByPk(payment.enrollment_id, {
+          include: [{ model: Course, as: 'course', attributes: ['id', 'title'] }],
+        });
+        if (enrollment) {
+          // Remove from course chat room
+          const { ChatRoom } = require('../../models');
+          const chatRoom = await ChatRoom.findOne({ where: { course_id: enrollment.course_id } });
+          if (chatRoom) {
+            await ChatRoomMember.destroy({ where: { room_id: chatRoom.id, user_id: payment.student_id } });
+          }
+          await enrollment.destroy();
 
-      return ApiResponse.success(res, { payment }, 'Refund issued successfully');
+          // Notify student
+          const student = await User.findByPk(payment.student_id, { attributes: ['full_name', 'email'] });
+          if (student) {
+            try {
+              await emailSvc.sendRefundConfirmation(student.email, student.full_name, {
+                courseTitle: enrollment.course?.title || 'your course',
+                refundAmount: payment.amount,
+              });
+            } catch (emailErr) {
+              logger.warn('Refund email failed (non-critical):', emailErr.message);
+            }
+          }
+        }
+      }
+
+      logger.info(`Admin ${req.user.email} issued refund for payment ${id} — enrollment revoked`);
+
+      return ApiResponse.success(res, { payment }, 'Refund issued and course access revoked');
     } catch (error) {
       next(error);
     }

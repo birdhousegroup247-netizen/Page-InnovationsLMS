@@ -1039,6 +1039,30 @@ ${installmentNote}
 
     return this.sendEmail({ to: email, subject, html, text: `${senderName}: ${preview}` });
   }
+
+  async sendRefundConfirmation(email, name, { courseTitle, refundAmount }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+      title: 'Your Refund Has Been Processed',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Your refund for <strong>${courseTitle}</strong> has been processed.</p>
+<div class="hi">
+<p><strong>Refund Amount:</strong> $${parseFloat(refundAmount).toFixed(2)} USD</p>
+<p><strong>Status:</strong> Refunded</p>
+</div>
+<p>Please allow 5–10 business days for the amount to appear on your original payment method. Your access to the course has been removed.</p>
+<p>If you have any questions, reply to this email or contact our support team.</p>`,
+      ctaText: 'Browse Other Courses',
+      ctaUrl: `${FE}/courses`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Your TekyPro refund for ${courseTitle} has been processed`,
+      html,
+      text: `Hi ${name}, your refund of $${refundAmount} for ${courseTitle} has been processed. Allow 5-10 business days.`,
+    });
+  }
 }
 
 // Export singleton instance

@@ -5,7 +5,7 @@ const CategoryController = require('../../controllers/courses/categoryController
 const ModuleController = require('../../controllers/courses/moduleController');
 const ContentController = require('../../controllers/courses/contentController');
 const ProgressController = require('../../controllers/courses/progressController');
-const { authenticate, optionalAuthenticate, authorize } = require('../../middleware/auth/authMiddleware');
+const { authenticate, optionalAuthenticate, authorize, checkNotSuspended } = require('../../middleware/auth/authMiddleware');
 
 // ============================================================================
 // CATEGORY ROUTES
@@ -53,8 +53,8 @@ router.delete('/contents/:contentId', authenticate, ContentController.deleteCont
 // PROGRESS ROUTES
 // ============================================================================
 router.get('/:courseId/progress', authenticate, authorize('student'), ProgressController.getCourseProgress);
-router.post('/contents/:contentId/complete', authenticate, authorize('student'), ProgressController.markContentComplete);
-router.post('/contents/:contentId/progress', authenticate, authorize('student'), ProgressController.updateProgress);
+router.post('/contents/:contentId/complete', authenticate, authorize('student'), checkNotSuspended, ProgressController.markContentComplete);
+router.post('/contents/:contentId/progress', authenticate, authorize('student'), checkNotSuspended, ProgressController.updateProgress);
 
 // ============================================================================
 // LIVE SESSIONS (sub-route)
