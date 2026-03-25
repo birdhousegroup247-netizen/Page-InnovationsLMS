@@ -67,6 +67,13 @@ const STEPS = [
       });
     },
   },
+  {
+    tag: 'onboarding_d14',
+    afterMs: DAYS_MS(14),
+    send: async (payment, user, course) => {
+      await emailService.sendLeadFollowupD14(user.email, user.full_name);
+    },
+  },
 ];
 
 async function processOnboarding() {

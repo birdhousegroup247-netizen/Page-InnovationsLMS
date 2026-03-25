@@ -1,4 +1,4 @@
-const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment } = require('../../models');
+const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment, Assignment } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
@@ -631,7 +631,7 @@ class CourseController {
         });
 
         for (const content of mod.contents || []) {
-          await ModuleContent.create({
+          const newContent = await ModuleContent.create({
             module_id: newMod.id,
             title: content.title,
             description: content.description,
@@ -648,6 +648,22 @@ class CourseController {
             unlock_date: null, // don't copy drip schedule — instructor can reset
             unlock_after_days: content.unlock_after_days,
           });
+
+          // Clone assignments attached to this content
+          const assignments = await Assignment.findAll({ where: { content_id: content.id } });
+          for (const a of assignments) {
+            await Assignment.create({
+              course_id: cloned.id,
+              content_id: newContent.id,
+              created_by: req.user.id,
+              title: a.title,
+              description: a.description,
+              due_date: null, // don't copy due dates
+              max_score: a.max_score,
+              allow_file_upload: a.allow_file_upload,
+              allow_text_submission: a.allow_text_submission,
+            });
+          }
         }
       }
 

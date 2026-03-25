@@ -1,6 +1,7 @@
 const { Assignment, AssignmentSubmission, User, Course, Enrollment, ModuleContent } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { Op } = require('sequelize');
+const NotificationsController = require('../notifications/notificationsController');
 
 const instructorInclude = [{ model: User, as: 'instructor', attributes: ['id', 'full_name'] }];
 const studentInclude = [{ model: User, as: 'student', attributes: ['id', 'full_name', 'profile_picture'] }];
@@ -94,6 +95,17 @@ class AssignmentsController {
       if (!submission) return ApiResponse.error(res, 'Submission not found', 404);
       if (score === undefined || score === null) return ApiResponse.error(res, 'Score is required', 400);
       await submission.update({ score, feedback, status: 'graded', graded_at: new Date() });
+
+      // Notify student their assignment was graded
+      NotificationsController.createNotification({
+        user_id: submission.student_id,
+        type: 'assignment_graded',
+        title: 'Assignment Graded',
+        message: `Your submission for "${submission.assignment.title}" has been graded. Score: ${score}/${submission.assignment.max_score}.`,
+        link: `/my-assignments`,
+        priority: 'normal',
+      }).catch(() => {});
+
       return ApiResponse.success(res, { submission }, 'Submission graded');
     } catch (err) { next(err); }
   }
@@ -149,6 +161,17 @@ class AssignmentsController {
         file_name,
         status: isLate ? 'late' : 'submitted',
       });
+
+      // Notify instructor a new submission came in
+      NotificationsController.createNotification({
+        user_id: assignment.created_by,
+        type: 'assignment_submitted',
+        title: 'New Assignment Submission',
+        message: `${req.user.full_name} submitted "${assignment.title}"${isLate ? ' (late)' : ''}.`,
+        link: `/instructor/courses/${assignment.course_id}/assignments`,
+        priority: 'normal',
+      }).catch(() => {});
+
       return ApiResponse.success(res, { submission }, 'Assignment submitted', 201);
     } catch (err) { next(err); }
   }

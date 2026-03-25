@@ -30,7 +30,7 @@ class ReferralsController {
 
       return ApiResponse.success(res, {
         referral_code: code,
-        referral_link: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/register?ref=${code}`,
+        referral_link: `${process.env.FRONTEND_URL}/register?ref=${code}`,
         stats: {
           total_invited: total,
           enrolled: rewarded,

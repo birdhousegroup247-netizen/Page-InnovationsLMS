@@ -509,11 +509,37 @@ class StripeController {
   static async _handlePaymentFailed(paymentIntent) {
     const payment = await Payment.findOne({
       where: { stripe_payment_intent_id: paymentIntent.id },
+      include: [{ model: Course, as: 'course', attributes: ['title'] }],
     });
 
     if (payment) {
       await payment.update({ payment_status: 'failed' });
       logger.warn(`Payment ${payment.id} marked as failed (intent: ${paymentIntent.id})`);
+
+      // Notify student so they can retry
+      NotificationsController.createNotification({
+        user_id: payment.student_id,
+        type: 'payment_failed',
+        title: 'Payment Failed',
+        message: `Your payment for "${payment.course?.title || 'your course'}" could not be processed. Please try again.`,
+        link: `/checkout?course_id=${payment.course_id}`,
+        priority: 'high',
+      }).catch(() => {});
+
+      // Send failure email (non-critical)
+      try {
+        const student = await User.findByPk(payment.student_id, { attributes: ['full_name', 'email'] });
+        if (student) {
+          await emailSvc.sendEmail({
+            to: student.email,
+            subject: 'TekyPro — Your payment could not be processed',
+            html: `<p>Hi ${student.full_name},</p><p>Your payment for <strong>${payment.course?.title || 'your course'}</strong> could not be processed. Please <a href="${process.env.FRONTEND_URL}/checkout?course_id=${payment.course_id}">try again</a> or contact support if the issue persists.</p><p>The TekyPro Team</p>`,
+            text: `Hi ${student.full_name}, your payment could not be processed. Please try again at ${process.env.FRONTEND_URL}/checkout?course_id=${payment.course_id}`,
+          });
+        }
+      } catch (emailErr) {
+        logger.warn(`Payment failure email failed: ${emailErr.message}`);
+      }
     }
   }
 }

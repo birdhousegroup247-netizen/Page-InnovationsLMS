@@ -656,6 +656,18 @@ class AssignedTestController {
 
       logger.info(`Test ${test.id} submitted by student ${req.user.id} - Score: ${totalScore}/${test.total_marks}`);
 
+      // Notify student of their result
+      NotificationsController.createNotification({
+        user_id: req.user.id,
+        type: 'test_result',
+        title: passed ? 'Test Passed!' : 'Test Submitted',
+        message: passed
+          ? `You passed "${test.test_name}" with ${parseFloat(percentage.toFixed(1))}%. Well done!`
+          : `You scored ${parseFloat(percentage.toFixed(1))}% on "${test.test_name}". The passing score is ${test.passing_score}%.`,
+        link: `/tests/${test.id}/results`,
+        priority: 'normal',
+      }).catch(() => {});
+
       return ApiResponse.success(res, {
         results: {
           attempt_id: attemptId,
