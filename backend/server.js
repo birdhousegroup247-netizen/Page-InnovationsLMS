@@ -361,13 +361,24 @@ const startServer = async () => {
       throw modelError;
     }
 
+    // Always create missing tables on startup (no-op if they already exist).
+    // This ensures a fresh database gets all tables without requiring DB_SYNC_ENABLED.
+    try {
+      logger.info('🔄 Ensuring all tables exist...');
+      await sequelize.sync({ force: false });
+      logger.info('✓ All tables ensured');
+    } catch (initSyncErr) {
+      logger.warn('⚠ Initial table sync failed (continuing):', initSyncErr.message);
+    }
+
     // Auto-migration: ensure critical columns exist (dialect-agnostic, runs every startup)
     try {
       logger.info('🔄 Running auto-migrations...');
       const qi = sequelize.getQueryInterface();
 
       for (const table of ['users', 'courses']) {
-        const desc = await qi.describeTable(table);
+        const desc = await qi.describeTable(table).catch(() => null);
+        if (!desc) continue; // table doesn't exist yet, skip
         if (!desc.deleted_at) {
           await qi.addColumn(table, 'deleted_at', {
             type: Sequelize.DATE,
@@ -379,8 +390,8 @@ const startServer = async () => {
       }
 
       // Add prerequisite_course_id to courses if missing
-      const coursesDesc = await qi.describeTable('courses');
-      if (!coursesDesc.prerequisite_course_id) {
+      const coursesDesc = await qi.describeTable('courses').catch(() => null);
+      if (coursesDesc && !coursesDesc.prerequisite_course_id) {
         await qi.addColumn('courses', 'prerequisite_course_id', {
           type: Sequelize.INTEGER,
           allowNull: true,
@@ -390,7 +401,8 @@ const startServer = async () => {
       }
 
       // Add missing columns to module_contents if needed
-      const moduleContentsDesc = await qi.describeTable('module_contents');
+      const moduleContentsDesc = await qi.describeTable('module_contents').catch(() => null);
+      if (moduleContentsDesc) {
       const mcMissing = {
         description: { type: Sequelize.TEXT, allowNull: true, defaultValue: null },
         unlock_after_days: { type: Sequelize.INTEGER, allowNull: true, defaultValue: null },
@@ -401,10 +413,11 @@ const startServer = async () => {
           logger.info(`  ✓ Added ${colName} column to module_contents`);
         }
       }
+      } // end if(moduleContentsDesc)
 
       // Add updated_at to course_modules if missing
-      const courseModulesDesc = await qi.describeTable('course_modules');
-      if (!courseModulesDesc.updated_at) {
+      const courseModulesDesc = await qi.describeTable('course_modules').catch(() => null);
+      if (courseModulesDesc && !courseModulesDesc.updated_at) {
         await qi.addColumn('course_modules', 'updated_at', {
           type: Sequelize.DATE,
           allowNull: true,
@@ -439,6 +452,7 @@ const startServer = async () => {
         LessonNote, LessonQuestion, QuestionReply, CourseAnnouncement,
         InstructorReview, LiveSession, ForumPost, ForumReply,
         Assignment, AssignmentSubmission, AdminAnnouncement,
+        CouponCode, CouponCodeCourse, CouponRedemption, Lead,
       } = require('./models');
 
       const newModels = [
@@ -459,6 +473,11 @@ const startServer = async () => {
         [Assignment, 'assignments'],
         [AssignmentSubmission, 'assignment_submissions'],
         [AdminAnnouncement, 'admin_announcements'],
+        // Week 4 — payment & leads models
+        [CouponCode, 'coupon_codes'],
+        [CouponCodeCourse, 'coupon_code_courses'],
+        [CouponRedemption, 'coupon_redemptions'],
+        [Lead, 'leads'],
       ];
 
       for (const [Model, tableName] of newModels) {
