@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
-import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar } from 'lucide-react';
+import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export default function Checkout() {
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get('course_id');
+  const isInstallmentPayment = searchParams.get('installment_payment') === '1';
   const navigate = useNavigate();
 
   const [course, setCourse] = useState(null);
@@ -19,7 +20,34 @@ export default function Checkout() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // For installment second payment mode
+  const [installmentPayment, setInstallmentPayment] = useState(null);
+
   useEffect(() => {
+    if (isInstallmentPayment) {
+      // Load outstanding installment balance
+      paymentsAPI
+        .getMyPayments()
+        .then((res) => {
+          const payments = res.data?.data?.payments || [];
+          const overdue = payments.find(
+            (p) =>
+              p.payment_plan === 'installment' &&
+              p.payment_status === 'completed' &&
+              ['pending', 'overdue'].includes(p.installment_status)
+          );
+          if (!overdue) {
+            navigate('/billing');
+            return;
+          }
+          setInstallmentPayment(overdue);
+          setCourse(overdue.course || null);
+        })
+        .catch(() => setError('Unable to load installment details'))
+        .finally(() => setPageLoading(false));
+      return;
+    }
+
     if (!courseId) {
       navigate('/courses');
       return;
@@ -29,7 +57,7 @@ export default function Checkout() {
       .then((res) => setCourse(res.data.data.course))
       .catch(() => setError('Course not found'))
       .finally(() => setPageLoading(false));
-  }, [courseId, navigate]);
+  }, [courseId, isInstallmentPayment, navigate]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -56,6 +84,18 @@ export default function Checkout() {
     setCouponError('');
   };
 
+  const handleInstallmentCheckout = async () => {
+    setCheckoutLoading(true);
+    setError('');
+    try {
+      const res = await paymentsAPI.createInstallmentSession();
+      window.location.href = res.data.data.checkout_url;
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to start payment. Please try again.');
+      setCheckoutLoading(false);
+    }
+  };
+
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     setError('');
@@ -65,7 +105,6 @@ export default function Checkout() {
         payment_plan: paymentPlan,
         coupon_code: appliedCoupon ? couponCode.trim().toUpperCase() : undefined,
       });
-      // Redirect to Stripe hosted checkout
       window.location.href = res.data.data.checkout_url;
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to start checkout. Please try again.');
@@ -106,6 +145,105 @@ export default function Checkout() {
     );
   }
 
+  // ── Installment second payment mode ─────────────────────────────────────────
+  if (isInstallmentPayment && installmentPayment) {
+    const remaining = parseFloat(installmentPayment.installment_remaining_amount || 0);
+    const isOverdue = installmentPayment.installment_status === 'overdue';
+
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
+        {/* Header */}
+        <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-border-dark px-4 py-4">
+          <div className="max-w-2xl mx-auto flex items-center gap-4">
+            <button
+              onClick={() => navigate('/billing')}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm">Back to Billing</span>
+            </button>
+            <img src={logo} alt="TekyPro" className="h-8 w-auto" />
+            <div className="flex items-center gap-1 ml-auto text-xs text-gray-500 dark:text-gray-400">
+              <Lock className="w-3 h-3" />
+              Secure Checkout
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
+          {isOverdue && (
+            <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-700 dark:text-red-400 text-sm">Installment Overdue</p>
+                <p className="text-red-600 dark:text-red-500 text-xs mt-0.5">
+                  Your installment payment is past due. Pay now to restore or maintain full course access.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+              Pay Remaining Balance
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              Complete your installment payment to maintain full course access.
+            </p>
+
+            {course && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg mb-6">
+                {course.thumbnail && (
+                  <img src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{course.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Installment balance</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2 text-sm border-t border-gray-100 dark:border-dark-700 pt-4 mb-6">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Original price</span>
+                <span className="text-gray-900 dark:text-white">${parseFloat(installmentPayment.original_amount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Already paid (60%)</span>
+                <span className="text-gray-900 dark:text-white">${parseFloat(installmentPayment.amount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-base border-t border-gray-200 dark:border-dark-700 pt-2">
+                <span className="text-gray-900 dark:text-white">Remaining balance</span>
+                <span className="text-brand-blue">${remaining.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleInstallmentCheckout}
+              disabled={checkoutLoading}
+              className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <CreditCard className="w-5 h-5" />
+              {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay $${remaining.toFixed(2)} Now`}
+            </button>
+
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1 mt-3">
+              <Lock className="w-3 h-3" />
+              Secured by Stripe. Your payment info is never stored on our servers.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── New enrollment checkout ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
       {/* Header */}

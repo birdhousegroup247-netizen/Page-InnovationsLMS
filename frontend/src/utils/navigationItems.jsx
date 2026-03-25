@@ -1,4 +1,4 @@
-import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package } from 'lucide-react';
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package, CreditCard } from 'lucide-react';
 
 // Shared navigation items for all authenticated pages
 export const getNavigationItems = (role = 'student') => {
@@ -79,6 +79,11 @@ export const getNavigationItems = (role = 'student') => {
       label: 'Refer & Earn',
       path: '/referrals',
       icon: <Gift className="w-5 h-5" />,
+    },
+    {
+      label: 'Billing',
+      path: '/billing',
+      icon: <CreditCard className="w-5 h-5" />,
     },
   ];
 

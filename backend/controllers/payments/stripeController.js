@@ -226,6 +226,63 @@ class StripeController {
   }
 
   /**
+   * POST /api/payments/installment-session
+   * Creates a Stripe Checkout Session for the user's outstanding installment balance.
+   * Only valid if the user has a pending/overdue installment payment.
+   */
+  static async createInstallmentSession(req, res, next) {
+    try {
+      const userId = req.user.id;
+
+      // Find the outstanding installment payment for this user
+      const payment = await Payment.findOne({
+        where: {
+          student_id: userId,
+          payment_plan: 'installment',
+          payment_status: 'completed',  // upfront portion was paid
+          installment_status: { [Op.in]: ['pending', 'overdue'] },
+        },
+        include: [{ model: Course, as: 'course', attributes: ['id', 'title'] }],
+        order: [['created_at', 'DESC']],
+      });
+
+      if (!payment) {
+        return ApiResponse.badRequest(res, 'No outstanding installment balance found');
+      }
+
+      const remainingAmount = parseFloat(payment.installment_remaining_amount);
+      if (!remainingAmount || remainingAmount <= 0) {
+        return ApiResponse.badRequest(res, 'Invalid remaining installment amount');
+      }
+
+      const unitAmountCents = Math.round(remainingAmount * 100);
+
+      const session = await stripeService.createCheckoutSession({
+        userId,
+        courseId: payment.course_id,
+        courseTitle: payment.course?.title || 'Course',
+        unitAmount: unitAmountCents,
+        paymentPlan: 'installment_second',
+        successUrl: `${FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}&installment=1`,
+        cancelUrl: `${FRONTEND_URL}/billing`,
+        couponStripeId: null,
+        extraMetadata: { payment_type: 'installment_second', original_payment_id: String(payment.id) },
+      });
+
+      logger.info(`Installment second-payment session ${session.id} created for user ${userId}, payment ${payment.id}`);
+
+      return ApiResponse.success(res, {
+        checkout_url: session.url,
+        session_id: session.id,
+        remaining_amount: remainingAmount,
+        course_title: payment.course?.title,
+      }, 'Installment checkout session created');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/webhooks/stripe
    * Stripe calls this after a successful payment.
    * This is the ONLY place where enrollment is created — never on frontend redirect.
@@ -274,8 +331,49 @@ class StripeController {
   // ─── Private webhook handlers ───────────────────────────────────────────────
 
   static async _handleCheckoutCompleted(session) {
-    const { user_id, course_id, payment_plan } = session.metadata;
+    const { user_id, course_id, payment_plan, payment_type, original_payment_id } = session.metadata;
 
+    // ── Handle installment second payment ─────────────────────────────────────
+    if (payment_type === 'installment_second' && original_payment_id) {
+      const origPayment = await Payment.findOne({
+        where: { id: parseInt(original_payment_id) },
+      });
+
+      if (!origPayment) {
+        logger.error(`Installment second payment: original payment ${original_payment_id} not found`);
+        return;
+      }
+
+      await origPayment.update({
+        installment_status: 'completed',
+        installment_paid_at: new Date(),
+        metadata: {
+          ...(origPayment.metadata || {}),
+          installment_session_id: session.id,
+          installment_intent_id: session.payment_intent,
+        },
+      });
+
+      // Unsuspend user if they were suspended due to overdue installment
+      await User.update(
+        { registration_status: 'active' },
+        { where: { id: parseInt(user_id || origPayment.student_id), registration_status: 'suspended' } }
+      );
+
+      await NotificationsController.createNotification({
+        user_id: parseInt(user_id || origPayment.student_id),
+        type: 'payment_confirmed',
+        title: 'Installment Payment Received!',
+        message: 'Your remaining balance has been paid. Full access restored.',
+        link: '/my-courses',
+        priority: 'high',
+      });
+
+      logger.info(`Installment second payment completed for payment ${original_payment_id}`);
+      return;
+    }
+
+    // ── Handle new enrollment payment ─────────────────────────────────────────
     if (!user_id || !course_id) {
       logger.error('Webhook checkout.session.completed missing metadata', session.metadata);
       return;

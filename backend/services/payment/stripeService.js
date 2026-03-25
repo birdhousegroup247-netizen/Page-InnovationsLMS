@@ -33,7 +33,13 @@ const createCheckoutSession = async ({
   successUrl,
   cancelUrl,
   couponStripeId = null,
+  extraMetadata = {},
 }) => {
+  const descriptionMap = {
+    installment: '60% upfront payment (remaining 40% due in 21 days)',
+    installment_second: 'Remaining 40% installment balance',
+  };
+
   const sessionParams = {
     mode: 'payment',
     payment_method_types: ['card'],
@@ -43,12 +49,9 @@ const createCheckoutSession = async ({
           currency: 'usd',
           product_data: {
             name: courseTitle,
-            description:
-              paymentPlan === 'installment'
-                ? '60% upfront payment (remaining 40% due in 21 days)'
-                : 'Full course access — lifetime',
+            description: descriptionMap[paymentPlan] || 'Full course access — lifetime',
           },
-          unit_amount: unitAmount, // already adjusted for installment %
+          unit_amount: unitAmount,
         },
         quantity: 1,
       },
@@ -59,6 +62,7 @@ const createCheckoutSession = async ({
       user_id: String(userId),
       course_id: String(courseId),
       payment_plan: paymentPlan,
+      ...extraMetadata,
     },
     client_reference_id: String(userId),
   };

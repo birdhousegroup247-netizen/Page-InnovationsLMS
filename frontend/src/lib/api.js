@@ -463,6 +463,7 @@ export const instructorReviewsAPI = {
 
 export const paymentsAPI = {
   createCheckoutSession: (data) => api.post('/api/payments/checkout-session', data),
+  createInstallmentSession: () => api.post('/api/payments/installment-session'),
   verifyPayment: (sessionId) => api.get('/api/payments/verify', { params: { session_id: sessionId } }),
   getMyPayments: () => api.get('/api/payments/my'),
 };

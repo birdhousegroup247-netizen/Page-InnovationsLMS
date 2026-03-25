@@ -73,6 +73,7 @@ const SearchResults = lazy(() => import('./pages/SearchResults'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
+const Billing = lazy(() => import('./pages/Billing'));
 
 // Admin pages
 const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
@@ -638,6 +639,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <Referrals />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Billing (within AppLayout) */}
+          <Route
+            path="/billing"
+            element={
+              <ProtectedRoute>
+                <Billing />
               </ProtectedRoute>
             }
           />
