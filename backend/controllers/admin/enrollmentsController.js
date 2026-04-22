@@ -144,8 +144,17 @@ class AdminEnrollmentsController {
       if (!enrollment) throw new NotFoundError('Enrollment not found');
 
       const courseId = enrollment.course_id;
+      const studentId = enrollment.student_id;
 
       await enrollment.destroy();
+
+      // Discord: remove course access (non-blocking)
+      try {
+        const discordCtrl = require('../discord/discordController');
+        discordCtrl.onUnenroll(studentId, courseId).catch(() => {});
+      } catch (discordErr) {
+        logger.warn(`Discord unenroll hook skipped: ${discordErr.message}`);
+      }
 
       // Decrement enrollment_count (guard against going below 0)
       await Course.update(

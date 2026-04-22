@@ -482,4 +482,11 @@ export const wishlistAPI = {
   check: (courseId) => api.get(`/api/wishlist/${courseId}/check`),
 };
 
+export const discordAPI = {
+  getStatus: () => api.get('/api/discord/status'),
+  connect: () => { window.location.href = `${api.defaults.baseURL}/api/discord/auth`; },
+  disconnect: () => api.delete('/api/discord/disconnect'),
+  getCourseInvite: (courseId) => api.get(`/api/discord/course/${courseId}/invite`),
+};
+
 export default api;

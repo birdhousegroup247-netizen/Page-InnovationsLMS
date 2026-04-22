@@ -61,7 +61,7 @@ class ReviewsController {
       });
 
       // Update course average rating
-      await this.updateCourseRating(courseId);
+      await ReviewsController.updateCourseRating(courseId);
 
       logger.info(`Student ${studentId} reviewed course ${courseId} with rating ${rating}`);
 
@@ -228,7 +228,7 @@ class ReviewsController {
       await review.save();
 
       // Update course average rating
-      await this.updateCourseRating(courseId);
+      await ReviewsController.updateCourseRating(courseId);
 
       logger.info(`Student ${studentId} updated review ${reviewId}`);
 
@@ -266,7 +266,7 @@ class ReviewsController {
       await review.destroy();
 
       // Update course average rating
-      await this.updateCourseRating(courseId);
+      await ReviewsController.updateCourseRating(courseId);
 
       logger.info(`Review ${reviewId} deleted by user ${req.user.id}`);
 

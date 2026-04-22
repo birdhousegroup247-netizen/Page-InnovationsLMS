@@ -47,7 +47,7 @@ describe('Bookmarks API', () => {
     const module = await CourseModule.create({
       course_id: testCourseId,
       title: 'Test Module',
-      module_order: 1,
+      order_index: 1,
     });
 
     // Create content
@@ -55,15 +55,15 @@ describe('Bookmarks API', () => {
       module_id: module.id,
       title: 'Test Lesson',
       content_type: 'video',
-      video_url: 'https://www.youtube.com/watch?v=test',
-      content_order: 1,
+      youtube_url: 'https://www.youtube.com/watch?v=test',
+      order_index: 1,
       duration_minutes: 30,
     });
     testContentId = content.id;
 
     // Enroll student
     await Enrollment.create({
-      user_id: studentId,
+      student_id: studentId,
       course_id: testCourseId,
       enrollment_date: new Date(),
       status: 'active',

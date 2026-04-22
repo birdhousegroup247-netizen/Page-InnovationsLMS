@@ -120,9 +120,9 @@ class NotificationsController {
         throw new NotFoundError('Notification not found');
       }
 
-      // Verify ownership
+      // Verify ownership (return 404 to avoid revealing other users' notifications)
       if (notification.user_id !== req.user.id) {
-        throw new ForbiddenError('You can only mark your own notifications as read');
+        throw new NotFoundError('Notification not found');
       }
 
       notification.is_read = true;
@@ -180,9 +180,9 @@ class NotificationsController {
         throw new NotFoundError('Notification not found');
       }
 
-      // Verify ownership
+      // Verify ownership (return 404 to avoid revealing other users' notifications)
       if (notification.user_id !== req.user.id) {
-        throw new ForbiddenError('You can only delete your own notifications');
+        throw new NotFoundError('Notification not found');
       }
 
       await notification.destroy();

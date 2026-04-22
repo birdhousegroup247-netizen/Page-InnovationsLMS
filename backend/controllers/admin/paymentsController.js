@@ -225,6 +225,14 @@ class AdminPaymentsController {
           }
           await enrollment.destroy();
 
+          // Discord: remove course access (non-blocking)
+          try {
+            const discordCtrl = require('../../controllers/discord/discordController');
+            discordCtrl.onUnenroll(payment.student_id, enrollment.course_id).catch(() => {});
+          } catch (discordErr) {
+            logger.warn(`Discord unenroll hook skipped: ${discordErr.message}`);
+          }
+
           // Notify student
           const student = await User.findByPk(payment.student_id, { attributes: ['full_name', 'email'] });
           if (student) {

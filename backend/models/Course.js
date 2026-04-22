@@ -125,6 +125,16 @@ const Course = sequelize.define(
         key: 'id',
       },
     },
+    discord_role_id: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Discord role ID for this course channel',
+    },
+    discord_channel_id: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Discord channel ID for this course',
+    },
   },
   {
     tableName: 'courses',

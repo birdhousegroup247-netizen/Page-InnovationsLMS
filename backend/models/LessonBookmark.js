@@ -39,6 +39,7 @@ const LessonBookmark = sequelize.define(
     timestamp: {
       type: DataTypes.INTEGER,
       allowNull: true, // Video timestamp in seconds
+      field: 'timestamp_seconds',
     },
   },
   {

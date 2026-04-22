@@ -58,53 +58,22 @@ class EmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendWelcomeEmail(email, name) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Welcome to TekyPro LMS! 🎓</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-              <p>Welcome to TekyPro Learning Management System! We're excited to have you join our community of learners.</p>
-
-              <p><strong>Here's what you can do:</strong></p>
-              <ul>
-                <li>📚 Browse and enroll in courses</li>
-                <li>🎥 Learn from expert instructors</li>
-                <li>📝 Take practice tests to sharpen your skills</li>
-                <li>🎓 Earn certificates upon completion</li>
-                <li>📊 Track your progress and achievements</li>
-              </ul>
-
-              <p>Ready to start learning?</p>
-              <a href="${process.env.FRONTEND_URL}/courses" class="button">Explore Courses</a>
-
-              <p>If you have any questions, feel free to reach out to our support team.</p>
-
-              <p>Happy Learning!<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: 'Welcome to TekyPro!',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Welcome to TekyPro Learning Management System! We're excited to have you join our community of learners.</p>
+<div class="hi"><strong>Here's what you can do:</strong><ul>
+<li>Browse and enroll in courses</li>
+<li>Learn from expert instructors</li>
+<li>Take practice tests to sharpen your skills</li>
+<li>Earn certificates upon completion</li>
+<li>Track your progress and achievements</li>
+</ul></div>
+<p>Ready to start learning? Explore our full course catalogue below.</p>`,
+      ctaText: 'Explore Courses',
+      ctaUrl: `${FE}/courses`,
+    });
     return this.sendEmail({
       to: email,
       subject: 'Welcome to TekyPro LMS!',
@@ -122,52 +91,16 @@ class EmailService {
    */
   async sendPasswordResetEmail(email, name, resetToken) {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #f44336; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; padding: 12px 30px; background: #f44336; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Password Reset Request 🔒</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-              <p>We received a request to reset your password for your TekyPro LMS account.</p>
-
-              <p>Click the button below to reset your password:</p>
-              <a href="${resetUrl}" class="button">Reset Password</a>
-
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
-
-              <div class="warning">
-                <strong>⚠️ Security Notice:</strong>
-                <p>This link will expire in 1 hour. If you didn't request this password reset, please ignore this email or contact support if you have concerns.</p>
-              </div>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+      title: 'Password Reset Request',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>We received a request to reset the password for your TekyPro account. Click the button below to set a new password.</p>
+<div class="wa"><strong>Security Notice:</strong> This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.</div>
+<p style="font-size:13px;color:#888">Or copy and paste this link into your browser:<br><span style="word-break:break-all;color:#0e2b5c">${resetUrl}</span></p>`,
+      ctaText: 'Reset My Password',
+      ctaUrl: resetUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: 'Password Reset Request - TekyPro LMS',
@@ -184,54 +117,22 @@ class EmailService {
    * @returns {Promise<Object>} Send result
    */
   async sendEnrollmentConfirmation(email, name, course) {
-    const courseUrl = `${process.env.FRONTEND_URL}/courses/${course.id}`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .course-card { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Enrollment Confirmed! 🎉</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-              <p>Congratulations! You've successfully enrolled in:</p>
-
-              <div class="course-card">
-                <h3>${course.title}</h3>
-                <p>${course.description}</p>
-                <p><strong>Instructor:</strong> ${course.instructor?.full_name || 'TBA'}</p>
-                ${course.duration_hours ? `<p><strong>Duration:</strong> ${course.duration_hours} hours</p>` : ''}
-              </div>
-
-              <p>You can now start learning at your own pace!</p>
-              <a href="${courseUrl}" class="button">Start Learning</a>
-
-              <p>Good luck with your learning journey!</p>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const courseUrl = `${FE}/courses/${course.id}`;
+    const html = this._baseTemplate({
+      title: 'Enrollment Confirmed!',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Congratulations! You've successfully enrolled in:</p>
+<div class="hi">
+<h3 style="margin:0 0 8px">${course.title}</h3>
+${course.description ? `<p style="margin:0 0 8px;color:#555">${course.description}</p>` : ''}
+${course.instructor?.full_name ? `<p style="margin:0 0 4px"><strong>Instructor:</strong> ${course.instructor.full_name}</p>` : ''}
+${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${course.duration_hours} hours</p>` : ''}
+</div>
+<p>You can now start learning at your own pace. Good luck with your learning journey!</p>`,
+      ctaText: 'Start Learning',
+      ctaUrl: courseUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: `Enrollment Confirmed: ${course.title}`,
@@ -1038,6 +939,30 @@ ${installmentNote}
     `;
 
     return this.sendEmail({ to: email, subject, html, text: `${senderName}: ${preview}` });
+  }
+
+  async sendDiscordInviteEmail(email, name, { courseTitle, inviteLink }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#5865F2,#4752C4)',
+      title: 'Your Discord Channel is Ready!',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Welcome to the TekyPro community on Discord! Your private channel for <strong>${courseTitle}</strong> is now ready.</p>
+<div class="hi">
+<p>Discord is where your class communicates — ask questions, share progress, get help from classmates, and stay connected with your instructor.</p>
+</div>
+<p>Click the button below to join your course channel. This link is for your class only, so keep it private.</p>
+<p style="font-size:13px;color:#888">Or copy this link: <span style="word-break:break-all;color:#5865F2">${inviteLink}</span></p>
+<p>You can also access this link anytime from your course page in the TekyPro app.</p>`,
+      ctaText: 'Join Discord Channel',
+      ctaUrl: inviteLink,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Your Discord channel for ${courseTitle} is ready — TekyPro`,
+      html,
+      text: `Hi ${name}, your Discord channel for ${courseTitle} is ready. Join here: ${inviteLink}`,
+    });
   }
 
   async sendRefundConfirmation(email, name, { courseTitle, refundAmount }) {

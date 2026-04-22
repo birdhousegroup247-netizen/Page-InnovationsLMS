@@ -56,7 +56,7 @@ describe('Course Reviews API', () => {
 
     // Enroll student
     await Enrollment.create({
-      user_id: studentId,
+      student_id: studentId,
       course_id: testCourseId,
       enrollment_date: new Date(),
       status: 'active',
@@ -70,13 +70,13 @@ describe('Course Reviews API', () => {
         .set('Authorization', `Bearer ${studentToken}`)
         .send({
           rating: 5,
-          comment: 'Excellent course! Very informative.',
+          review_text: 'Excellent course! Very informative.',
         })
         .expect(201);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data.review.rating).toBe(5);
-      expect(response.body.data.review.comment).toBe('Excellent course! Very informative.');
+      expect(response.body.data.review.review_text).toBe('Excellent course! Very informative.');
       testReviewId = response.body.data.review.id;
     });
 
@@ -97,7 +97,7 @@ describe('Course Reviews API', () => {
         .set('Authorization', `Bearer ${newStudentToken}`)
         .send({
           rating: 4,
-          comment: 'Good course',
+          review_text: 'Good course',
         })
         .expect(403);
 
@@ -110,7 +110,7 @@ describe('Course Reviews API', () => {
         .set('Authorization', `Bearer ${studentToken}`)
         .send({
           rating: 6, // Invalid rating > 5
-          comment: 'Test',
+          review_text: 'Test',
         })
         .expect(400);
 
@@ -123,7 +123,7 @@ describe('Course Reviews API', () => {
         .set('Authorization', `Bearer ${studentToken}`)
         .send({
           rating: 4,
-          comment: 'Second review attempt',
+          review_text: 'Second review attempt',
         })
         .expect(400);
 
@@ -161,9 +161,9 @@ describe('Course Reviews API', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data).toHaveProperty('averageRating');
-      expect(response.body.data).toHaveProperty('totalReviews');
-      expect(response.body.data.totalReviews).toBeGreaterThan(0);
+      expect(response.body.data).toHaveProperty('average_rating');
+      expect(response.body.data).toHaveProperty('total_reviews');
+      expect(response.body.data.total_reviews).toBeGreaterThan(0);
     });
   });
 
@@ -174,13 +174,13 @@ describe('Course Reviews API', () => {
         .set('Authorization', `Bearer ${studentToken}`)
         .send({
           rating: 4,
-          comment: 'Updated review - still great!',
+          review_text: 'Updated review - still great!',
         })
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data.review.rating).toBe(4);
-      expect(response.body.data.review.comment).toBe('Updated review - still great!');
+      expect(response.body.data.review.review_text).toBe('Updated review - still great!');
     });
 
     it('should reject update of another user review', async () => {
@@ -200,7 +200,7 @@ describe('Course Reviews API', () => {
         .set('Authorization', `Bearer ${anotherStudentToken}`)
         .send({
           rating: 1,
-          comment: 'Hacked review',
+          review_text: 'Hacked review',
         })
         .expect(403);
 
@@ -233,7 +233,7 @@ describe('Course Reviews API', () => {
   afterAll(async () => {
     try {
       await CourseReview.destroy({ where: { course_id: testCourseId } });
-      await Enrollment.destroy({ where: { user_id: studentId } });
+      await Enrollment.destroy({ where: { student_id: studentId } });
       await Course.destroy({ where: { id: testCourseId } });
       await User.destroy({ where: { id: [studentId, instructorId] } });
     } catch (error) {

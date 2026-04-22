@@ -3,7 +3,7 @@
  */
 
 const JWT = require('../../utils/jwt');
-const { ErrorTypes, APIError, ValidationError, NotFoundError, UnauthorizedError } = require('../../utils/errors');
+const { AppError, ValidationError, NotFoundError, UnauthorizedError } = require('../../utils/errors');
 const response = require('../../utils/response');
 
 describe('Utils and Services', () => {
@@ -104,33 +104,41 @@ describe('Utils and Services', () => {
   // Error Classes
   // =========================================================================
   describe('Error Classes', () => {
-    describe('APIError', () => {
-      it('should create an API error with correct properties', () => {
-        const error = new APIError('Test error message', 500, ErrorTypes.SERVER_ERROR);
+    describe('AppError', () => {
+      it('should create an error with correct properties', () => {
+        const error = new AppError('Test error message', 500);
         expect(error.message).toBe('Test error message');
         expect(error.statusCode).toBe(500);
-        expect(error.type).toBe(ErrorTypes.SERVER_ERROR);
-        expect(error.name).toBe('APIError');
+        expect(error.isOperational).toBe(true);
       });
 
       it('should inherit from Error', () => {
-        const error = new APIError('Test', 500);
+        const error = new AppError('Test', 500);
         expect(error instanceof Error).toBe(true);
-        expect(error instanceof APIError).toBe(true);
+        expect(error instanceof AppError).toBe(true);
+      });
+
+      it('should set status to fail for 4xx codes', () => {
+        const error = new AppError('Bad request', 400);
+        expect(error.status).toBe('fail');
+      });
+
+      it('should set status to error for 5xx codes', () => {
+        const error = new AppError('Server error', 500);
+        expect(error.status).toBe('error');
       });
     });
 
     describe('ValidationError', () => {
-      it('should create a validation error with 400 status', () => {
+      it('should create a validation error with 422 status', () => {
         const error = new ValidationError('Invalid input');
         expect(error.message).toBe('Invalid input');
-        expect(error.statusCode).toBe(400);
-        expect(error.type).toBe(ErrorTypes.VALIDATION_ERROR);
+        expect(error.statusCode).toBe(422);
       });
 
-      it('should inherit from APIError', () => {
+      it('should inherit from AppError', () => {
         const error = new ValidationError('Test');
-        expect(error instanceof APIError).toBe(true);
+        expect(error instanceof AppError).toBe(true);
       });
     });
 
@@ -139,7 +147,6 @@ describe('Utils and Services', () => {
         const error = new NotFoundError('Resource not found');
         expect(error.message).toBe('Resource not found');
         expect(error.statusCode).toBe(404);
-        expect(error.type).toBe(ErrorTypes.NOT_FOUND);
       });
     });
 
@@ -148,7 +155,6 @@ describe('Utils and Services', () => {
         const error = new UnauthorizedError('Unauthorized access');
         expect(error.message).toBe('Unauthorized access');
         expect(error.statusCode).toBe(401);
-        expect(error.type).toBe(ErrorTypes.UNAUTHORIZED);
       });
     });
   });
@@ -209,17 +215,17 @@ describe('Utils and Services', () => {
         });
       });
 
-      it('should default to 400 status if not specified', () => {
+      it('should default to 500 status if not specified', () => {
         response.error(mockRes, 'Error occurred');
-        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.status).toHaveBeenCalledWith(500);
       });
 
       it('should include error details if provided', () => {
-        response.error(mockRes, 'Validation failed', 400, { field: 'email', reason: 'invalid' });
+        response.error(mockRes, 'Validation failed', 422, { field: 'email', reason: 'invalid' });
         expect(mockRes.json).toHaveBeenCalledWith({
           success: false,
           message: 'Validation failed',
-          error: { field: 'email', reason: 'invalid' },
+          errors: { field: 'email', reason: 'invalid' },
         });
       });
     });

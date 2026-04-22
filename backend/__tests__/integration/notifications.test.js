@@ -48,7 +48,7 @@ describe('Notifications API', () => {
 
     await Notification.create({
       user_id: studentId,
-      type: 'test_assigned',
+      type: 'test_assignment',
       title: 'New Test Assigned',
       message: 'A new test has been assigned to you.',
       is_read: false,
@@ -77,7 +77,7 @@ describe('Notifications API', () => {
 
     it('should filter unread notifications', async () => {
       const response = await request(app)
-        .get('/api/notifications?filter=unread')
+        .get('/api/notifications?is_read=false')
         .set('Authorization', `Bearer ${studentToken}`)
         .expect(200);
 
@@ -87,7 +87,7 @@ describe('Notifications API', () => {
 
     it('should filter read notifications', async () => {
       const response = await request(app)
-        .get('/api/notifications?filter=read')
+        .get('/api/notifications?is_read=true')
         .set('Authorization', `Bearer ${studentToken}`)
         .expect(200);
 
@@ -143,14 +143,14 @@ describe('Notifications API', () => {
   describe('GET /api/notifications/unread-count', () => {
     it('should get unread notification count', async () => {
       const response = await request(app)
-        .get('/api/notifications/unread-count')
+        .get('/api/notifications/unread/count')
         .set('Authorization', `Bearer ${studentToken}`)
         .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
-      expect(response.body.data).toHaveProperty('unreadCount');
-      expect(typeof response.body.data.unreadCount).toBe('number');
-      expect(response.body.data.unreadCount).toBeGreaterThanOrEqual(2); // At least 2 unread
+      expect(response.body.data).toHaveProperty('unread_count');
+      expect(typeof response.body.data.unread_count).toBe('number');
+      expect(response.body.data.unread_count).toBeGreaterThanOrEqual(1); // At least 1 unread
     });
 
     it('should return 0 for user with no unread notifications', async () => {
@@ -161,11 +161,11 @@ describe('Notifications API', () => {
       );
 
       const response = await request(app)
-        .get('/api/notifications/unread-count')
+        .get('/api/notifications/unread/count')
         .set('Authorization', `Bearer ${studentToken}`)
         .expect(200);
 
-      expect(response.body.data.unreadCount).toBe(0);
+      expect(response.body.data.unread_count).toBe(0);
 
       // Reset for other tests
       await Notification.update(

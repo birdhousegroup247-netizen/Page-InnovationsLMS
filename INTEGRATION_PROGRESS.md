@@ -40,6 +40,8 @@ PAYSTACK_PUBLIC_KEY=pk_live_...
 
 ---
 
+
+
 ## 2. Zoom Integration
 **Status: ✅ Done**
 
@@ -73,32 +75,44 @@ ZOOM_CLIENT_SECRET=...
 ---
 
 ## 3. Discord Integration
-**Status: 🔲 Not Started**
+**Status: ✅ Done (awaiting credentials)**
 
-Auto-invite enrolled students to the Discord server and assign them a course-specific role. Remove access when they are unenrolled or refunded.
+Auto-invite enrolled students to Discord. Per-cohort channels, interview prep room for fully-paid students, remove from everything on unenroll/refund.
 
 ### Backend
-- [ ] Create `backend/services/discord/discordService.js` (bot API wrapper)
-- [ ] On enrollment: send Discord invite link to student via email/notification
-- [ ] On enrollment: assign course role to student in Discord (if they've linked their Discord)
-- [ ] On unenrollment/refund: remove course role from student in Discord
-- [ ] Create endpoint for students to link their Discord account
-- [ ] Store `discord_user_id` on the User record
+- [x] Created `backend/services/discord/discordService.js` (Discord REST API wrapper)
+- [x] Created `backend/controllers/discord/discordController.js` (business logic)
+- [x] Created `backend/routes/api/discord.js` (routes)
+- [x] OAuth 2.0 flow to link Discord account (`identify guilds.join` scope)
+- [x] On enrollment: auto-assign course role + send invite via email + in-app notification
+- [x] On enrollment: assign Interview Prep role for fully-paid students
+- [x] On unenrollment/refund: remove course role; kick from server if no enrollments remain
+- [x] Admin manual unenroll also triggers Discord removal
+- [x] Added `discord_user_id`, `discord_access_token` to User model
+- [x] Added `discord_role_id`, `discord_channel_id` to Course model
+- [x] `GET /api/discord/course/:courseId/invite` — fetch invite for enrolled student
+- [x] `POST /api/discord/admin/sync/:userId` — admin re-sync a user's roles
+- [x] Discord email template added to emailService
 
 ### Frontend (Student)
-- [ ] Add "Connect Discord" button on Profile Settings page
-- [ ] Show Discord server invite link on Course page (enrolled students only)
-- [ ] Show which Discord role/channel they have access to
+- [x] "Discord" tab added to Profile Settings page
+- [x] "Connect Discord Account" button (OAuth redirect)
+- [x] Shows connected status + in-server status
+- [x] Discord channel banner on Course Detail page (enrolled students only)
+- [x] "Join Channel" link shown on course page when Discord is configured
 
 ### Frontend (Admin)
-- [ ] Show Discord connection status per user in Users page
-- [ ] Allow admin to manually sync Discord roles
+- [ ] Discord status column in Users page (pending — admin frontend update)
 
 ### Environment Variables Needed
 ```
-DISCORD_BOT_TOKEN=...
-DISCORD_GUILD_ID=...
-DISCORD_INVITE_URL=...
+DISCORD_BOT_TOKEN=         ← from Discord Developer Portal
+DISCORD_GUILD_ID=          ← right-click server > Copy Server ID
+DISCORD_CLIENT_ID=         ← from Discord Developer Portal (OAuth2)
+DISCORD_CLIENT_SECRET=     ← from Discord Developer Portal (OAuth2)
+DISCORD_REDIRECT_URI=https://yourdomain.com/api/discord/callback
+DISCORD_INVITE_URL=        ← fallback invite (optional)
+DISCORD_INTERVIEW_PREP_ROLE_ID=  ← create this role in Discord, paste ID here
 ```
 
 ---
@@ -107,14 +121,13 @@ DISCORD_INVITE_URL=...
 
 | Integration | Backend | Frontend | Admin | Status |
 |---|---|---|---|---|
-| Paystack | 🔲 | 🔲 | 🔲 | Not Started |
-| Zoom | 🔲 | 🔲 | 🔲 | Not Started |
-| Discord | 🔲 | 🔲 | 🔲 | Not Started |
+| Paystack | ✅ | ✅ | ✅ | Done |
+| Zoom | ✅ | ✅ | ✅ | Done |
+| Discord | ✅ | ✅ | 🔲 | Done (awaiting credentials) |
 
 ---
 
 ## Notes
-- All integrations will be built with placeholder env vars — drop in real keys when ready
-- Paystack is priority (directly affects revenue)
-- Zoom is second (directly affects live classes)
-- Discord is third (community feature)
+- Discord code is complete — just needs Bot Token + Guild ID to go live
+- Interview Prep role ID must be created in Discord server, then pasted into env
+- Discord OAuth requires adding the callback URL in Discord Developer Portal → OAuth2 → Redirects

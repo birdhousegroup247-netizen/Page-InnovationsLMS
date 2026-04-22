@@ -108,6 +108,15 @@ const User = sequelize.define(
       defaultValue: 0,
       comment: 'Accumulated referral credits (each successful referral = 1 credit)',
     },
+    discord_user_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+    },
+    discord_access_token: {
+      type: DataTypes.STRING(1000),
+      allowNull: true,
+    },
     last_login: {
       type: DataTypes.DATE,
       allowNull: true,
@@ -160,6 +169,7 @@ User.prototype.comparePassword = async function (password) {
 User.prototype.toJSON = function () {
   const values = { ...this.get() };
   delete values.password_hash;
+  delete values.discord_access_token;
   return values;
 };
 

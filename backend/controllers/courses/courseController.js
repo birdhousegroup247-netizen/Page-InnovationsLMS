@@ -41,8 +41,8 @@ class CourseController {
       // Category filter
       if (category) where.category_id = category;
 
-      // Difficulty filter
-      if (difficulty) where.difficulty = difficulty;
+      // Difficulty filter (maps to 'level' column in DB)
+      if (difficulty) where.level = difficulty;
 
       // Rating filter
       if (min_rating || max_rating) {
@@ -464,6 +464,15 @@ class CourseController {
         }
       } catch (testErr) {
         logger.warn(`Failed to auto-assign tests on enrollment: ${testErr.message}`);
+      }
+
+      // Discord: send invite + assign role (non-blocking)
+      try {
+        const discordCtrl = require('../discord/discordController');
+        const isFullyPaid = !!(course.price && parseFloat(course.price) > 0);
+        discordCtrl.onEnroll(req.user.id, course.id, isFullyPaid).catch(() => {});
+      } catch (discordErr) {
+        logger.warn(`Discord enroll hook skipped: ${discordErr.message}`);
       }
 
       // Log activity

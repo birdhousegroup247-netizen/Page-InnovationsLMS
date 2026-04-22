@@ -264,6 +264,9 @@ app.use('/api/referrals', require('./routes/api/referrals'));
 app.use('/api/payments', require('./routes/api/payments'));
 app.use('/api/coupons',  require('./routes/api/coupons'));
 
+// Discord integration
+app.use('/api/discord', require('./routes/api/discord'));
+
 // Instructor routes (requires instructor/admin/super_admin role)
 app.use('/api/instructor', require('./routes/api/instructor'));
 
@@ -631,7 +634,9 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Start the server
-startServer();
+// Start the server only when run directly (not when imported by tests)
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;

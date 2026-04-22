@@ -16,7 +16,7 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
-import { profileAPI } from '../lib/api';
+import { profileAPI, discordAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner, Alert, Tabs } from '../components/ui';
 import TwoFactorSettings from '../components/auth/TwoFactorSettings';
@@ -30,7 +30,11 @@ export default function ProfileSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState('personal'); // personal, password
+  const [activeTab, setActiveTab] = useState('personal'); // personal, password, discord
+
+  // Discord state
+  const [discordStatus, setDiscordStatus] = useState(null);
+  const [discordLoading, setDiscordLoading] = useState(false);
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -60,7 +64,47 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     fetchProfile();
+    fetchDiscordStatus();
+
+    // Handle Discord OAuth return
+    const params = new URLSearchParams(window.location.search);
+    const discordResult = params.get('discord');
+    if (discordResult === 'connected') {
+      setSuccess('Discord account connected successfully!');
+      window.history.replaceState({}, '', window.location.pathname);
+      setActiveTab('discord');
+      fetchDiscordStatus();
+    } else if (discordResult === 'error') {
+      setError('Discord connection failed. Please try again.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
+
+  const fetchDiscordStatus = async () => {
+    try {
+      const res = await discordAPI.getStatus();
+      setDiscordStatus(res.data.data);
+    } catch {
+      // Discord not configured or unavailable — silently ignore
+    }
+  };
+
+  const handleDiscordConnect = () => {
+    discordAPI.connect(); // redirects to Discord OAuth
+  };
+
+  const handleDiscordDisconnect = async () => {
+    try {
+      setDiscordLoading(true);
+      await discordAPI.disconnect();
+      setDiscordStatus({ connected: false, in_server: false, discord_user_id: null });
+      setSuccess('Discord account disconnected.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to disconnect Discord');
+    } finally {
+      setDiscordLoading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -309,6 +353,17 @@ export default function ProfileSettings() {
                 )}
               >
                 Change Password
+              </button>
+              <button
+                onClick={() => { setActiveTab('discord'); fetchDiscordStatus(); }}
+                className={cn(
+                  'px-4 py-3 font-medium transition-colors border-b-2',
+                  activeTab === 'discord'
+                    ? 'text-[#5865F2] border-[#5865F2]'
+                    : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
+                )}
+              >
+                Discord
               </button>
             </div>
 
@@ -618,6 +673,84 @@ export default function ProfileSettings() {
                     </Button>
                   </div>
                 </form>
+              </div>
+            )}
+
+            {/* Discord Tab */}
+            {activeTab === 'discord' && (
+              <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark transition-colors">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-[#5865F2] flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.033.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary">Discord Community</h2>
+                    <p className="text-sm text-gray-500 dark:text-text-dark-muted">Connect your Discord account to join your course channels</p>
+                  </div>
+                </div>
+
+                {discordStatus === null ? (
+                  <div className="text-center py-6 text-gray-500 dark:text-text-dark-muted text-sm">
+                    Loading Discord status...
+                  </div>
+                ) : (
+                  <>
+                    {discordStatus.connected ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <div>
+                            <p className="text-green-800 dark:text-green-300 font-medium text-sm">Discord Connected</p>
+                            <p className="text-green-700 dark:text-green-400 text-xs mt-0.5">
+                              {discordStatus.in_server ? 'You are in the TekyPro Discord server' : 'Account linked — join any course to get a channel invite'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-[#5865F2]/10 rounded-lg p-4 text-sm text-gray-700 dark:text-text-dark-secondary">
+                          <p className="font-medium mb-1">What happens next:</p>
+                          <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-text-dark-muted">
+                            <li>When you enroll in a course, you'll be auto-assigned to its Discord channel</li>
+                            <li>Fully-paid students also get access to the Interview Prep channel</li>
+                            <li>If you lose access to a course, you'll be removed from its Discord channel</li>
+                          </ul>
+                        </div>
+
+                        <button
+                          onClick={handleDiscordDisconnect}
+                          disabled={discordLoading}
+                          className="text-sm text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+                        >
+                          {discordLoading ? 'Disconnecting...' : 'Disconnect Discord account'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-[#5865F2]/10 rounded-lg p-4 text-sm text-gray-700 dark:text-text-dark-secondary">
+                          <p className="font-medium mb-2">Why connect Discord?</p>
+                          <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-text-dark-muted">
+                            <li>Get auto-invited to your course's private Discord channel on enrollment</li>
+                            <li>Chat with classmates and your instructor in real-time</li>
+                            <li>Access the Interview Prep room (fully-paid students)</li>
+                            <li>Stay connected with your cohort</li>
+                          </ul>
+                        </div>
+
+                        <button
+                          onClick={handleDiscordConnect}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium rounded-lg transition-colors text-sm"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.033.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+                          </svg>
+                          Connect Discord Account
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
