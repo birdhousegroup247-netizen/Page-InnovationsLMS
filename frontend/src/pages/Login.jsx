@@ -315,6 +315,7 @@ export default function Login() {
             {/* Google Sign In */}
             <button
               type="button"
+              onClick={() => { window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`; }}
               className="w-full py-3 px-4 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark hover:bg-gray-50 dark:hover:bg-dark-600 text-gray-700 dark:text-text-dark-primary font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 dark:focus:ring-offset-dark-800 flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

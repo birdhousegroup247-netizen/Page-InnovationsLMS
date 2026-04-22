@@ -478,13 +478,10 @@ class AuthController {
       // Generate JWT tokens
       const tokens = JWT.generateTokens(user);
 
-      // Set authentication cookies
-      this.setAuthCookies(res, tokens);
-
       logger.info(`User logged in via Google: ${user.email}`);
 
-      // Redirect to frontend (tokens are now in cookies)
-      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?success=true`;
+      // Pass tokens in URL so frontend can store in localStorage (SPA auth pattern)
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
 
       return res.redirect(redirectUrl);
     } catch (error) {

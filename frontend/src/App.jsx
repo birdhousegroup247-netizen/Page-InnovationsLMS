@@ -22,6 +22,7 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import RoleSelector from './pages/RoleSelector';
+import AuthCallback from './pages/AuthCallback';
 
 // Student pages - lazy loaded
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -267,6 +268,9 @@ function App() {
               </PublicRoute>
             }
           />
+
+          {/* Google OAuth Callback */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Role Selector (authenticated users only, no layout) */}
           <Route path="/role-selector" element={<RoleSelectorRoute />} />
