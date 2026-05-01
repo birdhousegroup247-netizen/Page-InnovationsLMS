@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const ChatController = require('../../controllers/chat/chatController');
-const { authenticate } = require('../../middleware/auth/authMiddleware');
+const { authenticate, authorize } = require('../../middleware/auth/authMiddleware');
 const { uploadMultiple, handleUploadErrors } = require('../../middleware/upload/uploadMiddleware');
 
 // All chat routes require authentication
@@ -24,8 +24,8 @@ const withAttachment = (handler) => (req, res, next) => {
 // ============================================================================
 // ADMIN MODERATION
 // ============================================================================
-router.get('/admin/rooms', ChatController.adminGetAllRooms);
-router.get('/admin/rooms/:roomId/messages', ChatController.adminGetRoomMessages);
+router.get('/admin/rooms', authorize('admin', 'super_admin'), ChatController.adminGetAllRooms);
+router.get('/admin/rooms/:roomId/messages', authorize('admin', 'super_admin'), ChatController.adminGetRoomMessages);
 
 // ============================================================================
 // MUTE

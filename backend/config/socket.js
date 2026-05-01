@@ -50,12 +50,12 @@ function initializeSocketIO(server) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from database
-      const user = await User.findByPk(decoded.userId, {
+      const user = await User.findByPk(decoded.id, {
         attributes: ['id', 'full_name', 'email', 'role', 'is_active'],
       });
 
       if (!user) {
-        logger.warn(`Socket connection rejected: User not found - ${decoded.userId}`);
+        logger.warn(`Socket connection rejected: User not found - ${decoded.id}`);
         return next(new Error('Authentication error: User not found'));
       }
 
@@ -91,15 +91,16 @@ function initializeSocketIO(server) {
     // Join role-based room
     socket.join(`role:${socket.user.role}`);
 
-    // Track presence
+    // Track presence — only notify admins to avoid leaking user presence to all
     onlineUsers.add(socket.userId);
-    io.emit('presence:online', { userId: socket.userId });
+    io.to('role:admin').to('role:super_admin').emit('presence:online', { userId: socket.userId });
 
-    // Send welcome message
+    // Send welcome message — only admins receive the full online user list
+    const isAdmin = ['admin', 'super_admin'].includes(socket.user.role);
     socket.emit('connected', {
       message: 'Connected to TekyPro LMS',
       user: socket.user,
-      onlineUsers: [...onlineUsers],
+      onlineUsers: isAdmin ? [...onlineUsers] : [],
     });
 
     // Handle course room joining
@@ -223,7 +224,7 @@ function initializeSocketIO(server) {
     // Handle disconnect
     socket.on('disconnect', (reason) => {
       onlineUsers.delete(socket.userId);
-      io.emit('presence:offline', { userId: socket.userId });
+      io.to('role:admin').to('role:super_admin').emit('presence:offline', { userId: socket.userId });
       logger.info(`Client disconnected: ${socket.user.email} (Reason: ${reason})`);
     });
 
