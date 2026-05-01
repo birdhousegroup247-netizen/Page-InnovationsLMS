@@ -18,8 +18,7 @@ services:
       MYSQL_DATABASE: ${DB_NAME:-tekypro_lms}
       MYSQL_USER: ${DB_USER:?Error: DB_USER not set in environment}
       MYSQL_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD not set in environment}
-    ports:
-      - "3306:3306"
+    # Port NOT exposed to host — only accessible within tekypro_network
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/migrations:/docker-entrypoint-initdb.d
@@ -36,8 +35,7 @@ services:
     image: redis:7-alpine
     container_name: tekypro_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Port NOT exposed to host — only accessible within tekypro_network
     # SECURITY: Redis with password authentication
     command: >
       redis-server
@@ -78,6 +76,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Error: JWT_REFRESH_SECRET not set in environment}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       ADMIN_FRONTEND_URL: ${ADMIN_FRONTEND_URL:-http://localhost:5174}
+      PROMETHEUS_TOKEN: ${PROMETHEUS_TOKEN:?Error: PROMETHEUS_TOKEN not set in environment}
     depends_on:
       mysql:
         condition: service_healthy
@@ -142,6 +141,8 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
+      # Mount scrape token file — create it with: echo -n "$PROMETHEUS_TOKEN" > prometheus_scrape_token
+      - ./prometheus_scrape_token:/etc/prometheus/scrape_token:ro
     networks:
       - tekypro_network
     depends_on:

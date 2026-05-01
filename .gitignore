@@ -117,3 +117,4 @@ docs/.vuepress/dist
 
 # Credentials (do not commit!)
 LOGIN_CREDENTIALS.md
+prometheus_scrape_token

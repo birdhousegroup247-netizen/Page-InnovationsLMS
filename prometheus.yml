@@ -23,12 +23,17 @@ rule_files:
 # Scrape configurations
 scrape_configs:
   # TekyPro Backend API
+  # Set PROMETHEUS_TOKEN env var in both backend and prometheus containers, then
+  # mount a file containing the token to /etc/prometheus/scrape_token in this container.
   - job_name: 'tekypro-backend'
     static_configs:
       - targets: ['backend:5000']
     metrics_path: '/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/scrape_token
 
   # Prometheus self-monitoring
   - job_name: 'prometheus'

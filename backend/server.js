@@ -233,9 +233,15 @@ app.get('/live', async (req, res) => {
   }
 });
 
-// Metrics endpoint for Prometheus — admin only
+// Metrics endpoint — accepts either a Prometheus static scrape token or an admin JWT
 const { authenticate: _auth, authorize: _authorize } = require('./middleware/auth/authMiddleware');
-app.get('/metrics', _auth, _authorize('admin', 'super_admin'), metricsEndpoint);
+const _metricsGuard = (req, res, next) => {
+  const scrapeToken = process.env.PROMETHEUS_TOKEN;
+  const bearer = (req.headers.authorization || '').replace('Bearer ', '');
+  if (scrapeToken && bearer === scrapeToken) return next(); // Prometheus scraper
+  return _auth(req, res, () => _authorize('admin', 'super_admin')(req, res, next));
+};
+app.get('/metrics', _metricsGuard, metricsEndpoint);
 
 // API version info endpoint
 app.get('/api/version', getApiVersionInfo);
@@ -379,14 +385,16 @@ const startServer = async () => {
       throw modelError;
     }
 
-    // Always create missing tables on startup (no-op if they already exist).
-    // This ensures a fresh database gets all tables without requiring DB_SYNC_ENABLED.
-    try {
-      logger.info('🔄 Ensuring all tables exist...');
-      await sequelize.sync({ force: false });
-      logger.info('✓ All tables ensured');
-    } catch (initSyncErr) {
-      logger.warn('⚠ Initial table sync failed (continuing):', initSyncErr.message);
+    // Create missing tables on startup only outside production.
+    // In production, schema changes must go through explicit SQL migrations.
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        logger.info('🔄 Ensuring all tables exist (non-production)...');
+        await sequelize.sync({ force: false });
+        logger.info('✓ All tables ensured');
+      } catch (initSyncErr) {
+        logger.warn('⚠ Initial table sync failed (continuing):', initSyncErr.message);
+      }
     }
 
     // Auto-migration: ensure critical columns exist (dialect-agnostic, runs every startup)
@@ -641,13 +649,30 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  await closeRedis();
-  await sequelize.close();
-  process.exit(0);
-});
+// Graceful shutdown helper
+const gracefulShutdown = async (signal) => {
+  logger.info(`${signal} received: starting graceful shutdown`);
+  // Stop accepting new connections, wait for in-flight requests to finish
+  server.close(async () => {
+    try {
+      await closeRedis();
+      await sequelize.close();
+      logger.info('Graceful shutdown complete');
+      process.exit(0);
+    } catch (err) {
+      logger.error('Error during shutdown:', err);
+      process.exit(1);
+    }
+  });
+  // Force-kill if still alive after 15 s (avoid hanging forever)
+  setTimeout(() => {
+    logger.error('Graceful shutdown timed out — forcing exit');
+    process.exit(1);
+  }, 15000).unref();
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 
 // Start the server only when run directly (not when imported by tests)
 if (require.main === module) {
