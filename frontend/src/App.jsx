@@ -76,6 +76,8 @@ const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
 const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 const Billing = lazy(() => import('./pages/Billing'));
 
+const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'));
+
 // Admin pages
 const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
 
@@ -653,6 +655,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Billing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/knowledge"
+            element={
+              <ProtectedRoute>
+                <KnowledgeBase />
               </ProtectedRoute>
             }
           />

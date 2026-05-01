@@ -489,4 +489,10 @@ export const discordAPI = {
   getCourseInvite: (courseId) => api.get(`/api/discord/course/${courseId}/invite`),
 };
 
+export const knowledgeAPI = {
+  getAll: (params) => api.get('/api/knowledge', { params }),
+  getPopular: () => api.get('/api/knowledge/popular'),
+  getBySlug: (slug) => api.get(`/api/knowledge/${slug}`),
+};
+
 export default api;

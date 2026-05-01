@@ -6,6 +6,7 @@ const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
 const ActivityController = require('../activity/activityController');
 const cache = require('../../utils/cache');
+const emailService = require('../../services/email/emailService');
 
 class CourseController {
   // Get all courses (public) with advanced filtering
@@ -480,6 +481,11 @@ class CourseController {
         course_title: course.title,
         course_id: course.id,
       });
+
+      // Send enrollment confirmation email (fire-and-forget)
+      emailService.sendEnrollmentConfirmation(req.user.email, req.user.full_name, course).catch((e) =>
+        logger.warn(`Enrollment email failed for ${req.user.email}: ${e.message}`)
+      );
 
       logger.info(`User ${req.user.email} enrolled in course: ${course.title}`);
 

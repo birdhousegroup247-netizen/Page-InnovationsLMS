@@ -6,6 +6,7 @@ const { BadRequestError, UnauthorizedError, NotFoundError } = require('../../uti
 const ActivityController = require('../activity/activityController');
 const TokenBlacklist = require('../../utils/tokenBlacklist');
 const CSRF = require('../../utils/csrf');
+const emailService = require('../../services/email/emailService');
 
 /**
  * Authentication Controller
@@ -154,6 +155,11 @@ class AuthController {
           logger.warn(`Failed to create referral record for ref=${ref}: ${refErr.message}`);
         }
       }
+
+      // Send welcome email (fire-and-forget)
+      emailService.sendWelcomeEmail(email, full_name).catch((e) =>
+        logger.warn(`Welcome email failed for ${email}: ${e.message}`)
+      );
 
       // Log activity
       logger.info(`New user registered: ${email} (role: ${userRole}, instructor_status: ${instructorStatus})`);

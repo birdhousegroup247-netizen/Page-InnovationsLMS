@@ -39,6 +39,7 @@ const Bundles = lazy(() => import('./pages/admin/Bundles'));
 const Enrollments = lazy(() => import('./pages/admin/Enrollments'));
 const Payments = lazy(() => import('./pages/admin/Payments'));
 const Announcements = lazy(() => import('./pages/admin/Announcements'));
+const Referrals = lazy(() => import('./pages/admin/Referrals'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
@@ -293,6 +294,14 @@ function App() {
               element={
                 <AdminRoute>
                   <Announcements />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/referrals"
+              element={
+                <AdminRoute>
+                  <Referrals />
                 </AdminRoute>
               }
             />

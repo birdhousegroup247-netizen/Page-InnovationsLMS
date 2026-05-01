@@ -1,4 +1,4 @@
-import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package, CreditCard } from 'lucide-react';
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package, CreditCard, Megaphone, Library } from 'lucide-react';
 
 // Shared navigation items for all authenticated pages
 export const getNavigationItems = (role = 'student') => {
@@ -85,6 +85,11 @@ export const getNavigationItems = (role = 'student') => {
       path: '/billing',
       icon: <CreditCard className="w-5 h-5" />,
     },
+    {
+      label: 'Knowledge Base',
+      path: '/knowledge',
+      icon: <Library className="w-5 h-5" />,
+    },
   ];
 
   const instructorItems = [
@@ -122,6 +127,16 @@ export const getNavigationItems = (role = 'student') => {
       label: 'My Students',
       path: '/instructor/students',
       icon: <Award className="w-5 h-5" />,
+    },
+    {
+      label: 'My Questions',
+      path: '/instructor/questions',
+      icon: <HelpCircle className="w-5 h-5" />,
+    },
+    {
+      label: 'Announcements',
+      path: '/instructor/announcements',
+      icon: <Megaphone className="w-5 h-5" />,
     },
   ];
 

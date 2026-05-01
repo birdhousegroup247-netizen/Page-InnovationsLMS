@@ -366,4 +366,9 @@ export const adminBundlesAPI = {
   delete: (id) => api.delete(`/api/admin/bundles/${id}`),
 };
 
+// Admin: Referrals
+export const adminReferralsAPI = {
+  getAll: () => api.get('/api/admin/referrals'),
+};
+
 export default api;
