@@ -70,9 +70,12 @@ const errorHandler = (err, req, res, next) => {
     return ApiResponse.error(res, err.message, err.statusCode, err.errors);
   }
 
-  // Default Error
+  // Default Error — never expose internal error messages to clients in production
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal server error';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const message = statusCode === 500 && isProduction
+    ? 'Internal server error'
+    : err.message || 'Internal server error';
 
   return ApiResponse.error(res, message, statusCode);
 };

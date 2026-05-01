@@ -127,9 +127,9 @@ class UsersController {
         delete updates.password;
       }
 
-      // Prevent updating certain fields
-      delete updates.id;
-      delete updates.created_at;
+      // Strip fields that must never be set via this endpoint
+      const BLOCKED = ['id', 'created_at', 'password_hash', 'google_id', 'referral_code', 'referral_credits'];
+      BLOCKED.forEach((f) => delete updates[f]);
 
       await user.update(updates);
 

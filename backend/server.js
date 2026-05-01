@@ -23,6 +23,7 @@ const { performHealthCheck, performReadinessCheck, performLivenessCheck } = requ
 const { securityHeaders, contentSecurityPolicy, detectAttackPatterns } = require('./middleware/security');
 const { preventRateLimitBypass } = require('./middleware/requestValidator');
 const { smartSanitizer } = require('./middleware/smartSanitizer');
+const CSRF = require('./utils/csrf');
 
 logger.info('🚀 Starting TekyPro LMS server...');
 
@@ -141,6 +142,19 @@ app.use(smartSanitizer); // Context-aware sanitization
 app.use(preventRateLimitBypass);
 app.use(detectAttackPatterns);
 
+// CSRF protection — double-submit cookie pattern.
+// Skipped for: safe methods, Bearer-token requests (CSRF doesn't apply), and Stripe/Paystack webhooks.
+app.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  if (req.headers.authorization) return next(); // Bearer token = CSRF not applicable
+  if (req.path.startsWith('/api/webhooks')) return next(); // signed webhooks, no session
+  if (!CSRF.validateToken(req, req.headers['x-csrf-token'])) {
+    logger.warn(`CSRF validation failed: ${req.method} ${req.path} from ${req.ip}`);
+    return res.status(403).json({ success: false, message: 'Invalid or missing CSRF token' });
+  }
+  next();
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url} - ${req.ip}`);
@@ -219,8 +233,9 @@ app.get('/live', async (req, res) => {
   }
 });
 
-// Metrics endpoint for Prometheus
-app.get('/metrics', metricsEndpoint);
+// Metrics endpoint for Prometheus — admin only
+const { authenticate: _auth, authorize: _authorize } = require('./middleware/auth/authMiddleware');
+app.get('/metrics', _auth, _authorize('admin', 'super_admin'), metricsEndpoint);
 
 // API version info endpoint
 app.get('/api/version', getApiVersionInfo);

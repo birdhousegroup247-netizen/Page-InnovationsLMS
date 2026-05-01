@@ -6,6 +6,8 @@ const { authenticate } = require('../../middleware/auth/authMiddleware');
 router.use(authenticate);
 
 router.get('/my-stats', ReferralsController.getMyStats);
-router.post('/reward', ReferralsController.rewardReferrer); // internal call from enrollment
+// /reward is intentionally removed — reward logic is handled internally in the
+// payment/enrollment controllers. Exposing it allowed any authenticated user to
+// fraudulently trigger referral credits for arbitrary user IDs.
 
 module.exports = router;

@@ -161,43 +161,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/seed/status
- * @desc    Check if database has been seeded
- * @access  Public
- */
-router.get('/status', async (req, res) => {
-  try {
-    const { User, Category, Course } = require('../../models');
-
-    const [userCount, categoryCount, courseCount] = await Promise.all([
-      User.count(),
-      Category.count(),
-      Course.count(),
-    ]);
-
-    const isSeeded = userCount > 0;
-
-    res.json({
-      success: true,
-      seeded: isSeeded,
-      counts: {
-        users: userCount,
-        categories: categoryCount,
-        courses: courseCount,
-      },
-      message: isSeeded
-        ? 'Database is seeded ✅'
-        : 'Database is empty - needs seeding',
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check seed status',
-      error: error.message,
-    });
-  }
-});
+// /api/seed/status removed — it was a public endpoint that revealed
+// database record counts (user/course totals), enabling reconnaissance.
 
   module.exports = router;
 }
