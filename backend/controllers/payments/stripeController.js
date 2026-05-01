@@ -501,6 +501,19 @@ class StripeController {
       logger.warn(`Enrollment emails failed (non-critical): ${emailErr.message}`);
     }
 
+    // Reward referrer if this student was referred (fire-and-forget)
+    try {
+      const { Referral } = require('../../models');
+      const ref = await Referral.findOne({ where: { referred_id: parseInt(user_id), status: 'pending' } });
+      if (ref) {
+        await ref.update({ status: 'rewarded', rewarded_at: new Date() });
+        await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
+        logger.info(`Referral rewarded: referrer ${ref.referrer_id} credited for user ${user_id}`);
+      }
+    } catch (refErr) {
+      logger.warn(`Referral reward failed (non-critical): ${refErr.message}`);
+    }
+
     logger.info(
       `Payment ${payment.id} completed — user ${user_id} enrolled in course ${course_id}`
     );

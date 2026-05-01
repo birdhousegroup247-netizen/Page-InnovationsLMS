@@ -1,9 +1,10 @@
 const { ContentProgress, ModuleContent, Enrollment, CourseModule, Certificate, Course, User } = require('../../models');
 const ApiResponse = require('../../utils/response');
-const { NotFoundError } = require('../../utils/errors');
+const { NotFoundError, ForbiddenError } = require('../../utils/errors');
 const ActivityController = require('../activity/activityController');
 const NotificationsController = require('../notifications/notificationsController');
 const CertificateService = require('../../services/certificate/certificateService');
+const emailService = require('../../services/email/emailService');
 
 class ProgressController {
   // Mark content as complete
@@ -12,8 +13,31 @@ class ProgressController {
       const { contentId } = req.params;
       const { watch_time_seconds, last_position_seconds } = req.body || {};
 
-      const content = await ModuleContent.findByPk(contentId);
+      const content = await ModuleContent.findByPk(contentId, {
+        include: [{ model: CourseModule, as: 'module', attributes: ['course_id'] }],
+      });
       if (!content) throw new NotFoundError('Content not found');
+
+      // Enforce drip lock server-side
+      if (content.unlock_after_days || content.unlock_date) {
+        const enrollment = await Enrollment.findOne({
+          where: { student_id: req.user.id, course_id: content.module?.course_id },
+          attributes: ['enrollment_date'],
+        });
+        if (enrollment) {
+          const enrolledAt = new Date(enrollment.enrollment_date);
+          if (content.unlock_date && new Date() < new Date(content.unlock_date)) {
+            throw new ForbiddenError('This lesson is not available yet');
+          }
+          if (content.unlock_after_days) {
+            const unlockAt = new Date(enrolledAt);
+            unlockAt.setDate(unlockAt.getDate() + content.unlock_after_days);
+            if (new Date() < unlockAt) {
+              throw new ForbiddenError('This lesson is not available yet');
+            }
+          }
+        }
+      }
 
       const [progress, created] = await ContentProgress.findOrCreate({
         where: { student_id: req.user.id, content_id: contentId },
@@ -181,6 +205,17 @@ class ProgressController {
                 link: `/certificates`,
                 priority: 'high',
               });
+
+              // Send completion email (fire-and-forget)
+              const studentEmail = await User.findByPk(studentId, { attributes: ['email', 'full_name'] });
+              if (studentEmail) {
+                emailService.sendCourseCompletionEmail(
+                  studentEmail.email,
+                  studentEmail.full_name,
+                  courseData,
+                  `${process.env.FRONTEND_URL || 'http://localhost:5173'}/certificates`
+                ).catch((e) => console.error('Completion email failed:', e.message));
+              }
             }
           }
         } catch (certErr) {

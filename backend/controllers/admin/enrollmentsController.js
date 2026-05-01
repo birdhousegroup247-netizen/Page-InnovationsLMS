@@ -3,6 +3,7 @@ const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ConflictError } = require('../../utils/errors');
 const { Op, fn, col, literal } = require('sequelize');
+const emailService = require('../../services/email/emailService');
 
 class AdminEnrollmentsController {
   // GET /api/admin/enrollments — list all enrollments with filters
@@ -121,6 +122,11 @@ class AdminEnrollmentsController {
 
       // Bump enrollment_count on course
       await course.increment('enrollment_count');
+
+      // Send enrollment confirmation email (fire-and-forget)
+      emailService.sendEnrollmentConfirmation(student.email, student.full_name, course).catch((e) =>
+        logger.warn(`Admin enroll email failed for ${student.email}: ${e.message}`)
+      );
 
       logger.info(`Admin ${req.user.email} manually enrolled student ${student_id} in course ${course_id}`);
 

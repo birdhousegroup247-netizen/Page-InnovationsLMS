@@ -2,6 +2,7 @@ const { Course, Enrollment, User, ContentProgress, ModuleContent, AssignedTestAt
 const ApiResponse = require('../../utils/response');
 const { Op } = require('sequelize');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
+const emailService = require('../../services/email/emailService');
 
 /**
  * Student Management Controller for Instructors
@@ -575,7 +576,7 @@ class StudentManagementController {
       }
 
       const normalised = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
-      const users = await User.findAll({ where: { email: normalised, role: 'student' }, attributes: ['id', 'email'] });
+      const users = await User.findAll({ where: { email: normalised, role: 'student' }, attributes: ['id', 'full_name', 'email'] });
 
       const results = { enrolled: [], already_enrolled: [], not_found: [] };
 
@@ -597,6 +598,8 @@ class StudentManagementController {
             message: `You have been enrolled in "${course.title}" by your instructor.`,
             link: `/courses/${courseId}`,
           }).catch(() => {});
+          // Send enrollment confirmation email (fire-and-forget)
+          emailService.sendEnrollmentConfirmation(user.email, user.full_name || user.email, course).catch(() => {});
         } else {
           results.already_enrolled.push(user.email);
         }

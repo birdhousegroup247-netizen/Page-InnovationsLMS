@@ -1,4 +1,4 @@
-const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment, Assignment } = require('../../models');
+const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment, Assignment, Referral } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
@@ -486,6 +486,14 @@ class CourseController {
       emailService.sendEnrollmentConfirmation(req.user.email, req.user.full_name, course).catch((e) =>
         logger.warn(`Enrollment email failed for ${req.user.email}: ${e.message}`)
       );
+
+      // Reward referrer for free-course enrollment (fire-and-forget)
+      Referral.findOne({ where: { referred_id: req.user.id, status: 'pending' } }).then(async (ref) => {
+        if (ref) {
+          await ref.update({ status: 'rewarded', rewarded_at: new Date() });
+          await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
+        }
+      }).catch((e) => logger.warn(`Referral reward failed: ${e.message}`));
 
       logger.info(`User ${req.user.email} enrolled in course: ${course.title}`);
 

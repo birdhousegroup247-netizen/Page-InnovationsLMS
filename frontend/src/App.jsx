@@ -47,6 +47,7 @@ const MyAssignments = lazy(() => import('./pages/MyAssignments'));
 const MyNotes = lazy(() => import('./pages/MyNotes'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
 const Bundles = lazy(() => import('./pages/Bundles'));
+const BundleDetail = lazy(() => import('./pages/BundleDetail'));
 const Referrals = lazy(() => import('./pages/Referrals'));
 
 // Instructor pages - lazy loaded
@@ -637,6 +638,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Bundles />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bundles/:id"
+            element={
+              <ProtectedRoute>
+                <BundleDetail />
               </ProtectedRoute>
             }
           />

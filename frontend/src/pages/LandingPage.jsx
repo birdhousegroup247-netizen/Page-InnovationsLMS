@@ -503,6 +503,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="py-24 bg-gray-50 dark:bg-dark-800/30">
+        <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white text-center mb-12">
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-4">
+              {faqs.map((faq, index) => (
+                <div key={index} className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{faq.question}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-24">
         <div className="w-full max-w-[95%] mx-auto px-4 sm:px-6">
