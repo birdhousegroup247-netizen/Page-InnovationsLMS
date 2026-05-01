@@ -16,6 +16,7 @@ import {
   DollarSign,
   Megaphone,
   Gift,
+  Award,
 } from 'lucide-react';
 
 /**
@@ -107,6 +108,11 @@ const adminNavigationItems = [
     label: 'Referrals',
     path: '/referrals',
     icon: <Gift className="w-5 h-5" />,
+  },
+  {
+    label: 'Badges',
+    path: '/badges',
+    icon: <Award className="w-5 h-5" />,
   },
 ];
 

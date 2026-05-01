@@ -371,4 +371,12 @@ export const adminReferralsAPI = {
   getAll: () => api.get('/api/admin/referrals'),
 };
 
+// Admin: Badges
+export const adminBadgesAPI = {
+  getAll: () => api.get('/api/badges'),
+  create: (data) => api.post('/api/badges', data),
+  update: (id, data) => api.put(`/api/badges/${id}`, data),
+  delete: (id) => api.delete(`/api/badges/${id}`),
+};
+
 export default api;

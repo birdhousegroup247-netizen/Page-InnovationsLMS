@@ -16,6 +16,7 @@ const { Op } = require('sequelize');
 const { sequelize } = require('../../config/database');
 const NotificationsController = require('../notifications/notificationsController');
 const ActivityController = require('../activity/activityController');
+const BadgesController = require('../badges/badgesController');
 
 class AssignedTestController {
   // Create assigned test (instructor/admin)
@@ -655,6 +656,14 @@ class AssignedTestController {
       await t.commit();
 
       logger.info(`Test ${test.id} submitted by student ${req.user.id} - Score: ${totalScore}/${test.total_marks}`);
+
+      // Check and award badges (fire-and-forget)
+      if (passed) {
+        BadgesController.checkAndAward(req.user.id, 'test_pass').catch(() => {});
+        if (parseFloat(percentage.toFixed(2)) === 100) {
+          BadgesController.checkAndAward(req.user.id, 'score_perfect', { score: 100 }).catch(() => {});
+        }
+      }
 
       // Notify student of their result
       NotificationsController.createNotification({

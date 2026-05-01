@@ -77,4 +77,31 @@ class BadgesController {
   }
 }
 
+  static async createBadge(req, res, next) {
+    try {
+      const { slug, name, description, icon, condition_type, condition_value } = req.body;
+      const badge = await Badge.create({ slug, name, description, icon, condition_type, condition_value });
+      return ApiResponse.created(res, { badge }, 'Badge created');
+    } catch (err) { next(err); }
+  }
+
+  static async updateBadge(req, res, next) {
+    try {
+      const badge = await Badge.findByPk(req.params.id);
+      if (!badge) return ApiResponse.notFound(res, 'Badge not found');
+      await badge.update(req.body);
+      return ApiResponse.success(res, { badge }, 'Badge updated');
+    } catch (err) { next(err); }
+  }
+
+  static async deleteBadge(req, res, next) {
+    try {
+      const badge = await Badge.findByPk(req.params.id);
+      if (!badge) return ApiResponse.notFound(res, 'Badge not found');
+      await badge.destroy();
+      return ApiResponse.success(res, null, 'Badge deleted');
+    } catch (err) { next(err); }
+  }
+}
+
 module.exports = BadgesController;

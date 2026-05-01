@@ -78,6 +78,7 @@ const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 const Billing = lazy(() => import('./pages/Billing'));
 
 const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'));
+const CertificateVerify = lazy(() => import('./pages/CertificateVerify'));
 
 // Admin pages
 const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
@@ -274,6 +275,9 @@ function App() {
 
           {/* Google OAuth Callback */}
           <Route path="/auth/callback" element={<AuthCallback />} />
+
+          {/* Public certificate verification — no auth required */}
+          <Route path="/verify/:id" element={<CertificateVerify />} />
 
           {/* Role Selector (authenticated users only, no layout) */}
           <Route path="/role-selector" element={<RoleSelectorRoute />} />

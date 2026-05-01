@@ -5,6 +5,7 @@ const ActivityController = require('../activity/activityController');
 const NotificationsController = require('../notifications/notificationsController');
 const CertificateService = require('../../services/certificate/certificateService');
 const emailService = require('../../services/email/emailService');
+const BadgesController = require('../badges/badgesController');
 
 class ProgressController {
   // Mark content as complete
@@ -205,6 +206,9 @@ class ProgressController {
                 link: `/certificates`,
                 priority: 'high',
               });
+
+              // Check and award badges for course completion (fire-and-forget)
+              BadgesController.checkAndAward(studentId, 'course_complete').catch(() => {});
 
               // Send completion email (fire-and-forget)
               const studentEmail = await User.findByPk(studentId, { attributes: ['email', 'full_name'] });
