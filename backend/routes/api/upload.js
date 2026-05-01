@@ -68,6 +68,23 @@ router.post(
 );
 
 // =============================================================================
+// ASSIGNMENT SUBMISSION UPLOADS
+// =============================================================================
+
+/**
+ * @route   POST /api/upload/assignment
+ * @desc    Upload assignment submission file (PDF, DOCX, etc.)
+ * @access  Private (any authenticated user)
+ */
+router.post(
+  '/assignment',
+  authenticate,
+  uploadDocument.single('file'),
+  handleUploadErrors,
+  UploadController.uploadAssignmentFile
+);
+
+// =============================================================================
 // KNOWLEDGE ARTICLE UPLOADS
 // =============================================================================
 

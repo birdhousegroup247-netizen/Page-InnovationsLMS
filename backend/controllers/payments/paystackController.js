@@ -442,6 +442,10 @@ class PaystackController {
       logger.warn(`Referral reward failed (non-critical): ${refErr.message}`);
     }
 
+    // Badge check for enrollment milestone
+    const BadgesController = require('../badges/badgesController');
+    BadgesController.checkAndAward(student_id, 'enrollment_count').catch(() => {});
+
     logger.info(`Paystack payment ${payment.id} completed — user ${student_id} enrolled in course ${course_id}`);
   }
 }

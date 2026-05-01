@@ -209,6 +209,41 @@ class UploadController {
   }
 
   /**
+   * Upload assignment submission file (for students)
+   * POST /api/upload/assignment
+   */
+  static async uploadAssignmentFile(req, res, next) {
+    try {
+      if (!req.file) throw new BadRequestError('No file uploaded');
+
+      const ext = req.file.originalname.match(/\.([^/.]+)$/)?.[1] || '';
+      const fileName = req.file.originalname.replace(/\.[^/.]+$/, '');
+      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+      const result = await CloudinaryService.uploadDocument(
+        base64File,
+        'assignment-submissions',
+        `submission_${req.user.id}_${fileName}_${Date.now()}${ext ? '.' + ext : ''}`
+      );
+
+      logger.info(`Assignment file uploaded by user ${req.user.id}: ${result.url}`);
+
+      return ApiResponse.success(
+        res,
+        {
+          ...result,
+          format: ext || result.format,
+          original_filename: req.file.originalname,
+          size_mb: (result.size / (1024 * 1024)).toFixed(2),
+        },
+        'Assignment file uploaded successfully'
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Delete file from Cloudinary
    * DELETE /api/upload/:publicId
    */

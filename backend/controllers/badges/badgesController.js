@@ -75,7 +75,6 @@ class BadgesController {
       return [];
     }
   }
-}
 
   static async createBadge(req, res, next) {
     try {

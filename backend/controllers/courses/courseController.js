@@ -7,6 +7,7 @@ const NotificationsController = require('../notifications/notificationsControlle
 const ActivityController = require('../activity/activityController');
 const cache = require('../../utils/cache');
 const emailService = require('../../services/email/emailService');
+const BadgesController = require('../badges/badgesController');
 
 class CourseController {
   // Get all courses (public) with advanced filtering
@@ -494,6 +495,9 @@ class CourseController {
           await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
         }
       }).catch((e) => logger.warn(`Referral reward failed: ${e.message}`));
+
+      // Badge check for enrollment milestone
+      BadgesController.checkAndAward(req.user.id, 'enrollment_count').catch(() => {});
 
       logger.info(`User ${req.user.email} enrolled in course: ${course.title}`);
 

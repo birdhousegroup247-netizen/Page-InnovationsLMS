@@ -128,6 +128,10 @@ class AdminEnrollmentsController {
         logger.warn(`Admin enroll email failed for ${student.email}: ${e.message}`)
       );
 
+      // Badge check for enrollment milestone
+      const BadgesController = require('../badges/badgesController');
+      BadgesController.checkAndAward(student_id, 'enrollment_count').catch(() => {});
+
       logger.info(`Admin ${req.user.email} manually enrolled student ${student_id} in course ${course_id}`);
 
       return ApiResponse.created(res, { enrollment }, 'Student enrolled successfully');

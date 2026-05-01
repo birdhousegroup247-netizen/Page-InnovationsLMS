@@ -8,6 +8,7 @@ import {
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Alert } from '../components/ui';
 import { cn } from '../utils/cn';
+import CloudinaryUpload from '../components/common/CloudinaryUpload';
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', color: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400', icon: <Clock className="w-3 h-3" /> },
@@ -35,6 +36,8 @@ function AssignmentCard({ assignment, onSubmit }) {
   const [expanded, setExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [textContent, setTextContent] = useState('');
+  const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -45,17 +48,26 @@ function AssignmentCard({ assignment, onSubmit }) {
   const canUpdate = status === 'submitted';
 
   const handleSubmit = async () => {
-    if (!textContent.trim()) {
-      setError('Please write your submission text.');
+    const hasText = textContent.trim();
+    const hasFile = fileUrl;
+    if (assignment.allow_text_submission && !hasText && !hasFile) {
+      setError('Please provide your submission.');
+      return;
+    }
+    if (assignment.allow_file_upload && !hasFile && !hasText) {
+      setError('Please attach a file or write your answer.');
       return;
     }
     setSubmitting(true);
     setError('');
     try {
+      const payload = {};
+      if (hasText) payload.text_content = textContent;
+      if (hasFile) { payload.file_url = fileUrl; payload.file_name = fileName; }
       if (canSubmit) {
-        await assignmentsAPI.submitAssignment(assignment.id, { text_content: textContent });
+        await assignmentsAPI.submitAssignment(assignment.id, payload);
       } else if (canUpdate) {
-        await assignmentsAPI.updateSubmission(assignment.id, { text_content: textContent });
+        await assignmentsAPI.updateSubmission(assignment.id, payload);
       }
       setSuccess('Submitted successfully!');
       setExpanded(false);
@@ -146,8 +158,8 @@ function AssignmentCard({ assignment, onSubmit }) {
           )}
           {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
           {success && <Alert variant="success" className="mb-3">{success}</Alert>}
-          {assignment.allow_text_submission ? (
-            <>
+          <div className="space-y-4">
+            {assignment.allow_text_submission && (
               <textarea
                 className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none transition-colors"
                 rows={5}
@@ -155,20 +167,40 @@ function AssignmentCard({ assignment, onSubmit }) {
                 value={textContent || sub?.text_content || ''}
                 onChange={(e) => setTextContent(e.target.value)}
               />
-              <div className="flex justify-end mt-3">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleSubmit}
-                  loading={submitting}
-                  leftIcon={!submitting && <Send className="w-4 h-4" />}
-                >
-                  {canSubmit ? 'Submit' : 'Update'}
-                </Button>
+            )}
+            {assignment.allow_file_upload && (
+              <div>
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Attach a file</p>
+                {sub?.file_url && !fileUrl && (
+                  <p className="text-xs text-brand-blue mb-2">
+                    Current file: <a href={sub.file_url} target="_blank" rel="noopener noreferrer" className="underline">{sub.file_name || 'Download'}</a>
+                  </p>
+                )}
+                <CloudinaryUpload
+                  acceptedTypes="any"
+                  maxSizeMB={20}
+                  uploadEndpoint="/api/upload/assignment"
+                  onUploadSuccess={(url, name) => { setFileUrl(url); setFileName(name || url.split('/').pop()); }}
+                  onUploadError={(msg) => setError(msg)}
+                />
               </div>
-            </>
-          ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Text submission is not enabled for this assignment.</p>
+            )}
+            {!assignment.allow_text_submission && !assignment.allow_file_upload && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No submission method enabled for this assignment.</p>
+            )}
+          </div>
+          {(assignment.allow_text_submission || assignment.allow_file_upload) && (
+            <div className="flex justify-end mt-3">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSubmit}
+                loading={submitting}
+                leftIcon={!submitting && <Send className="w-4 h-4" />}
+              >
+                {canSubmit ? 'Submit' : 'Update'}
+              </Button>
+            </div>
           )}
         </div>
       )}

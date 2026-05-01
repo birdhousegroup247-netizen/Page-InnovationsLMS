@@ -514,6 +514,10 @@ class StripeController {
       logger.warn(`Referral reward failed (non-critical): ${refErr.message}`);
     }
 
+    // Badge check for enrollment milestone
+    const BadgesController = require('../badges/badgesController');
+    BadgesController.checkAndAward(parseInt(user_id), 'enrollment_count').catch(() => {});
+
     logger.info(
       `Payment ${payment.id} completed — user ${user_id} enrolled in course ${course_id}`
     );

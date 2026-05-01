@@ -203,4 +203,14 @@ router.post(
   (req, res, next) => StudentManagementController.bulkEnroll(req, res, next)
 );
 
+// @route   DELETE /api/instructor/courses/:courseId/students/:studentId
+// @desc    Remove a student from a course
+// @access  Private (Instructor, Admin, Super Admin)
+router.delete(
+  '/courses/:courseId/students/:studentId',
+  authenticate,
+  authorize('instructor', 'admin', 'super_admin'),
+  (req, res, next) => StudentManagementController.removeStudent(req, res, next)
+);
+
 module.exports = router;

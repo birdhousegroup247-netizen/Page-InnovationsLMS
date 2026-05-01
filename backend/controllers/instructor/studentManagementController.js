@@ -3,6 +3,7 @@ const ApiResponse = require('../../utils/response');
 const { Op } = require('sequelize');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
 const emailService = require('../../services/email/emailService');
+const logger = require('../../utils/logger');
 
 /**
  * Student Management Controller for Instructors
@@ -606,6 +607,54 @@ class StudentManagementController {
       }
 
       return ApiResponse.success(res, { results }, `Enrolled ${results.enrolled.length} student(s)`);
+    } catch (err) { next(err); }
+  }
+
+  /**
+   * Remove a student from a course
+   * DELETE /api/instructor/courses/:courseId/students/:studentId
+   */
+  static async removeStudent(req, res, next) {
+    try {
+      const { courseId, studentId } = req.params;
+
+      const course = await Course.findByPk(courseId);
+      if (!course) throw new NotFoundError('Course not found');
+      if (course.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('Not authorized');
+      }
+
+      const enrollment = await Enrollment.findOne({ where: { student_id: studentId, course_id: courseId } });
+      if (!enrollment) throw new NotFoundError('Enrollment not found');
+
+      await enrollment.destroy();
+
+      // Decrement course enrollment_count
+      const { literal } = require('sequelize');
+      await Course.update(
+        { enrollment_count: literal('GREATEST(enrollment_count - 1, 0)') },
+        { where: { id: courseId } }
+      );
+
+      // Discord: remove course access (non-blocking)
+      try {
+        const discordCtrl = require('../discord/discordController');
+        discordCtrl.onUnenroll(parseInt(studentId), parseInt(courseId)).catch(() => {});
+      } catch (discordErr) {
+        logger.warn(`Discord unenroll hook skipped: ${discordErr.message}`);
+      }
+
+      // Notify the student
+      await Notification.create({
+        user_id: parseInt(studentId),
+        type: 'enrollment',
+        title: 'Removed from course',
+        message: `You have been removed from "${course.title}".`,
+        link: '/my-courses',
+      }).catch(() => {});
+
+      logger.info(`Instructor ${req.user.email} removed student ${studentId} from course ${courseId}`);
+      return ApiResponse.success(res, null, 'Student removed from course');
     } catch (err) { next(err); }
   }
 }

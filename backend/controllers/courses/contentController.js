@@ -1,6 +1,14 @@
-const { ModuleContent, CourseModule, Course } = require('../../models');
+const { ModuleContent, CourseModule, Course, Enrollment } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
+
+// Returns true if the user can access non-preview content for the given course
+async function _hasAccess(user, courseId) {
+  if (!user) return false;
+  if (['admin', 'super_admin', 'instructor'].includes(user.role)) return true;
+  const enrollment = await Enrollment.findOne({ where: { student_id: user.id, course_id: courseId } });
+  return !!enrollment;
+}
 
 class ContentController {
   // Get module contents
@@ -8,10 +16,21 @@ class ContentController {
     try {
       const { moduleId } = req.params;
 
+      const module = await CourseModule.findByPk(moduleId, {
+        include: [{ model: Course, as: 'course', attributes: ['id', 'instructor_id'] }],
+      });
+      if (!module) throw new NotFoundError('Module not found');
+
       const contents = await ModuleContent.findAll({
         where: { module_id: moduleId },
         order: [['order_index', 'ASC']],
       });
+
+      const canAccess = await _hasAccess(req.user, module.course_id);
+      if (!canAccess) {
+        // Return only preview-flagged lessons for unauthenticated / non-enrolled users
+        return ApiResponse.success(res, { contents: contents.filter((c) => c.is_preview) });
+      }
 
       return ApiResponse.success(res, { contents });
     } catch (error) {
@@ -24,8 +43,16 @@ class ContentController {
     try {
       const { contentId } = req.params;
 
-      const content = await ModuleContent.findByPk(contentId);
+      const content = await ModuleContent.findByPk(contentId, {
+        include: [{ model: CourseModule, as: 'module', attributes: ['course_id'] }],
+      });
       if (!content) throw new NotFoundError('Content not found');
+
+      // Non-preview content requires enrollment (or instructor/admin role)
+      if (!content.is_preview) {
+        const canAccess = await _hasAccess(req.user, content.module.course_id);
+        if (!canAccess) throw new ForbiddenError('Enroll in this course to access the content');
+      }
 
       return ApiResponse.success(res, { content });
     } catch (error) {

@@ -11,6 +11,7 @@ const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/database');
+const BadgesController = require('../badges/badgesController');
 
 class PracticeTestController {
   // Generate a new practice test
@@ -199,6 +200,15 @@ class PracticeTestController {
       await t.commit();
 
       logger.info(`Practice test submitted: ${attemptId} - Score: ${totalScore}/${attempt.total_marks}`);
+
+      // Badge checks (fire-and-forget)
+      const passed = percentage >= 50; // practice tests use 50% as pass threshold
+      if (passed) {
+        BadgesController.checkAndAward(req.user.id, 'test_pass').catch(() => {});
+        if (parseFloat(percentage.toFixed(2)) === 100) {
+          BadgesController.checkAndAward(req.user.id, 'score_perfect', { score: 100 }).catch(() => {});
+        }
+      }
 
       return ApiResponse.success(
         res,
