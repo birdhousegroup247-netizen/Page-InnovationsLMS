@@ -520,44 +520,14 @@ const startServer = async () => {
       logger.error('⚠ Auto-migration failed (continuing):', migrationErr.message);
     }
 
-    // Sync database tables if enabled
-    // Set DB_SYNC_ENABLED=true in environment to create tables on first deploy
-    // IMPORTANT: Disable after tables are created to prevent accidental schema changes
+    // Optional schema sync — only in non-production when DB_SYNC_ENABLED=true
+    // DB_FORCE_RESET removed: dropping all tables must be done via an explicit
+    // migration script run manually, never via an env flag on a running server.
     try {
-      if (process.env.DB_SYNC_ENABLED === 'true') {
-        logger.info('🔄 Starting database table synchronization...');
-
-        // Check if force reset is requested (WARNING: This will delete all data!)
-        const forceReset = process.env.DB_FORCE_RESET === 'true';
-        if (forceReset) {
-          logger.warn('⚠️  DB_FORCE_RESET is enabled - This will DROP ALL TABLES and recreate them!');
-        }
-
-        try {
-          if (forceReset) {
-            // force: true drops and recreates all tables (data loss!)
-            await sequelize.sync({ force: true });
-          } else {
-            // alter: true safely adds missing columns without dropping data
-            await sequelize.sync({ force: false, alter: true });
-          }
-          logger.info('✓ Database tables synchronized (DB_SYNC_ENABLED=true)');
-        } catch (syncError) {
-          logger.error('✗ Database sync failed:', syncError.message);
-          logger.error('Error name:', syncError.name);
-
-          // Sequelize wraps database errors in parent/original
-          if (syncError.parent) {
-            logger.error('Database error (parent):', syncError.parent.message);
-            logger.error('SQL:', syncError.parent.sql);
-          }
-          if (syncError.original) {
-            logger.error('Database error (original):', syncError.original.message);
-          }
-
-          logger.error('Full error stack:', syncError.stack);
-          // throw syncError; // Dont crash on sync error
-        }
+      if (process.env.NODE_ENV !== 'production' && process.env.DB_SYNC_ENABLED === 'true') {
+        logger.info('🔄 Starting database table synchronization (alter only)...');
+        await sequelize.sync({ force: false, alter: true });
+        logger.info('✓ Database tables synchronized');
       } else if (process.env.NODE_ENV === 'development') {
         await sequelize.sync({ alter: true });
         logger.info('✓ Database synchronized (development mode)');
