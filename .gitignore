@@ -8,6 +8,11 @@
 .env.production
 .env.development
 *.env
+*.env.local*
+*.env.*.backup
+*env.backup
+*.env.backup
+.env.local.backup
 
 # Dependencies
 node_modules/

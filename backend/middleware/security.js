@@ -66,12 +66,12 @@ const provideCSRFToken = (req, res, next) => {
 const contentSecurityPolicy = (req, res, next) => {
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: https: blob:",
-    "connect-src 'self' wss: ws: https://api.stripe.com https://js.stripe.com",
-    "frame-src https://js.stripe.com https://hooks.stripe.com",
+    "img-src 'self' data: https: blob: https://www.paypalobjects.com",
+    "connect-src 'self' wss: ws: https://api.stripe.com https://js.stripe.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://www.paypal.com",
+    "frame-src https://js.stripe.com https://hooks.stripe.com https://www.paypal.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
