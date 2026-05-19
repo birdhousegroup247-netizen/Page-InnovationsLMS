@@ -110,10 +110,12 @@ app.use(
   })
 );
 
-// ── STRIPE WEBHOOK (must be before JSON body parser AND rate limiter) ─────────
-// Stripe signature verification requires the raw, unparsed request body.
-// express.raw() captures it for this path only before express.json() runs.
+// ── PAYMENT WEBHOOKS (must be before JSON body parser AND rate limiter) ──────
+// Stripe / Paystack / PayPal all require the raw, unparsed body for signature
+// verification, so express.raw() captures it for these paths before json runs.
 app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
+app.use('/api/webhooks/paystack', express.raw({ type: 'application/json' }));
+app.use('/api/webhooks/paypal', express.raw({ type: 'application/json' }));
 // Webhook route registered here so it is exempt from the global rate limiter below.
 app.use('/api/webhooks', require('./routes/api/webhooks'));
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,7 +145,7 @@ app.use(preventRateLimitBypass);
 app.use(detectAttackPatterns);
 
 // CSRF protection — double-submit cookie pattern.
-// Skipped for: safe methods, Bearer-token requests (CSRF doesn't apply), and Stripe/Paystack webhooks.
+// Skipped for: safe methods, Bearer-token requests (CSRF doesn't apply), and Stripe/Paystack/PayPal webhooks.
 app.use((req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   if (req.headers.authorization) return next(); // Bearer token = CSRF not applicable

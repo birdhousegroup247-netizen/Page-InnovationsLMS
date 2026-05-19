@@ -125,7 +125,7 @@ const Payment = sequelize.define(
     },
     // ── Paystack ──────────────────────────────────────────────────────────────
     payment_gateway: {
-      type: DataTypes.ENUM('stripe', 'paystack'),
+      type: DataTypes.ENUM('stripe', 'paystack', 'paypal'),
       defaultValue: 'stripe',
       allowNull: false,
     },
@@ -133,6 +133,16 @@ const Payment = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
       unique: true,
+    },
+    // ── PayPal ────────────────────────────────────────────────────────────────
+    paypal_order_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+    },
+    paypal_capture_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     metadata: {
       type: DataTypes.JSON,
@@ -156,6 +166,7 @@ const Payment = sequelize.define(
       { fields: ['installment_due_date'] },
       { fields: ['payment_gateway'] },
       { fields: ['paystack_reference'] },
+      { fields: ['paypal_order_id'] },
     ],
   }
 );

@@ -92,6 +92,8 @@ uploads/*
 *.sql
 *.dump
 backups/
+# but DO track backend migrations
+!backend/migrations/*.sql
 
 # Certificate files (private keys)
 *.pem
