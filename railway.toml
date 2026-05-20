@@ -1,9 +1,15 @@
-[build]
-builder = "nixpacks"
+# Railway config — kept intentionally minimal.
+#
+# The active settings live in the Railway UI (Service → Settings):
+#   - Root Directory: /backend
+#   - Builder: Railpack (auto-detects Node from backend/package.json)
+#   - Branch: main, auto-deploy on push
+#
+# Anything set here will be overridden by the UI, so we only declare
+# what's safe and useful as a fallback / source-of-truth signal.
 
 [deploy]
-startCommand = "cd backend && npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 10
