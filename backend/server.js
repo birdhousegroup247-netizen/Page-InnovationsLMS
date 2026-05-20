@@ -145,11 +145,23 @@ app.use(preventRateLimitBypass);
 app.use(detectAttackPatterns);
 
 // CSRF protection — double-submit cookie pattern.
-// Skipped for: safe methods, Bearer-token requests (CSRF doesn't apply), and Stripe/Paystack/PayPal webhooks.
+// Skipped for: safe methods, Bearer-token requests (CSRF doesn't apply),
+// signed webhooks, and the unauthenticated auth bootstrap endpoints
+// (chicken-and-egg: the CSRF cookie is only issued *after* a successful
+// login/register/refresh, so these endpoints can't require it themselves).
+const CSRF_EXEMPT_PATHS = new Set([
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/refresh',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/2fa/authenticate',
+]);
 app.use((req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   if (req.headers.authorization) return next(); // Bearer token = CSRF not applicable
   if (req.path.startsWith('/api/webhooks')) return next(); // signed webhooks, no session
+  if (CSRF_EXEMPT_PATHS.has(req.path)) return next(); // pre-session auth bootstrap
   if (!CSRF.validateToken(req, req.headers['x-csrf-token'])) {
     logger.warn(`CSRF validation failed: ${req.method} ${req.path} from ${req.ip}`);
     return res.status(403).json({ success: false, message: 'Invalid or missing CSRF token' });

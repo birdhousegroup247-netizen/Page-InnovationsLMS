@@ -8,7 +8,7 @@ Have two browsers open: one for the **student** journey (incognito), one for the
 
 ## 0. Pre-flight (do these first; everything else assumes they pass)
 
-- [ ] `https://<railway-service>.up.railway.app/api/health` returns 200 with `{ status: "ok" }`
+- [ ] `https://<railway-service>.up.railway.app/health` returns 200 with the dependency-status JSON (database + redis healthy)
 - [ ] Frontend (`VITE_API_URL` baked at build time) successfully calls the Railway backend (open browser devtools → Network → see green requests)
 - [ ] Database migrations have been run on the Railway DB. Specifically `20260519_add_paypal_to_payments.sql` (PayPal columns + enum)
 - [ ] Railway env vars confirmed populated: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `DB_*`, `PAYPAL_MODE`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `EMAIL_USER`, `EMAIL_PASSWORD`, `CLOUDINARY_*`, `ZOOM_*`, `FRONTEND_URL`, `ADMIN_FRONTEND_URL`
