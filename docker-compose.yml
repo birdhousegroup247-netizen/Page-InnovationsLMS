@@ -128,7 +128,7 @@ services:
 
   # Prometheus (Metrics)
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.55.1
     container_name: tekypro_prometheus
     restart: unless-stopped
     ports:
@@ -150,7 +150,7 @@ services:
 
   # Grafana (Visualization)
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.3.2
     container_name: tekypro_grafana
     restart: unless-stopped
     ports:
