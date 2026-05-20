@@ -76,10 +76,10 @@ export default function CourseDetail() {
       if (data.isEnrolled) {
         liveSessionsAPI.getByCourse(id)
           .then(r => setUpcomingSessions((r.data.data.sessions || []).filter(s => s.status !== 'ended')))
+          .catch(() => {});
         discordAPI.getCourseInvite(id)
           .then(r => setDiscordInvite(r.data.data.invite_url))
           .catch(() => {}); // non-critical
-          .catch(() => {});
       }
     } catch (error) {
       console.error('Error fetching course:', error);
