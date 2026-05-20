@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
 import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
@@ -12,6 +12,20 @@ function loadPaystackScript() {
     script.src = 'https://js.paystack.co/v1/inline.js';
     script.async = true;
     script.onload = resolve;
+    document.head.appendChild(script);
+  });
+}
+
+// Load PayPal JS SDK from CDN. Sandbox vs live is implied by the client-id.
+function loadPayPalScript(clientId) {
+  return new Promise((resolve, reject) => {
+    if (window.paypal) { resolve(); return; }
+    if (!clientId) { reject(new Error('PayPal client ID not configured')); return; }
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Failed to load PayPal SDK'));
     document.head.appendChild(script);
   });
 }
@@ -31,10 +45,95 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [paystackLoading, setPaystackLoading] = useState(false);
+  const [paypalLoading, setPaypalLoading] = useState(false);
+  const [paypalReady, setPaypalReady] = useState(false);
   const [error, setError] = useState('');
 
   // For installment second payment mode
   const [installmentPayment, setInstallmentPayment] = useState(null);
+
+  // PayPal SDK callbacks are created once, but read fresh state via refs so coupon/plan
+  // changes after the SDK loads still flow into createOrder.
+  const paymentPlanRef = useRef(paymentPlan);
+  const couponCodeRef = useRef(couponCode);
+  const appliedCouponRef = useRef(appliedCoupon);
+  useEffect(() => { paymentPlanRef.current = paymentPlan; }, [paymentPlan]);
+  useEffect(() => { couponCodeRef.current = couponCode; }, [couponCode]);
+  useEffect(() => { appliedCouponRef.current = appliedCoupon; }, [appliedCoupon]);
+
+  const paypalButtonsRef = useRef(null);
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+
+  // Load PayPal SDK once on mount (only if configured)
+  useEffect(() => {
+    if (!paypalClientId) return;
+    setPaypalLoading(true);
+    loadPayPalScript(paypalClientId)
+      .then(() => setPaypalReady(true))
+      .catch(() => {
+        // Silent: PayPal is one of three options, no need to break the page if it fails
+      })
+      .finally(() => setPaypalLoading(false));
+  }, [paypalClientId]);
+
+  // Render PayPal Buttons widget when the SDK is loaded and the container is mounted.
+  // Identity changes only when paypalReady toggles, so React re-attaches (and we render)
+  // once after the SDK has loaded. It does NOT re-render on coupon/plan changes — those
+  // are picked up via refs inside createOrder.
+  const paypalRefCb = useCallback((containerEl) => {
+    if (!containerEl || !paypalReady || !window.paypal) return;
+    if (paypalButtonsRef.current) {
+      try { paypalButtonsRef.current.close(); } catch (_) { /* ignore */ }
+      paypalButtonsRef.current = null;
+    }
+    containerEl.innerHTML = '';
+
+    const buttons = window.paypal.Buttons({
+      style: { layout: 'horizontal', height: 45, label: 'pay', tagline: false, shape: 'rect' },
+      createOrder: async () => {
+        try {
+          setError('');
+          if (isInstallmentPayment) {
+            const r = await paymentsAPI.initializePayPalInstallment();
+            return r.data.data.order_id;
+          }
+          const r = await paymentsAPI.initializePayPalCheckout({
+            course_id: courseId,
+            payment_plan: paymentPlanRef.current,
+            coupon_code: appliedCouponRef.current
+              ? couponCodeRef.current.trim().toUpperCase()
+              : undefined,
+          });
+          return r.data.data.order_id;
+        } catch (e) {
+          setError(e.response?.data?.message || 'Failed to start PayPal checkout.');
+          throw e;
+        }
+      },
+      onApprove: async (data) => {
+        try {
+          await paymentsAPI.capturePayPalOrder(data.orderID);
+          navigate(`/payment-success?order_id=${data.orderID}&gateway=paypal`);
+        } catch (e) {
+          setError(
+            e.response?.data?.message ||
+              'PayPal capture failed. If you were charged, check My Courses or contact support.'
+          );
+        }
+      },
+      onCancel: () => setError('PayPal payment was cancelled.'),
+      onError: () => setError('PayPal payment failed. Please try again or use another method.'),
+    });
+    buttons.render(containerEl).catch(() => {});
+    paypalButtonsRef.current = buttons;
+  }, [paypalReady, courseId, isInstallmentPayment, navigate]);
+
+  useEffect(() => () => {
+    if (paypalButtonsRef.current) {
+      try { paypalButtonsRef.current.close(); } catch (_) { /* ignore */ }
+      paypalButtonsRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (isInstallmentPayment) {
@@ -294,7 +393,7 @@ export default function Checkout() {
             )}
 
             {/* Show only the gateway used for the first payment */}
-            {installmentPayment?.payment_gateway === 'paystack' ? (
+            {installmentPayment?.payment_gateway === 'paystack' && (
               <button
                 onClick={handlePaystackInstallmentCheckout}
                 disabled={paystackLoading}
@@ -303,16 +402,36 @@ export default function Checkout() {
                 <CreditCard className="w-5 h-5" />
                 {paystackLoading ? 'Loading...' : `Pay $${remaining.toFixed(2)} Now`}
               </button>
-            ) : (
-              <button
-                onClick={handleInstallmentCheckout}
-                disabled={checkoutLoading}
-                className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <CreditCard className="w-5 h-5" />
-                {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay $${remaining.toFixed(2)} Now`}
-              </button>
             )}
+            {installmentPayment?.payment_gateway === 'paypal' && (
+              <div className="space-y-2">
+                <div
+                  ref={paypalRefCb}
+                  className="min-h-[48px]"
+                />
+                {paypalLoading && (
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    Loading PayPal...
+                  </p>
+                )}
+                {!paypalClientId && (
+                  <p className="text-xs text-center text-red-500 dark:text-red-400">
+                    PayPal is not configured. Contact support.
+                  </p>
+                )}
+              </div>
+            )}
+            {installmentPayment?.payment_gateway !== 'paystack' &&
+              installmentPayment?.payment_gateway !== 'paypal' && (
+                <button
+                  onClick={handleInstallmentCheckout}
+                  disabled={checkoutLoading}
+                  className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay $${remaining.toFixed(2)} Now`}
+                </button>
+              )}
 
             <p className="text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1 mt-3">
               <Lock className="w-3 h-3" />
@@ -617,6 +736,21 @@ export default function Checkout() {
               </span>
               <span className="text-xs opacity-75 font-normal">Nigeria (Paystack)</span>
             </button>
+
+            {/* PayPal — only rendered if VITE_PAYPAL_CLIENT_ID is configured */}
+            {paypalClientId && (
+              <div className="space-y-1.5">
+                <div
+                  ref={paypalRefCb}
+                  className="min-h-[48px]"
+                />
+                {paypalLoading && (
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    Loading PayPal...
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">

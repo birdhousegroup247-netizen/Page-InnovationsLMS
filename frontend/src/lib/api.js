@@ -468,6 +468,10 @@ export const paymentsAPI = {
   initializePaystackCheckout: (data) => api.post('/api/payments/paystack/initialize', data),
   initializePaystackInstallment: () => api.post('/api/payments/paystack/installment'),
   verifyPaystackPayment: (reference) => api.get('/api/payments/paystack/verify', { params: { reference } }),
+  initializePayPalCheckout: (data) => api.post('/api/payments/paypal/initialize', data),
+  initializePayPalInstallment: () => api.post('/api/payments/paypal/installment'),
+  capturePayPalOrder: (orderId) => api.post('/api/payments/paypal/capture', { order_id: orderId }),
+  verifyPayPalPayment: (orderId) => api.get('/api/payments/paypal/verify', { params: { order_id: orderId } }),
   getMyPayments: () => api.get('/api/payments/my'),
 };
 
