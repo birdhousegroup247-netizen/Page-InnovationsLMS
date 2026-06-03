@@ -36,6 +36,9 @@ app.set('trust proxy', 1);
 // HTTPS redirect in production
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
+    // Railway's internal healthchecks hit these paths over HTTP and don't follow
+    // 301s, so redirecting would fail the deploy. Let probes through as-is.
+    if (['/health', '/ready', '/live'].includes(req.path)) return next();
     if (req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
     }

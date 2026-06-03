@@ -9,7 +9,9 @@
 # what's safe and useful as a fallback / source-of-truth signal.
 
 [deploy]
-healthcheckPath = "/health"
+# Use /live (cheap liveness probe) instead of /health (which checks DB+Redis+disk
+# and returns 503 if Redis is missing, blocking startup on Railway).
+healthcheckPath = "/live"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
