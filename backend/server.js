@@ -597,8 +597,9 @@ const startServer = async () => {
       }
     }, 5 * 60 * 1000); // Run every 5 minutes
 
-    // Start server
-    server.listen(PORT, () => {
+    // Start server — explicit 0.0.0.0 so Railway's proxy can reach us
+    // (Node sometimes binds IPv6-only otherwise, which the proxy can't route to).
+    server.listen(PORT, '0.0.0.0', () => {
       logger.info(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
