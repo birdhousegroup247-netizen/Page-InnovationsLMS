@@ -443,6 +443,72 @@ const startServer = async () => {
         logger.info('  ✓ Added prerequisite_course_id column to courses');
       }
 
+      // courses: columns introduced by the MySQL-only migration
+      // 20251225_update_courses_table.sql (rename difficulty->level, add price)
+      // plus the Discord columns. These never applied on Postgres, so their
+      // absence 500s the entire public catalog (Course model SELECTs `level`/`price`).
+      if (coursesDesc) {
+        if (!coursesDesc.level) {
+          await qi.addColumn('courses', 'level', {
+            type: Sequelize.ENUM('beginner', 'intermediate', 'advanced'),
+            allowNull: true,
+            defaultValue: 'beginner',
+          });
+          // Backfill from the legacy `difficulty` column if it is still present.
+          if (coursesDesc.difficulty) {
+            await sequelize
+              .query('UPDATE courses SET level = difficulty::text::"enum_courses_level" WHERE level IS NULL')
+              .catch(() => sequelize
+                .query('UPDATE courses SET level = difficulty WHERE level IS NULL')
+                .catch(() => {}));
+          }
+          logger.info('  ✓ Added level column to courses');
+        }
+        if (!coursesDesc.price) {
+          await qi.addColumn('courses', 'price', {
+            type: Sequelize.DECIMAL(10, 2),
+            allowNull: true,
+            defaultValue: 0.00,
+          });
+          logger.info('  ✓ Added price column to courses');
+        }
+        if (!coursesDesc.discord_role_id) {
+          await qi.addColumn('courses', 'discord_role_id', { type: Sequelize.STRING(100), allowNull: true, defaultValue: null });
+          logger.info('  ✓ Added discord_role_id column to courses');
+        }
+        if (!coursesDesc.discord_channel_id) {
+          await qi.addColumn('courses', 'discord_channel_id', { type: Sequelize.STRING(100), allowNull: true, defaultValue: null });
+          logger.info('  ✓ Added discord_channel_id column to courses');
+        }
+        // Admin can set a course to 'pending'; ensure the enum carries that value.
+        // (ALTER TYPE ... ADD VALUE must run outside a transaction; non-fatal.)
+        await sequelize
+          .query('ALTER TYPE "enum_courses_status" ADD VALUE IF NOT EXISTS \'pending\'')
+          .catch(() => {});
+      }
+
+      // users: columns introduced by MySQL-only migrations (instructor status,
+      // 2FA already in base, referral program, Discord linking, leads). Their
+      // absence 500s login — User.findByEmail() SELECTs every model attribute.
+      const usersDesc = await qi.describeTable('users').catch(() => null);
+      if (usersDesc) {
+        const userCols = {
+          instructor_status: { type: Sequelize.ENUM('none', 'pending', 'approved', 'rejected'), allowNull: false, defaultValue: 'none' },
+          registration_status: { type: Sequelize.ENUM('preview', 'active', 'suspended'), allowNull: false, defaultValue: 'preview' },
+          lead_id: { type: Sequelize.INTEGER, allowNull: true, defaultValue: null },
+          referral_code: { type: Sequelize.STRING(12), allowNull: true, defaultValue: null },
+          referral_credits: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+          discord_user_id: { type: Sequelize.STRING(255), allowNull: true, defaultValue: null },
+          discord_access_token: { type: Sequelize.STRING(1000), allowNull: true, defaultValue: null },
+        };
+        for (const [colName, colDef] of Object.entries(userCols)) {
+          if (!usersDesc[colName]) {
+            await qi.addColumn('users', colName, colDef);
+            logger.info(`  ✓ Added ${colName} column to users`);
+          }
+        }
+      }
+
       // Add missing columns to module_contents if needed
       const moduleContentsDesc = await qi.describeTable('module_contents').catch(() => null);
       if (moduleContentsDesc) {
