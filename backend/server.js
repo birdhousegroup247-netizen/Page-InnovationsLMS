@@ -104,7 +104,11 @@ app.use(
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // Reject by omitting CORS headers (callback(null, false)) rather than
+        // throwing — a thrown Error propagates to the error handler and returns
+        // a noisy 500. With false, the browser still blocks the cross-origin
+        // response, and same-origin/CSRF/auth layers return the proper 401/403.
+        callback(null, false);
       }
     },
     credentials: true,
@@ -506,6 +510,26 @@ const startServer = async () => {
             await qi.addColumn('users', colName, colDef);
             logger.info(`  ✓ Added ${colName} column to users`);
           }
+        }
+      }
+
+      // payments: PayPal support from 20260519_add_paypal_to_payments.postgres.sql.
+      // If that SQL was never run against Railway, PayPal checkout 500s with
+      // `invalid input value for enum ... "paypal"` / missing paypal_* columns.
+      const paymentsDesc = await qi.describeTable('payments').catch(() => null);
+      if (paymentsDesc) {
+        // Add 'paypal' to the gateway enum (ALTER TYPE ADD VALUE must be outside
+        // a transaction; IF NOT EXISTS makes it idempotent; non-fatal on failure).
+        await sequelize
+          .query('ALTER TYPE "enum_payments_payment_gateway" ADD VALUE IF NOT EXISTS \'paypal\'')
+          .catch(() => {});
+        if (!paymentsDesc.paypal_order_id) {
+          await qi.addColumn('payments', 'paypal_order_id', { type: Sequelize.STRING, allowNull: true, unique: true });
+          logger.info('  ✓ Added paypal_order_id column to payments');
+        }
+        if (!paymentsDesc.paypal_capture_id) {
+          await qi.addColumn('payments', 'paypal_capture_id', { type: Sequelize.STRING, allowNull: true, unique: true });
+          logger.info('  ✓ Added paypal_capture_id column to payments');
         }
       }
 
