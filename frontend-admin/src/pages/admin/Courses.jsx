@@ -1028,10 +1028,10 @@ export default function AdminCourses() {
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Instructor
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                         Content
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell">
                         Questions
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -1046,10 +1046,10 @@ export default function AdminCourses() {
                           {getSortIcon('status')}
                         </div>
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                         Students
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
                         Price
                       </th>
                       <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -1071,31 +1071,33 @@ export default function AdminCourses() {
                           </td>
                         )}
                         <td className="px-3 py-4">
-                          <div className="flex items-center">
-                            {course.thumbnail_url ? (
-                              <img
-                                src={course.thumbnail_url}
-                                alt={course.title}
-                                className="w-12 h-12 rounded-lg object-cover mr-3"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextElementSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className={`w-12 h-12 rounded-lg mr-3 flex items-center justify-center text-white font-bold text-sm ${
-                                course.thumbnail_url ? 'hidden' : ''
-                              } ${getAvatarProps(course.title).bgColor}`}
-                              style={{ display: course.thumbnail_url ? 'none' : 'flex' }}
-                            >
-                              {getAvatarProps(course.title).initials}
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Thumbnail — fixed 48x48 square so every row lines up,
+                                regardless of whether the course has a real image. */}
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
+                              {course.thumbnail_url ? (
+                                <img
+                                  src={course.thumbnail_url}
+                                  alt={course.title}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div
+                                className={`absolute inset-0 flex items-center justify-center text-white font-bold text-sm ${getAvatarProps(course.title).bgColor}`}
+                                style={{ display: course.thumbnail_url ? 'none' : 'flex' }}
+                              >
+                                {getAvatarProps(course.title).initials}
+                              </div>
                             </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
                                 {course.title}
                               </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                 {course.category?.name || 'Uncategorized'}
                               </div>
                             </div>
@@ -1106,7 +1108,7 @@ export default function AdminCourses() {
                             {course.instructor?.full_name || 'Unknown'}
                           </div>
                         </td>
-                        <td className="px-3 py-4 whitespace-nowrap">
+                        <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
                           <div className="text-sm text-gray-600 dark:text-gray-400">
                             {course.module_count || 0} modules
                             {course.content_count > 0 && (
@@ -1116,7 +1118,7 @@ export default function AdminCourses() {
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-4 whitespace-nowrap">
+                        <td className="px-3 py-4 whitespace-nowrap hidden xl:table-cell">
                           {(() => {
                             const qStats = getQuestionStatsForCourse(course.id);
                             return (
@@ -1147,13 +1149,13 @@ export default function AdminCourses() {
                             {course.status}
                           </Badge>
                         </td>
-                        <td className="px-3 py-4 whitespace-nowrap">
+                        <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
                           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                             <Users className="w-4 h-4 mr-1" />
                             {course.enrolled_count || 0}
                           </div>
                         </td>
-                        <td className="px-3 py-4 whitespace-nowrap">
+                        <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
                           <div className="flex items-center text-sm text-gray-900 dark:text-white font-medium">
                             <DollarSign className="w-4 h-4" />
                             {course.price || 0}
