@@ -59,15 +59,20 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      const { user, accessToken, refreshToken } = response.data.data;
-
-      // Store tokens in localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      
-      setUser(user);
-      setIsAuthenticated(true);
-
+      const data = response.data.data || {};
+      // New flow: register returns { verification_required, email } and does NOT
+      // log the user in. Caller redirects to /verify-email.
+      if (data.verification_required) {
+        return { success: true, verificationRequired: true, email: data.email };
+      }
+      // Legacy fallback if tokens are present (shouldn't happen post-verification rollout)
+      const { user, accessToken, refreshToken } = data;
+      if (accessToken) localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      if (user) {
+        setUser(user);
+        setIsAuthenticated(true);
+      }
       return { success: true, user };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
@@ -83,13 +88,19 @@ export const AuthProvider = ({ children }) => {
       // Store tokens in localStorage
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      
+
       setUser(user);
       setIsAuthenticated(true);
 
       return { success: true, user };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      // Surface email-not-verified so the Login page can redirect to /verify-email
+      const status = error.response?.status;
+      const data = error.response?.data;
+      if (status === 403 && data?.code === 'EMAIL_NOT_VERIFIED') {
+        return { success: false, emailNotVerified: true, email: data.email, error: data.message };
+      }
+      const message = data?.message || 'Login failed';
       return { success: false, error: message };
     }
   };
@@ -98,15 +109,30 @@ export const AuthProvider = ({ children }) => {
     try {
       await authAPI.logout();
     } catch (error) {
+      // Continue with local cleanup even if the server call fails
       console.error('Logout error:', error);
     } finally {
-      // Clear tokens and selected role from localStorage
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('selectedRole');
+      // Clear every piece of auth state we control. Anything left behind here
+      // is exactly what causes "reopen browser and you're logged back in".
+      try { localStorage.removeItem('accessToken'); } catch (_) {}
+      try { localStorage.removeItem('refreshToken'); } catch (_) {}
+      try { localStorage.removeItem('selectedRole'); } catch (_) {}
+      try { sessionStorage.clear(); } catch (_) {}
+
+      // The httpOnly auth cookies are owned by the server (cleared via clearCookie).
+      // csrf-token is not httpOnly so we can nuke it from JS too — belt and braces
+      // in case the server's clearCookie attrs didn't match in some environments.
+      try {
+        document.cookie = 'csrf-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      } catch (_) {}
 
       setUser(null);
       setIsAuthenticated(false);
+
+      // Hard reload to landing so any in-memory state from protected routes is dropped.
+      // Using assign (not replace) so the back button doesn't drop them right back into
+      // a stale authenticated route.
+      window.location.assign('/');
     }
   };
 

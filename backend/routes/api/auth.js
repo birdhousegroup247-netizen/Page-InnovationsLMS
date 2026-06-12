@@ -21,6 +21,26 @@ const {
 // @access  Public
 router.post('/register', registrationLimiter, validate('register'), (req, res, next) => AuthController.register(req, res, next));
 
+// @route   GET /api/auth/verify-email
+// @desc    Verify email by link token (clicked from email)
+// @access  Public
+router.get('/verify-email', (req, res, next) => AuthController.verifyEmailByToken(req, res, next));
+
+// @route   POST /api/auth/verify-email-code
+// @desc    Verify email by 6-digit code (entered on /verify-email page)
+// @access  Public
+router.post('/verify-email-code', authRateLimiter, validate('verifyEmailCode'), (req, res, next) => AuthController.verifyEmailByCode(req, res, next));
+
+// @route   POST /api/auth/instructor-apply
+// @desc    Register a new user + submit instructor application with documents
+// @access  Public
+router.post('/instructor-apply', registrationLimiter, validate('instructorApply'), (req, res, next) => AuthController.instructorApply(req, res, next));
+
+// @route   POST /api/auth/resend-verification
+// @desc    Resend verification email
+// @access  Public
+router.post('/resend-verification', passwordResetLimiter, validate('resendVerification'), (req, res, next) => AuthController.resendVerification(req, res, next));
+
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public

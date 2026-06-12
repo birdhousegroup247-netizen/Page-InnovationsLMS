@@ -16,7 +16,7 @@ describe('Authentication API', () => {
   };
 
   describe('POST /api/auth/register', () => {
-    it('should register a new user successfully', async () => {
+    it('should register a new user successfully (verification required)', async () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send(testUser)
@@ -24,9 +24,9 @@ describe('Authentication API', () => {
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
-      expect(response.body.data).toHaveProperty('user');
-      expect(response.body.data).toHaveProperty('accessToken');
-      expect(response.body.data.user.email).toBe(testUser.email);
+      // New flow: register issues a verification email and does not log in.
+      expect(response.body.data).toHaveProperty('verification_required', true);
+      expect(response.body.data).toHaveProperty('email', testUser.email);
     });
 
     it('should return error for duplicate email', async () => {
@@ -51,7 +51,15 @@ describe('Authentication API', () => {
   });
 
   describe('POST /api/auth/login', () => {
-    it('should login with correct credentials', async () => {
+    // Login is gated by email_verified. The login tests below need the user verified.
+    beforeAll(async () => {
+      await User.update(
+        { email_verified: true, email_verified_at: new Date() },
+        { where: { email: testUser.email } }
+      );
+    });
+
+    it('should login with correct credentials (verified user)', async () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send({
@@ -63,6 +71,26 @@ describe('Authentication API', () => {
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data).toHaveProperty('accessToken');
       expect(response.body.data.user.email).toBe(testUser.email);
+    });
+
+    it('should block login for unverified user with 403 EMAIL_NOT_VERIFIED', async () => {
+      const unverifiedEmail = `unverified${Date.now()}@example.com`;
+      await request(app).post('/api/auth/register').send({
+        full_name: 'Unverified User',
+        email: unverifiedEmail,
+        password: 'TestPassword123!',
+        role: 'student',
+      }).expect(201);
+
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: unverifiedEmail, password: 'TestPassword123!' })
+        .expect(403);
+
+      expect(response.body).toHaveProperty('code', 'EMAIL_NOT_VERIFIED');
+      expect(response.body).toHaveProperty('email', unverifiedEmail);
+
+      await User.destroy({ where: { email: unverifiedEmail }, force: true });
     });
 
     it('should reject incorrect password', async () => {

@@ -55,6 +55,17 @@ const InstructorApplication = sequelize.define(
         },
       },
     },
+    cv_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: 'Cloudinary URL of uploaded CV / resume',
+    },
+    credential_urls: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+      comment: 'Array of Cloudinary URLs for credential / certificate documents',
+    },
     // Review information
     rejection_reason: {
       type: DataTypes.TEXT,

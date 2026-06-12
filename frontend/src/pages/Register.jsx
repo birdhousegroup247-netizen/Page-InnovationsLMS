@@ -107,22 +107,16 @@ export default function Register() {
       });
 
       if (result.success) {
-        if (result.instructor_application_pending) {
-          setSuccessMessage(
-            'Registration successful! Your instructor application is pending admin approval. ' +
-              'You can use the platform as a student while waiting for approval.'
-          );
-          setTimeout(() => navigate('/dashboard'), 4000);
-        } else {
-          const role = result.user.role;
-          if (role === 'admin') {
-            navigate('/admin/dashboard');
-          } else if (role === 'instructor') {
-            navigate('/instructor/dashboard');
-          } else {
-            navigate('/dashboard');
-          }
+        // New flow: register issues a verification email and does not log in.
+        if (result.verificationRequired) {
+          navigate(`/verify-email?email=${encodeURIComponent(result.email || formData.email)}`);
+          return;
         }
+        // Legacy fallback if auto-login ever happens
+        const role = result.user?.role;
+        if (role === 'admin') navigate('/admin/dashboard');
+        else if (role === 'instructor') navigate('/instructor/dashboard');
+        else navigate('/dashboard');
       } else {
         setError(result.error);
       }
@@ -471,31 +465,15 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Role Selection */}
-              <div>
-                <label htmlFor="role" className={labelClass}>
-                  I am a...
-                </label>
-                <div className="relative">
-                  <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
-                  >
-                    <option value="student">Student</option>
-                    <option value="instructor">Instructor (Requires Approval)</option>
-                  </select>
-                </div>
-                {formData.role === 'instructor' && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg transition-colors">
-                    <p className="text-blue-800 dark:text-blue-400 text-xs">
-                      <strong>Instructor Application:</strong> Your account will be reviewed by our admin
-                      team. You'll be notified once approved and can start creating courses. You can use the platform as a student while waiting.
-                    </p>
-                  </div>
-                )}
+              {/* Instructor CTA — applies separately so we can collect documents */}
+              <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg">
+                <p className="text-blue-800 dark:text-blue-400 text-xs">
+                  Want to teach on TekyPro?{' '}
+                  <Link to="/instructor-apply" className="font-semibold underline">
+                    Apply as an instructor
+                  </Link>{' '}
+                  — we'll need a few extra details and supporting documents.
+                </p>
               </div>
 
               {/* Terms & Conditions */}

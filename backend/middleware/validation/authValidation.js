@@ -18,17 +18,68 @@ const schemas = {
       'string.email': 'Must be a valid email address',
     }),
     password: Joi.string().min(8).max(128).required().pattern(
-      new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])')
+      new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])')
     ).messages({
       'string.empty': 'Password is required',
       'string.min': 'Password must be at least 8 characters',
       'string.pattern.base':
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'Password must contain uppercase, lowercase, and a number',
     }),
     role: Joi.string()
       .valid('student', 'instructor')
       .optional()
       .default('student'),
+    phone: Joi.string().max(50).allow('', null).optional(),
+    country: Joi.string().max(100).allow('', null).optional(),
+    experience_level: Joi.string().valid('beginner', 'intermediate', 'advanced').allow('', null).optional(),
+    referral_source: Joi.string().max(100).allow('', null).optional(),
+    utm_source: Joi.string().max(100).allow('', null).optional(),
+    utm_medium: Joi.string().max(100).allow('', null).optional(),
+    utm_campaign: Joi.string().max(100).allow('', null).optional(),
+    ref: Joi.string().max(50).allow('', null).optional(),
+  }),
+
+  // Email verification (6-digit code)
+  verifyEmailCode: Joi.object({
+    email: Joi.string().email().required(),
+    code: Joi.string().length(6).pattern(/^\d{6}$/).required().messages({
+      'string.pattern.base': 'Code must be 6 digits',
+      'string.length': 'Code must be 6 digits',
+    }),
+  }),
+
+  // Resend verification email
+  resendVerification: Joi.object({
+    email: Joi.string().email().required(),
+  }),
+
+  // Instructor application — collects everything register does PLUS the instructor fields
+  instructorApply: Joi.object({
+    full_name: Joi.string().min(2).max(255).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().min(8).max(128).required().pattern(
+      new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])')
+    ).messages({
+      'string.pattern.base': 'Password must contain uppercase, lowercase, and a number',
+    }),
+    phone: Joi.string().max(50).allow('', null).optional(),
+    country: Joi.string().max(100).allow('', null).optional(),
+    bio: Joi.string().min(20).max(5000).required().messages({
+      'string.min': 'Bio must be at least 20 characters',
+    }),
+    qualifications: Joi.string().min(10).max(5000).required().messages({
+      'string.min': 'Qualifications must be at least 10 characters',
+    }),
+    teaching_experience: Joi.string().min(10).max(5000).required().messages({
+      'string.min': 'Teaching experience must be at least 10 characters',
+    }),
+    subject_expertise: Joi.string().min(5).max(2000).required(),
+    portfolio_url: Joi.string().uri().allow('', null).optional(),
+    cv_url: Joi.string().uri().required().messages({
+      'any.required': 'A CV / resume document is required',
+      'string.uri': 'CV URL must be a valid URL',
+    }),
+    credential_urls: Joi.array().items(Joi.string().uri()).max(10).optional().default([]),
   }),
 
   // Login validation

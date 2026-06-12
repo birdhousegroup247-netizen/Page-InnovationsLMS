@@ -32,6 +32,8 @@ const MyCourses = lazy(() => import('./pages/MyCourses'));
 const CoursePlayer = lazy(() => import('./pages/CoursePlayer'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const InstructorApply = lazy(() => import('./pages/InstructorApply'));
 const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Bookmarks = lazy(() => import('./pages/Bookmarks'));
@@ -272,6 +274,8 @@ function App() {
               </PublicRoute>
             }
           />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/instructor-apply" element={<InstructorApply />} />
 
           {/* Google OAuth Callback */}
           <Route path="/auth/callback" element={<AuthCallback />} />

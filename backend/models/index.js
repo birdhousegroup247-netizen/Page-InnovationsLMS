@@ -10,6 +10,7 @@ const CouponCode = require('./CouponCode');
 const CouponCodeCourse = require('./CouponCodeCourse');
 const CouponRedemption = require('./CouponRedemption');
 const PasswordReset = require('./PasswordReset');
+const EmailVerification = require('./EmailVerification');
 const InstructorApplication = require('./InstructorApplication');
 const Category = require('./Category');
 const Course = require('./Course');
@@ -73,6 +74,9 @@ User.hasMany(QuestionBank, { foreignKey: 'created_by', as: 'questions' });
 User.hasMany(KnowledgeArticle, { foreignKey: 'author_id', as: 'articles' });
 
 PasswordReset.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+User.hasMany(EmailVerification, { foreignKey: 'user_id', as: 'email_verifications' });
+EmailVerification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 // Instructor Application relationships
 InstructorApplication.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -367,6 +371,7 @@ module.exports = {
   CouponCodeCourse,
   CouponRedemption,
   PasswordReset,
+  EmailVerification,
   InstructorApplication,
   Category,
   Course,

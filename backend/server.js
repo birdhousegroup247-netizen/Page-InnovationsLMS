@@ -159,6 +159,9 @@ app.use(detectAttackPatterns);
 const CSRF_EXEMPT_PATHS = new Set([
   '/api/auth/login',
   '/api/auth/register',
+  '/api/auth/instructor-apply',
+  '/api/auth/verify-email-code',
+  '/api/auth/resend-verification',
   '/api/auth/refresh',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
@@ -504,12 +507,38 @@ const startServer = async () => {
           referral_credits: { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
           discord_user_id: { type: Sequelize.STRING(255), allowNull: true, defaultValue: null },
           discord_access_token: { type: Sequelize.STRING(1000), allowNull: true, defaultValue: null },
+          email_verified: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+          email_verified_at: { type: Sequelize.DATE, allowNull: true, defaultValue: null },
+          login_count: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
         };
+
+        // Grandfather existing users: anyone who has successfully logged in before
+        // the email-verification gate shipped is treated as verified. Idempotent —
+        // already-verified users are skipped. Without this, the new login gate
+        // would lock every existing account (including the seeded admin) on deploy.
+        await sequelize.query(
+          'UPDATE users SET email_verified = true, email_verified_at = COALESCE(email_verified_at, last_login) WHERE email_verified = false AND last_login IS NOT NULL'
+        ).catch((e) => logger.warn(`Verified-user backfill skipped: ${e.message}`));
         for (const [colName, colDef] of Object.entries(userCols)) {
           if (!usersDesc[colName]) {
             await qi.addColumn('users', colName, colDef);
             logger.info(`  ✓ Added ${colName} column to users`);
           }
+        }
+      }
+
+      // instructor_applications: cv_url + credential_urls were added when the
+      // instructor signup was split out into its own multi-step wizard with
+      // document uploads. The /api/auth/instructor-apply endpoint writes them.
+      const iaDesc = await qi.describeTable('instructor_applications').catch(() => null);
+      if (iaDesc) {
+        if (!iaDesc.cv_url) {
+          await qi.addColumn('instructor_applications', 'cv_url', { type: Sequelize.STRING(500), allowNull: true, defaultValue: null });
+          logger.info('  ✓ Added cv_url column to instructor_applications');
+        }
+        if (!iaDesc.credential_urls) {
+          await qi.addColumn('instructor_applications', 'credential_urls', { type: Sequelize.JSON, allowNull: true, defaultValue: [] });
+          logger.info('  ✓ Added credential_urls column to instructor_applications');
         }
       }
 
@@ -586,9 +615,15 @@ const startServer = async () => {
         InstructorReview, LiveSession, ForumPost, ForumReply,
         Assignment, AssignmentSubmission, AdminAnnouncement,
         CouponCode, CouponCodeCourse, CouponRedemption, Lead,
+        EmailVerification, InstructorApplication,
       } = require('./models');
 
       const newModels = [
+        [EmailVerification, 'email_verifications'],
+        // instructor_applications was a MySQL-only migration originally — without
+        // this it never gets created on Railway Postgres, and applications
+        // disappear silently.
+        [InstructorApplication, 'instructor_applications'],
         [ChatRoom, 'chat_rooms'],
         [ChatRoomMember, 'chat_room_members'],
         [Conversation, 'conversations'],

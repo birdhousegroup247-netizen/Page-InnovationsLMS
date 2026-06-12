@@ -166,7 +166,7 @@ export default function AdminDashboard() {
                   Admin Dashboard
                 </h1>
                 <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  Welcome back, {user?.full_name?.split(' ')[0]}! Here's your platform overview
+                  {(user?.login_count ?? 0) <= 1 ? 'Welcome' : 'Welcome back'}, {user?.full_name?.split(' ')[0]}! Here's your platform overview
                 </p>
               </div>
             </div>

@@ -230,7 +230,7 @@ export default function InstructorDashboard() {
                 </div>
                 <div>
                   <h1 className="text-3xl sm:text-4xl font-bold text-white">
-                    Welcome back, {user?.full_name?.split(' ')[0]}!
+                    {(user?.login_count ?? 0) <= 1 ? 'Welcome' : 'Welcome back'}, {user?.full_name?.split(' ')[0]}!
                   </h1>
                   <p className="text-lg text-white/80 mt-1">
                     Manage your courses and track performance

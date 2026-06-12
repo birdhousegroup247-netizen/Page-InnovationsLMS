@@ -83,6 +83,41 @@ class EmailService {
   }
 
   /**
+   * Send email verification (link + 6-digit code)
+   * @param {String} email
+   * @param {String} name
+   * @param {String} token - verification token for the link
+   * @param {String} code - 6-digit code shown in email body
+   */
+  async sendVerificationEmail(email, name, token, code) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const verifyUrl = `${FE}/verify-email?token=${token}`;
+    const html = this._baseTemplate({
+      title: 'Verify Your Email',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Welcome to TekyPro! To finish creating your account, please verify your email address.</p>
+<p>You have two ways to verify — pick whichever is easier:</p>
+<div class="hi">
+<p style="margin:0 0 8px"><strong>Option 1 — Click the button below</strong></p>
+<p style="margin:0;color:#555;font-size:13px">The link below verifies your email in one click. It expires in 24 hours.</p>
+</div>
+<div class="hi" style="text-align:center">
+<p style="margin:0 0 8px"><strong>Option 2 — Enter this code on the verification page</strong></p>
+<p style="margin:0;font-size:32px;letter-spacing:8px;font-weight:900;color:#0e2b5c;font-family:'Courier New',monospace">${code}</p>
+</div>
+<p style="font-size:13px;color:#888">If you did not create a TekyPro account, you can safely ignore this email.</p>`,
+      ctaText: 'Verify My Email',
+      ctaUrl: verifyUrl,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: 'Verify your TekyPro email address',
+      html,
+      text: `Hi ${name}, verify your TekyPro email by visiting ${verifyUrl} or by entering this code on the verification page: ${code}`,
+    });
+  }
+
+  /**
    * Send password reset email
    * @param {String} email - User email
    * @param {String} name - User name
@@ -263,6 +298,60 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
       subject: `New Test Assignment: ${test.test_name}`,
       html,
       text: `Hi ${name}, You have been assigned a new test: ${test.test_name}. Take it now: ${testUrl}`,
+    });
+  }
+
+  /**
+   * Send "application received" confirmation to the instructor applicant
+   */
+  async sendInstructorApplicationReceived(email, name) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      title: 'We received your instructor application',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Thanks for applying to teach on TekyPro. We've received your application and our admin team is reviewing it.</p>
+<div class="hi"><strong>What happens next:</strong><ul>
+<li>Our team reviews your details and supporting documents — usually within 2–3 business days</li>
+<li>You'll receive an email once your application is approved or if we need more information</li>
+<li>In the meantime, you can use TekyPro as a student — browse courses, watch previews, and join the community</li>
+</ul></div>
+<p>If you have any questions while you wait, just reply to this email.</p>`,
+      ctaText: 'Go to My Dashboard',
+      ctaUrl: `${FE}/dashboard`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: 'Your TekyPro instructor application is being reviewed',
+      html,
+      text: `Hi ${name}, we received your instructor application. The admin team is reviewing it and you'll hear back within 2-3 business days.`,
+    });
+  }
+
+  /**
+   * Notify an admin that a new instructor application has been submitted
+   */
+  async sendNewInstructorApplicationToAdmin(adminEmail, adminName, { applicantName, applicantEmail, applicationId }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const reviewUrl = `${FE}/admin/instructor-applications`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
+      title: 'New Instructor Application',
+      body: `<p>Hi <strong>${adminName || 'Admin'}</strong>,</p>
+<p>A new instructor application has been submitted on TekyPro and is awaiting review.</p>
+<div class="hi">
+<p><strong>Applicant:</strong> ${applicantName}</p>
+<p><strong>Email:</strong> ${applicantEmail}</p>
+<p><strong>Application ID:</strong> #${applicationId}</p>
+</div>
+<p>Open the admin portal to review the bio, qualifications, teaching experience, and supporting documents (CV + credentials).</p>`,
+      ctaText: 'Review Application',
+      ctaUrl: reviewUrl,
+    });
+    return this.sendEmail({
+      to: adminEmail,
+      subject: `New instructor application from ${applicantName}`,
+      html,
+      text: `New instructor application from ${applicantName} (${applicantEmail}). Review at ${reviewUrl}`,
     });
   }
 

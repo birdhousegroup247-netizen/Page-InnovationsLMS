@@ -32,6 +32,12 @@ export default function Login() {
     try {
       const result = await login(formData.email, formData.password);
 
+      // Email not verified — send them to the verify page
+      if (!result.success && result.emailNotVerified) {
+        navigate(`/verify-email?email=${encodeURIComponent(result.email || formData.email)}`);
+        return;
+      }
+
       if (result.success) {
         const { user } = result;
         const selectedRole = localStorage.getItem('selectedRole');

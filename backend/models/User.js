@@ -78,6 +78,10 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    email_verified_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     two_factor_secret: {
       type: DataTypes.STRING(255),
       allowNull: true,
@@ -120,6 +124,12 @@ const User = sequelize.define(
     last_login: {
       type: DataTypes.DATE,
       allowNull: true,
+    },
+    login_count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Total successful logins — used to distinguish first login (Welcome) vs returning (Welcome back)',
     },
     created_at: {
       type: DataTypes.DATE,
@@ -179,6 +189,7 @@ User.prototype.toJSON = function () {
  */
 User.prototype.updateLastLogin = async function () {
   this.last_login = new Date();
+  this.login_count = (this.login_count || 0) + 1;
   await this.save();
 };
 
