@@ -24,7 +24,12 @@ router.get('/:id', AdminCoursesController.getCourseById);
 // Update course status
 router.patch('/:id/status', AdminCoursesController.updateCourseStatus);
 
-// Assign instructor to course
+// Assign instructor to course (legacy — sets the lead instructor)
 router.patch('/:id/instructor', AdminCoursesController.assignInstructor);
+
+// Multi-instructor roster
+router.get('/:id/instructors', AdminCoursesController.listInstructors);
+router.post('/:id/instructors', AdminCoursesController.addInstructor);
+router.delete('/:id/instructors/:userId', AdminCoursesController.removeInstructor);
 
 module.exports = router;

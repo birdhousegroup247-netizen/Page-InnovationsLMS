@@ -1,4 +1,4 @@
-const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment, Assignment, Referral } = require('../../models');
+const { Course, Category, User, CourseModule, ModuleContent, Enrollment, ContentProgress, ChatRoom, ChatRoomMember, Payment, Assignment, Referral, CourseInstructor } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
@@ -210,7 +210,22 @@ class CourseController {
         });
       }
 
-      const responseData = { course, isEnrolled, progress };
+      // Pull the full instructor roster (lead + co + TA). Keeps the existing
+      // `course.instructor` field intact for any consumer that only knows about
+      // the lead — but exposes `instructors` for callers that want everyone.
+      const rosterRows = await CourseInstructor.findAll({
+        where: { course_id: id },
+        include: [{ model: User, as: 'instructor', attributes: ['id', 'full_name', 'profile_picture', 'bio'] }],
+        order: [['role', 'ASC'], ['assigned_at', 'ASC']],
+      });
+      const instructors = rosterRows
+        .filter((r) => r.instructor)
+        .map((r) => ({
+          ...r.instructor.toJSON(),
+          role: r.role,
+        }));
+
+      const responseData = { course, instructors, isEnrolled, progress };
 
       // Cache for 2 minutes (shorter for logged-in users)
       await cache.set('course_details', cacheKey, responseData, 120);

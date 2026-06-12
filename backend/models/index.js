@@ -58,6 +58,7 @@ const Bundle = require('./Bundle');
 const BundleCourse = require('./BundleCourse');
 const Referral = require('./Referral');
 const AdminAnnouncement = require('./AdminAnnouncement');
+const CourseInstructor = require('./CourseInstructor');
 
 // ============================================================================
 // RELATIONSHIPS
@@ -346,6 +347,25 @@ Course.hasMany(Wishlist, { foreignKey: 'course_id', as: 'wishlist_entries', onDe
 Course.belongsTo(Course, { foreignKey: 'prerequisite_course_id', as: 'prerequisite' });
 Course.hasMany(Course, { foreignKey: 'prerequisite_course_id', as: 'dependent_courses' });
 
+// Course ↔ Instructor (many-to-many)
+// Courses are accessible via lead_instructor (existing instructor_id) AND via
+// the full instructors list which includes lead + co + TA.
+Course.belongsToMany(User, {
+  through: CourseInstructor,
+  foreignKey: 'course_id',
+  otherKey: 'user_id',
+  as: 'instructors',
+});
+User.belongsToMany(Course, {
+  through: CourseInstructor,
+  foreignKey: 'user_id',
+  otherKey: 'course_id',
+  as: 'teaching_courses',
+});
+CourseInstructor.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
+CourseInstructor.belongsTo(User, { foreignKey: 'user_id', as: 'instructor' });
+CourseInstructor.belongsTo(User, { foreignKey: 'assigned_by', as: 'assigner' });
+
 // AdminAnnouncement relationships
 AdminAnnouncement.belongsTo(User, { foreignKey: 'admin_id', as: 'admin' });
 AdminAnnouncement.belongsTo(Course, { foreignKey: 'course_id', as: 'course', required: false });
@@ -419,4 +439,5 @@ module.exports = {
   BundleCourse,
   Referral,
   AdminAnnouncement,
+  CourseInstructor,
 };

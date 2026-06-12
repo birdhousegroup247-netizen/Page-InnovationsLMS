@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UsersController = require('../../../controllers/admin/usersController');
 const ImportController = require('../../../controllers/admin/importController');
+const AdminCoursesController = require('../../../controllers/admin/coursesController');
 const { authenticate, authorize } = require('../../../middleware/auth/authMiddleware');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } }); // 2MB
@@ -42,5 +43,8 @@ router.patch('/:userId/activate', UsersController.activateUser);
 
 // Override registration_status (unlock suspended / clear preview / re-activate)
 router.patch('/:userId/registration-status', UsersController.setRegistrationStatus);
+
+// Courses this user teaches (lead + co + TA)
+router.get('/:userId/teaching-courses', AdminCoursesController.listInstructorCourses);
 
 module.exports = router;

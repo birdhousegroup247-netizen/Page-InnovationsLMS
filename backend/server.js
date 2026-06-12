@@ -615,7 +615,7 @@ const startServer = async () => {
         InstructorReview, LiveSession, ForumPost, ForumReply,
         Assignment, AssignmentSubmission, AdminAnnouncement,
         CouponCode, CouponCodeCourse, CouponRedemption, Lead,
-        EmailVerification, InstructorApplication,
+        EmailVerification, InstructorApplication, CourseInstructor,
       } = require('./models');
 
       const newModels = [
@@ -624,6 +624,8 @@ const startServer = async () => {
         // this it never gets created on Railway Postgres, and applications
         // disappear silently.
         [InstructorApplication, 'instructor_applications'],
+        // course_instructors holds the multi-instructor roster (lead + co + TA).
+        [CourseInstructor, 'course_instructors'],
         [ChatRoom, 'chat_rooms'],
         [ChatRoomMember, 'chat_room_members'],
         [Conversation, 'conversations'],
@@ -655,6 +657,25 @@ const startServer = async () => {
         } catch (tableErr) {
           logger.warn(`  ⚠ Could not ensure ${tableName}: ${tableErr.message}`);
         }
+      }
+
+      // Backfill: seed course_instructors from every course's lead instructor.
+      // Idempotent — only inserts pairs that aren't already present. This lets
+      // existing courses immediately show up under "their instructor's teaching
+      // courses" without an admin having to re-assign every row.
+      try {
+        await sequelize.query(`
+          INSERT INTO course_instructors (course_id, user_id, role, assigned_at)
+          SELECT c.id, c.instructor_id, 'lead', NOW()
+          FROM courses c
+          WHERE c.instructor_id IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM course_instructors ci
+              WHERE ci.course_id = c.id AND ci.user_id = c.instructor_id
+            )
+        `);
+      } catch (backfillErr) {
+        logger.warn(`course_instructors backfill skipped: ${backfillErr.message}`);
       }
 
       logger.info('✓ Auto-migrations complete');

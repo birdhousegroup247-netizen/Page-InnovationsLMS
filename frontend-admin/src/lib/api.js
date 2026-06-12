@@ -195,6 +195,8 @@ export const adminUsersAPI = {
   sendVerificationEmail: (userId) => api.post(`/api/admin/users/${userId}/send-verification-email`),
   // Override user access (unlock suspended, clear preview, etc.)
   setRegistrationStatus: (userId, data) => api.patch(`/api/admin/users/${userId}/registration-status`, data),
+  // Courses this user teaches
+  getTeachingCourses: (userId) => api.get(`/api/admin/users/${userId}/teaching-courses`),
 };
 
 // Admin: Course Management
@@ -215,6 +217,10 @@ export const adminCoursesAPI = {
   bulkUpdateField: (courseIds, field, value) => api.post('/api/admin/courses/bulk/update-field', { courseIds, field, value }),
   // Instructor assignment
   assignInstructor: (courseId, instructor_id) => api.patch(`/api/admin/courses/${courseId}/instructor`, { instructor_id }),
+  // Multi-instructor roster
+  listInstructors: (courseId) => api.get(`/api/admin/courses/${courseId}/instructors`),
+  addInstructor: (courseId, user_id, role = 'co') => api.post(`/api/admin/courses/${courseId}/instructors`, { user_id, role }),
+  removeInstructor: (courseId, userId) => api.delete(`/api/admin/courses/${courseId}/instructors/${userId}`),
 };
 
 // Admin: Instructor Application Management

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ui/Toast';
-import { adminUsersAPI } from '../../lib/api';
+import { adminUsersAPI, adminCoursesAPI } from '../../lib/api';
 import {
   Users as UsersIcon,
   Search,
@@ -30,6 +30,9 @@ import {
   CheckCircle2,
   AlertCircle,
   GraduationCap,
+  BookOpen,
+  X,
+  Crown,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import {
@@ -78,6 +81,15 @@ export default function Users() {
   const [importFile, setImportFile] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  // Assign-to-courses modal (only meaningful for instructors / admins)
+  const [isAssignCoursesModalOpen, setIsAssignCoursesModalOpen] = useState(false);
+  const [assignTarget, setAssignTarget] = useState(null);
+  const [teachingCourses, setTeachingCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [assignRole, setAssignRole] = useState('co');
 
   // Bulk selection
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -474,6 +486,78 @@ export default function Users() {
       setActionLoading(false);
     }
   };
+
+  // ── Assign-to-courses for instructor users ───────────────────────────────
+  const openAssignCourses = async (user) => {
+    setAssignTarget(user);
+    setIsAssignCoursesModalOpen(true);
+    setCourseSearch('');
+    setAssignRole('co');
+    setCoursesLoading(true);
+    try {
+      const [teachingRes, allRes] = await Promise.all([
+        adminUsersAPI.getTeachingCourses(user.id),
+        adminCoursesAPI.getAll({ status: 'all', limit: 500 }),
+      ]);
+      setTeachingCourses(teachingRes.data?.data?.courses || []);
+      setAllCourses(allRes.data?.data?.courses || []);
+    } catch (e) {
+      showToast('Failed to load courses', 'error');
+      setTeachingCourses([]);
+      setAllCourses([]);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
+  const refreshTeachingCourses = async () => {
+    if (!assignTarget) return;
+    try {
+      const res = await adminUsersAPI.getTeachingCourses(assignTarget.id);
+      setTeachingCourses(res.data?.data?.courses || []);
+    } catch (e) { /* keep stale list */ }
+  };
+
+  const handleAssignToCourse = async (courseId, role) => {
+    if (!assignTarget) return;
+    setActionLoading(true);
+    try {
+      await adminCoursesAPI.addInstructor(courseId, assignTarget.id, role);
+      await refreshTeachingCourses();
+      showToast('Assigned', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to assign', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUnassignFromCourse = async (courseId) => {
+    if (!assignTarget) return;
+    setActionLoading(true);
+    try {
+      await adminCoursesAPI.removeInstructor(courseId, assignTarget.id);
+      await refreshTeachingCourses();
+      showToast('Removed from course', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to remove', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Filter the "add to course" picker — only show courses the user isn't already on
+  const teachingCourseIds = new Set(teachingCourses.map((tc) => tc.course?.id).filter(Boolean));
+  const availableCourses = (allCourses || []).filter((c) => {
+    if (teachingCourseIds.has(c.id)) return false;
+    if (!courseSearch) return true;
+    return (c.title || '').toLowerCase().includes(courseSearch.toLowerCase());
+  });
+
+  // Whether a user is eligible for the Assign-to-courses action
+  const canBeAssignedAsInstructor = (u) =>
+    u && (u.role === 'instructor' || u.role === 'admin' || u.role === 'super_admin'
+      || u.instructor_status === 'approved');
 
   // Export to CSV
   const handleExportCSV = () => {
@@ -1002,6 +1086,18 @@ export default function Users() {
                                     >
                                       Unlock Access
                                     </Dropdown.Item>
+
+                                    {canBeAssignedAsInstructor(user) && (
+                                      <Dropdown.Item
+                                        icon={BookOpen}
+                                        onClick={() => {
+                                          setIsOpen(false);
+                                          openAssignCourses(user);
+                                        }}
+                                      >
+                                        Assign to Courses
+                                      </Dropdown.Item>
+                                    )}
 
                                     {currentUser?.role === 'super_admin' && user.id !== currentUser?.id && (
                                       <>
@@ -1536,6 +1632,123 @@ export default function Users() {
               </div>
             </>
           )}
+        </div>
+      </Modal>
+
+      {/* Assign-to-courses modal */}
+      <Modal
+        isOpen={isAssignCoursesModalOpen}
+        onClose={() => setIsAssignCoursesModalOpen(false)}
+        title={`Assign ${assignTarget?.full_name || ''} to courses`}
+        size="lg"
+      >
+        <div className="space-y-5">
+          {/* Currently teaching */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Currently teaching {teachingCourses.length > 0 && `(${teachingCourses.length})`}
+            </h4>
+            {coursesLoading ? (
+              <div className="py-8 flex justify-center"><Spinner /></div>
+            ) : teachingCourses.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
+                Not assigned to any courses yet.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {teachingCourses.map((tc) => (
+                  <li key={tc.course.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <BookOpen className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {tc.course.title}
+                          {tc.role === 'lead' && (
+                            <Badge variant="warning" size="sm" className="ml-2 inline-flex items-center gap-1">
+                              <Crown className="w-3 h-3" /> Lead
+                            </Badge>
+                          )}
+                          {tc.role === 'co' && <Badge variant="info" size="sm" className="ml-2">Co</Badge>}
+                          {tc.role === 'ta' && <Badge variant="default" size="sm" className="ml-2">TA</Badge>}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Status: {tc.course.status}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleUnassignFromCourse(tc.course.id)}
+                      disabled={actionLoading || tc.role === 'lead'}
+                      title={tc.role === 'lead' ? 'Reassign lead instructor first' : 'Remove from course'}
+                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Add to a course */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Add to a course
+            </h4>
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="Search courses..."
+                value={courseSearch}
+                onChange={(e) => setCourseSearch(e.target.value)}
+                className="flex-1"
+              />
+              <Select
+                value={assignRole}
+                onChange={(e) => setAssignRole(e.target.value)}
+                className="w-40"
+              >
+                <option value="co">Co-instructor</option>
+                <option value="ta">Teaching assistant</option>
+                <option value="lead">Lead (replaces current)</option>
+              </Select>
+            </div>
+            <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+              {availableCourses.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 p-4 text-center">
+                  {courseSearch ? 'No courses match that search.' : 'No more courses to assign.'}
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {availableCourses.map((c) => (
+                    <li key={c.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Status: {c.status} {c.instructor?.full_name && `· Lead: ${c.instructor.full_name}`}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAssignToCourse(c.id, assignRole)}
+                        disabled={actionLoading}
+                      >
+                        Add as {assignRole === 'lead' ? 'lead' : assignRole === 'co' ? 'co' : 'TA'}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsAssignCoursesModalOpen(false)}>
+              Done
+            </Button>
+          </div>
         </div>
       </Modal>
     </>

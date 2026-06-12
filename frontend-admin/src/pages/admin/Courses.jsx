@@ -26,6 +26,9 @@ import {
   HelpCircle,
   MoreVertical,
   Copy,
+  UserPlus,
+  Crown,
+  X,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import {
@@ -76,6 +79,14 @@ export default function AdminCourses() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Instructor-roster modal
+  const [isInstructorModalOpen, setIsInstructorModalOpen] = useState(false);
+  const [rosterCourse, setRosterCourse] = useState(null);
+  const [roster, setRoster] = useState([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [rosterRole, setRosterRole] = useState('co');
 
   // Bulk selection
   const [selectedCourses, setSelectedCourses] = useState([]);
@@ -168,6 +179,86 @@ export default function AdminCourses() {
       console.error('Error fetching instructors:', error);
     }
   };
+
+  // ── Multi-instructor roster handlers ─────────────────────────────────────
+  const openInstructorRoster = async (course) => {
+    setRosterCourse(course);
+    setIsInstructorModalOpen(true);
+    setRosterSearch('');
+    setRosterRole('co');
+    setRosterLoading(true);
+    try {
+      const res = await adminCoursesAPI.listInstructors(course.id);
+      setRoster(res.data?.data?.instructors || []);
+    } catch (e) {
+      showToast('Failed to load instructor roster', 'error');
+      setRoster([]);
+    } finally {
+      setRosterLoading(false);
+    }
+  };
+
+  const refreshRoster = async () => {
+    if (!rosterCourse) return;
+    try {
+      const res = await adminCoursesAPI.listInstructors(rosterCourse.id);
+      setRoster(res.data?.data?.instructors || []);
+    } catch (e) { /* keep stale roster on error */ }
+  };
+
+  const handleAddRosterMember = async (userId, role) => {
+    if (!rosterCourse) return;
+    setActionLoading(true);
+    try {
+      await adminCoursesAPI.addInstructor(rosterCourse.id, userId, role);
+      await refreshRoster();
+      await fetchCourses(); // courses table shows lead instructor — refresh in case it changed
+      showToast('Instructor added', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to add instructor', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveRosterMember = async (userId) => {
+    if (!rosterCourse) return;
+    setActionLoading(true);
+    try {
+      await adminCoursesAPI.removeInstructor(rosterCourse.id, userId);
+      await refreshRoster();
+      showToast('Instructor removed', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to remove instructor', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePromoteToLead = async (userId) => {
+    if (!rosterCourse) return;
+    setActionLoading(true);
+    try {
+      await adminCoursesAPI.addInstructor(rosterCourse.id, userId, 'lead');
+      await refreshRoster();
+      await fetchCourses();
+      showToast('Promoted to lead instructor', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to promote', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Instructors available to add — eligible (instructor/admin) and not already on the roster.
+  const rosterUserIds = new Set(roster.map((r) => r.user_id));
+  const availableInstructors = (instructors || []).filter((u) => {
+    if (rosterUserIds.has(u.id)) return false;
+    if (!rosterSearch) return true;
+    const q = rosterSearch.toLowerCase();
+    return (u.full_name || '').toLowerCase().includes(q)
+      || (u.email || '').toLowerCase().includes(q);
+  });
 
   const fetchQuestionStats = async () => {
     try {
@@ -1113,6 +1204,16 @@ export default function AdminCourses() {
                                     </Dropdown.Item>
 
                                     <Dropdown.Item
+                                      icon={UserPlus}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        openInstructorRoster(course);
+                                      }}
+                                    >
+                                      Assign Instructors
+                                    </Dropdown.Item>
+
+                                    <Dropdown.Item
                                       icon={Copy}
                                       onClick={() => {
                                         setIsOpen(false);
@@ -1707,6 +1808,139 @@ export default function AdminCourses() {
           >
             Delete Courses
           </Button>
+        </div>
+      </Modal>
+
+      {/* Multi-instructor roster modal */}
+      <Modal
+        isOpen={isInstructorModalOpen}
+        onClose={() => setIsInstructorModalOpen(false)}
+        title={`Instructors — ${rosterCourse?.title || ''}`}
+        size="lg"
+      >
+        <div className="space-y-5">
+          {/* Current roster */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Current instructors {roster.length > 0 && `(${roster.length})`}
+            </h4>
+            {rosterLoading ? (
+              <div className="py-8 flex justify-center"><Spinner /></div>
+            ) : roster.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
+                No instructors assigned yet.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {roster.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar
+                        src={row.user?.profile_picture}
+                        name={row.user?.full_name}
+                        size="sm"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {row.user?.full_name}
+                          {row.role === 'lead' && (
+                            <Badge variant="warning" size="sm" className="ml-2 inline-flex items-center gap-1">
+                              <Crown className="w-3 h-3" /> Lead
+                            </Badge>
+                          )}
+                          {row.role === 'co' && <Badge variant="info" size="sm" className="ml-2">Co-instructor</Badge>}
+                          {row.role === 'ta' && <Badge variant="default" size="sm" className="ml-2">TA</Badge>}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{row.user?.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {row.role !== 'lead' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePromoteToLead(row.user_id)}
+                          disabled={actionLoading}
+                          title="Promote to lead"
+                        >
+                          <Crown className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveRosterMember(row.user_id)}
+                        disabled={actionLoading || row.role === 'lead'}
+                        title={row.role === 'lead' ? 'Promote another instructor to lead first' : 'Remove'}
+                        className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Add new */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Add instructor
+            </h4>
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="Search by name or email..."
+                value={rosterSearch}
+                onChange={(e) => setRosterSearch(e.target.value)}
+                className="flex-1"
+              />
+              <Select
+                value={rosterRole}
+                onChange={(e) => setRosterRole(e.target.value)}
+                className="w-40"
+              >
+                <option value="co">Co-instructor</option>
+                <option value="ta">Teaching assistant</option>
+                <option value="lead">Lead (replace current)</option>
+              </Select>
+            </div>
+            <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+              {availableInstructors.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 p-4 text-center">
+                  {rosterSearch ? 'No instructors match that search.' : 'No more instructors available — everyone\'s already on this course.'}
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {availableInstructors.map((u) => (
+                    <li key={u.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar src={u.profile_picture} name={u.full_name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{u.full_name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddRosterMember(u.id, rosterRole)}
+                        disabled={actionLoading}
+                      >
+                        Add as {rosterRole === 'lead' ? 'lead' : rosterRole === 'co' ? 'co' : 'TA'}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsInstructorModalOpen(false)}>
+              Done
+            </Button>
+          </div>
         </div>
       </Modal>
     </>

@@ -1,4 +1,4 @@
-const { Course, User, Category, Enrollment, CourseModule, ModuleContent, ChatRoom, ChatRoomMember } = require('../../models');
+const { Course, User, Category, Enrollment, CourseModule, ModuleContent, ChatRoom, ChatRoomMember, CourseInstructor } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ForbiddenError } = require('../../utils/errors');
@@ -338,12 +338,169 @@ class AdminCoursesController {
 
             await course.update({ instructor_id });
 
-            logger.info(`Course ${id} instructor changed to user ${instructor_id} by admin ${req.user.email}`);
+            // Mirror into the join table so the full roster query sees this user
+            // as 'lead'. If they were already 'co' or 'ta', promote them to lead.
+            await CourseInstructor.upsert({
+                course_id: course.id,
+                user_id: instructor.id,
+                role: 'lead',
+                assigned_by: req.user.id,
+                assigned_at: new Date(),
+            }, { conflictFields: ['course_id', 'user_id'] }).catch(async () => {
+                // Older Postgres versions or dialects without conflictFields support —
+                // fall back to find-or-create then update.
+                const [row] = await CourseInstructor.findOrCreate({
+                    where: { course_id: course.id, user_id: instructor.id },
+                    defaults: { role: 'lead', assigned_by: req.user.id, assigned_at: new Date() },
+                });
+                if (row.role !== 'lead') await row.update({ role: 'lead', assigned_by: req.user.id });
+            });
+
+            logger.info(`Course ${id} lead instructor changed to user ${instructor_id} by admin ${req.user.email}`);
 
             return ApiResponse.success(res, {
                 course: { id: course.id, title: course.title, instructor_id: course.instructor_id },
                 instructor: { id: instructor.id, full_name: instructor.full_name, email: instructor.email }
             }, 'Instructor assigned successfully');
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * List all instructors assigned to a course (lead + co + TA).
+     * GET /api/admin/courses/:id/instructors
+     */
+    static async listInstructors(req, res, next) {
+        try {
+            const { id } = req.params;
+            const course = await Course.findByPk(id);
+            if (!course) throw new NotFoundError('Course not found');
+
+            const rows = await CourseInstructor.findAll({
+                where: { course_id: id },
+                include: [
+                    { model: User, as: 'instructor', attributes: ['id', 'full_name', 'email', 'profile_picture', 'role', 'instructor_status'] },
+                    { model: User, as: 'assigner', attributes: ['id', 'full_name', 'email'], required: false },
+                ],
+                order: [['role', 'ASC'], ['assigned_at', 'ASC']],
+            });
+
+            return ApiResponse.success(res, {
+                instructors: rows.map((r) => ({
+                    id: r.id,
+                    user_id: r.user_id,
+                    role: r.role,
+                    assigned_at: r.assigned_at,
+                    assigned_by: r.assigner ? { id: r.assigner.id, full_name: r.assigner.full_name } : null,
+                    user: r.instructor,
+                })),
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Add an instructor (co or TA) to a course.
+     * POST /api/admin/courses/:id/instructors { user_id, role }
+     */
+    static async addInstructor(req, res, next) {
+        try {
+            const { id } = req.params;
+            const { user_id, role = 'co' } = req.body;
+            if (!user_id) throw new BadRequestError('user_id is required');
+            if (!['lead', 'co', 'ta'].includes(role)) {
+                throw new BadRequestError('role must be one of: lead, co, ta');
+            }
+
+            const course = await Course.findByPk(id);
+            if (!course) throw new NotFoundError('Course not found');
+
+            const user = await User.findByPk(user_id);
+            if (!user) throw new BadRequestError('User not found');
+            // Anyone can co-teach — but only users who can actually teach should
+            // appear in instructor pickers. Approved instructors, admins, and
+            // super-admins are allowed.
+            const canTeach = user.role === 'admin' || user.role === 'super_admin'
+                || (user.role === 'instructor')
+                || user.instructor_status === 'approved';
+            if (!canTeach) {
+                throw new BadRequestError('User cannot be assigned as instructor — must be an approved instructor or admin');
+            }
+
+            // If promoting to lead, demote any prior lead + sync courses.instructor_id
+            if (role === 'lead') {
+                await CourseInstructor.update(
+                    { role: 'co' },
+                    { where: { course_id: id, role: 'lead' } }
+                );
+                await course.update({ instructor_id: user.id });
+            }
+
+            const [row, created] = await CourseInstructor.findOrCreate({
+                where: { course_id: id, user_id },
+                defaults: { role, assigned_by: req.user.id, assigned_at: new Date() },
+            });
+            if (!created && row.role !== role) {
+                await row.update({ role, assigned_by: req.user.id });
+            }
+
+            logger.info(`Instructor ${user_id} (${role}) ${created ? 'added to' : 'updated on'} course ${id} by admin ${req.user.email}`);
+
+            return ApiResponse.success(res, {
+                instructor: { id: row.id, user_id, role: row.role },
+            }, created ? 'Instructor added' : 'Instructor role updated');
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Remove an instructor from a course. Refuses to remove the last 'lead'
+     * unless another instructor is promoted to lead first.
+     * DELETE /api/admin/courses/:id/instructors/:userId
+     */
+    static async removeInstructor(req, res, next) {
+        try {
+            const { id, userId } = req.params;
+            const row = await CourseInstructor.findOne({ where: { course_id: id, user_id: userId } });
+            if (!row) throw new NotFoundError('That instructor is not on this course');
+
+            if (row.role === 'lead') {
+                // Don't leave a course leaderless. The admin must pick a new lead first.
+                throw new BadRequestError(
+                    'Cannot remove the lead instructor. Promote another instructor to lead first.'
+                );
+            }
+
+            await row.destroy();
+            logger.info(`Instructor ${userId} removed from course ${id} by admin ${req.user.email}`);
+            return ApiResponse.success(res, null, 'Instructor removed');
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * List the courses an instructor currently teaches.
+     * GET /api/admin/users/:userId/teaching-courses
+     */
+    static async listInstructorCourses(req, res, next) {
+        try {
+            const { userId } = req.params;
+            const rows = await CourseInstructor.findAll({
+                where: { user_id: userId },
+                include: [{ model: Course, as: 'course', attributes: ['id', 'title', 'slug', 'status', 'thumbnail_url'] }],
+                order: [['assigned_at', 'DESC']],
+            });
+            return ApiResponse.success(res, {
+                courses: rows.filter((r) => r.course).map((r) => ({
+                    course: r.course,
+                    role: r.role,
+                    assigned_at: r.assigned_at,
+                })),
+            });
         } catch (error) {
             next(error);
         }
