@@ -1228,6 +1228,22 @@ export default function AdminCourses() {
                                       View Students
                                     </Dropdown.Item>
 
+                                    {course.status === 'draft' && (
+                                      <>
+                                        <Dropdown.Separator />
+                                        <Dropdown.Item
+                                          icon={CheckCircle}
+                                          onClick={() => {
+                                            setIsOpen(false);
+                                            handleApproveCourse(course);
+                                          }}
+                                          disabled={actionLoading}
+                                        >
+                                          Publish Course
+                                        </Dropdown.Item>
+                                      </>
+                                    )}
+
                                     {course.status === 'pending' && (
                                       <>
                                         <Dropdown.Separator />
@@ -1251,6 +1267,22 @@ export default function AdminCourses() {
                                           danger
                                         >
                                           Reject Course
+                                        </Dropdown.Item>
+                                      </>
+                                    )}
+
+                                    {course.status === 'archived' && (
+                                      <>
+                                        <Dropdown.Separator />
+                                        <Dropdown.Item
+                                          icon={CheckCircle}
+                                          onClick={() => {
+                                            setIsOpen(false);
+                                            handleApproveCourse(course);
+                                          }}
+                                          disabled={actionLoading}
+                                        >
+                                          Republish Course
                                         </Dropdown.Item>
                                       </>
                                     )}
