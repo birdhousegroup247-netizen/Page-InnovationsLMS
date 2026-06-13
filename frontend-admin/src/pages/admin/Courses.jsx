@@ -1056,7 +1056,15 @@ export default function AdminCourses() {
                           </td>
                         )}
                         <td className="px-3 py-4">
-                          <div className="flex items-center gap-3 min-w-0">
+                          {/* The Course column is clickable — opens the View
+                              Details modal. Edit / Build Content / etc. stay in
+                              the ⋮ menu so this doesn't conflict. */}
+                          <button
+                            type="button"
+                            onClick={() => handleViewCourseDetails(course)}
+                            className="flex items-center gap-3 min-w-0 text-left group hover:text-brand-blue dark:hover:text-brand-blue transition-colors w-full"
+                            title="View course details"
+                          >
                             {/* Thumbnail — fixed 48x48 square so every row lines up,
                                 regardless of whether the course has a real image. */}
                             <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 relative">
@@ -1079,14 +1087,14 @@ export default function AdminCourses() {
                               </div>
                             </div>
                             <div className="min-w-0">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-brand-blue dark:group-hover:text-brand-blue whitespace-nowrap transition-colors">
                                 {course.title}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                                 {course.category?.name || 'Uncategorized'}
                               </div>
                             </div>
-                          </div>
+                          </button>
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-600 dark:text-gray-400">
