@@ -264,6 +264,94 @@ class AuthController {
   }
 
   /**
+   * Apply to teach as an already-logged-in user.
+   * POST /api/auth/apply-to-teach
+   *
+   * Same end result as POST /api/auth/instructor-apply, but skips the
+   * account-creation step because the user is already authenticated. This is
+   * what the "Become an Instructor" button on the student dashboard hits.
+   *
+   * Refuses if the user already has an active application (pending / approved /
+   * under_review) — they'd be applying twice for the same thing.
+   */
+  static async applyToTeach(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const user = await User.findByPk(userId);
+      if (!user) throw new NotFoundError('User not found');
+
+      // Refuse if there's already a current application
+      const existing = await InstructorApplication.findByUserId(userId);
+      if (existing && ['pending', 'under_review'].includes(existing.status)) {
+        throw new BadRequestError('You already have an instructor application in review.');
+      }
+      if (existing && existing.status === 'approved') {
+        throw new BadRequestError('You are already approved as an instructor.');
+      }
+
+      const {
+        bio, qualifications, teaching_experience, subject_expertise,
+        portfolio_url, cv_url, credential_urls,
+      } = req.body;
+
+      const application = await InstructorApplication.createApplication({
+        user_id: userId,
+        status: 'pending',
+        bio,
+        qualifications,
+        teaching_experience,
+        subject_expertise,
+        portfolio_url: portfolio_url || null,
+        cv_url,
+        credential_urls: Array.isArray(credential_urls) ? credential_urls : [],
+      });
+
+      await user.update({ instructor_status: 'pending' });
+
+      await ActivityController.logActivity({
+        user_id: userId,
+        action: 'instructor_application_submit',
+        metadata: { email: user.email, full_name: user.full_name, source: 'logged_in' },
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: req.get('user-agent'),
+      });
+
+      // Confirm to the applicant
+      emailService.sendInstructorApplicationReceived(user.email, user.full_name).catch((e) =>
+        logger.warn(`Application-received email failed for ${user.email}: ${e.message}`)
+      );
+
+      // Notify admins (fire-and-forget)
+      (async () => {
+        try {
+          const admins = await User.findAll({
+            where: { role: ['admin', 'super_admin'], is_active: true },
+            attributes: ['email', 'full_name'],
+          });
+          for (const admin of admins) {
+            emailService.sendNewInstructorApplicationToAdmin(
+              admin.email, admin.full_name, {
+                applicantName: user.full_name, applicantEmail: user.email, applicationId: application.id,
+              }
+            ).catch((e) => logger.warn(`Admin notify failed for ${admin.email}: ${e.message}`));
+          }
+        } catch (e) {
+          logger.warn(`Could not notify admins of new application: ${e.message}`);
+        }
+      })();
+
+      logger.info(`Existing user ${user.email} submitted an instructor application`);
+
+      return ApiResponse.created(res, {
+        application_id: application.id,
+        instructor_status: 'pending',
+      }, 'Application submitted. Our team will review it within 2–3 business days.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Verify email via link token
    * GET /api/auth/verify-email?token=...
    * Redirects to the frontend with a success or error flag rather than rendering JSON,

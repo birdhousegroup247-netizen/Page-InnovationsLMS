@@ -13,6 +13,8 @@ import {
   GraduationCap,
   ChevronRight,
   AlertCircle,
+  Briefcase,
+  Clock3,
 } from 'lucide-react';
 import { profileAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
 import StreakCard from '../components/dashboard/StreakCard';
@@ -312,6 +314,67 @@ export default function Dashboard() {
             <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <p className="text-red-800 dark:text-red-200">{error}</p>
           </div>
+        )}
+
+        {/* Instructor-application status banner.
+            - none / rejected → invite to apply
+            - pending          → "we're reviewing"
+            - approved         → quick link into the instructor dashboard
+            Hidden entirely for users who are already instructors or admins. */}
+        {user && !['instructor', 'admin', 'super_admin'].includes(user.role) && (
+          <>
+            {(user.instructor_status === 'none' || user.instructor_status === 'rejected') && (
+              <Link
+                to="/instructor-apply"
+                className="mb-6 group flex items-center justify-between gap-4 p-5 rounded-xl bg-gradient-to-r from-brand-purple/10 to-brand-blue/10 dark:from-brand-purple/20 dark:to-brand-blue/20 border border-brand-blue/20 hover:border-brand-blue/40 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-lg bg-brand-blue/15 flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="w-5 h-5 text-brand-blue" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Become an Instructor</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Share what you know — apply to teach on TekyPro. Same account, no new email.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-brand-blue group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </Link>
+            )}
+            {user.instructor_status === 'pending' && (
+              <div className="mb-6 flex items-center gap-4 p-5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
+                <div className="w-11 h-11 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                  <Clock3 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Instructor application under review</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Our team is reviewing your application. We'll email you within 2–3 business days.
+                  </p>
+                </div>
+              </div>
+            )}
+            {user.instructor_status === 'approved' && (
+              <Link
+                to="/instructor/dashboard"
+                className="mb-6 group flex items-center justify-between gap-4 p-5 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 hover:border-green-400 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-lg bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">You're an instructor now 🎉</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Switch to your instructor dashboard to start building courses.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-green-600 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+              </Link>
+            )}
+          </>
         )}
 
         {/* Stats Grid */}

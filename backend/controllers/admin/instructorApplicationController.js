@@ -113,9 +113,15 @@ class InstructorApplicationController {
       // Approve application using model method
       await application.approve(req.user.id);
 
-      // Update user role and instructor_status for backward compatibility
+      // Grant teaching access without taking away student privileges:
+      // - instructor_status='approved' lights up the dual-role grant in
+      //   authMiddleware.authorize, so this user can hit instructor endpoints.
+      // - role is only promoted from 'student' to 'instructor' if they have no
+      //   student-side history we want to preserve. Right now we just keep
+      //   them as 'student' — the user-facing behavior is "you can now teach"
+      //   while keeping their student dashboard, enrollments, reviews, etc.
+      // - Already-instructor or admin users are left alone (don't downgrade).
       const user = application.user;
-      user.role = 'instructor';
       user.instructor_status = 'approved';
       await user.save();
 

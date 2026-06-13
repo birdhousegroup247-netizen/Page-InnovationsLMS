@@ -36,6 +36,11 @@ router.post('/verify-email-code', authRateLimiter, validate('verifyEmailCode'), 
 // @access  Public
 router.post('/instructor-apply', registrationLimiter, validate('instructorApply'), (req, res, next) => AuthController.instructorApply(req, res, next));
 
+// @route   POST /api/auth/apply-to-teach
+// @desc    Submit an instructor application as an already-logged-in user
+// @access  Private (any authenticated user)
+router.post('/apply-to-teach', authenticate, validate('applyToTeach'), (req, res, next) => AuthController.applyToTeach(req, res, next));
+
 // @route   POST /api/auth/resend-verification
 // @desc    Resend verification email
 // @access  Public

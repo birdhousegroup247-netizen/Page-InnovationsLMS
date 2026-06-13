@@ -112,6 +112,7 @@ export const authAPI = {
   verifyEmailCode: (email, code) => api.post('/api/auth/verify-email-code', { email, code }),
   resendVerification: (email) => api.post('/api/auth/resend-verification', { email }),
   instructorApply: (data) => api.post('/api/auth/instructor-apply', data),
+  applyToTeach: (data) => api.post('/api/auth/apply-to-teach', data),
   refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }),
   getProfile: () => api.get('/api/auth/me'),
   updateProfile: (data) => api.put('/api/profile', data),

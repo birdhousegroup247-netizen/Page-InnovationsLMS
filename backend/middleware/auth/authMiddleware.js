@@ -103,14 +103,20 @@ const authorize = (...allowedRoles) => {
       return ApiResponse.unauthorized(res, 'Authentication required');
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return ApiResponse.forbidden(
-        res,
-        'You do not have permission to access this resource'
-      );
+    // Match on primary role first.
+    if (allowedRoles.includes(req.user.role)) return next();
+
+    // Dual-role grant: if the route allows instructors, a student whose
+    // instructor application has been approved also counts. This is what lets
+    // one email + one account both teach and learn (Udemy / Skillshare model).
+    if (allowedRoles.includes('instructor') && req.user.instructor_status === 'approved') {
+      return next();
     }
 
-    next();
+    return ApiResponse.forbidden(
+      res,
+      'You do not have permission to access this resource'
+    );
   };
 };
 

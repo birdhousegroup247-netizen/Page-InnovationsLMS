@@ -53,6 +53,20 @@ const schemas = {
     email: Joi.string().email().required(),
   }),
 
+  // Apply-to-teach for a logged-in user. No account fields — just the instructor profile.
+  applyToTeach: Joi.object({
+    bio: Joi.string().min(20).max(5000).required(),
+    qualifications: Joi.string().min(10).max(5000).required(),
+    teaching_experience: Joi.string().min(10).max(5000).required(),
+    subject_expertise: Joi.string().min(5).max(2000).required(),
+    portfolio_url: Joi.string().uri().allow('', null).optional(),
+    cv_url: Joi.string().uri().required().messages({
+      'any.required': 'A CV / resume document is required',
+      'string.uri': 'CV URL must be a valid URL',
+    }),
+    credential_urls: Joi.array().items(Joi.string().uri()).max(10).optional().default([]),
+  }),
+
   // Instructor application — collects everything register does PLUS the instructor fields
   instructorApply: Joi.object({
     full_name: Joi.string().min(2).max(255).required(),

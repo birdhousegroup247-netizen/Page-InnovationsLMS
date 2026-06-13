@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../lib/api';
 import {
   Sun, Moon, ArrowLeft, ArrowRight, Upload, FileText, X, CheckCircle2,
@@ -18,8 +19,15 @@ const COUNTRIES = [
   'Turkey', 'China', 'Japan', 'South Korea', 'New Zealand', 'Ireland', 'Other',
 ];
 
-const STEPS = [
+const STEPS_ANON = [
   { key: 'account', label: 'Account', icon: GraduationCap },
+  { key: 'expertise', label: 'Expertise', icon: Briefcase },
+  { key: 'documents', label: 'Documents', icon: FilePlus2 },
+  { key: 'review', label: 'Review', icon: ClipboardCheck },
+];
+
+// For logged-in users we drop the Account step since they already have one.
+const STEPS_LOGGED_IN = [
   { key: 'expertise', label: 'Expertise', icon: Briefcase },
   { key: 'documents', label: 'Documents', icon: FilePlus2 },
   { key: 'review', label: 'Review', icon: ClipboardCheck },
@@ -51,11 +59,16 @@ async function uploadToCloudinary(file) {
 export default function InstructorApply() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated, user } = useAuth();
+
+  const STEPS = useMemo(() => (isAuthenticated ? STEPS_LOGGED_IN : STEPS_ANON), [isAuthenticated]);
 
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
-    full_name: '', email: '', password: '', confirmPassword: '',
-    phone: '', country: '',
+    full_name: user?.full_name || '',
+    email: user?.email || '',
+    password: '', confirmPassword: '',
+    phone: user?.phone || '', country: '',
     bio: '', qualifications: '', teaching_experience: '',
     subject_expertise: '', portfolio_url: '',
     cv_url: '', credential_urls: [],
@@ -77,24 +90,27 @@ export default function InstructorApply() {
   };
 
   const validateStep = () => {
-    if (step === 0) {
+    // Resolve which step the user is on by key, so the logic is the same
+    // whether the Account step exists or not.
+    const key = STEPS[step]?.key;
+    if (key === 'account') {
       if (!formData.full_name || formData.full_name.length < 2) return 'Please enter your full name.';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return 'Please enter a valid email.';
       if (formData.password.length < 8) return 'Password must be at least 8 characters.';
       if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) return 'Password must contain uppercase, lowercase, and a number.';
       if (formData.password !== formData.confirmPassword) return 'Passwords do not match.';
     }
-    if (step === 1) {
+    if (key === 'expertise') {
       if (formData.bio.length < 20) return 'Bio must be at least 20 characters.';
       if (formData.qualifications.length < 10) return 'Please describe your qualifications (at least 10 characters).';
       if (formData.teaching_experience.length < 10) return 'Please describe your teaching experience.';
       if (formData.subject_expertise.length < 5) return 'Please list your subject expertise.';
       if (formData.portfolio_url && !/^https?:\/\//.test(formData.portfolio_url)) return 'Portfolio URL must start with http:// or https://';
     }
-    if (step === 2) {
+    if (key === 'documents') {
       if (!formData.cv_url) return 'Please upload your CV / resume.';
     }
-    if (step === 3) {
+    if (key === 'review') {
       if (!formData.agreed) return 'Please agree to the Terms of Service and Privacy Policy.';
     }
     return null;
@@ -156,6 +172,20 @@ export default function InstructorApply() {
     if (err) { setStepError(err); return; }
     setSubmitting(true); setError('');
     try {
+      if (isAuthenticated) {
+        // Logged-in path: we already have an account, post the application only.
+        await authAPI.applyToTeach({
+          bio: formData.bio,
+          qualifications: formData.qualifications,
+          teaching_experience: formData.teaching_experience,
+          subject_expertise: formData.subject_expertise,
+          portfolio_url: formData.portfolio_url || undefined,
+          cv_url: formData.cv_url,
+          credential_urls: formData.credential_urls,
+        });
+        setSubmitted(true);
+        return;
+      }
       await authAPI.instructorApply({
         full_name: formData.full_name,
         email: formData.email,
@@ -196,29 +226,50 @@ export default function InstructorApply() {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-text-dark-primary mb-2">
             Application Submitted
           </h1>
-          <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
-            Thanks for applying to teach on TekyPro. Two things to do now:
-          </p>
-          <div className="text-left bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>1. Verify your email</strong></p>
-            <p className="text-sm text-blue-900 dark:text-blue-300 mb-3">We sent a verification link and 6-digit code to <strong>{formData.email}</strong>. You'll need to verify before you can sign in.</p>
-            <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>2. Wait for admin review</strong></p>
-            <p className="text-sm text-blue-900 dark:text-blue-300">Our team reviews instructor applications within 2–3 business days. You'll get an email once a decision is made.</p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              to={`/verify-email?email=${encodeURIComponent(formData.email)}`}
-              className="flex-1 py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg text-center"
-            >
-              Verify Email
-            </Link>
-            <Link
-              to="/login"
-              className="flex-1 py-3 px-4 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 text-gray-900 dark:text-text-dark-primary font-medium rounded-lg text-center"
-            >
-              Back to Sign In
-            </Link>
-          </div>
+          {isAuthenticated ? (
+            <>
+              <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+                Thanks for applying to teach on TekyPro. Our team reviews instructor
+                applications within 2–3 business days. You'll get an email once a
+                decision is made, and you can keep using TekyPro as a student in
+                the meantime.
+              </p>
+              <div className="flex gap-3">
+                <Link
+                  to="/dashboard"
+                  className="flex-1 py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg text-center"
+                >
+                  Back to Dashboard
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
+                Thanks for applying to teach on TekyPro. Two things to do now:
+              </p>
+              <div className="text-left bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>1. Verify your email</strong></p>
+                <p className="text-sm text-blue-900 dark:text-blue-300 mb-3">We sent a verification link and 6-digit code to <strong>{formData.email}</strong>. You'll need to verify before you can sign in.</p>
+                <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>2. Wait for admin review</strong></p>
+                <p className="text-sm text-blue-900 dark:text-blue-300">Our team reviews instructor applications within 2–3 business days. You'll get an email once a decision is made.</p>
+              </div>
+              <div className="flex gap-3">
+                <Link
+                  to={`/verify-email?email=${encodeURIComponent(formData.email)}`}
+                  className="flex-1 py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg text-center"
+                >
+                  Verify Email
+                </Link>
+                <Link
+                  to="/login"
+                  className="flex-1 py-3 px-4 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 text-gray-900 dark:text-text-dark-primary font-medium rounded-lg text-center"
+                >
+                  Back to Sign In
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -285,8 +336,8 @@ export default function InstructorApply() {
             </div>
           )}
 
-          {/* Step 0 — Account */}
-          {step === 0 && (
+          {/* Step — Account */}
+          {STEPS[step]?.key === 'account' && (
             <div className="space-y-5">
               <div>
                 <label className={labelClass}>Full name <span className="text-red-500">*</span></label>
@@ -322,7 +373,7 @@ export default function InstructorApply() {
           )}
 
           {/* Step 1 — Expertise */}
-          {step === 1 && (
+          {STEPS[step]?.key === 'expertise' && (
             <div className="space-y-5">
               <div>
                 <label className={labelClass}>About you <span className="text-red-500">*</span></label>
@@ -354,7 +405,7 @@ export default function InstructorApply() {
           )}
 
           {/* Step 2 — Documents */}
-          {step === 2 && (
+          {STEPS[step]?.key === 'documents' && (
             <div className="space-y-6">
               <div>
                 <label className={labelClass}>CV / Resume <span className="text-red-500">*</span></label>
@@ -438,7 +489,7 @@ export default function InstructorApply() {
           )}
 
           {/* Step 3 — Review */}
-          {step === 3 && (
+          {STEPS[step]?.key === 'review' && (
             <div className="space-y-5 text-sm">
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-2">Account</h3>
@@ -515,12 +566,14 @@ export default function InstructorApply() {
           </div>
         </div>
 
-        <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6">
-          Just want to learn?{' '}
-          <Link to="/register" className="text-brand-blue hover:underline font-medium">
-            Sign up as a student instead
-          </Link>
-        </p>
+        {!isAuthenticated && (
+          <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6">
+            Just want to learn?{' '}
+            <Link to="/register" className="text-brand-blue hover:underline font-medium">
+              Sign up as a student instead
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );
