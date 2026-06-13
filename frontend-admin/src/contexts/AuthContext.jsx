@@ -28,6 +28,23 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.getProfile();
       setUser(response.data.data.user);
       setIsAuthenticated(true);
+
+      // If we authenticated via cookie but don't yet have tokens in
+      // localStorage, mint a pair via /refresh so the Bearer-token CSRF
+      // bypass works on subsequent writes. Without this, anyone who was
+      // already logged in before the Bearer-token fix shipped stays stuck
+      // sending requests without an Authorization header.
+      if (!localStorage.getItem('accessToken')) {
+        try {
+          const ref = await authAPI.refreshToken();
+          const { accessToken, refreshToken } = ref.data?.data || {};
+          if (accessToken) localStorage.setItem('accessToken', accessToken);
+          if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        } catch (_) {
+          // Refresh failing here is OK — most writes will then surface a CSRF
+          // error that nudges the user to log in fresh.
+        }
+      }
     } catch (error) {
       logger.error('Auth check failed:', error);
       // If profile fetch fails, user is not authenticated

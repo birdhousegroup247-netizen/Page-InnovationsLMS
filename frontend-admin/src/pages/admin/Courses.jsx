@@ -42,7 +42,7 @@ import {
   Dropdown
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
-import { EmptyState } from '../../components/layout';
+import { EmptyState, PageHeader } from '../../components/layout';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 import emptyCourses from '../../assets/empty-courses.svg';
 import { cn } from '../../utils/cn';
@@ -726,62 +726,46 @@ export default function AdminCourses() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    Course Management
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Manage courses, approve submissions, and monitor performance
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleExportCSV}
-                  disabled={courses.length === 0}
-                  variant="ghost"
-                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-                <Button
-                  onClick={() => {
-                    setCreateForm({
-                      title: '',
-                      description: '',
-                      category_id: '',
-                      level: 'beginner',
-                      price: 0,
-                      duration_hours: '',
-                      thumbnail_url: ''
-                    });
-                    setFormErrors({});
-                    setIsCreateModalOpen(true);
-                  }}
-                  variant="ghost"
-                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Course
-                </Button>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={BookOpen}
+        title="Course Management"
+        subtitle="Manage courses, approve submissions, and monitor performance"
+        actions={
+          <>
+            <Button
+              onClick={handleExportCSV}
+              disabled={courses.length === 0}
+              variant="ghost"
+              size="sm"
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+            <Button
+              onClick={() => {
+                setCreateForm({
+                  title: '',
+                  description: '',
+                  category_id: '',
+                  level: 'beginner',
+                  price: 0,
+                  duration_hours: '',
+                  thumbnail_url: ''
+                });
+                setFormErrors({});
+                setIsCreateModalOpen(true);
+              }}
+              variant="ghost"
+              size="sm"
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Course
+            </Button>
+          </>
+        }
+      />
 
       <Container className="py-8">
         {/* Stats Cards */}
