@@ -619,7 +619,10 @@ const startServer = async () => {
         logger.warn(`  ⚠ content_progress column check failed: ${cpErr.message}`);
       }
 
-      // Create any missing tables for newer models (safe: no-op if table already exists)
+      // Create any missing tables for newer models (safe: no-op if table already exists).
+      // The pattern in this project is: lots of tables were added via MySQL-only
+      // migrations that never ran on Postgres — anything not in this list will
+      // silently 500 the moment a user touches the feature that needs it.
       const {
         ChatRoom, ChatRoomMember, Conversation, Message, MessageReaction, MutedChat,
         LessonNote, LessonQuestion, QuestionReply, CourseAnnouncement,
@@ -627,6 +630,15 @@ const startServer = async () => {
         Assignment, AssignmentSubmission, AdminAnnouncement,
         CouponCode, CouponCodeCourse, CouponRedemption, Lead,
         EmailVerification, InstructorApplication, CourseInstructor,
+        // Tables that were probably created in the original seed but are
+        // included here defensively in case any are missing on Railway
+        // Postgres — Model.sync({ force:false }) is a no-op if they exist.
+        Wishlist, Bundle, BundleCourse, Badge, UserBadge, Referral,
+        Notification, ActivityLog, LessonBookmark, ArticleBookmark, Certificate,
+        CourseReview, KnowledgeArticle,
+        PracticeTestAttempt, PracticeTestQuestion, PracticeTestAnswer,
+        AssignedTest, AssignedTestQuestion, TestAssignment,
+        AssignedTestAttempt, AssignedTestAnswer,
       } = require('./models');
 
       const newModels = [
@@ -637,6 +649,29 @@ const startServer = async () => {
         [InstructorApplication, 'instructor_applications'],
         // course_instructors holds the multi-instructor roster (lead + co + TA).
         [CourseInstructor, 'course_instructors'],
+        // Feature tables — each of these has caused or could cause "missing
+        // table" 500s if Railway Postgres never had the MySQL migration run.
+        [Wishlist, 'wishlist'],
+        [Bundle, 'bundles'],
+        [BundleCourse, 'bundle_courses'],
+        [Badge, 'badges'],
+        [UserBadge, 'user_badges'],
+        [Referral, 'referrals'],
+        [Notification, 'notifications'],
+        [ActivityLog, 'activity_logs'],
+        [LessonBookmark, 'lesson_bookmarks'],
+        [ArticleBookmark, 'article_bookmarks'],
+        [Certificate, 'certificates'],
+        [CourseReview, 'course_reviews'],
+        [KnowledgeArticle, 'knowledge_articles'],
+        [PracticeTestAttempt, 'practice_test_attempts'],
+        [PracticeTestQuestion, 'practice_test_questions'],
+        [PracticeTestAnswer, 'practice_test_answers'],
+        [AssignedTest, 'assigned_tests'],
+        [AssignedTestQuestion, 'assigned_test_questions'],
+        [TestAssignment, 'test_assignments'],
+        [AssignedTestAttempt, 'assigned_test_attempts'],
+        [AssignedTestAnswer, 'assigned_test_answers'],
         [ChatRoom, 'chat_rooms'],
         [ChatRoomMember, 'chat_room_members'],
         [Conversation, 'conversations'],
@@ -667,6 +702,51 @@ const startServer = async () => {
           logger.info(`  ✓ Ensured table exists: ${tableName}`);
         } catch (tableErr) {
           logger.warn(`  ⚠ Could not ensure ${tableName}: ${tableErr.message}`);
+        }
+      }
+
+      // Generic safety net — for a curated set of high-traffic tables, look at
+      // every column the Sequelize model declares and add any that are missing
+      // from the production DB. Sequelize SELECTs every attribute by default,
+      // so a single missing column makes the whole table unreadable. Skipped
+      // for tables with custom auto-migration above to avoid double work.
+      const safetyNetModels = [
+        require('./models/Enrollment'),
+        require('./models/Notification'),
+        require('./models/ActivityLog'),
+        require('./models/Certificate'),
+        require('./models/CourseReview'),
+        require('./models/Wishlist'),
+        require('./models/Referral'),
+        require('./models/AdminAnnouncement'),
+        require('./models/Assignment'),
+        require('./models/AssignmentSubmission'),
+        require('./models/CourseAnnouncement'),
+      ];
+      for (const Model of safetyNetModels) {
+        try {
+          const tableName = Model.tableName || Model.getTableName?.();
+          if (!tableName) continue;
+          const desc = await qi.describeTable(tableName).catch(() => null);
+          if (!desc) continue;
+          const attrs = Model.rawAttributes || {};
+          for (const [attrName, attrDef] of Object.entries(attrs)) {
+            // Skip virtuals and any column that doesn't have an actual type.
+            const fieldName = attrDef.field || attrName;
+            if (attrDef.type?.constructor?.name === 'VIRTUAL') continue;
+            if (desc[fieldName]) continue;
+            // Build the column spec from the model's declared attribute,
+            // dropping `references` so we don't error out on FK ordering issues.
+            const { references, ...colDef } = attrDef;
+            try {
+              await qi.addColumn(tableName, fieldName, colDef);
+              logger.info(`  ✓ Safety-net added column ${fieldName} to ${tableName}`);
+            } catch (colErr) {
+              logger.warn(`  ⚠ Safety-net could not add ${fieldName} to ${tableName}: ${colErr.message}`);
+            }
+          }
+        } catch (modelErr) {
+          logger.warn(`  ⚠ Safety-net error for model: ${modelErr.message}`);
         }
       }
 
