@@ -645,26 +645,30 @@ export default function Users() {
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
 
-        <div className="relative z-10 py-12 sm:py-16">
+        <div className="relative z-10 py-8 sm:py-12 lg:py-16">
           <Container>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <UsersIcon className="h-6 w-6 text-white" />
+            {/* On narrow viewports the title + buttons stack vertically, on
+                sm and up they sit on the same row. Buttons flex-wrap so they
+                never overflow the container. */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <UsersIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white animate-fade-in leading-tight">
                     User Management
                   </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
+                  <p className="text-sm sm:text-base lg:text-lg text-white/90 animate-fade-in mt-0.5 sm:mt-1">
                     Manage users, roles, and permissions
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
                 <Button
                   onClick={() => { setImportFile(null); setImportResult(null); setIsImportModalOpen(true); }}
                   variant="ghost"
+                  size="sm"
                   className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                   title="Import users from CSV"
                 >
@@ -675,6 +679,7 @@ export default function Users() {
                   onClick={handleExportCSV}
                   disabled={users.length === 0}
                   variant="ghost"
+                  size="sm"
                   className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                   title="Export users to CSV file"
                 >
@@ -695,6 +700,7 @@ export default function Users() {
                     setIsCreateModalOpen(true);
                   }}
                   variant="ghost"
+                  size="sm"
                   leftIcon={<Plus className="h-4 w-4" />}
                   className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
                   title="Create a new user account"
