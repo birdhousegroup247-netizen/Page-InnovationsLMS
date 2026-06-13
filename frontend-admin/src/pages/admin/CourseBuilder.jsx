@@ -43,6 +43,10 @@ export default function CourseBuilder() {
   const [isAddContentOpen, setIsAddContentOpen] = useState(false);
   const [isEditContentOpen, setIsEditContentOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Per-lesson preview — opens a modal showing the actual content (video embed,
+  // rendered article, or document link) without flipping the user into edit mode.
+  const [lessonPreview, setLessonPreview] = useState(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Selected items
@@ -591,17 +595,25 @@ export default function CourseBuilder() {
                         {module.contents.map((content, contentIdx) => (
                           <div
                             key={content.id}
-                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg"
+                            className="group flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors"
                           >
-                            <GripVertical className="w-4 h-4 text-gray-400" />
+                            <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
 
-                            {content.content_type === 'video' && <Video className="w-4 h-4 text-blue-500" />}
-                            {content.content_type === 'document' && <File className="w-4 h-4 text-green-500" />}
-                            {content.content_type === 'article' && <FileText className="w-4 h-4 text-purple-500" />}
+                            {content.content_type === 'video' && <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                            {content.content_type === 'document' && <File className="w-4 h-4 text-green-500 flex-shrink-0" />}
+                            {content.content_type === 'article' && <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />}
 
-                            <div className="flex-1">
+                            {/* Title block is clickable — opens the preview modal.
+                                Edit / Delete buttons stay separate so they don't
+                                fire when you just want to look at the content. */}
+                            <button
+                              type="button"
+                              onClick={() => setLessonPreview(content)}
+                              className="flex-1 text-left min-w-0"
+                              title="Preview lesson"
+                            >
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                   {content.title}
                                 </span>
                                 {content.is_preview && (
@@ -617,9 +629,17 @@ export default function CourseBuilder() {
                                   </>
                                 )}
                               </div>
-                            </div>
+                            </button>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setLessonPreview(content)}
+                                title="View Lesson"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1029,6 +1049,105 @@ export default function CourseBuilder() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Per-lesson preview — renders the actual content for whatever type
+          the lesson is. */}
+      <Modal
+        isOpen={!!lessonPreview}
+        onClose={() => setLessonPreview(null)}
+        title={lessonPreview?.title || 'Lesson Preview'}
+        size="lg"
+      >
+        {lessonPreview && (
+          <div className="space-y-4">
+            {/* Meta row */}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-text-dark-secondary">
+              <Badge variant="info" size="sm" className="capitalize">{lessonPreview.content_type}</Badge>
+              {lessonPreview.duration_minutes > 0 && <span>{lessonPreview.duration_minutes} min</span>}
+              {lessonPreview.is_preview && <Badge variant="success" size="sm">Free preview</Badge>}
+            </div>
+
+            {lessonPreview.description && (
+              <p className="text-sm text-gray-700 dark:text-gray-300">{lessonPreview.description}</p>
+            )}
+
+            {/* Video — embed if we can resolve a YouTube ID, otherwise link out */}
+            {lessonPreview.content_type === 'video' && (() => {
+              const id = lessonPreview.youtube_video_id
+                || (lessonPreview.youtube_url || '').match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1];
+              if (id) {
+                return (
+                  <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${id}`}
+                      title={lessonPreview.title}
+                      className="w-full h-full"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              }
+              return lessonPreview.youtube_url ? (
+                <a href={lessonPreview.youtube_url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg">
+                  <Play className="w-4 h-4" /> Open video
+                </a>
+              ) : (
+                <p className="text-sm text-gray-500">No video URL has been added to this lesson yet.</p>
+              );
+            })()}
+
+            {/* Document */}
+            {lessonPreview.content_type === 'document' && (
+              lessonPreview.document_url ? (
+                <div className="space-y-3">
+                  <a href={lessonPreview.document_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg">
+                    <File className="w-4 h-4" /> Open document ({lessonPreview.document_type || 'file'})
+                  </a>
+                  {/* Try to embed PDFs inline */}
+                  {(lessonPreview.document_type === 'pdf' || lessonPreview.document_url.toLowerCase().endsWith('.pdf')) && (
+                    <iframe
+                      src={lessonPreview.document_url}
+                      title={lessonPreview.title}
+                      className="w-full h-[60vh] border border-gray-200 dark:border-border-dark rounded-lg"
+                    />
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No document has been uploaded to this lesson yet.</p>
+              )
+            )}
+
+            {/* Article — render the HTML content */}
+            {lessonPreview.content_type === 'article' && (
+              lessonPreview.article_content ? (
+                <div
+                  className="prose prose-sm dark:prose-invert max-w-none border border-gray-200 dark:border-border-dark rounded-lg p-4 bg-white dark:bg-dark-800"
+                  dangerouslySetInnerHTML={{ __html: lessonPreview.article_content }}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">This article is empty.</p>
+              )
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setLessonPreview(null)}>Close</Button>
+              <Button onClick={() => {
+                const mod = modules.find((m) => m.contents?.some((c) => c.id === lessonPreview.id));
+                if (mod) {
+                  setLessonPreview(null);
+                  handleEditContent(mod, lessonPreview);
+                }
+              }}>
+                <Edit className="w-4 h-4 mr-2" /> Edit
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );
