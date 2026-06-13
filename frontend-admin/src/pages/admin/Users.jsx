@@ -466,19 +466,20 @@ export default function Users() {
     }
   };
 
-  // Unlock — bring a user out of suspended/preview back to active. Also clears
-  // any installment overdue lock. Use this to grant special preference.
+  // Unlock — bring a user out of suspended/preview back to active.
+  // Does NOT touch payment / installment records. The admin can grant access
+  // to a user who hasn't fully paid yet; their outstanding balance stays
+  // outstanding and shows up wherever payment status normally would.
   const handleUnlockUser = async (user) => {
     const confirmed = confirm(
-      `Unlock full access for ${user.full_name}?\n\nThis will set their account to "active" and clear any installment overdue lock.`
+      `Unlock full access for ${user.full_name}?\n\nTheir account becomes active. Any unpaid installment balance is untouched and still owed.`
     );
     if (!confirmed) return;
     try {
       setActionLoading(true);
       await adminUsersAPI.setRegistrationStatus(user.id, {
         registration_status: 'active',
-        clear_installment_lock: true,
-        note: `Admin override by ${currentUser?.email}`,
+        note: `Admin unlock by ${currentUser?.email}`,
       });
       showToast(`Access unlocked for ${user.full_name}`, 'success');
       fetchUsers();
