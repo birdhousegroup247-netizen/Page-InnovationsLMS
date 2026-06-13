@@ -258,18 +258,22 @@ export default function Categories() {
           </div>
         )}
 
-        {/* Actions Bar */}
-        <div className="flex items-center gap-2 mb-6">
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeInactive}
-              onChange={(e) => setIncludeInactive(e.target.checked)}
-              className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
-            />
-            Show inactive categories
-          </label>
-        </div>
+        {/* Actions Bar — only show the toggle if there are actually inactive
+            categories to hide; otherwise it looks broken (it does filter, but
+            with 0 inactive rows there's nothing to add/remove visually). */}
+        {stats.inactive > 0 && (
+          <div className="flex items-center gap-2 mb-6">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeInactive}
+                onChange={(e) => setIncludeInactive(e.target.checked)}
+                className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+              />
+              Show {stats.inactive} inactive {stats.inactive === 1 ? 'category' : 'categories'}
+            </label>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
