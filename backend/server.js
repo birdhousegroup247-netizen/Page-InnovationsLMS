@@ -562,19 +562,30 @@ const startServer = async () => {
         }
       }
 
-      // Add missing columns to module_contents if needed
+      // Add missing columns to module_contents if needed.
+      // Sequelize SELECTs every model attribute by default, so any column the
+      // model declares that's missing from the DB will 500 every read of this
+      // table — including GET /api/courses/:id/modules.
       const moduleContentsDesc = await qi.describeTable('module_contents').catch(() => null);
       if (moduleContentsDesc) {
-      const mcMissing = {
-        description: { type: Sequelize.TEXT, allowNull: true, defaultValue: null },
-        unlock_after_days: { type: Sequelize.INTEGER, allowNull: true, defaultValue: null },
-      };
-      for (const [colName, colDef] of Object.entries(mcMissing)) {
-        if (!moduleContentsDesc[colName]) {
-          await qi.addColumn('module_contents', colName, colDef);
-          logger.info(`  ✓ Added ${colName} column to module_contents`);
+        const mcMissing = {
+          description: { type: Sequelize.TEXT, allowNull: true, defaultValue: null },
+          unlock_after_days: { type: Sequelize.INTEGER, allowNull: true, defaultValue: null },
+          unlock_date: { type: Sequelize.DATEONLY, allowNull: true, defaultValue: null },
+          youtube_url: { type: Sequelize.STRING(500), allowNull: true, defaultValue: null },
+          youtube_video_id: { type: Sequelize.STRING(20), allowNull: true, defaultValue: null },
+          document_url: { type: Sequelize.STRING(500), allowNull: true, defaultValue: null },
+          document_type: { type: Sequelize.STRING(20), allowNull: true, defaultValue: null },
+          file_size_mb: { type: Sequelize.DECIMAL(10, 2), allowNull: true, defaultValue: null },
+          article_content: { type: Sequelize.TEXT, allowNull: true, defaultValue: null },
+          is_preview: { type: Sequelize.BOOLEAN, allowNull: true, defaultValue: false },
+        };
+        for (const [colName, colDef] of Object.entries(mcMissing)) {
+          if (!moduleContentsDesc[colName]) {
+            await qi.addColumn('module_contents', colName, colDef);
+            logger.info(`  ✓ Added ${colName} column to module_contents`);
+          }
         }
-      }
       } // end if(moduleContentsDesc)
 
       // Add updated_at to course_modules if missing
