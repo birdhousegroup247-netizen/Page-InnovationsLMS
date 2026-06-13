@@ -6,6 +6,36 @@ import { ToastProvider } from './components/ui';
 import AppLayout from './components/layout/AppLayout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
+/**
+ * lazyWithReload — auto-recover from stale code-split chunks after a deploy.
+ * When the user has an old bundle and navigates to a route whose new chunk
+ * hash no longer exists on the server, the dynamic import throws a
+ * "Failed to fetch dynamically imported module" / wrong MIME-type error.
+ * Instead of crashing into the ErrorBoundary, force one reload to fetch the
+ * new index.html with current hashes. sessionStorage guards against loops.
+ */
+const lazyWithReload = (factory) =>
+  lazy(() =>
+    factory().catch((err) => {
+      const msg = String(err && err.message);
+      const isChunkFailure =
+        /Failed to fetch dynamically imported module/i.test(msg) ||
+        /Loading chunk \d+ failed/i.test(msg) ||
+        /text\/html/i.test(msg) ||
+        /import\(\) failed/i.test(msg);
+      const tried = sessionStorage.getItem('chunkReloadAttempt');
+      if (isChunkFailure && !tried) {
+        sessionStorage.setItem('chunkReloadAttempt', '1');
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw err;
+    })
+  );
+if (typeof window !== 'undefined') {
+  setTimeout(() => sessionStorage.removeItem('chunkReloadAttempt'), 5000);
+}
+
 // Loading component for Suspense fallback
 const PageLoader = () => (
   <div className="min-h-screen bg-dark-900 flex items-center justify-center">
@@ -25,65 +55,65 @@ import RoleSelector from './pages/RoleSelector';
 import AuthCallback from './pages/AuthCallback';
 
 // Student pages - lazy loaded
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Courses = lazy(() => import('./pages/Courses'));
-const CourseDetail = lazy(() => import('./pages/CourseDetail'));
-const MyCourses = lazy(() => import('./pages/MyCourses'));
-const CoursePlayer = lazy(() => import('./pages/CoursePlayer'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
-const InstructorApply = lazy(() => import('./pages/InstructorApply'));
-const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
-const Notifications = lazy(() => import('./pages/Notifications'));
-const Bookmarks = lazy(() => import('./pages/Bookmarks'));
-const PracticeTests = lazy(() => import('./pages/PracticeTests'));
-const Certificates = lazy(() => import('./pages/Certificates'));
-const GeneratePracticeTest = lazy(() => import('./pages/GeneratePracticeTest'));
-const TakeTest = lazy(() => import('./pages/TakeTest'));
-const TestResults = lazy(() => import('./pages/TestResults'));
-const MyAssignedTests = lazy(() => import('./pages/MyAssignedTests'));
-const Messages = lazy(() => import('./pages/Messages'));
-const Leaderboard = lazy(() => import('./pages/Leaderboard'));
-const MyAssignments = lazy(() => import('./pages/MyAssignments'));
-const MyNotes = lazy(() => import('./pages/MyNotes'));
-const Wishlist = lazy(() => import('./pages/Wishlist'));
-const Bundles = lazy(() => import('./pages/Bundles'));
-const BundleDetail = lazy(() => import('./pages/BundleDetail'));
-const Referrals = lazy(() => import('./pages/Referrals'));
+const Dashboard = lazyWithReload(() => import('./pages/Dashboard'));
+const Courses = lazyWithReload(() => import('./pages/Courses'));
+const CourseDetail = lazyWithReload(() => import('./pages/CourseDetail'));
+const MyCourses = lazyWithReload(() => import('./pages/MyCourses'));
+const CoursePlayer = lazyWithReload(() => import('./pages/CoursePlayer'));
+const ForgotPassword = lazyWithReload(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyWithReload(() => import('./pages/ResetPassword'));
+const VerifyEmail = lazyWithReload(() => import('./pages/VerifyEmail'));
+const InstructorApply = lazyWithReload(() => import('./pages/InstructorApply'));
+const ProfileSettings = lazyWithReload(() => import('./pages/ProfileSettings'));
+const Notifications = lazyWithReload(() => import('./pages/Notifications'));
+const Bookmarks = lazyWithReload(() => import('./pages/Bookmarks'));
+const PracticeTests = lazyWithReload(() => import('./pages/PracticeTests'));
+const Certificates = lazyWithReload(() => import('./pages/Certificates'));
+const GeneratePracticeTest = lazyWithReload(() => import('./pages/GeneratePracticeTest'));
+const TakeTest = lazyWithReload(() => import('./pages/TakeTest'));
+const TestResults = lazyWithReload(() => import('./pages/TestResults'));
+const MyAssignedTests = lazyWithReload(() => import('./pages/MyAssignedTests'));
+const Messages = lazyWithReload(() => import('./pages/Messages'));
+const Leaderboard = lazyWithReload(() => import('./pages/Leaderboard'));
+const MyAssignments = lazyWithReload(() => import('./pages/MyAssignments'));
+const MyNotes = lazyWithReload(() => import('./pages/MyNotes'));
+const Wishlist = lazyWithReload(() => import('./pages/Wishlist'));
+const Bundles = lazyWithReload(() => import('./pages/Bundles'));
+const BundleDetail = lazyWithReload(() => import('./pages/BundleDetail'));
+const Referrals = lazyWithReload(() => import('./pages/Referrals'));
 
 // Instructor pages - lazy loaded
-const InstructorDashboard = lazy(() => import('./pages/InstructorDashboard'));
-const InstructorCourses = lazy(() => import('./pages/instructor/InstructorCourses'));
-const CreateCourse = lazy(() => import('./pages/instructor/CreateCourse'));
-const EditCourse = lazy(() => import('./pages/instructor/EditCourse'));
-const ManageModules = lazy(() => import('./pages/instructor/ManageModules'));
-const ManageLessons = lazy(() => import('./pages/instructor/ManageLessons'));
-const InstructorCourseBuilder = lazy(() => import('./pages/instructor/CourseBuilder'));
-const MyStudents = lazy(() => import('./pages/instructor/MyStudents'));
-const StudentProgress = lazy(() => import('./pages/instructor/StudentProgress'));
-const TestAnalytics = lazy(() => import('./pages/instructor/TestAnalytics'));
-const MyQuestions = lazy(() => import('./pages/instructor/MyQuestions'));
-const CourseAnalytics = lazy(() => import('./pages/instructor/CourseAnalytics'));
-const Announcements = lazy(() => import('./pages/instructor/Announcements'));
-const EnrollmentManagement = lazy(() => import('./pages/instructor/EnrollmentManagement'));
-const ManageTests = lazy(() => import('./pages/instructor/ManageTests'));
-const CreateTest = lazy(() => import('./pages/instructor/CreateTest'));
-const ContributeQuestions = lazy(() => import('./pages/instructor/ContributeQuestions'));
-const LiveSessions = lazy(() => import('./pages/instructor/LiveSessions'));
-const GradeAssignments = lazy(() => import('./pages/instructor/GradeAssignments'));
-const CourseAssignments = lazy(() => import('./pages/instructor/CourseAssignments'));
-const SearchResults = lazy(() => import('./pages/SearchResults'));
-const Checkout = lazy(() => import('./pages/Checkout'));
-const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
-const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
-const Billing = lazy(() => import('./pages/Billing'));
+const InstructorDashboard = lazyWithReload(() => import('./pages/InstructorDashboard'));
+const InstructorCourses = lazyWithReload(() => import('./pages/instructor/InstructorCourses'));
+const CreateCourse = lazyWithReload(() => import('./pages/instructor/CreateCourse'));
+const EditCourse = lazyWithReload(() => import('./pages/instructor/EditCourse'));
+const ManageModules = lazyWithReload(() => import('./pages/instructor/ManageModules'));
+const ManageLessons = lazyWithReload(() => import('./pages/instructor/ManageLessons'));
+const InstructorCourseBuilder = lazyWithReload(() => import('./pages/instructor/CourseBuilder'));
+const MyStudents = lazyWithReload(() => import('./pages/instructor/MyStudents'));
+const StudentProgress = lazyWithReload(() => import('./pages/instructor/StudentProgress'));
+const TestAnalytics = lazyWithReload(() => import('./pages/instructor/TestAnalytics'));
+const MyQuestions = lazyWithReload(() => import('./pages/instructor/MyQuestions'));
+const CourseAnalytics = lazyWithReload(() => import('./pages/instructor/CourseAnalytics'));
+const Announcements = lazyWithReload(() => import('./pages/instructor/Announcements'));
+const EnrollmentManagement = lazyWithReload(() => import('./pages/instructor/EnrollmentManagement'));
+const ManageTests = lazyWithReload(() => import('./pages/instructor/ManageTests'));
+const CreateTest = lazyWithReload(() => import('./pages/instructor/CreateTest'));
+const ContributeQuestions = lazyWithReload(() => import('./pages/instructor/ContributeQuestions'));
+const LiveSessions = lazyWithReload(() => import('./pages/instructor/LiveSessions'));
+const GradeAssignments = lazyWithReload(() => import('./pages/instructor/GradeAssignments'));
+const CourseAssignments = lazyWithReload(() => import('./pages/instructor/CourseAssignments'));
+const SearchResults = lazyWithReload(() => import('./pages/SearchResults'));
+const Checkout = lazyWithReload(() => import('./pages/Checkout'));
+const PaymentSuccess = lazyWithReload(() => import('./pages/PaymentSuccess'));
+const PaymentCancelled = lazyWithReload(() => import('./pages/PaymentCancelled'));
+const Billing = lazyWithReload(() => import('./pages/Billing'));
 
-const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'));
-const CertificateVerify = lazy(() => import('./pages/CertificateVerify'));
+const KnowledgeBase = lazyWithReload(() => import('./pages/KnowledgeBase'));
+const CertificateVerify = lazyWithReload(() => import('./pages/CertificateVerify'));
 
 // Admin pages
-const AdminChatModeration = lazy(() => import('./pages/admin/AdminChatModeration'));
+const AdminChatModeration = lazyWithReload(() => import('./pages/admin/AdminChatModeration'));
 
 // Protected Route Component with AppLayout
 function ProtectedRoute({ children }) {

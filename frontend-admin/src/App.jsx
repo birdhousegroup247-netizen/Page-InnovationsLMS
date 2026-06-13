@@ -6,6 +6,47 @@ import { ToastProvider } from './components/ui/Toast';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AppLayout from './components/layout/AppLayout';
 
+/**
+ * lazyWithReload — wraps React.lazy so that if a code-split chunk fails to
+ * load (almost always because the user has a stale bundle whose chunk hashes
+ * no longer exist on the server after a new deploy), we force one hard
+ * reload to fetch the new index.html with the current hashes. The
+ * sessionStorage flag stops it from looping forever if the failure is
+ * something else (e.g. real network down).
+ *
+ * Symptoms this catches:
+ * - "Failed to fetch dynamically imported module"
+ * - "Loading chunk N failed"
+ * - "Expected a JavaScript-or-Wasm module script but the server responded
+ *    with a MIME type of "text/html"
+ */
+const lazyWithReload = (factory) =>
+  lazy(() =>
+    factory().catch((err) => {
+      const msg = String(err && err.message);
+      const isChunkFailure =
+        /Failed to fetch dynamically imported module/i.test(msg) ||
+        /Loading chunk \d+ failed/i.test(msg) ||
+        /text\/html/i.test(msg) ||
+        /import\(\) failed/i.test(msg);
+      const tried = sessionStorage.getItem('chunkReloadAttempt');
+      if (isChunkFailure && !tried) {
+        sessionStorage.setItem('chunkReloadAttempt', '1');
+        window.location.reload();
+        // Return a never-resolving promise so React doesn't try to render
+        // anything before the reload kicks in.
+        return new Promise(() => {});
+      }
+      throw err;
+    })
+  );
+
+// Clear the reload-once flag after a successful render so a later real chunk
+// failure can still trigger one auto-reload.
+if (typeof window !== 'undefined') {
+  setTimeout(() => sessionStorage.removeItem('chunkReloadAttempt'), 5000);
+}
+
 // Loading component for Suspense fallback
 const PageLoader = () => (
   <div className="min-h-screen bg-dark-900 flex items-center justify-center">
@@ -20,27 +61,27 @@ const PageLoader = () => (
 import Login from './pages/Login';
 
 // Admin pages - lazy loaded for better performance
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const Users = lazy(() => import('./pages/admin/Users'));
-const AdminCourses = lazy(() => import('./pages/admin/Courses'));
-const CourseBuilder = lazy(() => import('./pages/admin/CourseBuilder'));
-const Categories = lazy(() => import('./pages/admin/Categories'));
-const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'));
-const AdminActivity = lazy(() => import('./pages/admin/Activity'));
-const InstructorApplications = lazy(() => import('./pages/admin/InstructorApplications'));
-const QuestionBank = lazy(() => import('./pages/admin/QuestionBank'));
-const Tests = lazy(() => import('./pages/admin/Tests'));
-const TestBuilder = lazy(() => import('./pages/admin/TestBuilder'));
-const TestResults = lazy(() => import('./pages/admin/TestResults'));
-const ChatModeration = lazy(() => import('./pages/admin/ChatModeration'));
-const Coupons = lazy(() => import('./pages/admin/Coupons'));
-const Leads = lazy(() => import('./pages/admin/Leads'));
-const Bundles = lazy(() => import('./pages/admin/Bundles'));
-const Enrollments = lazy(() => import('./pages/admin/Enrollments'));
-const Payments = lazy(() => import('./pages/admin/Payments'));
-const Announcements = lazy(() => import('./pages/admin/Announcements'));
-const Referrals = lazy(() => import('./pages/admin/Referrals'));
-const Badges = lazy(() => import('./pages/admin/Badges'));
+const AdminDashboard = lazyWithReload(() => import('./pages/admin/AdminDashboard'));
+const Users = lazyWithReload(() => import('./pages/admin/Users'));
+const AdminCourses = lazyWithReload(() => import('./pages/admin/Courses'));
+const CourseBuilder = lazyWithReload(() => import('./pages/admin/CourseBuilder'));
+const Categories = lazyWithReload(() => import('./pages/admin/Categories'));
+const AdminAnalytics = lazyWithReload(() => import('./pages/admin/Analytics'));
+const AdminActivity = lazyWithReload(() => import('./pages/admin/Activity'));
+const InstructorApplications = lazyWithReload(() => import('./pages/admin/InstructorApplications'));
+const QuestionBank = lazyWithReload(() => import('./pages/admin/QuestionBank'));
+const Tests = lazyWithReload(() => import('./pages/admin/Tests'));
+const TestBuilder = lazyWithReload(() => import('./pages/admin/TestBuilder'));
+const TestResults = lazyWithReload(() => import('./pages/admin/TestResults'));
+const ChatModeration = lazyWithReload(() => import('./pages/admin/ChatModeration'));
+const Coupons = lazyWithReload(() => import('./pages/admin/Coupons'));
+const Leads = lazyWithReload(() => import('./pages/admin/Leads'));
+const Bundles = lazyWithReload(() => import('./pages/admin/Bundles'));
+const Enrollments = lazyWithReload(() => import('./pages/admin/Enrollments'));
+const Payments = lazyWithReload(() => import('./pages/admin/Payments'));
+const Announcements = lazyWithReload(() => import('./pages/admin/Announcements'));
+const Referrals = lazyWithReload(() => import('./pages/admin/Referrals'));
+const Badges = lazyWithReload(() => import('./pages/admin/Badges'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
