@@ -9,6 +9,7 @@ import {
   Filter,
   MoreVertical,
   Shield,
+  Lock,
   UserCheck,
   UserX,
   Edit,
@@ -465,10 +466,11 @@ export default function Users() {
     }
   };
 
-  // Unlock / override registration_status for special preference
+  // Unlock — bring a user out of suspended/preview back to active. Also clears
+  // any installment overdue lock. Use this to grant special preference.
   const handleUnlockUser = async (user) => {
     const confirmed = confirm(
-      `Unlock full access for ${user.full_name}?\n\nThis will set their account to "active" and clear any installment overdue lock. Use this to grant special preference.`
+      `Unlock full access for ${user.full_name}?\n\nThis will set their account to "active" and clear any installment overdue lock.`
     );
     if (!confirmed) return;
     try {
@@ -482,6 +484,29 @@ export default function Users() {
       fetchUsers();
     } catch (error) {
       showToast(error.response?.data?.message || 'Failed to unlock user', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Lock — flip an active user to suspended. They keep the login but can't
+  // open course content. This is the manual counterpart to the installment
+  // auto-suspend so admins can lock accounts for any reason.
+  const handleLockUser = async (user) => {
+    const confirmed = confirm(
+      `Lock access for ${user.full_name}?\n\nThey'll still be able to log in but won't be able to open course content until you unlock them.`
+    );
+    if (!confirmed) return;
+    try {
+      setActionLoading(true);
+      await adminUsersAPI.setRegistrationStatus(user.id, {
+        registration_status: 'suspended',
+        note: `Admin lock by ${currentUser?.email}`,
+      });
+      showToast(`Access locked for ${user.full_name}`, 'success');
+      fetchUsers();
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Failed to lock user', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -1054,16 +1079,33 @@ export default function Users() {
                                       </Dropdown.Item>
                                     )}
 
-                                    <Dropdown.Item
-                                      icon={ShieldCheck}
-                                      onClick={() => {
-                                        setIsOpen(false);
-                                        handleUnlockUser(user);
-                                      }}
-                                      disabled={actionLoading}
-                                    >
-                                      Unlock Access
-                                    </Dropdown.Item>
+                                    {/* Lock / Unlock — show whichever flips the
+                                        user's current state. Locked = suspended
+                                        OR preview (can't open content). Active
+                                        users get Lock; everyone else gets Unlock. */}
+                                    {user.registration_status === 'active' ? (
+                                      <Dropdown.Item
+                                        icon={Lock}
+                                        onClick={() => {
+                                          setIsOpen(false);
+                                          handleLockUser(user);
+                                        }}
+                                        disabled={actionLoading}
+                                      >
+                                        Lock Access
+                                      </Dropdown.Item>
+                                    ) : (
+                                      <Dropdown.Item
+                                        icon={ShieldCheck}
+                                        onClick={() => {
+                                          setIsOpen(false);
+                                          handleUnlockUser(user);
+                                        }}
+                                        disabled={actionLoading}
+                                      >
+                                        Unlock Access
+                                      </Dropdown.Item>
+                                    )}
 
                                     {canBeAssignedAsInstructor(user) && (
                                       <Dropdown.Item
