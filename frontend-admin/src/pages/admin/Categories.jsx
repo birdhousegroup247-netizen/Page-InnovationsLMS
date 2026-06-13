@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { adminCategoriesAPI } from '../../lib/api';
 import {
@@ -22,6 +22,7 @@ import emptyCategories from '../../assets/empty-categories.svg';
 
 export default function Categories() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, main_categories: 0, subcategories: 0 });
   const [loading, setLoading] = useState(true);
@@ -160,7 +161,7 @@ export default function Categories() {
       <PageHeader
         icon={FolderTree}
         title="Categories"
-        subtitle="Manage course categories and subcategories"
+        subtitle="Manage course categories"
         actions={
           <Button
             onClick={() => handleOpenModal('create')}
@@ -176,7 +177,7 @@ export default function Categories() {
 
       <Container className="py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -213,29 +214,6 @@ export default function Categories() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Main</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.main_categories}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                <Folder className="w-6 h-6 text-purple-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">Subcategories</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.subcategories}</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-orange-500" />
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Alerts */}
@@ -307,15 +285,19 @@ export default function Categories() {
         {/* Categories List */}
         {!loading && categories.length > 0 && (
           <div className="space-y-4">
-            {mainCategories.map((category) => {
-              const subcategories = getSubcategories(category.id);
-
+            {categories.map((category) => {
               return (
                 <div key={category.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl overflow-hidden">
-                  {/* Main Category */}
+                  {/* Click the body to view this category's courses; Edit /
+                      Delete stay separate so they don't fire on row clicks. */}
                   <div className="p-6">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/courses?category_id=${category.id}`)}
+                        className="flex-1 text-left group"
+                        title="View courses in this category"
+                      >
                         <div className="flex items-center gap-3 mb-2">
                           {category.icon && (
                             <div
@@ -326,7 +308,7 @@ export default function Categories() {
                             </div>
                           )}
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-brand-blue transition-colors">
                               {category.name}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
@@ -345,9 +327,9 @@ export default function Categories() {
                             {category.description}
                           </p>
                         )}
-                      </div>
+                      </button>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -368,45 +350,6 @@ export default function Categories() {
                     </div>
                   </div>
 
-                  {/* Subcategories */}
-                  {subcategories.length > 0 && (
-                    <div className="border-t border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-900/30 p-4">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-400 mb-3">
-                        Subcategories ({subcategories.length})
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {subcategories.map((subcat) => (
-                          <div
-                            key={subcat.id}
-                            className="flex items-center justify-between p-3 bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-lg"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {subcat.name}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {subcat.course_count || 0} courses
-                              </p>
-                            </div>
-                            <div className="flex gap-1 ml-2">
-                              <button
-                                onClick={() => handleOpenModal('edit', subcat)}
-                                className="p-1 text-gray-500 hover:text-brand-blue transition-colors"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(subcat)}
-                                className="p-1 text-gray-500 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -433,25 +376,6 @@ export default function Categories() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-border-dark rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white"
               placeholder="e.g., Web Development"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-              Parent Category (Optional)
-            </label>
-            <select
-              value={formData.parent_category_id || ''}
-              onChange={(e) => setFormData({ ...formData, parent_category_id: e.target.value ? parseInt(e.target.value) : null })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-border-dark rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white"
-            >
-              <option value="">None (Main Category)</option>
-              {mainCategories
-                .filter(cat => !selectedCategory || cat.id !== selectedCategory.id)
-                .map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))
-              }
-            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

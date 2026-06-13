@@ -52,6 +52,7 @@ export default function AdminCourses() {
   const { user: currentUser } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,8 @@ export default function AdminCourses() {
   const [filters, setFilters] = useState({
     search: '',
     status: '',
-    category_id: '',
+    // Seed from ?category_id=X so Categories → click row lands here filtered.
+    category_id: searchParams.get('category_id') || '',
     level: '',
     dateFrom: '',
     dateTo: '',
