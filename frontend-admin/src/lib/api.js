@@ -13,24 +13,34 @@ const api = axios.create({
   withCredentials: true, // Send cookies with requests
 });
 
-// Request interceptor to add CSRF token from cookie
+// Request interceptor — attach a Bearer token (so CSRF auto-exempts the request
+// on the backend) and the CSRF cookie value as a fallback for cookie-auth callers.
+//
+// Why this matters: the admin app is on a different *.up.railway.app subdomain
+// from the API. Cross-site cookies (even with sameSite=none) get stripped by
+// modern browsers in many situations (incognito, strict tracking prevention,
+// Safari, etc.). When that happens the csrf-token cookie isn't even readable —
+// hence "Invalid or missing CSRF token" on every write. Sending a Bearer token
+// sidesteps the issue entirely, because the backend CSRF check skips any
+// request that has an Authorization header.
 api.interceptors.request.use(
   (config) => {
-    // Get CSRF token from cookie and add to header
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     const csrfToken = document.cookie
       .split('; ')
-      .find(row => row.startsWith('csrf-token='))
+      .find((row) => row.startsWith('csrf-token='))
       ?.split('=')[1];
-
     if (csrfToken) {
       config.headers['X-CSRF-Token'] = csrfToken;
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor to handle errors globally
@@ -56,17 +66,26 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Attempt to refresh access token (refreshToken is in httpOnly cookie)
+        const refreshToken = localStorage.getItem('refreshToken');
+        // Pass refresh token explicitly when we have it — cookie fallback for
+        // cases where the browser kept it (same-site dev).
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
-          {}, // No body needed - refreshToken comes from cookie
-          { withCredentials: true } // Send cookies
+          refreshToken ? { refreshToken } : {},
+          { withCredentials: true }
         );
 
-        // Retry original request (new accessToken is now in cookie)
+        const { accessToken: newAccess, refreshToken: newRefresh } = response.data?.data || {};
+        if (newAccess) localStorage.setItem('accessToken', newAccess);
+        if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
+
+        if (newAccess) {
+          originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        }
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

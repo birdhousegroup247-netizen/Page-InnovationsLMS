@@ -43,6 +43,7 @@ import {
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
 import { EmptyState } from '../../components/layout';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 import emptyCourses from '../../assets/empty-courses.svg';
 import { cn } from '../../utils/cn';
 import { validateCourseForm, formatErrors } from '../../utils/validation';
@@ -1577,15 +1578,24 @@ export default function AdminCourses() {
             ]}
           />
 
-          <Input
-            label="Thumbnail URL (Optional)"
-            name="thumbnail_url"
-            type="url"
-            value={createForm.thumbnail_url}
-            onChange={handleCreateFormChange}
-            placeholder="https://example.com/image.jpg"
-            error={formErrors.thumbnail_url}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Course Thumbnail
+            </label>
+            <CloudinaryUpload
+              acceptedTypes="image"
+              maxSizeMB={5}
+              currentFile={createForm.thumbnail_url}
+              folder="tekypro/course-thumbnails"
+              onUploadSuccess={(url) =>
+                setCreateForm((prev) => ({ ...prev, thumbnail_url: url || '' }))
+              }
+              onUploadError={(msg) => showToast(msg, 'error')}
+            />
+            {formErrors.thumbnail_url && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.thumbnail_url}</p>
+            )}
+          </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-border-dark">
             <Button
@@ -1717,15 +1727,24 @@ export default function AdminCourses() {
               ]}
             />
 
-            <Input
-              label="Thumbnail URL"
-              name="thumbnail_url"
-              type="url"
-              value={editForm.thumbnail_url}
-              onChange={handleEditFormChange}
-              placeholder="https://example.com/image.jpg"
-              error={formErrors.thumbnail_url}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Course Thumbnail
+              </label>
+              <CloudinaryUpload
+                acceptedTypes="image"
+                maxSizeMB={5}
+                currentFile={editForm.thumbnail_url}
+                folder="tekypro/course-thumbnails"
+                onUploadSuccess={(url) =>
+                  setEditForm((prev) => ({ ...prev, thumbnail_url: url || '' }))
+                }
+                onUploadError={(msg) => showToast(msg, 'error')}
+              />
+              {formErrors.thumbnail_url && (
+                <p className="mt-1 text-xs text-red-600">{formErrors.thumbnail_url}</p>
+              )}
+            </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-border-dark">
               <Button

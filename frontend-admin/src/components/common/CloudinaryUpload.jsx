@@ -95,16 +95,18 @@ export default function CloudinaryUpload({
         formData.append('folder', folder);
       }
 
-      // Upload to backend API (admin uses cookie-based auth)
+      // Bearer token from localStorage — same pattern as api.js. The backend
+      // CSRF check exempts requests with an Authorization header, which is how
+      // we sidestep the cross-subdomain cookie problem.
+      const accessToken = localStorage.getItem('accessToken');
       const csrfToken = document.cookie
         .split('; ')
-        .find(row => row.startsWith('csrf-token='))
+        .find((row) => row.startsWith('csrf-token='))
         ?.split('=')[1];
 
       const headers = {};
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      }
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+      if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
 
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}${uploadEndpoint}`,

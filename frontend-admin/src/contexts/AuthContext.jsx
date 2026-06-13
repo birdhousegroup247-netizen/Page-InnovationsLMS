@@ -41,16 +41,25 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login({ email, password });
-      const { user } = response.data.data;
+      const { user, accessToken, refreshToken } = response.data.data;
 
-      // Tokens are now in httpOnly cookies (set by backend)
-      // No need to store in localStorage
+      // Store tokens in localStorage so the api.js Bearer-token interceptor
+      // can attach them. This is what makes CSRF auto-bypass work across
+      // subdomains (admin app vs API on different *.up.railway.app hosts).
+      if (accessToken) localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
       setUser(user);
       setIsAuthenticated(true);
 
       return { success: true, user };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const status = error.response?.status;
+      const data = error.response?.data;
+      if (status === 403 && data?.code === 'EMAIL_NOT_VERIFIED') {
+        return { success: false, emailNotVerified: true, email: data.email, error: data.message };
+      }
+      const message = data?.message || 'Login failed';
       return { success: false, error: message };
     }
   };
@@ -58,12 +67,15 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      const { user } = response.data.data;
+      const { user, accessToken, refreshToken } = response.data.data || {};
 
-      // Tokens are now in httpOnly cookies (set by backend)
-      // No need to store in localStorage
-      setUser(user);
-      setIsAuthenticated(true);
+      if (accessToken) localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+      if (user) {
+        setUser(user);
+        setIsAuthenticated(true);
+      }
 
       return { success: true, user };
     } catch (error) {
@@ -78,10 +90,18 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       logger.error('Logout error:', error);
     } finally {
-      // Cookies are cleared by backend
-      // Just clear local state
+      // Clear every piece of auth state — without this, stale tokens in
+      // localStorage keep the user logged in after they click logout.
+      try { localStorage.removeItem('accessToken'); } catch (_) {}
+      try { localStorage.removeItem('refreshToken'); } catch (_) {}
+      try { sessionStorage.clear(); } catch (_) {}
+      try {
+        document.cookie = 'csrf-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      } catch (_) {}
+
       setUser(null);
       setIsAuthenticated(false);
+      window.location.assign('/login');
     }
   };
 
