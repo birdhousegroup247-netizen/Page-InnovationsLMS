@@ -16,7 +16,7 @@ import { adminQuestionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { Button, Input, Select, Badge, Spinner, Modal, Dropdown, Table } from '../../components/ui';
 import Container from '../../components/layout/Container';
 import StatsCard from '../../components/ui/StatsCard';
-import { EmptyState } from '../../components/layout';
+import { EmptyState, PageHeader } from '../../components/layout';
 import emptyQuestions from '../../assets/empty-questions.svg';
 import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
@@ -251,48 +251,33 @@ export default function QuestionBank() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <HelpCircle className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    Question Bank
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Browse and manage questions by category
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setShowBulkImportModal(true)}
-                  variant="ghost"
-                  leftIcon={<Upload className="h-4 w-4" />}
-                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
-                >
-                  Import CSV
-                </Button>
-                <Button
-                  onClick={() => handleAddQuestion()}
-                  variant="ghost"
-                  leftIcon={<Plus className="h-4 w-4" />}
-                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
-                >
-                  Add Question
-                </Button>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={HelpCircle}
+        title="Question Bank"
+        subtitle="Browse and manage questions by category"
+        actions={
+          <>
+            <Button
+              onClick={() => setShowBulkImportModal(true)}
+              variant="ghost"
+              size="sm"
+              leftIcon={<Upload className="h-4 w-4" />}
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              Import CSV
+            </Button>
+            <Button
+              onClick={() => handleAddQuestion()}
+              variant="ghost"
+              size="sm"
+              leftIcon={<Plus className="h-4 w-4" />}
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              Add Question
+            </Button>
+          </>
+        }
+      />
 
       <Container className="py-8">
         {/* Stats Cards */}

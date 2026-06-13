@@ -15,7 +15,7 @@ import {
   Folder,
   FileText,
 } from 'lucide-react';
-import { Container, EmptyState } from '../../components/layout';
+import { Container, EmptyState, PageHeader } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import emptyCategories from '../../assets/empty-categories.svg';
@@ -157,39 +157,22 @@ export default function Categories() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <FolderTree className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    Categories
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Manage course categories and subcategories
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => handleOpenModal('create')}
-                variant="ghost"
-                leftIcon={<Plus className="h-4 w-4" />}
-                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
-              >
-                Add Category
-              </Button>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={FolderTree}
+        title="Categories"
+        subtitle="Manage course categories and subcategories"
+        actions={
+          <Button
+            onClick={() => handleOpenModal('create')}
+            variant="ghost"
+            size="sm"
+            leftIcon={<Plus className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            Add Category
+          </Button>
+        }
+      />
 
       <Container className="py-8">
         {/* Stats Cards */}

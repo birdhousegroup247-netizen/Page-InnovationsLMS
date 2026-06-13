@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { adminStatsAPI, adminInstructorAPI } from '../../lib/api';
-import { Container } from '../../components/layout';
+import { Container, PageHeader } from '../../components/layout';
 import { Button, Spinner } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -176,30 +176,11 @@ export default function AdminDashboard() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  Admin Dashboard
-                </h1>
-                <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  Welcome back, {user?.full_name?.split(' ')[0]}! Here's your platform overview
-                </p>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={Shield}
+        title="Admin Dashboard"
+        subtitle={`${(user?.login_count ?? 0) <= 1 ? 'Welcome' : 'Welcome back'}, ${user?.full_name?.split(' ')[0] || ''}! Here's your platform overview`}
+      />
 
       <Container className="py-8">
         {/* Error State */}

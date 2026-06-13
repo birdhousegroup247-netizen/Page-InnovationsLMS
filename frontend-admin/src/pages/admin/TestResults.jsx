@@ -184,62 +184,52 @@ export default function TestResults() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
+      <PageHeader
+        icon={BarChart3}
+        title={test.title}
+        subtitle={test.description || 'Test Results and Analytics'}
+        actions={
+          <>
             <Button
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() => navigate('/tests')}
               leftIcon={<ArrowLeft className="h-4 w-4" />}
-              className="mb-4 bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20"
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
             >
               Back to Tests
             </Button>
-
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    {test.title}
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    {test.description || 'Test Results and Analytics'}
-                  </p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-white/80" />
-                      <span className="text-sm text-white/90">{test.assigned_students_count} Students</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-white/80" />
-                      <span className="text-sm text-white/90">{test.question_count} Questions</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-white/80" />
-                      <span className="text-sm text-white/90">{test.time_limit_minutes} Minutes</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleExportResults}
-                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Results
-                </Button>
-              </div>
+            <Button
+              onClick={handleExportResults}
+              variant="ghost"
+              size="sm"
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Results
+            </Button>
+          </>
+        }
+      />
+      {/* Test meta — sits just below the hero on its own row so it can wrap
+          on narrow screens instead of squeezing the title block. */}
+      <div className="bg-gradient-to-br from-brand-blue/90 via-brand-purple/90 to-brand-red/90 border-t border-white/10">
+        <Container>
+          <div className="flex flex-wrap gap-x-4 sm:gap-x-6 gap-y-2 py-3 text-sm text-white/90">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-white/80" />
+              <span>{test.assigned_students_count} Students</span>
             </div>
-          </Container>
-        </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-white/80" />
+              <span>{test.question_count} Questions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-white/80" />
+              <span>{test.time_limit_minutes} Minutes</span>
+            </div>
+          </div>
+        </Container>
       </div>
 
       <Container className="py-8">

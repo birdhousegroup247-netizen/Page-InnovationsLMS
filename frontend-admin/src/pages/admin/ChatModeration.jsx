@@ -9,7 +9,7 @@ import {
   StatsCard,
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
-import { Container } from '../../components/layout';
+import { Container, PageHeader } from '../../components/layout';
 import { cn } from '../../utils/cn';
 import {
   MessageSquare, Users, Trash2, ChevronLeft, RefreshCw,
@@ -631,28 +631,11 @@ export default function ChatModeration() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <ShieldCheck className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  Chat Moderation
-                </h1>
-                <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  Monitor rooms · Moderate messages · Support users
-                </p>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={ShieldCheck}
+        title="Chat Moderation"
+        subtitle="Monitor rooms · Moderate messages · Support users"
+      />
 
       <Container className="py-8">
         {/* Tabs */}

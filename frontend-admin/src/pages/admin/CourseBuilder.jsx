@@ -20,7 +20,7 @@ import {
   ArrowDown,
   Play
 } from 'lucide-react';
-import { Container } from '../../components/layout';
+import { Container, PageHeader } from '../../components/layout';
 import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
@@ -405,31 +405,39 @@ export default function CourseBuilder() {
 
   return (
     <>
-      {/* Header */}
+      {/* Header — Course Builder has a unique layout (Back + title + Preview +
+          progress bar) so it doesn't use the shared PageHeader, but the
+          responsive rules mirror it. */}
       <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="relative z-10 py-8">
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
+        <div className="relative z-10 py-6 sm:py-8">
           <Container>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-4">
+            {/* Stacks vertically on narrow screens so the Preview button never
+                gets clipped off the right edge. */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={() => navigate('/admin/courses')}
-                  className="text-white hover:bg-white/20"
+                  className="!text-white hover:!bg-white/20 flex-shrink-0"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <div>
-                  <h1 className="text-3xl font-bold text-white">
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight truncate">
                     {course.title}
                   </h1>
-                  <p className="text-white/90 mt-1">Course Builder</p>
+                  <p className="text-sm sm:text-base text-white/90 mt-0.5 sm:mt-1">Course Builder</p>
                 </div>
               </div>
               <Button
                 onClick={() => setIsPreviewOpen(true)}
                 variant="ghost"
-                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+                size="sm"
+                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none self-start sm:self-auto flex-shrink-0"
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Preview
@@ -437,7 +445,7 @@ export default function CourseBuilder() {
             </div>
 
             {/* Progress Bar */}
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-white font-medium">Course Progress</span>
                 <span className="text-sm text-white">{Math.round(completeness)}% Complete</span>
@@ -448,11 +456,11 @@ export default function CourseBuilder() {
                   style={{ width: `${completeness}%` }}
                 />
               </div>
-              <div className="flex gap-6 mt-3 text-sm text-white">
+              <div className="flex flex-wrap gap-x-3 sm:gap-x-6 gap-y-1 mt-3 text-xs sm:text-sm text-white">
                 <span>{stats.modules} modules</span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>{stats.lessons} lessons</span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>{stats.duration} total</span>
               </div>
             </div>

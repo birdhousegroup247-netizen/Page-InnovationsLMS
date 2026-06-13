@@ -15,7 +15,7 @@ import {
   ArrowLeft,
   Shield,
 } from 'lucide-react';
-import { Container, EmptyState } from '../../components/layout';
+import { Container, EmptyState, PageHeader } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal, Input } from '../../components/ui';
 import emptyApplications from '../../assets/empty-applications.svg';
 import { cn } from '../../utils/cn';
@@ -112,30 +112,11 @@ export default function InstructorApplications() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  Instructor Applications
-                </h1>
-                <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  Manage instructor verification and approval
-                </p>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={Shield}
+        title="Instructor Applications"
+        subtitle="Manage instructor verification and approval"
+      />
 
       <Container className="py-8">
         {/* Stats Cards */}

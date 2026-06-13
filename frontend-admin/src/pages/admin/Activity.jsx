@@ -19,7 +19,7 @@ import {
   Clock,
   User,
 } from 'lucide-react';
-import { Container } from '../../components/layout';
+import { Container, PageHeader } from '../../components/layout';
 import {
   Button,
   Input,
@@ -238,41 +238,22 @@ export default function Activity() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <ActivityIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    Activity Logs
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Monitor platform activity and user actions in real-time
-                  </p>
-                </div>
-              </div>
-              <div className="hidden md:block">
-                <Button
-                  variant="ghost"
-                  onClick={handleExport}
-                  className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Logs
-                </Button>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={ActivityIcon}
+        title="Activity Logs"
+        subtitle="Monitor platform activity and user actions in real-time"
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExport}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export Logs
+          </Button>
+        }
+      />
 
       <Container className="py-8">
         {/* Filters */}

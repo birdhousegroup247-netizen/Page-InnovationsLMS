@@ -15,7 +15,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { Container } from '../../components/layout';
+import { Container, PageHeader } from '../../components/layout';
 import { Spinner, Select } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import {
@@ -175,44 +175,24 @@ export default function AdminAnalytics() {
 
   return (
     <>
-      {/* Page Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    Platform Analytics
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Comprehensive insights and performance metrics
-                  </p>
-                </div>
-              </div>
-              <div className="hidden md:block">
-                <Select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  options={[
-                    { value: '7', label: 'Last 7 days' },
-                    { value: '30', label: 'Last 30 days' },
-                    { value: '90', label: 'Last 90 days' },
-                    { value: '365', label: 'Last year' },
-                  ]}
-                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white min-w-[150px]"
-                />
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={BarChart3}
+        title="Platform Analytics"
+        subtitle="Comprehensive insights and performance metrics"
+        actions={
+          <Select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            options={[
+              { value: '7', label: 'Last 7 days' },
+              { value: '30', label: 'Last 30 days' },
+              { value: '90', label: 'Last 90 days' },
+              { value: '365', label: 'Last year' },
+            ]}
+            className="bg-white/10 backdrop-blur-sm border-white/20 text-white min-w-[150px]"
+          />
+        }
+      />
 
       <Container className="py-8">
         {/* Error State */}

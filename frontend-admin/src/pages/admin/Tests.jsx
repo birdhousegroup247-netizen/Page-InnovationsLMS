@@ -202,39 +202,22 @@ export default function Tests() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                    Tests Management
-                  </h1>
-                  <p className="text-lg text-white/90 animate-fade-in mt-1">
-                    Create, manage, and track assigned tests for your courses
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleCreateTest}
-                variant="ghost"
-                leftIcon={<Plus className="h-4 w-4" />}
-                className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none animate-scale-in"
-              >
-                Create Test
-              </Button>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={FileText}
+        title="Tests Management"
+        subtitle="Create, manage, and track assigned tests for your courses"
+        actions={
+          <Button
+            onClick={handleCreateTest}
+            variant="ghost"
+            size="sm"
+            leftIcon={<Plus className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            Create Test
+          </Button>
+        }
+      />
 
       <Container className="py-8">
 

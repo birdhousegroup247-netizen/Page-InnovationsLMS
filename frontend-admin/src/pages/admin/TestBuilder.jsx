@@ -408,38 +408,22 @@ export default function TestBuilder() {
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
-
-        <div className="relative z-10 py-12 sm:py-16">
-          <Container>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/tests')}
-              leftIcon={<ArrowLeft className="h-4 w-4" />}
-              className="mb-4 !bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
-            >
-              Back to Tests
-            </Button>
-
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  {isEditing ? 'Edit Test' : 'Create New Test'}
-                </h1>
-                <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  {isEditing ? 'Update test configuration and settings' : 'Build and configure your test step by step'}
-                </p>
-              </div>
-            </div>
-          </Container>
-        </div>
-      </div>
+      <PageHeader
+        icon={FileText}
+        title={isEditing ? 'Edit Test' : 'Create New Test'}
+        subtitle={isEditing ? 'Update test configuration and settings' : 'Build and configure your test step by step'}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/tests')}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            Back to Tests
+          </Button>
+        }
+      />
 
       <Container className="py-8">
 
