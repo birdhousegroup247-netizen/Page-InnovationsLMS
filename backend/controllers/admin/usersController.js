@@ -1,10 +1,11 @@
-const { User, Course, Enrollment, Certificate, Payment } = require('../../models');
+const { User, Course, Enrollment, Certificate, Payment, EmailVerification, PasswordReset } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { getPaginationParams, getPaginationMeta } = require('../../utils/pagination');
 const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
+const emailService = require('../../services/email/emailService');
 
 class UsersController {
   // Get all users with filters
@@ -255,6 +256,59 @@ class UsersController {
           total: students + instructors + admins + superAdmins,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Admin trigger — re-send the verification email for a user.
+   * POST /api/admin/users/:userId/send-verification-email
+   *
+   * Issues a fresh EmailVerification token + 6-digit code and sends the
+   * branded verification email. No-ops cleanly if the user is already
+   * verified.
+   */
+  static async sendVerificationEmail(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const user = await User.findByPk(userId);
+      if (!user) throw new NotFoundError('User not found');
+      if (user.email_verified) {
+        return ApiResponse.success(res, { already_verified: true }, 'User is already verified.');
+      }
+      const { token, code } = await EmailVerification.createForUser(user.id);
+      try {
+        await emailService.sendVerificationEmail(user.email, user.full_name, token, code);
+        logger.info(`Admin ${req.user.email} resent verification email to ${user.email}`);
+      } catch (e) {
+        logger.error(`Verification email send failed for ${user.email}: ${e.message}`);
+        throw new BadRequestError('Could not send the verification email. Please check the email service configuration.');
+      }
+      return ApiResponse.success(res, null, 'Verification email sent.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Admin trigger — send a password reset link to the user.
+   * POST /api/admin/users/:userId/send-password-reset
+   */
+  static async sendPasswordReset(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const user = await User.findByPk(userId);
+      if (!user) throw new NotFoundError('User not found');
+      const { token } = await PasswordReset.createResetToken(user.id);
+      try {
+        await emailService.sendPasswordResetEmail(user.email, user.full_name, token);
+        logger.info(`Admin ${req.user.email} sent password reset to ${user.email}`);
+      } catch (e) {
+        logger.error(`Password reset email send failed for ${user.email}: ${e.message}`);
+        throw new BadRequestError('Could not send the password reset email. Please check the email service configuration.');
+      }
+      return ApiResponse.success(res, null, 'Password reset email sent.');
     } catch (error) {
       next(error);
     }

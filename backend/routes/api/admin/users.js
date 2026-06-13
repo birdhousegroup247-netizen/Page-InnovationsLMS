@@ -41,6 +41,12 @@ router.delete('/:userId', authorize('super_admin'), UsersController.deleteUser);
 // Activate user
 router.patch('/:userId/activate', UsersController.activateUser);
 
+// Send (or re-send) the verification email to a user
+router.post('/:userId/send-verification-email', UsersController.sendVerificationEmail);
+
+// Send a password-reset link to a user
+router.post('/:userId/send-password-reset', UsersController.sendPasswordReset);
+
 // Override registration_status (unlock suspended / clear preview / re-activate)
 router.patch('/:userId/registration-status', UsersController.setRegistrationStatus);
 
