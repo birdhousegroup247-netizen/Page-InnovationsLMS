@@ -795,7 +795,7 @@ class AssignedTestController {
       if (course_id) where.course_id = course_id;
       if (search) where.test_name = { [Op.iLike]: `%${search}%` };
 
-      const tests = await AssignedTest.findAll({
+      const rows = await AssignedTest.findAll({
         where,
         include: [
           { model: Course, as: 'course', attributes: ['id', 'title'] },
@@ -803,6 +803,25 @@ class AssignedTestController {
         ],
         order: [['created_at', 'DESC']],
       });
+
+      // Attach question + student counts so the list view doesn't show 0 for
+      // every test (Questions / Students columns on /tests).
+      const tests = await Promise.all(
+        rows.map(async (t) => {
+          const plain = t.toJSON();
+          const [questionCount, studentCount] = await Promise.all([
+            AssignedTestQuestion.count({ where: { test_id: t.id } }),
+            TestAssignment.count({ where: { test_id: t.id } }),
+          ]);
+          plain.question_count = questionCount;
+          plain.assigned_students_count = studentCount;
+          // Frontend list reads `test.title` and `test.due_date` — alias the
+          // model's actual column names so the table doesn't render blank.
+          plain.title = plain.test_name;
+          plain.due_date = plain.end_date;
+          return plain;
+        })
+      );
 
       return ApiResponse.success(res, { tests });
     } catch (error) {

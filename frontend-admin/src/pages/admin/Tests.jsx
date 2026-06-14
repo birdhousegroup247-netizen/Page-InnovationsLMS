@@ -22,6 +22,49 @@ import StatsCard from '../../components/ui/StatsCard';
 import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
 
+function TestRowActions({ test, onView, onEdit, onPublish, onArchive, onDelete }) {
+  return (
+    <Dropdown>
+      {({ isOpen, setIsOpen }) => (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+          {isOpen && (
+            <Dropdown.Menu align="right">
+              <Dropdown.Item icon={BarChart3} onClick={() => { setIsOpen(false); onView(test); }}>
+                View Results
+              </Dropdown.Item>
+              <Dropdown.Item icon={Edit} onClick={() => { setIsOpen(false); onEdit(test); }}>
+                Edit Test
+              </Dropdown.Item>
+              {test.status === 'draft' && (
+                <Dropdown.Item icon={CheckCircle} onClick={() => { setIsOpen(false); onPublish(test); }}>
+                  Publish Test
+                </Dropdown.Item>
+              )}
+              {test.status === 'published' && (
+                <Dropdown.Item icon={Archive} onClick={() => { setIsOpen(false); onArchive(test); }}>
+                  Archive Test
+                </Dropdown.Item>
+              )}
+              <Dropdown.Separator />
+              <Dropdown.Item icon={Trash2} onClick={() => { setIsOpen(false); onDelete(test); }} danger>
+                Delete Test
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          )}
+        </>
+      )}
+    </Dropdown>
+  );
+}
+
 export default function Tests() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -327,8 +370,8 @@ export default function Tests() {
           </div>
         ) : (
           <>
-            {/* Tests Table */}
-            <div className="overflow-x-auto">
+            {/* Tests Table — desktop */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-gray-700">
                   <tr>
@@ -361,15 +404,15 @@ export default function Tests() {
                       key={test.id}
                       className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
                     >
-                      <td className="px-3 py-4">
-                        <div className="flex items-center">
-                          <FileText className="w-5 h-5 text-gray-400 mr-3" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {test.title}
+                      <td className="px-3 py-4 max-w-xs">
+                        <div className="flex items-start gap-3">
+                          <FileText className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
+                              {test.title || test.test_name}
                             </p>
                             {test.description && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 break-words">
                                 {test.description}
                               </p>
                             )}
@@ -403,81 +446,70 @@ export default function Tests() {
                         </div>
                       </td>
                       <td className="px-3 py-4 text-right">
-                        <Dropdown>
-                          {({ isOpen, setIsOpen }) => (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsOpen(!isOpen)}
-                                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                              {isOpen && (
-                                <Dropdown.Menu align="right">
-                                  <Dropdown.Item
-                                    icon={BarChart3}
-                                    onClick={() => {
-                                      setIsOpen(false);
-                                      handleViewResults(test);
-                                    }}
-                                  >
-                                    View Results
-                                  </Dropdown.Item>
-                                  <Dropdown.Item
-                                    icon={Edit}
-                                    onClick={() => {
-                                      setIsOpen(false);
-                                      handleEditTest(test);
-                                    }}
-                                  >
-                                    Edit Test
-                                  </Dropdown.Item>
-                                  {test.status === 'draft' && (
-                                    <Dropdown.Item
-                                      icon={CheckCircle}
-                                      onClick={() => {
-                                        setIsOpen(false);
-                                        handlePublishTest(test);
-                                      }}
-                                    >
-                                      Publish Test
-                                    </Dropdown.Item>
-                                  )}
-                                  {test.status === 'published' && (
-                                    <Dropdown.Item
-                                      icon={Archive}
-                                      onClick={() => {
-                                        setIsOpen(false);
-                                        handleArchiveTest(test);
-                                      }}
-                                    >
-                                      Archive Test
-                                    </Dropdown.Item>
-                                  )}
-                                  <Dropdown.Separator />
-                                  <Dropdown.Item
-                                    icon={Trash2}
-                                    onClick={() => {
-                                      setIsOpen(false);
-                                      handleDeleteTest(test);
-                                    }}
-                                    danger
-                                  >
-                                    Delete Test
-                                  </Dropdown.Item>
-                                </Dropdown.Menu>
-                              )}
-                            </>
-                          )}
-                        </Dropdown>
+                        <TestRowActions
+                          test={test}
+                          onView={handleViewResults}
+                          onEdit={handleEditTest}
+                          onPublish={handlePublishTest}
+                          onArchive={handleArchiveTest}
+                          onDelete={handleDeleteTest}
+                        />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* Tests Cards — mobile */}
+            <ul className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+              {tests.map((test) => (
+                <li key={test.id} className="p-4">
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white break-words pr-2">
+                          {test.title || test.test_name}
+                        </p>
+                        <div className="flex-shrink-0">
+                          <TestRowActions
+                            test={test}
+                            onView={handleViewResults}
+                            onEdit={handleEditTest}
+                            onPublish={handlePublishTest}
+                            onArchive={handleArchiveTest}
+                            onDelete={handleDeleteTest}
+                          />
+                        </div>
+                      </div>
+                      {test.description && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 break-words">
+                          {test.description}
+                        </p>
+                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                        {getStatusBadge(test.status)}
+                        {test.course?.title && (
+                          <span className="inline-flex items-center gap-1">
+                            <FileText className="w-3.5 h-3.5" /> {test.course.title}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <CheckCircle className="w-3.5 h-3.5" /> {test.question_count || 0} questions
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" /> {test.assigned_students_count || 0} students
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" /> {formatDate(test.due_date)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
 
             {/* Pagination */}
             <div className="border-t border-gray-200 dark:border-gray-700 p-4">
