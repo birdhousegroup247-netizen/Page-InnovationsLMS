@@ -146,7 +146,11 @@ export default function Activity() {
           action: actionText,
           target,
           metadata: log.metadata || {},
-          timestamp: new Date(log.created_at),
+          // Tolerate either casing — the backend used to return createdAt
+          // for ActivityLog because of underscored:true without explicit
+          // aliases. Keep both paths so the page stays robust even if
+          // some other model surfaces logs with a different shape.
+          timestamp: new Date(log.created_at || log.createdAt || log.timestamp),
           ip_address: log.ip_address || 'N/A',
         };
       });
@@ -222,8 +226,11 @@ export default function Activity() {
   };
 
   const formatTimestamp = (timestamp) => {
+    const d = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    if (!d || isNaN(d.getTime())) return '—';
+
     const now = new Date();
-    const diff = now - new Date(timestamp);
+    const diff = now - d;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -233,7 +240,7 @@ export default function Activity() {
     if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
 
-    return new Date(timestamp).toLocaleString();
+    return d.toLocaleString();
   };
 
   return (

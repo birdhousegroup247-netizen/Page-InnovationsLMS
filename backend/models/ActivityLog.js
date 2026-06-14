@@ -55,6 +55,13 @@ const ActivityLog = sequelize.define(
     tableName: 'activity_logs',
     timestamps: true,
     underscored: true,
+    // Explicit aliases so the JSON the API returns has snake_case keys
+    // (created_at / updated_at). Without this, some Sequelize versions
+    // expose them as createdAt / updatedAt on the model output, which is
+    // what made the Activity Logs page render "Invalid Date" everywhere —
+    // the frontend was reading log.created_at and getting undefined.
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
     indexes: [
       {
         fields: ['user_id'],
