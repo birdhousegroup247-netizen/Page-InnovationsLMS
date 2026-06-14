@@ -41,6 +41,13 @@ const Select = forwardRef(
       ? 'bg-gray-100 dark:bg-gray-800 opacity-60'
       : '';
 
+    // If the caller already provides an option with value="" (e.g. "All types"),
+    // showing a disabled "Select an option" placeholder would clash — the browser
+    // picks the first matching option (the disabled placeholder), so the real
+    // selected label never renders. Suppress the placeholder in that case.
+    const hasEmptyOption = options.some((o) => o.value === '' || o.value == null);
+    const showPlaceholder = placeholder && !hasEmptyOption;
+
     return (
       <div className={cn('relative', fullWidth ? 'w-full' : '', containerClassName)}>
         {label && (
@@ -58,7 +65,7 @@ const Select = forwardRef(
             className={cn(baseStyles, errorStyles, disabledStyles, className)}
             {...props}
           >
-            {placeholder && (
+            {showPlaceholder && (
               <option value="" disabled>
                 {placeholder}
               </option>
