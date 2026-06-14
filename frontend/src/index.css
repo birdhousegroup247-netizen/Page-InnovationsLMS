@@ -18,6 +18,19 @@
     @apply min-h-screen;
   }
 
+  /* Default readable colors for raw form controls. Browser UA sheets
+     render input/textarea/select text as black, which is invisible on
+     this app's dark surfaces. Page-level classNames can still override. */
+  input,
+  textarea,
+  select {
+    @apply text-gray-900 dark:text-white;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-gray-400 dark:text-gray-500;
+  }
+
   /* Custom scrollbar for dark mode */
   ::-webkit-scrollbar {
     @apply w-2 h-2;
