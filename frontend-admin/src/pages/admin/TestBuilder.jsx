@@ -1047,8 +1047,15 @@ export default function TestBuilder() {
         )}
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-between">
+      {/* Navigation Buttons.
+          On step 2 with selections, the mobile sticky "Review" bar sits at
+          bottom:0 fixed; the extra mb on phones lifts these buttons above
+          its 64px footprint so they don't get covered. */}
+      <div
+        className={`flex justify-between ${
+          currentStep === 2 && formData.questions.length > 0 ? 'mb-20 sm:mb-0' : ''
+        }`}
+      >
         {currentStep > 1 && (
           <Button variant="outline" onClick={handleBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
