@@ -1060,37 +1060,41 @@ export default function TestBuilder() {
           bottom:0 fixed; the extra mb on phones lifts these buttons above
           its 64px footprint so they don't get covered. */}
       <div
-        className={`flex justify-between ${
+        className={`flex justify-between items-center gap-2 ${
           currentStep === 2 && formData.questions.length > 0 ? 'mb-20 sm:mb-0' : ''
         }`}
       >
-        {currentStep > 1 && (
-          <Button variant="outline" onClick={handleBack}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+        {currentStep > 1 ? (
+          <Button variant="outline" size="sm" onClick={handleBack}>
+            <ArrowLeft className="w-4 h-4 mr-1.5" />
             Back
           </Button>
+        ) : (
+          <span />
         )}
-        <div className="ml-auto flex gap-3">
+        <div className="flex gap-2">
           {currentStep < 4 ? (
-            <Button onClick={handleNext}>
+            <Button size="sm" onClick={handleNext}>
               Next
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           ) : (
             <>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => handleSubmit('draft')}
                 disabled={loading}
               >
                 Save as Draft
               </Button>
               <Button
+                size="sm"
                 onClick={() => handleSubmit('published')}
                 disabled={loading}
               >
                 {loading ? 'Publishing...' : 'Publish Test'}
-                <Check className="w-4 h-4 ml-2" />
+                <Check className="w-4 h-4 ml-1.5" />
               </Button>
             </>
           )}

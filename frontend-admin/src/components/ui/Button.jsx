@@ -53,18 +53,21 @@ const Button = forwardRef(
         'bg-transparent text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:bg-blue-100 dark:active:bg-blue-900/30 focus:ring-blue-500 dark:focus:ring-blue-400',
     };
 
+    // Slimmer scale across the board — the old md was 44px+ chunky which
+    // made wizard nav rows and table actions feel cramped. min-h preserves a
+    // sane tap target (≥32px) without dominating compact layouts.
     const sizes = {
-      sm: 'text-sm px-4 py-2 gap-1.5 min-h-[36px]',
-      md: 'text-base px-5 py-2.5 gap-2 min-h-[44px]',
-      lg: 'text-lg px-6 py-3 gap-2 min-h-[48px]',
-      xl: 'text-xl px-8 py-4 gap-3 min-h-[56px]',
+      sm: 'text-xs px-3 py-1.5 gap-1.5 min-h-[32px]',
+      md: 'text-sm px-4 py-2 gap-1.5 min-h-[36px]',
+      lg: 'text-base px-5 py-2.5 gap-2 min-h-[44px]',
+      xl: 'text-lg px-6 py-3 gap-2 min-h-[52px]',
     };
 
     const iconSizes = {
-      sm: 'w-4 h-4',
+      sm: 'w-3.5 h-3.5',
       md: 'w-4 h-4',
-      lg: 'w-5 h-5',
-      xl: 'w-6 h-6',
+      lg: 'w-4 h-4',
+      xl: 'w-5 h-5',
     };
 
     const widthClass = fullWidth ? 'w-full' : '';
