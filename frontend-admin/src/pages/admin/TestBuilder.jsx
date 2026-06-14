@@ -570,8 +570,8 @@ export default function TestBuilder() {
 
         {/* Step 2: Question Selection */}
         {currentStep === 2 && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
+          <div className="space-y-5 pb-24 sm:pb-0">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Select Questions</h2>
               {formData.questions.length > 0 && (
                 <div className="flex items-center gap-3">
@@ -589,14 +589,14 @@ export default function TestBuilder() {
               <p className="text-sm text-red-600">{errors.questions}</p>
             )}
 
-            {/* Category chips — primary filter */}
+            {/* Category chips — horizontal scroll on mobile, wrap on desktop */}
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Category</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto -mx-1 px-1 pb-1 sm:overflow-visible sm:px-0 sm:mx-0 scrollbar-hide">
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('')}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                     selectedCategory === ''
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white dark:bg-dark-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
@@ -612,7 +612,7 @@ export default function TestBuilder() {
                       key={cat.id}
                       type="button"
                       onClick={() => setSelectedCategory(String(cat.id))}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                         selectedCategory === String(cat.id)
                           ? 'bg-blue-600 text-white border-blue-600'
                           : 'bg-white dark:bg-dark-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
@@ -625,19 +625,17 @@ export default function TestBuilder() {
               </div>
             </div>
 
-            {/* Secondary filters */}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex-1 min-w-[160px]">
-                <Input
-                  placeholder="Search questions..."
-                  value={questionFilters.search}
-                  onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))}
-                />
-              </div>
+            {/* Secondary filters — responsive grid: 1 col phone, 2 col tablet, 4 col desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Input
+                placeholder="Search questions..."
+                value={questionFilters.search}
+                onChange={(e) => setQuestionFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full"
+              />
               <Select
                 value={questionFilters.difficulty}
                 onChange={(e) => setQuestionFilters(prev => ({ ...prev, difficulty: e.target.value }))}
-                className="w-36"
                 options={[
                   { value: '', label: 'All levels' },
                   { value: 'easy', label: 'Easy' },
@@ -648,7 +646,6 @@ export default function TestBuilder() {
               <Select
                 value={questionFilters.type}
                 onChange={(e) => setQuestionFilters(prev => ({ ...prev, type: e.target.value }))}
-                className="w-44"
                 options={[
                   { value: '', label: 'All types' },
                   { value: 'multiple_choice', label: 'Multiple choice' },
@@ -659,7 +656,6 @@ export default function TestBuilder() {
               <Select
                 value={questionFilters.course_id}
                 onChange={(e) => setQuestionFilters(prev => ({ ...prev, course_id: e.target.value }))}
-                className="w-44"
                 options={[
                   { value: '', label: 'All courses' },
                   ...courses.map((c) => ({ value: c.id, label: c.title })),
@@ -736,7 +732,7 @@ export default function TestBuilder() {
 
             {/* Selected Questions summary */}
             {formData.questions.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div id="selected-questions" className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 scroll-mt-20">
                 <h3 className="font-medium text-gray-900 dark:text-white mb-3">
                   Selected Questions ({formData.questions.length})
                 </h3>
@@ -744,10 +740,10 @@ export default function TestBuilder() {
                   {formData.questions.map((question, index) => (
                     <div
                       key={question.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg"
+                      className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-500">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <span className="text-sm font-medium text-gray-500 flex-shrink-0">
                           {index + 1}.
                         </span>
                         <p className="text-sm text-gray-900 dark:text-white line-clamp-1">
@@ -758,11 +754,38 @@ export default function TestBuilder() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleSelectQuestion(question)}
+                        className="flex-shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mobile-only sticky review bar — saves the user from scrolling
+                halfway down the page to see what they've picked. */}
+            {formData.questions.length > 0 && (
+              <div className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-dark-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 shadow-lg">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {formData.questions.length}
+                    </span>{' '}
+                    <span className="text-gray-600 dark:text-gray-300">
+                      question{formData.questions.length !== 1 ? 's' : ''} selected
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const el = document.getElementById('selected-questions');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    Review
+                  </Button>
                 </div>
               </div>
             )}

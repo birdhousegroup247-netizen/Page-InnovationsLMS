@@ -31,6 +31,15 @@
     @apply text-gray-400 dark:text-gray-500;
   }
 
+  /* Mobile-friendly horizontal scroll rows (category chips, etc.) */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Custom scrollbar for dark mode */
   ::-webkit-scrollbar {
     @apply w-2 h-2;
