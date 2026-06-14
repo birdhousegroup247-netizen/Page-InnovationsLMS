@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { adminCouponsAPI } from '../../lib/api';
-import { Tag, Plus, Pencil, Trash2, RefreshCw, X, Check } from 'lucide-react';
+import { Tag, Plus, Pencil, Trash2, RefreshCw, X, Check, Search } from 'lucide-react';
+import { Button, Input, Select, Badge, Spinner, Modal } from '../../components/ui';
+import Container from '../../components/layout/Container';
+import { PageHeader } from '../../components/layout';
+import Pagination from '../../components/ui/Pagination';
+import { useToast } from '../../components/ui/Toast';
 
 const BLANK = {
   code: '', description: '', discount_type: 'percentage', discount_value: '',
@@ -9,6 +14,7 @@ const BLANK = {
 };
 
 export default function Coupons() {
+  const { showToast } = useToast();
   const [coupons, setCoupons] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +38,9 @@ export default function Coupons() {
       const r = await adminCouponsAPI.getAll(params);
       setCoupons(r.data.data.coupons);
       setPagination(r.data.data.pagination);
-    } catch { /* silent */ }
+    } catch {
+      showToast('Failed to load coupons', 'error');
+    }
     setLoading(false);
   };
 
@@ -68,8 +76,10 @@ export default function Coupons() {
       };
       if (editing) {
         await adminCouponsAPI.update(editing.id, payload);
+        showToast('Coupon updated', 'success');
       } else {
         await adminCouponsAPI.create(payload);
+        showToast('Coupon created', 'success');
       }
       setShowModal(false);
       fetchAll(); fetchStats();
@@ -80,204 +90,296 @@ export default function Coupons() {
   };
 
   const handleToggle = async (c) => {
-    try { await adminCouponsAPI.update(c.id, { is_active: !c.is_active }); fetchAll(); fetchStats(); }
-    catch { /* silent */ }
+    try {
+      await adminCouponsAPI.update(c.id, { is_active: !c.is_active });
+      fetchAll(); fetchStats();
+    } catch { showToast('Toggle failed', 'error'); }
   };
 
   const handleDelete = async (c) => {
-    if (!confirm(`Deactivate coupon "${c.code}"?`)) return;
-    try { await adminCouponsAPI.delete(c.id); fetchAll(); fetchStats(); }
-    catch { /* silent */ }
+    if (!window.confirm(`Deactivate coupon "${c.code}"?`)) return;
+    try {
+      await adminCouponsAPI.delete(c.id);
+      showToast('Coupon deleted', 'success');
+      fetchAll(); fetchStats();
+    } catch { showToast('Delete failed', 'error'); }
   };
 
   const fmt = (c) =>
     c.discount_type === 'percentage' ? `${c.discount_value}%` : `$${c.discount_value}`;
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Tag className="w-6 h-6 text-brand-blue" /> Coupon Manager
-          </h1>
-          {stats && (
-            <p className="text-text-secondary text-sm mt-1">
-              {stats.active} active · {stats.totalRedemptions} total redemptions
-            </p>
+    <>
+      <PageHeader
+        icon={Tag}
+        title="Coupon Manager"
+        subtitle={stats ? `${stats.active} active · ${stats.totalRedemptions} total redemptions` : 'Promo codes and one-time discounts'}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={openCreate}
+            leftIcon={<Plus className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            New Coupon
+          </Button>
+        }
+      />
+
+      <Container className="py-8">
+        {/* Filters */}
+        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr,180px,auto] gap-3 items-end">
+            <Input
+              placeholder="Search code or description..."
+              leftIcon={<Search className="w-4 h-4" />}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchAll()}
+            />
+            <Select
+              value={filterActive}
+              onChange={(e) => { setFilterActive(e.target.value); fetchAll(); }}
+              options={[
+                { value: '', label: 'All' },
+                { value: 'true', label: 'Active' },
+                { value: 'false', label: 'Inactive' },
+              ]}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchAll()}
+              leftIcon={<RefreshCw className="w-4 h-4" />}
+            >
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Table — Courses-style: progressively hide columns at smaller breakpoints */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">
+                    Discount
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
+                    Uses
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
+                    Expires
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center">
+                      <Spinner size="lg" />
+                    </td>
+                  </tr>
+                ) : coupons.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-12 text-center text-gray-500 dark:text-gray-400">
+                      No coupons yet — click "New Coupon" to create one.
+                    </td>
+                  </tr>
+                ) : coupons.map((c) => (
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
+                    <td className="px-3 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                          <Tag className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-mono font-semibold text-gray-900 dark:text-white truncate">{c.code}</p>
+                          {/* On phones (where Discount + Expires columns are
+                              hidden) surface the key facts under the code so
+                              the row still reads at a glance. */}
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            <span className="sm:hidden text-blue-600 dark:text-blue-400 font-medium">{fmt(c)}</span>
+                            {c.description && <span className="sm:hidden"> · </span>}
+                            {c.description || (c.expires_at && <span className="sm:hidden">expires {new Date(c.expires_at).toLocaleDateString()}</span>)}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap hidden sm:table-cell">
+                      <span className="text-sm text-blue-600 dark:text-blue-400 font-semibold">{fmt(c)}</span>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {c.uses_count}/{c.max_uses ?? '∞'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {c.expires_at ? new Date(c.expires_at).toLocaleDateString() : '—'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap">
+                      <Badge variant={c.is_active ? 'success' : 'default'}>
+                        {c.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => openEdit(c)}
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-dark-600 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggle(c)}
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-dark-600 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                          title={c.is_active ? 'Deactivate' : 'Activate'}
+                        >
+                          {c.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c)}
+                          className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 hover:text-red-600"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {pagination.totalPages > 1 && (
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={(p) => fetchAll(p)}
+                size="sm"
+              />
+            </div>
           )}
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" /> New Coupon
-        </button>
-      </div>
+      </Container>
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-4">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && fetchAll()}
-          placeholder="Search code or description..."
-          className="flex-1 bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand-blue"
-        />
-        <select
-          value={filterActive}
-          onChange={(e) => { setFilterActive(e.target.value); fetchAll(); }}
-          className="bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">All</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-        <button onClick={() => fetchAll()} className="p-2 bg-dark-700 border border-dark-600 rounded-lg text-text-secondary hover:text-white">
-          <RefreshCw className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Table */}
-      <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-dark-700 text-text-secondary">
-              <th className="text-left p-4 font-medium">Code</th>
-              <th className="text-left p-4 font-medium">Discount</th>
-              <th className="text-left p-4 font-medium">Uses</th>
-              <th className="text-left p-4 font-medium">Expires</th>
-              <th className="text-left p-4 font-medium">Status</th>
-              <th className="text-right p-4 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-text-secondary">Loading...</td></tr>
-            ) : coupons.length === 0 ? (
-              <tr><td colSpan={6} className="p-8 text-center text-text-secondary">No coupons found</td></tr>
-            ) : coupons.map((c) => (
-              <tr key={c.id} className="border-b border-dark-700 hover:bg-dark-700/50 transition-colors">
-                <td className="p-4">
-                  <span className="font-mono font-bold text-white">{c.code}</span>
-                  {c.description && <p className="text-xs text-text-secondary mt-0.5">{c.description}</p>}
-                </td>
-                <td className="p-4 text-brand-blue font-semibold">{fmt(c)}</td>
-                <td className="p-4 text-text-secondary">
-                  {c.uses_count}/{c.max_uses ?? '∞'}
-                </td>
-                <td className="p-4 text-text-secondary text-xs">
-                  {c.expires_at ? new Date(c.expires_at).toLocaleDateString() : '—'}
-                </td>
-                <td className="p-4">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${c.is_active ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-                    {c.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2 justify-end">
-                    <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-dark-600 text-text-secondary hover:text-white">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => handleToggle(c)} className="p-1.5 rounded hover:bg-dark-600 text-text-secondary hover:text-white" title={c.is_active ? 'Deactivate' : 'Activate'}>
-                      {c.is_active ? <X className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
-                    </button>
-                    <button onClick={() => handleDelete(c)} className="p-1.5 rounded hover:bg-dark-600 text-red-400 hover:text-red-300">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-dark-700 text-sm text-text-secondary">
-            <span>{pagination.total} total</span>
-            <div className="flex gap-2">
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
-                <button key={p} onClick={() => fetchAll(p)}
-                  className={`w-8 h-8 rounded ${pagination.page === p ? 'bg-brand-blue text-white' : 'hover:bg-dark-600'}`}>
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Create/Edit Modal — kept native form fields since the inputs are
+          simple and dense. Inherits the shared Modal chrome. */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editing ? 'Edit Coupon' : 'New Coupon'}
+        size="lg"
+      >
+        {error && (
+          <p className="text-red-600 dark:text-red-400 text-sm mb-4 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
+            {error}
+          </p>
         )}
-      </div>
 
-      {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-dark-800 rounded-xl border border-dark-700 w-full max-w-lg p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-white">{editing ? 'Edit Coupon' : 'New Coupon'}</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded hover:bg-dark-700 text-text-secondary"><X className="w-4 h-4" /></button>
-            </div>
-
-            {error && <p className="text-red-400 text-sm mb-4 bg-red-900/20 px-3 py-2 rounded">{error}</p>}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="text-xs text-text-secondary mb-1 block">Code *</label>
-                <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                  disabled={!!editing}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-blue disabled:opacity-50" />
-                {editing && <p className="text-xs text-text-muted mt-1">Code cannot be changed after creation</p>}
-              </div>
-              <div>
-                <label className="text-xs text-text-secondary mb-1 block">Type *</label>
-                <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value })}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm">
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="flat">Flat ($)</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-text-secondary mb-1 block">Value *</label>
-                <input type="number" min="0" value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
-                  placeholder={form.discount_type === 'percentage' ? '10 = 10%' : '50 = $50 off'}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-text-secondary mb-1 block">Max Uses (1 = one-time, blank = unlimited)</label>
-                <input type="number" min="1" value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-text-secondary mb-1 block">Per-user Limit</label>
-                <input type="number" min="1" value={form.per_user_limit} onChange={(e) => setForm({ ...form, per_user_limit: e.target.value })}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-text-secondary mb-1 block">Min Purchase ($)</label>
-                <input type="number" min="0" value={form.min_purchase_amount} onChange={(e) => setForm({ ...form, min_purchase_amount: e.target.value })}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-text-secondary mb-1 block">Expires (blank = never)</label>
-                <input type="date" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs text-text-secondary mb-1 block">Internal Note</label>
-                <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="e.g. VIP student discount"
-                  className="w-full bg-dark-700 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm" />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-2 bg-dark-700 border border-dark-600 text-text-secondary rounded-lg text-sm hover:bg-dark-600">
-                Cancel
-              </button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2 bg-brand-blue text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : editing ? 'Save Changes' : 'Create Coupon'}
-              </button>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Code *</label>
+            <Input
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+              disabled={!!editing}
+              className="font-mono"
+            />
+            {editing && <p className="text-xs text-gray-400 mt-1">Code cannot be changed after creation</p>}
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Type *</label>
+            <Select
+              value={form.discount_type}
+              onChange={(e) => setForm({ ...form, discount_type: e.target.value })}
+              options={[
+                { value: 'percentage', label: 'Percentage (%)' },
+                { value: 'flat', label: 'Flat ($)' },
+              ]}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Value *</label>
+            <Input
+              type="number"
+              min="0"
+              value={form.discount_value}
+              onChange={(e) => setForm({ ...form, discount_value: e.target.value })}
+              placeholder={form.discount_type === 'percentage' ? '10 = 10%' : '50 = $50 off'}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Max Uses</label>
+            <Input
+              type="number"
+              min="1"
+              value={form.max_uses}
+              onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
+              placeholder="Blank = unlimited"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Per-user Limit</label>
+            <Input
+              type="number"
+              min="1"
+              value={form.per_user_limit}
+              onChange={(e) => setForm({ ...form, per_user_limit: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Min Purchase ($)</label>
+            <Input
+              type="number"
+              min="0"
+              value={form.min_purchase_amount}
+              onChange={(e) => setForm({ ...form, min_purchase_amount: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Expires (blank = never)</label>
+            <Input
+              type="date"
+              value={form.expires_at}
+              onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Internal Note</label>
+            <Input
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="e.g. VIP student discount"
+            />
           </div>
         </div>
-      )}
-    </div>
+
+        <div className="flex gap-3 mt-6 justify-end">
+          <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Coupon'}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }
