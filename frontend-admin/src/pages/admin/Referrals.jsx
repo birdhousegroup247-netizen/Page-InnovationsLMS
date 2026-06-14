@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { adminReferralsAPI } from '../../lib/api';
-import { Gift, RefreshCw, CheckCircle, Clock } from 'lucide-react';
+import { Gift, RefreshCw, CheckCircle, Clock, Search } from 'lucide-react';
+import { Button, Input, Badge, Spinner } from '../../components/ui';
+import Container from '../../components/layout/Container';
+import { PageHeader } from '../../components/layout';
+import { useToast } from '../../components/ui/Toast';
 
 export default function Referrals() {
+  const { showToast } = useToast();
   const [referrals, setReferrals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -14,7 +19,9 @@ export default function Referrals() {
     try {
       const r = await adminReferralsAPI.getAll();
       setReferrals(r.data.data.referrals || []);
-    } catch { /* silent */ }
+    } catch {
+      showToast('Failed to load referrals', 'error');
+    }
     setLoading(false);
   };
 
@@ -30,94 +37,84 @@ export default function Referrals() {
 
   const totalRewarded = referrals.filter((r) => r.status === 'rewarded').length;
   const totalPending = referrals.filter((r) => r.status === 'pending').length;
-  const uniqueReferrers = new Set(referrals.map((r) => r.referrer_id)).size;
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Gift className="w-6 h-6 text-brand-blue" /> Referrals
-        </h1>
-        <button
-          onClick={fetchAll}
-          className="flex items-center gap-2 px-3 py-2 bg-dark-700 hover:bg-dark-600 text-text-secondary rounded-lg text-sm transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
+    <>
+      <PageHeader
+        icon={Gift}
+        title="Referrals"
+        subtitle={`${referrals.length} total · ${totalRewarded} rewarded · ${totalPending} pending`}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchAll}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            Refresh
+          </Button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-4">
-          <p className="text-xs text-text-secondary mb-1">Total Referrals</p>
-          <p className="text-2xl font-bold text-white">{referrals.length}</p>
+      <Container className="py-8">
+        {/* Search */}
+        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-4 mb-6">
+          <Input
+            placeholder="Search by referrer or referred user..."
+            leftIcon={<Search className="w-4 h-4" />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-4">
-          <p className="text-xs text-text-secondary mb-1">Rewarded</p>
-          <p className="text-2xl font-bold text-green-400">{totalRewarded}</p>
-        </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-4">
-          <p className="text-xs text-text-secondary mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-400">{totalPending}</p>
-        </div>
-      </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by referrer or referred user..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:w-80 px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-sm text-white placeholder-text-secondary focus:outline-none focus:border-brand-blue"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-text-secondary">Loading...</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-text-secondary">No referrals found.</div>
-        ) : (
+        {/* Table */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-dark-700 text-text-secondary text-xs uppercase">
-                  <th className="px-4 py-3 text-left">Referrer</th>
-                  <th className="px-4 py-3 text-left">Referred User</th>
-                  <th className="px-4 py-3 text-left">Credits</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Date</th>
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Referrer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Referred</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Credits</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-dark-700">
-                {filtered.map((ref) => (
-                  <tr key={ref.id} className="hover:bg-dark-700/50 transition-colors">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {loading ? (
+                  <tr><td colSpan={5} className="p-12 text-center"><Spinner size="lg" /></td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan={5} className="p-12 text-center text-gray-500 dark:text-gray-400">No referrals yet.</td></tr>
+                ) : filtered.map((ref) => (
+                  <tr key={ref.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium">{ref.referrer?.full_name || '—'}</p>
-                      <p className="text-text-secondary text-xs">{ref.referrer?.email || '—'}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{ref.referrer?.full_name || '—'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {/* On phones (Referred + Credits + Date hidden) surface the referred user inline */}
+                        <span className="md:hidden">→ {ref.referred?.full_name || '—'}</span>
+                        <span className="hidden md:inline">{ref.referrer?.email || '—'}</span>
+                      </p>
                     </td>
-                    <td className="px-4 py-3">
-                      <p className="text-white">{ref.referred?.full_name || '—'}</p>
-                      <p className="text-text-secondary text-xs">{ref.referred?.email || '—'}</p>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <p className="text-sm text-gray-900 dark:text-white truncate">{ref.referred?.full_name || '—'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{ref.referred?.email || '—'}</p>
                     </td>
-                    <td className="px-4 py-3 text-text-secondary">
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
                       {ref.referrer?.referral_credits ?? 0}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {ref.status === 'rewarded' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-900/40 text-green-400">
-                          <CheckCircle className="w-3 h-3" /> Rewarded
-                        </span>
+                        <Badge variant="success">
+                          <span className="inline-flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Rewarded</span>
+                        </Badge>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-900/40 text-yellow-400">
-                          <Clock className="w-3 h-3" /> Pending
-                        </span>
+                        <Badge variant="warning">
+                          <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</span>
+                        </Badge>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">
+                    <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 hidden lg:table-cell">
                       {new Date(ref.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' })}
                     </td>
                   </tr>
@@ -125,8 +122,8 @@ export default function Referrals() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      </Container>
+    </>
   );
 }

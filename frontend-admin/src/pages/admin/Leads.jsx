@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { adminLeadsAPI } from '../../lib/api';
-import { UserPlus, RefreshCw, CheckCircle, Trash2, TrendingUp } from 'lucide-react';
+import { UserPlus, RefreshCw, CheckCircle, Trash2, TrendingUp, Search } from 'lucide-react';
+import { Button, Input, Select } from '../../components/ui';
+import Container from '../../components/layout/Container';
+import { PageHeader } from '../../components/layout';
 
 const STATUS_LABELS = {
   registered: { label: 'Registered', color: 'bg-gray-700 text-gray-300' },
@@ -56,14 +59,24 @@ export default function Leads() {
   };
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <UserPlus className="w-6 h-6 text-brand-blue" /> Leads Dashboard
-        </h1>
-      </div>
-
+    <>
+      <PageHeader
+        icon={UserPlus}
+        title="Leads Dashboard"
+        subtitle={stats ? `${stats.total} total · ${stats.conversionRate}% conversion` : 'Track and convert leads'}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { fetchAll(); fetchStats(); }}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
+            Refresh
+          </Button>
+        }
+      />
+      <Container className="py-8">
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -208,6 +221,7 @@ export default function Leads() {
           </div>
         )}
       </div>
-    </div>
+      </Container>
+    </>
   );
 }

@@ -11,7 +11,7 @@ import {
   AlertCircle,
   Clock,
 } from 'lucide-react';
-import { Container } from '../../components/layout';
+import { Container, PageHeader } from '../../components/layout';
 import { Button, Input, Select, Badge, Spinner, Modal } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
 import {
@@ -121,19 +121,23 @@ export default function Payments() {
 
   return (
     <>
-      <Container>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Revenue & Payments</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Track revenue, transactions, and manage refunds
-            </p>
-          </div>
-          <Button variant="outline" onClick={() => { fetchPayments(); fetchStats(); }}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+      <PageHeader
+        icon={CreditCard}
+        title="Revenue & Payments"
+        subtitle="Track revenue, transactions, and manage refunds"
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { fetchPayments(); fetchStats(); }}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+          >
             Refresh
           </Button>
-        </div>
+        }
+      />
+      <Container className="py-8">
 
         {/* Stats Cards */}
         {statsLoading ? (
@@ -265,11 +269,11 @@ export default function Payments() {
                   <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-border-dark">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Student</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Course</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Gateway</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Course</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden xl:table-cell">Gateway</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Date</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Action</th>
                     </tr>
                   </thead>
@@ -277,21 +281,26 @@ export default function Payments() {
                     {payments.map((payment) => (
                       <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
                         <td className="px-4 py-3">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{payment.student?.full_name || '—'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{payment.student?.email}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{payment.student?.full_name || '—'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {/* On phones (Amount + Course hidden) surface the amount inline */}
+                              <span className="sm:hidden font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(payment.amount)}</span>
+                              <span className="sm:hidden"> · </span>
+                              {payment.student?.email}
+                            </p>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hidden lg:table-cell">
                           <span className="line-clamp-1">{payment.course?.title || '—'}</span>
                         </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white hidden sm:table-cell">
                           {formatCurrency(payment.amount)}
                           {payment.discount_amount > 0 && (
                             <span className="ml-1 text-xs text-gray-400 line-through">{formatCurrency(payment.original_amount)}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 hidden xl:table-cell">
                           <div className="flex items-center gap-1.5">
                             <CreditCard className="w-3.5 h-3.5 text-gray-400" />
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -308,7 +317,7 @@ export default function Payments() {
                             {payment.payment_status}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">
                           {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : '—'}
                         </td>
                         <td className="px-4 py-3 text-right">
