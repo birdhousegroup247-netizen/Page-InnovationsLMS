@@ -373,19 +373,21 @@ export default function Activity() {
                 })}
               </div>
 
-              {/* Pagination */}
+              {/* Pagination — stacks on mobile so the page strip never
+                  gets clipped against the "Showing X of Y" caption. */}
               {pagination && (
                 <div className="px-3 py-4 border-t border-gray-200 dark:border-border-dark">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{' '}
+                  <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
+                      Showing {((pagination.currentPage - 1) * filters.limit) + 1}–{' '}
                       {Math.min(pagination.currentPage * filters.limit, pagination.totalItems)} of{' '}
-                      {pagination.totalItems} activities
+                      {pagination.totalItems}
                     </p>
                     <Pagination
                       currentPage={pagination.currentPage}
                       totalPages={pagination.totalPages}
                       onPageChange={handlePageChange}
+                      size="sm"
                     />
                   </div>
                 </div>

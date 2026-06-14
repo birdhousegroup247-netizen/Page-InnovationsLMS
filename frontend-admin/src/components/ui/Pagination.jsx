@@ -73,17 +73,18 @@ const Pagination = ({
 
   return (
     <nav
-      className={cn('flex items-center justify-center gap-1', className)}
+      className={cn('flex flex-wrap items-center justify-center gap-1', className)}
       role="navigation"
       aria-label="Pagination"
     >
-      {/* First Page */}
+      {/* First Page — hidden on narrow screens to keep the strip from
+          overflowing; Prev/Next still reachable below. */}
       {showFirstLast && (
         <button
           onClick={() => handlePageChange(1)}
           disabled={currentPage === 1}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
+            'hidden sm:inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
             'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
             'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
@@ -167,13 +168,13 @@ const Pagination = ({
         <ChevronRight className="w-4 h-4" />
       </button>
 
-      {/* Last Page */}
+      {/* Last Page — hidden on narrow screens, same reasoning as First Page. */}
       {showFirstLast && (
         <button
           onClick={() => handlePageChange(totalPages)}
           disabled={currentPage === totalPages}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
+            'hidden sm:inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700',
             'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800',
             'transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
