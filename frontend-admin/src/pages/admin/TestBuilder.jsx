@@ -577,17 +577,25 @@ export default function TestBuilder() {
         {/* Step 2: Question Selection */}
         {currentStep === 2 && (
           <div className="space-y-5 pb-24 sm:pb-0">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Select Questions</h2>
-              {formData.questions.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                    {formData.questions.length} selected
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">
+                  Select Questions
+                </h2>
+                {formData.questions.length > 0 && (
+                  <span className="inline-flex items-center justify-center text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                    {formData.questions.length}
                   </span>
-                  <Button variant="outline" size="sm" onClick={() => setFormData(prev => ({ ...prev, questions: [] }))}>
-                    Clear all
-                  </Button>
-                </div>
+                )}
+              </div>
+              {formData.questions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, questions: [] }))}
+                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline-offset-2 hover:underline"
+                >
+                  Clear all
+                </button>
               )}
             </div>
 
