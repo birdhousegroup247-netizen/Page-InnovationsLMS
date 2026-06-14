@@ -17,6 +17,7 @@ import {
 import { adminTestsAPI, coursesAPI } from '../../lib/api';
 import { Button, Input, Select, Badge, Spinner, Modal, Dropdown } from '../../components/ui';
 import Container from '../../components/layout/Container';
+import { PageHeader } from '../../components/layout';
 import StatsCard from '../../components/ui/StatsCard';
 import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
@@ -273,13 +274,11 @@ export default function Tests() {
             <Select
               value={filters.course_id}
               onChange={(e) => handleFilterChange('course_id', e.target.value)}
-              placeholder="Filter by course"
-            >
-              <option value="">All Courses</option>
-              {courses.map(course => (
-                <option key={course.id} value={course.id}>{course.title}</option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: 'All Courses' },
+                ...courses.map((course) => ({ value: course.id, label: course.title })),
+              ]}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -288,13 +287,13 @@ export default function Tests() {
             <Select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              placeholder="Filter by status"
-            >
-              <option value="">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </Select>
+              options={[
+                { value: '', label: 'All Status' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'published', label: 'Published' },
+                { value: 'archived', label: 'Archived' },
+              ]}
+            />
           </div>
         </div>
         <div className="mt-4 flex justify-end">

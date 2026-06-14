@@ -15,6 +15,7 @@ import {
 import { adminTestsAPI } from '../../lib/api';
 import { Button, Badge, Spinner, Select } from '../../components/ui';
 import Container from '../../components/layout/Container';
+import { PageHeader } from '../../components/layout';
 import StatsCard from '../../components/ui/StatsCard';
 import { useToast } from '../../components/ui/Toast';
 
@@ -348,23 +349,25 @@ export default function TestResults() {
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
               className="!h-12"
-            >
-              <option value="">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="in_progress">In Progress</option>
-            </Select>
+              options={[
+                { value: '', label: 'All Status' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'in_progress', label: 'In Progress' },
+              ]}
+            />
           </div>
           <div className="flex-1">
             <Select
               value={filters.sort}
               onChange={(e) => setFilters(prev => ({ ...prev, sort: e.target.value }))}
               className="!h-12"
-            >
-              <option value="score_desc">Highest Score First</option>
-              <option value="score_asc">Lowest Score First</option>
-              <option value="date_desc">Most Recent First</option>
-              <option value="date_asc">Oldest First</option>
-            </Select>
+              options={[
+                { value: 'score_desc', label: 'Highest Score First' },
+                { value: 'score_asc', label: 'Lowest Score First' },
+                { value: 'date_desc', label: 'Most Recent First' },
+                { value: 'date_asc', label: 'Oldest First' },
+              ]}
+            />
           </div>
         </div>
       </div>

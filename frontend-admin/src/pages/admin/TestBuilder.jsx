@@ -16,6 +16,7 @@ import {
 import { adminTestsAPI, adminQuestionsAPI, adminCategoriesAPI, coursesAPI, adminUsersAPI } from '../../lib/api';
 import { Button, Input, Select, Badge, Spinner } from '../../components/ui';
 import Container from '../../components/layout/Container';
+import { PageHeader } from '../../components/layout';
 import { useToast } from '../../components/ui/Toast';
 
 export default function TestBuilder() {
@@ -527,12 +528,9 @@ export default function TestBuilder() {
                   value={formData.course_id}
                   onChange={(e) => handleChange('course_id', e.target.value)}
                   className={errors.course_id ? 'border-red-500' : ''}
-                >
-                  <option value="">Select a course</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.id}>{course.title}</option>
-                  ))}
-                </Select>
+                  placeholder="Select a course"
+                  options={courses.map((course) => ({ value: course.id, label: course.title }))}
+                />
                 {errors.course_id && (
                   <p className="mt-1 text-sm text-red-600">{errors.course_id}</p>
                 )}
@@ -640,30 +638,33 @@ export default function TestBuilder() {
                 value={questionFilters.difficulty}
                 onChange={(e) => setQuestionFilters(prev => ({ ...prev, difficulty: e.target.value }))}
                 className="w-36"
-              >
-                <option value="">All levels</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </Select>
+                options={[
+                  { value: '', label: 'All levels' },
+                  { value: 'easy', label: 'Easy' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'hard', label: 'Hard' },
+                ]}
+              />
               <Select
                 value={questionFilters.type}
                 onChange={(e) => setQuestionFilters(prev => ({ ...prev, type: e.target.value }))}
                 className="w-44"
-              >
-                <option value="">All types</option>
-                <option value="multiple_choice">Multiple choice</option>
-                <option value="true_false">True / False</option>
-                <option value="fill_blank">Fill in blank</option>
-              </Select>
+                options={[
+                  { value: '', label: 'All types' },
+                  { value: 'multiple_choice', label: 'Multiple choice' },
+                  { value: 'true_false', label: 'True / False' },
+                  { value: 'fill_blank', label: 'Fill in blank' },
+                ]}
+              />
               <Select
                 value={questionFilters.course_id}
                 onChange={(e) => setQuestionFilters(prev => ({ ...prev, course_id: e.target.value }))}
                 className="w-44"
-              >
-                <option value="">All courses</option>
-                {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-              </Select>
+                options={[
+                  { value: '', label: 'All courses' },
+                  ...courses.map((c) => ({ value: c.id, label: c.title })),
+                ]}
+              />
             </div>
 
             {/* Question list */}

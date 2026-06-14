@@ -1946,11 +1946,12 @@ export default function AdminCourses() {
                 value={rosterRole}
                 onChange={(e) => setRosterRole(e.target.value)}
                 className="w-40"
-              >
-                <option value="co">Co-instructor</option>
-                <option value="ta">Teaching assistant</option>
-                <option value="lead">Lead (replace current)</option>
-              </Select>
+                options={[
+                  { value: 'co', label: 'Co-instructor' },
+                  { value: 'ta', label: 'Teaching assistant' },
+                  { value: 'lead', label: 'Lead (replace current)' },
+                ]}
+              />
             </div>
             <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
               {availableInstructors.length === 0 ? (
