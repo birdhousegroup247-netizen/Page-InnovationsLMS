@@ -9,7 +9,6 @@ import { Button, Badge, Spinner, Modal } from '../../components/ui';
 import Container from '../../components/layout/Container';
 import { PageHeader } from '../../components/layout';
 import { useToast } from '../../components/ui/Toast';
-import QuestionModal from '../../components/questions/QuestionModal';
 
 /**
  * QuestionDetail — full read view of a single question.
@@ -26,7 +25,6 @@ export default function QuestionDetail() {
 
   const [question, setQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
@@ -126,7 +124,7 @@ export default function QuestionDetail() {
               </Button>
             )}
             <Button
-              onClick={() => setShowEditModal(true)}
+              onClick={() => navigate(`/questions/${question.id}/edit`)}
               variant="ghost"
               size="sm"
               leftIcon={<Edit className="h-4 w-4" />}
@@ -244,20 +242,6 @@ export default function QuestionDetail() {
           </div>
         )}
       </Container>
-
-      {/* Modals */}
-      {showEditModal && (
-        <QuestionModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          question={question}
-          onSaved={() => {
-            setShowEditModal(false);
-            fetchQuestion();
-            showToast('Question updated', 'success');
-          }}
-        />
-      )}
 
       <Modal
         isOpen={showDeleteModal}

@@ -10,7 +10,6 @@ import Container from '../../components/layout/Container';
 import { EmptyState, PageHeader } from '../../components/layout';
 import Pagination from '../../components/ui/Pagination';
 import { useToast } from '../../components/ui/Toast';
-import QuestionModal from '../../components/questions/QuestionModal';
 import emptyQuestions from '../../assets/empty-questions.svg';
 
 /**
@@ -41,8 +40,6 @@ export default function QuestionsByCategory() {
   });
   const [searchDebounced, setSearchDebounced] = useState('');
 
-  const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   // ── Initial / category fetch ─────────────────────────────────────────────
@@ -104,12 +101,6 @@ export default function QuestionsByCategory() {
     }
   };
 
-  const handleEdit = (q, e) => {
-    e?.stopPropagation();
-    setEditingQuestion(q);
-    setShowQuestionModal(true);
-  };
-
   const handleApprove = async (q, e) => {
     e?.stopPropagation();
     try {
@@ -158,7 +149,7 @@ export default function QuestionsByCategory() {
               Back
             </Button>
             <Button
-              onClick={() => { setEditingQuestion(null); setShowQuestionModal(true); }}
+              onClick={() => navigate(`/questions/new?category=${categoryId}`)}
               variant="ghost"
               size="sm"
               leftIcon={<Plus className="h-4 w-4" />}
@@ -228,7 +219,7 @@ export default function QuestionsByCategory() {
             }
             action={
               <Button
-                onClick={() => { setEditingQuestion(null); setShowQuestionModal(true); }}
+                onClick={() => navigate(`/questions/new?category=${categoryId}`)}
                 leftIcon={<Plus className="h-4 w-4" />}
               >
                 Add Question
@@ -306,22 +297,6 @@ export default function QuestionsByCategory() {
           </div>
         )}
       </Container>
-
-      {/* Modals */}
-      {showQuestionModal && (
-        <QuestionModal
-          isOpen={showQuestionModal}
-          onClose={() => { setShowQuestionModal(false); setEditingQuestion(null); }}
-          question={editingQuestion}
-          defaultCategoryId={isUncategorized ? null : parseInt(categoryId, 10)}
-          onSaved={() => {
-            setShowQuestionModal(false);
-            setEditingQuestion(null);
-            fetchQuestions(pagination.page);
-            showToast(editingQuestion ? 'Question updated' : 'Question created', 'success');
-          }}
-        />
-      )}
 
       <Modal
         isOpen={!!deleteTarget}

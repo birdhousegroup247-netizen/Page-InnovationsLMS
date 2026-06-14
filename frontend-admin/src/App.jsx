@@ -72,6 +72,7 @@ const InstructorApplications = lazyWithReload(() => import('./pages/admin/Instru
 const QuestionBank = lazyWithReload(() => import('./pages/admin/QuestionBank'));
 const QuestionsByCategory = lazyWithReload(() => import('./pages/admin/QuestionsByCategory'));
 const QuestionDetail = lazyWithReload(() => import('./pages/admin/QuestionDetail'));
+const QuestionEditor = lazyWithReload(() => import('./pages/admin/QuestionEditor'));
 const Tests = lazyWithReload(() => import('./pages/admin/Tests'));
 const TestBuilder = lazyWithReload(() => import('./pages/admin/TestBuilder'));
 const TestResults = lazyWithReload(() => import('./pages/admin/TestResults'));
@@ -251,10 +252,26 @@ function App() {
               }
             />
             <Route
+              path="/questions/new"
+              element={
+                <AdminRoute>
+                  <QuestionEditor />
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/questions/category/:categoryId"
               element={
                 <AdminRoute>
                   <QuestionsByCategory />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/questions/:questionId/edit"
+              element={
+                <AdminRoute>
+                  <QuestionEditor />
                 </AdminRoute>
               }
             />

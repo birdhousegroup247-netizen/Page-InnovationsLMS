@@ -7,7 +7,6 @@ import Container from '../../components/layout/Container';
 import StatsCard from '../../components/ui/StatsCard';
 import { PageHeader } from '../../components/layout';
 import { useToast } from '../../components/ui/Toast';
-import QuestionModal from '../../components/questions/QuestionModal';
 import BulkImport from '../../components/questions/BulkImport';
 
 /**
@@ -27,7 +26,6 @@ export default function QuestionBank() {
   const [breakdown, setBreakdown] = useState({ category_counts: [], uncategorized_count: 0 });
   const [loading, setLoading] = useState(true);
 
-  const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 
   useEffect(() => {
@@ -90,7 +88,7 @@ export default function QuestionBank() {
               Import CSV
             </Button>
             <Button
-              onClick={() => setShowQuestionModal(true)}
+              onClick={() => navigate('/questions/new')}
               variant="ghost"
               size="sm"
               leftIcon={<Plus className="h-4 w-4" />}
@@ -104,7 +102,7 @@ export default function QuestionBank() {
 
       <Container className="py-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
           <StatsCard title="Total" value={stats.total} icon={HelpCircle} color="blue" />
           <StatsCard title="Approved" value={stats.approved} icon={CheckCircle} color="green" />
           <StatsCard title="Pending" value={stats.pending} icon={Clock} color="yellow" />
@@ -157,21 +155,8 @@ export default function QuestionBank() {
         </div>
       </Container>
 
-      {/* Modals — Add new question + Bulk import. Live on the landing so admins
-          can create questions before drilling into any category. */}
-      {showQuestionModal && (
-        <QuestionModal
-          isOpen={showQuestionModal}
-          onClose={() => setShowQuestionModal(false)}
-          question={null}
-          onSaved={() => {
-            setShowQuestionModal(false);
-            showToast('Question created', 'success');
-            refresh();
-          }}
-        />
-      )}
-
+      {/* Bulk import stays a modal — it's a short multi-step flow that doesn't
+          need its own URL. Add Question went to a dedicated page. */}
       {showBulkImportModal && (
         <BulkImport
           isOpen={showBulkImportModal}
