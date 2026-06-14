@@ -434,6 +434,12 @@ export default function Tests() {
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <Users className="w-4 h-4 mr-1" />
                           {test.assigned_students_count || 0}
+                          {!!test.enrolled_students_count &&
+                            test.enrolled_students_count !== test.assigned_students_count && (
+                              <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">
+                                · {test.enrolled_students_count} enrolled
+                              </span>
+                            )}
                         </div>
                       </td>
                       <td className="px-3 py-4">
@@ -462,17 +468,38 @@ export default function Tests() {
             </div>
 
             {/* Tests Cards — mobile */}
-            <ul className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-              {tests.map((test) => (
-                <li key={test.id} className="p-4">
-                  <div className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white break-words pr-2">
-                          {test.title || test.test_name}
-                        </p>
-                        <div className="flex-shrink-0">
+            <div className="md:hidden p-4 space-y-3">
+              {tests.map((test) => {
+                const stripeColor =
+                  test.status === 'published'
+                    ? 'bg-green-500'
+                    : test.status === 'archived'
+                    ? 'bg-yellow-500'
+                    : 'bg-gray-400';
+                return (
+                  <div
+                    key={test.id}
+                    className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-800 shadow-sm"
+                  >
+                    {/* status accent stripe */}
+                    <span className={`absolute left-0 top-0 bottom-0 w-1 ${stripeColor}`} />
+
+                    <div className="p-4 pl-5">
+                      {/* Header: status pill + kebab */}
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="min-w-0">
+                          {getStatusBadge(test.status)}
+                          <h3 className="mt-2 text-base font-semibold text-gray-900 dark:text-white leading-tight break-words">
+                            {test.title || test.test_name}
+                          </h3>
+                          {test.course?.title && (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1">
+                              <FileText className="w-3.5 h-3.5" />
+                              {test.course.title}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 -mr-2 -mt-1">
                           <TestRowActions
                             test={test}
                             onView={handleViewResults}
@@ -483,33 +510,52 @@ export default function Tests() {
                           />
                         </div>
                       </div>
+
+                      {/* Description */}
                       {test.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 break-words">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words mb-3">
                           {test.description}
                         </p>
                       )}
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
-                        {getStatusBadge(test.status)}
-                        {test.course?.title && (
-                          <span className="inline-flex items-center gap-1">
-                            <FileText className="w-3.5 h-3.5" /> {test.course.title}
+
+                      {/* Stat row */}
+                      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                        <div className="flex flex-col items-start">
+                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            <CheckCircle className="w-3.5 h-3.5" /> Questions
                           </span>
-                        )}
-                        <span className="inline-flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" /> {test.question_count || 0} questions
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" /> {test.assigned_students_count || 0} students
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" /> {formatDate(test.due_date)}
-                        </span>
+                          <span className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
+                            {test.question_count || 0}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            <Users className="w-3.5 h-3.5" /> Students
+                          </span>
+                          <span className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
+                            {test.assigned_students_count || 0}
+                          </span>
+                          {!!test.enrolled_students_count &&
+                            test.enrolled_students_count !== test.assigned_students_count && (
+                              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                                of {test.enrolled_students_count} enrolled
+                              </span>
+                            )}
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            <Clock className="w-3.5 h-3.5" /> Due
+                          </span>
+                          <span className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
+                            {formatDate(test.due_date)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+            </div>
 
             {/* Pagination */}
             <div className="border-t border-gray-200 dark:border-gray-700 p-4">

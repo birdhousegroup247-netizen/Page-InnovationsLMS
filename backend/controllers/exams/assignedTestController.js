@@ -8,6 +8,7 @@ const {
   User,
   Course,
   Category,
+  Enrollment,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -805,16 +806,23 @@ class AssignedTestController {
       });
 
       // Attach question + student counts so the list view doesn't show 0 for
-      // every test (Questions / Students columns on /tests).
+      // every test (Questions / Students columns on /tests). Also return the
+      // course's enrollment count — a published test with assign_to:'all'
+      // can be taken by every enrolled student, so showing only the
+      // TestAssignment rows undersells the real reach.
       const tests = await Promise.all(
         rows.map(async (t) => {
           const plain = t.toJSON();
-          const [questionCount, studentCount] = await Promise.all([
+          const [questionCount, assignedCount, enrolledCount] = await Promise.all([
             AssignedTestQuestion.count({ where: { test_id: t.id } }),
             TestAssignment.count({ where: { test_id: t.id } }),
+            t.course_id
+              ? Enrollment.count({ where: { course_id: t.course_id } }).catch(() => 0)
+              : Promise.resolve(0),
           ]);
           plain.question_count = questionCount;
-          plain.assigned_students_count = studentCount;
+          plain.assigned_students_count = assignedCount;
+          plain.enrolled_students_count = enrolledCount;
           // Frontend list reads `test.title` and `test.due_date` — alias the
           // model's actual column names so the table doesn't render blank.
           plain.title = plain.test_name;
