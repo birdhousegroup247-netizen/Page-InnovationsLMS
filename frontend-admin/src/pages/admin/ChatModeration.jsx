@@ -572,7 +572,18 @@ function SupportInbox() {
               ) : (
                 <div className="space-y-3">
                   {messages.map((msg) => {
-                    const isOwn = msg.sender_id === adminUser?.id;
+                    // sender_id can come back as a number or, on some cached
+                    // bundles, missing — fall back to the included sender.id.
+                    // Compare as Number to defeat any string/number mismatch
+                    // that would make isOwn always-true (the bug where every
+                    // bubble landed on the right "own" side regardless of who
+                    // actually sent it).
+                    const senderId = msg.sender_id ?? msg.senderId ?? msg.sender?.id;
+                    const myId = adminUser?.id;
+                    const isOwn =
+                      myId != null &&
+                      senderId != null &&
+                      Number(senderId) === Number(myId);
                     return (
                       <div key={msg.id} className={cn('flex gap-2', isOwn ? 'flex-row-reverse' : 'flex-row')}>
                         <div className={cn(
