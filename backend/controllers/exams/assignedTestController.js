@@ -898,7 +898,22 @@ class AssignedTestController {
         throw new NotFoundError('Test not found');
       }
 
-      return ApiResponse.success(res, { test });
+      // Same shape the list endpoint returns — the TestResults / Edit pages
+      // read title/due_date and the count fields.
+      const plain = test.toJSON();
+      const [assignedCount, enrolledCount] = await Promise.all([
+        TestAssignment.count({ where: { test_id: test.id } }),
+        test.course_id
+          ? Enrollment.count({ where: { course_id: test.course_id } }).catch(() => 0)
+          : Promise.resolve(0),
+      ]);
+      plain.title = plain.test_name;
+      plain.due_date = plain.end_date;
+      plain.question_count = Array.isArray(plain.test_questions) ? plain.test_questions.length : 0;
+      plain.assigned_students_count = assignedCount;
+      plain.enrolled_students_count = enrolledCount;
+
+      return ApiResponse.success(res, { test: plain });
     } catch (error) {
       next(error);
     }

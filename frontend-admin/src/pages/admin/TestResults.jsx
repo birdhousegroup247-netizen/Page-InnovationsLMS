@@ -187,8 +187,8 @@ export default function TestResults() {
     <>
       <PageHeader
         icon={BarChart3}
-        title={test.title}
-        subtitle={test.description || 'Test Results and Analytics'}
+        title={test.title || test.test_name || 'Test Results'}
+        subtitle={test.course?.title ? `Results for ${test.course.title}` : 'Test Results and Analytics'}
         actions={
           <>
             <Button
