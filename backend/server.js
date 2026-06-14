@@ -730,6 +730,11 @@ const startServer = async () => {
         require('./models/TestAssignment'),
         require('./models/AssignedTestAttempt'),
         require('./models/AssignedTestAnswer'),
+        // /admin/instructor-applications was 500ing with "Failed to load
+        // applications" — table created via newModels sync but later-added
+        // columns (cv_url, credential_urls, applied_at, reviewed_by, etc.)
+        // never materialized on prod.
+        require('./models/InstructorApplication'),
       ];
       for (const Model of safetyNetModels) {
         try {

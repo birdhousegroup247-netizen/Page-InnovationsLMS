@@ -1,4 +1,5 @@
 const { User, InstructorApplication } = require('../../models');
+const bcrypt = require('bcryptjs');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../../utils/errors');
@@ -344,5 +345,116 @@ class InstructorApplicationController {
     }
   }
 }
+
+/**
+ * Seed a handful of demo applications across statuses so the admin
+ * page isn't empty during testing. Idempotent by email — re-running
+ * doesn't create duplicates. Demo users are flagged with @demo.local
+ * so it's easy to filter or wipe them later.
+ *
+ * POST /api/admin/instructor-applications/seed-demo
+ */
+InstructorApplicationController.seedDemo = async function (req, res, next) {
+  try {
+    const demos = [
+      {
+        full_name: 'Adaeze Okeke',
+        email: 'adaeze.okeke@demo.local',
+        status: 'pending',
+        bio: 'Backend engineer with 8 years building APIs in Node.js + Postgres.',
+        qualifications: 'B.Sc Computer Science, AWS Solutions Architect.',
+        teaching_experience: 'Ran a 6-week Node bootcamp internally at my last job.',
+        subject_expertise: 'Node.js, Postgres, system design.',
+      },
+      {
+        full_name: 'Tunde Bakare',
+        email: 'tunde.bakare@demo.local',
+        status: 'pending',
+        bio: 'Data scientist focused on practical ML for African fintech.',
+        qualifications: 'M.Sc Statistics, Coursera ML specialization.',
+        teaching_experience: 'Teaching assistant for an online stats course.',
+        subject_expertise: 'Python, pandas, scikit-learn, A/B testing.',
+      },
+      {
+        full_name: 'Chiamaka Eze',
+        email: 'chiamaka.eze@demo.local',
+        status: 'approved',
+        bio: 'Senior frontend engineer, ex-Andela.',
+        qualifications: 'B.Eng Electronics, 5+ years React in production.',
+        teaching_experience: 'Mentored 30+ juniors through Andela.',
+        subject_expertise: 'React, TypeScript, Next.js, design systems.',
+        rejection_reason: null,
+      },
+      {
+        full_name: 'Femi Adesanya',
+        email: 'femi.adesanya@demo.local',
+        status: 'rejected',
+        bio: 'Self-taught dev wanting to teach coding.',
+        qualifications: 'Bootcamp graduate, 6 months experience.',
+        teaching_experience: 'None.',
+        subject_expertise: 'HTML, CSS.',
+        rejection_reason: 'Not enough teaching experience yet — please reapply after 12 months of mentoring.',
+      },
+      {
+        full_name: 'Ngozi Umeh',
+        email: 'ngozi.umeh@demo.local',
+        status: 'under_review',
+        bio: 'DevOps engineer focused on Kubernetes + observability.',
+        qualifications: 'CKA, CKAD certified.',
+        teaching_experience: 'Speaker at 2 K8s meetups in Lagos.',
+        subject_expertise: 'Docker, Kubernetes, Prometheus, GitHub Actions.',
+      },
+    ];
+
+    const passwordHash = await bcrypt.hash('Demo!2026', 10);
+    const created = [];
+
+    for (const d of demos) {
+      let user = await User.findOne({ where: { email: d.email } });
+      if (!user) {
+        user = await User.create({
+          full_name: d.full_name,
+          email: d.email,
+          password_hash: passwordHash,
+          role: 'student',
+          instructor_status: d.status,
+          is_active: true,
+          email_verified: true,
+        });
+      } else {
+        user.instructor_status = d.status;
+        await user.save();
+      }
+
+      let app = await InstructorApplication.findOne({ where: { user_id: user.id } });
+      if (!app) {
+        app = await InstructorApplication.create({
+          user_id: user.id,
+          status: d.status,
+          bio: d.bio,
+          qualifications: d.qualifications,
+          teaching_experience: d.teaching_experience,
+          subject_expertise: d.subject_expertise,
+          rejection_reason: d.rejection_reason || null,
+          reviewed_by: ['approved', 'rejected'].includes(d.status) ? req.user.id : null,
+          reviewed_at: ['approved', 'rejected'].includes(d.status) ? new Date() : null,
+          applied_at: new Date(),
+        });
+      } else {
+        app.status = d.status;
+        app.rejection_reason = d.rejection_reason || null;
+        app.reviewed_by = ['approved', 'rejected'].includes(d.status) ? req.user.id : null;
+        app.reviewed_at = ['approved', 'rejected'].includes(d.status) ? new Date() : null;
+        await app.save();
+      }
+      created.push({ user: { id: user.id, email: user.email }, application_id: app.id, status: app.status });
+    }
+
+    logger.info(`Admin ${req.user.email} seeded ${created.length} demo instructor applications`);
+    return ApiResponse.success(res, { created }, `Seeded ${created.length} demo applications`);
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = InstructorApplicationController;

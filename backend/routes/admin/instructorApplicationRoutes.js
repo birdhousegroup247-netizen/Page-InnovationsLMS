@@ -57,4 +57,11 @@ router.put('/:id/reject', InstructorApplicationController.rejectApplication);
  */
 router.put('/:id/revoke', InstructorApplicationController.revokeInstructor);
 
+/**
+ * @route   POST /api/admin/instructor-applications/seed-demo
+ * @desc    Seed demo applications across statuses (idempotent by email).
+ * @access  Admin only
+ */
+router.post('/seed-demo', InstructorApplicationController.seedDemo);
+
 module.exports = router;

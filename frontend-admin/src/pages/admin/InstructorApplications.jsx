@@ -14,14 +14,18 @@ import {
   AlertCircle,
   ArrowLeft,
   Shield,
+  Sparkles,
 } from 'lucide-react';
 import { Container, EmptyState, PageHeader } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal, Input } from '../../components/ui';
+import { useToast } from '../../components/ui/Toast';
 import emptyApplications from '../../assets/empty-applications.svg';
 import { cn } from '../../utils/cn';
 
 export default function InstructorApplications() {
   useAuth();
+  const { showToast } = useToast();
+  const [seeding, setSeeding] = useState(false);
   const [applications, setApplications] = useState([]);
   const [stats, setStats] = useState({ pending: 0, under_review: 0, approved: 0, rejected: 0, revoked: 0, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -116,6 +120,31 @@ export default function InstructorApplications() {
         icon={Shield}
         title="Instructor Applications"
         subtitle="Manage instructor verification and approval"
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              if (seeding) return;
+              if (!window.confirm('Add 5 demo applications (Pending, Under Review, Approved, Rejected)? Re-running won\'t duplicate them.')) return;
+              try {
+                setSeeding(true);
+                const res = await adminInstructorAPI.seedDemo();
+                showToast(`Seeded ${res.data?.data?.created?.length || 0} demo applications`, 'success');
+                fetchData();
+              } catch (e) {
+                showToast(e.response?.data?.message || 'Failed to seed demos', 'error');
+              } finally {
+                setSeeding(false);
+              }
+            }}
+            leftIcon={<Sparkles className="h-4 w-4" />}
+            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            disabled={seeding}
+          >
+            {seeding ? 'Seeding…' : 'Seed demo'}
+          </Button>
+        }
       />
 
       <Container className="py-8">

@@ -249,6 +249,7 @@ export const adminInstructorAPI = {
   getStats: () => api.get('/api/admin/instructor-applications/stats'),
   approveApplication: (userId) => api.put(`/api/admin/instructor-applications/${userId}/approve`),
   rejectApplication: (userId, reason) => api.put(`/api/admin/instructor-applications/${userId}/reject`, { reason }),
+  seedDemo: () => api.post('/api/admin/instructor-applications/seed-demo'),
   revokeInstructor: (userId, reason) => api.put(`/api/admin/instructor-applications/${userId}/revoke`, { reason }),
 };
 
