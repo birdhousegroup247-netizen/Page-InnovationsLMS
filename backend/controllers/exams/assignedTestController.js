@@ -837,6 +837,46 @@ class AssignedTestController {
     }
   }
 
+  // Per-test attempts list for the instructor/admin TestResults page.
+  // Returns one row per attempt with the student attached.
+  static async getTestAttempts(req, res, next) {
+    try {
+      const { testId } = req.params;
+      const { status, sort } = req.query;
+
+      const where = { test_id: testId };
+      if (status === 'completed') where.completed_at = { [Op.ne]: null };
+      else if (status === 'in_progress') where.completed_at = null;
+
+      const order =
+        sort === 'score_asc'
+          ? [['score', 'ASC']]
+          : sort === 'date_desc'
+          ? [['started_at', 'DESC']]
+          : sort === 'date_asc'
+          ? [['started_at', 'ASC']]
+          : [['score', 'DESC']];
+
+      const rows = await AssignedTestAttempt.findAll({
+        where,
+        include: [
+          { model: User, as: 'student', attributes: ['id', 'full_name', 'email'] },
+        ],
+        order,
+      });
+
+      const attempts = rows.map((a) => {
+        const plain = a.toJSON();
+        plain.status = plain.completed_at ? 'completed' : 'in_progress';
+        return plain;
+      });
+
+      return ApiResponse.success(res, { attempts });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Get test by ID (with stats for instructor)
   static async getTestById(req, res, next) {
     try {

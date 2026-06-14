@@ -62,4 +62,7 @@ router.post('/:testId/questions', authenticate, authorize('instructor', 'admin',
 // Assign test to students (manual)
 router.post('/:testId/assign', authenticate, authorize('instructor', 'admin', 'super_admin'), AssignedTestController.assignTestToStudents);
 
+// Per-test results list (instructor/admin view) — used by /test-results/:testId
+router.get('/:testId/results', authenticate, authorize('instructor', 'admin', 'super_admin'), AssignedTestController.getTestAttempts);
+
 module.exports = router;

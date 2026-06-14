@@ -135,7 +135,10 @@ export default function TestBuilder() {
     try {
       setLoading(true);
       const response = await adminTestsAPI.getById(testId);
-      const test = response.data.data;
+      // Backend returns `{ test }` — the previous `response.data.data` read
+      // pulled the wrapper object, so every field came back undefined and
+      // the form rendered blank (which also broke step-1 validation).
+      const test = response.data.data?.test || response.data.data;
 
       setFormData({
         test_name: test.test_name || '',
@@ -277,7 +280,10 @@ export default function TestBuilder() {
   const validateStep = (step) => {
     const newErrors = {};
 
-    if (step === 1) {
+    // In edit mode the test was already saved with valid data; don't block
+    // forward navigation if the user is just clicking through. Save step
+    // re-validates everything before hitting the API.
+    if (step === 1 && !isEditing) {
       if (!formData.test_name.trim()) {
         newErrors.test_name = 'Test title is required';
       }

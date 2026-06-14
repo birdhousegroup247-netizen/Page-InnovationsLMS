@@ -53,9 +53,9 @@ export default function TestResults() {
     try {
       setLoading(true);
 
-      // Fetch test details
+      // Fetch test details — backend returns `{ test }` so unwrap.
       const testResponse = await adminTestsAPI.getById(testId);
-      setTest(testResponse.data.data);
+      setTest(testResponse.data.data?.test || testResponse.data.data);
 
       // Fetch results
       const resultsResponse = await adminTestsAPI.getResults(testId, filters);
