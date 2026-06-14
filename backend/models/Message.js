@@ -79,6 +79,11 @@ const Message = sequelize.define(
   {
     tableName: 'messages',
     timestamps: true,
+    // Explicit createdAt alias — without this Sequelize emits the JS-side
+    // `createdAt` attribute on .toJSON(), and the admin UI (which reads
+    // msg.created_at) renders every bubble's timestamp as "Invalid Date".
+    // Same trap we hit on ActivityLog.
+    createdAt: 'created_at',
     updatedAt: false,
     underscored: true,
     indexes: [

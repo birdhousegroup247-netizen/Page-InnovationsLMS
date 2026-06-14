@@ -412,10 +412,16 @@ function SupportInbox() {
   });
 
   return (
-    <div className="flex h-[640px] bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-260px)] min-h-[480px] md:h-[640px] bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark overflow-hidden">
 
-      {/* Left: conversation list */}
-      <div className="w-72 flex-shrink-0 border-r border-gray-100 dark:border-border-dark flex flex-col">
+      {/* Left: conversation list — full width on mobile when no conv selected,
+          hidden when one is open (replaced by the thread). Side panel on md+. */}
+      <div
+        className={cn(
+          'md:w-72 md:flex-shrink-0 border-r border-gray-100 dark:border-border-dark flex-col',
+          activeConv ? 'hidden md:flex' : 'flex flex-1 md:flex-initial'
+        )}
+      >
         <div className="px-4 py-4 border-b border-gray-100 dark:border-border-dark space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Support Inbox</h3>
@@ -511,27 +517,41 @@ function SupportInbox() {
         </div>
       </div>
 
-      {/* Right: message thread */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Right: message thread — hidden until a conv is chosen on mobile,
+          always visible on md+ (shows empty-state when nothing selected). */}
+      <div
+        className={cn(
+          'flex-1 flex-col overflow-hidden',
+          activeConv ? 'flex' : 'hidden md:flex'
+        )}
+      >
         {activeConv ? (
           <>
             {/* Thread header */}
             {(() => {
               const other = getOther(activeConv);
               return (
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-border-dark flex items-center justify-between bg-white dark:bg-dark-800 flex-shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center text-sm font-semibold">
+                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-100 dark:border-border-dark flex items-center justify-between bg-white dark:bg-dark-800 flex-shrink-0 gap-2">
+                  <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                    {/* Mobile back-to-list */}
+                    <button
+                      onClick={() => setActiveConv(null)}
+                      className="md:hidden p-1.5 text-gray-500 dark:text-gray-400 hover:text-brand-blue rounded-lg flex-shrink-0"
+                      title="Back to inbox"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <div className="w-9 h-9 rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center text-sm font-semibold flex-shrink-0">
                       {initials(other?.full_name)}
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm">{other?.full_name || 'Unknown'}</p>
-                      <p className="text-xs text-gray-400 capitalize">{other?.role}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{other?.full_name || 'Unknown'}</p>
+                      <p className="text-xs text-gray-400 capitalize truncate">{other?.role}</p>
                     </div>
                   </div>
                   <button
                     onClick={refreshMessages}
-                    className="p-1.5 text-gray-400 hover:text-brand-blue hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-brand-blue hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-colors flex-shrink-0"
                     title="Refresh"
                   >
                     <RefreshCw className="w-4 h-4" />
@@ -572,7 +592,13 @@ function SupportInbox() {
                             </a>
                           )}
                           <p className={cn('text-[10px] mt-1', isOwn ? 'text-white/60' : 'text-gray-400')}>
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {(() => {
+                              const raw = msg.created_at || msg.createdAt;
+                              const d = raw ? new Date(raw) : null;
+                              return d && !Number.isNaN(d.getTime())
+                                ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : '';
+                            })()}
                           </p>
                         </div>
                       </div>
