@@ -54,7 +54,11 @@ class AssignedTestController {
         description,
         instructor_id: req.user.id,
         course_id,
-        total_questions,
+        // Default to 0 — the real count is written by addQuestionsToTest in
+        // the next call. Without this default the NOT NULL constraint on
+        // total_questions blows up as a generic "Validation failed" toast
+        // when the admin clicks Publish on a freshly-built test.
+        total_questions: total_questions ?? 0,
         total_marks: 0, // Will be calculated when questions are added
         time_limit_minutes,
         passing_score: passing_score || 70,

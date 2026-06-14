@@ -14,13 +14,16 @@ const errorHandler = (err, req, res, next) => {
     error: err.stack,
   });
 
-  // Sequelize Validation Error
+  // Sequelize Validation Error — surface the field-level reason so the
+  // frontend toast says e.g. "total_questions cannot be null" instead of
+  // a useless generic "Validation failed".
   if (err.name === 'SequelizeValidationError') {
     const errors = err.errors.map((e) => ({
       field: e.path,
       message: e.message,
     }));
-    return ApiResponse.validationError(res, errors);
+    const summary = errors.map((e) => `${e.field}: ${e.message}`).join('; ');
+    return ApiResponse.validationError(res, errors, summary || 'Validation failed');
   }
 
   // Sequelize Unique Constraint Error
