@@ -722,6 +722,14 @@ const startServer = async () => {
         require('./models/Assignment'),
         require('./models/AssignmentSubmission'),
         require('./models/CourseAnnouncement'),
+        // Tests family — recurring 500 source on /api/assigned-tests/my-tests
+        // when production drifts behind the model (Sequelize SELECTs every
+        // declared column, so one missing column breaks the whole list).
+        require('./models/AssignedTest'),
+        require('./models/AssignedTestQuestion'),
+        require('./models/TestAssignment'),
+        require('./models/AssignedTestAttempt'),
+        require('./models/AssignedTestAnswer'),
       ];
       for (const Model of safetyNetModels) {
         try {
