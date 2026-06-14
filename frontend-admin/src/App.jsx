@@ -70,6 +70,8 @@ const AdminAnalytics = lazyWithReload(() => import('./pages/admin/Analytics'));
 const AdminActivity = lazyWithReload(() => import('./pages/admin/Activity'));
 const InstructorApplications = lazyWithReload(() => import('./pages/admin/InstructorApplications'));
 const QuestionBank = lazyWithReload(() => import('./pages/admin/QuestionBank'));
+const QuestionsByCategory = lazyWithReload(() => import('./pages/admin/QuestionsByCategory'));
+const QuestionDetail = lazyWithReload(() => import('./pages/admin/QuestionDetail'));
 const Tests = lazyWithReload(() => import('./pages/admin/Tests'));
 const TestBuilder = lazyWithReload(() => import('./pages/admin/TestBuilder'));
 const TestResults = lazyWithReload(() => import('./pages/admin/TestResults'));
@@ -245,6 +247,22 @@ function App() {
               element={
                 <AdminRoute>
                   <QuestionBank />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/questions/category/:categoryId"
+              element={
+                <AdminRoute>
+                  <QuestionsByCategory />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/questions/:questionId"
+              element={
+                <AdminRoute>
+                  <QuestionDetail />
                 </AdminRoute>
               }
             />
