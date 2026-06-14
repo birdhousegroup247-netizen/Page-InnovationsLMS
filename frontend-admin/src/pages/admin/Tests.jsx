@@ -370,27 +370,27 @@ export default function Tests() {
           </div>
         ) : (
           <>
-            {/* Tests Table — desktop */}
-            <div className="hidden md:block overflow-x-auto">
+            {/* Tests table — same responsive pattern as /courses:
+                non-essential columns drop out at sm/md/lg breakpoints, so
+                mobile shows just Name + Status + Actions. Deeper info
+                lives in Edit Test / View Results. */}
+            <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-gray-700">
                   <tr>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Test Name
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Course
-                    </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">
                       Questions
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                       Students
                     </th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">
                       Due Date
                     </th>
                     <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -402,35 +402,35 @@ export default function Tests() {
                   {tests.map((test) => (
                     <tr
                       key={test.id}
-                      className="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
                     >
-                      <td className="px-3 py-4 max-w-xs">
-                        <div className="flex items-start gap-3">
-                          <FileText className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
-                              {test.title || test.test_name}
-                            </p>
-                            {test.description && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 break-words">
-                                {test.description}
-                              </p>
-                            )}
+                      <td className="px-3 py-4">
+                        <button
+                          type="button"
+                          onClick={() => handleEditTest(test)}
+                          className="flex items-center gap-3 min-w-0 text-left group hover:text-brand-blue dark:hover:text-brand-blue transition-colors w-full"
+                          title="Edit test"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5" />
                           </div>
-                        </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-brand-blue dark:group-hover:text-brand-blue break-words">
+                              {test.title || test.test_name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {test.course?.title || 'No course'}
+                            </div>
+                          </div>
+                        </button>
                       </td>
-                      <td className="px-3 py-4">
-                        <p className="text-sm text-gray-900 dark:text-white">
-                          {test.course?.title || 'N/A'}
-                        </p>
-                      </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <CheckCircle className="w-4 h-4 mr-1" />
                           {test.question_count || 0}
                         </div>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <Users className="w-4 h-4 mr-1" />
                           {test.assigned_students_count || 0}
@@ -442,16 +442,16 @@ export default function Tests() {
                             )}
                         </div>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap">
                         {getStatusBadge(test.status)}
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-3 py-4 whitespace-nowrap hidden lg:table-cell">
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <Clock className="w-4 h-4 mr-1" />
                           {formatDate(test.due_date)}
                         </div>
                       </td>
-                      <td className="px-3 py-4 text-right">
+                      <td className="px-3 py-4 whitespace-nowrap text-right">
                         <TestRowActions
                           test={test}
                           onView={handleViewResults}
@@ -465,96 +465,6 @@ export default function Tests() {
                   ))}
                 </tbody>
               </table>
-            </div>
-
-            {/* Tests Cards — mobile */}
-            <div className="md:hidden p-4 space-y-3">
-              {tests.map((test) => {
-                const stripeColor =
-                  test.status === 'published'
-                    ? 'bg-green-500'
-                    : test.status === 'archived'
-                    ? 'bg-yellow-500'
-                    : 'bg-gray-400';
-                return (
-                  <div
-                    key={test.id}
-                    className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-800 shadow-sm"
-                  >
-                    {/* status accent stripe */}
-                    <span className={`absolute left-0 top-0 bottom-0 w-1 ${stripeColor}`} />
-
-                    <div className="p-4 pl-5">
-                      {/* Header: status pill + kebab */}
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="min-w-0">
-                          {getStatusBadge(test.status)}
-                          <h3 className="mt-2 text-base font-semibold text-gray-900 dark:text-white leading-tight break-words">
-                            {test.title || test.test_name}
-                          </h3>
-                          {test.course?.title && (
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1">
-                              <FileText className="w-3.5 h-3.5" />
-                              {test.course.title}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex-shrink-0 -mr-2 -mt-1">
-                          <TestRowActions
-                            test={test}
-                            onView={handleViewResults}
-                            onEdit={handleEditTest}
-                            onPublish={handlePublishTest}
-                            onArchive={handleArchiveTest}
-                            onDelete={handleDeleteTest}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      {test.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words mb-3">
-                          {test.description}
-                        </p>
-                      )}
-
-                      {/* Stat row */}
-                      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100 dark:border-gray-700/60">
-                        <div className="flex flex-col items-start">
-                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            <CheckCircle className="w-3.5 h-3.5" /> Questions
-                          </span>
-                          <span className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
-                            {test.question_count || 0}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            <Users className="w-3.5 h-3.5" /> Students
-                          </span>
-                          <span className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
-                            {test.assigned_students_count || 0}
-                          </span>
-                          {!!test.enrolled_students_count &&
-                            test.enrolled_students_count !== test.assigned_students_count && (
-                              <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                                of {test.enrolled_students_count} enrolled
-                              </span>
-                            )}
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            <Clock className="w-3.5 h-3.5" /> Due
-                          </span>
-                          <span className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-white">
-                            {formatDate(test.due_date)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
 
             {/* Pagination */}
