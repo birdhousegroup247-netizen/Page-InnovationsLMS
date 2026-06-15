@@ -386,10 +386,10 @@ export const adminAnnouncementsAPI = {
   uploadAttachment: (file, onUploadProgress) => {
     const fd = new FormData();
     fd.append('file', file);
-    return api.post('/api/upload/announcement-attachment', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress,
-    });
+    // NOTE: do NOT set Content-Type here — axios needs to set it itself so
+    // it can append the multipart boundary. A manual "multipart/form-data"
+    // strips the boundary and multer rejects the body. Lesson re-learned.
+    return api.post('/api/upload/announcement-attachment', fd, { onUploadProgress });
   },
 };
 
