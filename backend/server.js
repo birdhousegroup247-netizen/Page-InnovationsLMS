@@ -719,6 +719,8 @@ const startServer = async () => {
         require('./models/Wishlist'),
         require('./models/Referral'),
         require('./models/AdminAnnouncement'), // adds attachment_url/_type/_name on prod
+        require('./models/Bundle'),            // /bundles save was returning "Database error"
+        require('./models/BundleCourse'),
         require('./models/Assignment'),
         require('./models/AssignmentSubmission'),
         require('./models/CourseAnnouncement'),

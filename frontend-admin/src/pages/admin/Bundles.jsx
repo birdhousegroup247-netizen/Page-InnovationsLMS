@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminBundlesAPI, adminCoursesAPI } from '../../lib/api';
 import { Package, Plus, Pencil, Trash2, X, Check, BookOpen } from 'lucide-react';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 
 const BLANK = { title: '', description: '', thumbnail_url: '', price: '', course_ids: [] };
 
@@ -202,28 +203,28 @@ export default function Bundles() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bundle Price ($) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 dark:border-dark-600 rounded-lg text-sm dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
-                    placeholder="99.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thumbnail URL</label>
-                  <input
-                    value={form.thumbnail_url}
-                    onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 dark:border-dark-600 rounded-lg text-sm dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
-                    placeholder="https://..."
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bundle Price ($) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-dark-600 rounded-lg text-sm dark:bg-dark-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  placeholder="99.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thumbnail</label>
+                <CloudinaryUpload
+                  acceptedTypes="image"
+                  maxSizeMB={5}
+                  currentFile={form.thumbnail_url}
+                  folder="bundle-thumbnails"
+                  onUploadSuccess={(url) => setForm({ ...form, thumbnail_url: url })}
+                />
               </div>
 
               {/* Course Selector */}

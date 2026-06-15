@@ -417,37 +417,6 @@ export default function ProfileSettings() {
                         uploadEndpoint="/api/upload/profile-picture"
                         folder="tekyprolms/avatars"
                       />
-                      <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-3 mb-1 transition-colors">
-                        Or paste a URL directly:
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          type="url"
-                          value={avatarUrl}
-                          onChange={(e) => setAvatarUrl(e.target.value)}
-                          placeholder="https://example.com/avatar.jpg"
-                          className="flex-1 px-4 py-2.5 bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border-gray-300 dark:border-border-dark rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
-                        />
-                        <Button
-                          onClick={handleAvatarUpdate}
-                          disabled={saving || !avatarUrl}
-                          loading={saving && avatarUrl}
-                          size="sm"
-                        >
-                          Use URL
-                        </Button>
-                      </div>
-                      {avatarUrl && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <img
-                            src={avatarUrl}
-                            alt="Preview"
-                            className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-border-dark"
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                          <span className="text-xs text-gray-400">Preview</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
