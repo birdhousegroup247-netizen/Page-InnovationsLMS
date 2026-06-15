@@ -200,7 +200,7 @@ export default function CloudinaryUpload({
               <img
                 src={preview}
                 alt="Preview"
-                className="w-full h-64 object-cover rounded-lg border border-gray-300 dark:border-border-dark"
+                className="w-full h-40 object-cover rounded-lg border border-gray-300 dark:border-border-dark"
               />
               <button
                 type="button"

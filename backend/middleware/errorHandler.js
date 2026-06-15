@@ -38,14 +38,20 @@ const errorHandler = (err, req, res, next) => {
     return ApiResponse.badRequest(res, 'Invalid reference to related resource');
   }
 
-  // Sequelize Database Error
+  // Sequelize Database Error — surface the precise Postgres message
+  // (e.g. "null value in column 'X' violates not-null constraint", "column
+  // \"Y\" does not exist") in the response so the UI toast actually says
+  // what's wrong instead of the unhelpful "Database error occurred". Same
+  // pattern we did for SequelizeValidationError. Strips trailing SQL noise.
   if (err.name === 'SequelizeDatabaseError') {
+    const raw = err.original?.message || err.parent?.message || err.message || '';
+    const clean = raw.split('\n')[0].replace(/\s+at .*$/, '').trim();
     logger.error('SequelizeDatabaseError details:', {
       message: err.message,
       sql: err.sql || err.parent?.sql,
-      original: err.original?.message || err.parent?.message,
+      original: raw,
     });
-    return ApiResponse.serverError(res, 'Database error occurred');
+    return ApiResponse.serverError(res, clean ? `Database error: ${clean}` : 'Database error occurred');
   }
 
   // JWT Error
