@@ -2,6 +2,7 @@ const { Bundle, BundleCourse, Course, User, Category, Enrollment } = require('..
 const ApiResponse = require('../../utils/response');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { Op } = require('sequelize');
+const ActivityController = require('../activity/activityController');
 
 const COURSE_ATTRS = [
   'id', 'title', 'description', 'thumbnail_url',
@@ -129,6 +130,7 @@ class AdminBundlesController {
         include: [{ model: Course, as: 'courses', attributes: COURSE_ATTRS, through: { attributes: [] } }],
       });
 
+      await ActivityController.logFromRequest(req, 'bundle_create', 'bundle', bundle.id, { title: bundle.title, course_count: course_ids.length, price: bundle.price }).catch(() => {});
       return ApiResponse.created(res, { bundle: full }, 'Bundle created');
     } catch (error) {
       next(error);
@@ -156,6 +158,7 @@ class AdminBundlesController {
         include: [{ model: Course, as: 'courses', attributes: COURSE_ATTRS, through: { attributes: [] } }],
       });
 
+      await ActivityController.logFromRequest(req, 'bundle_update', 'bundle', bundle.id, { title: bundle.title }).catch(() => {});
       return ApiResponse.success(res, { bundle: full }, 'Bundle updated');
     } catch (error) {
       next(error);
@@ -168,6 +171,7 @@ class AdminBundlesController {
       if (!bundle) throw new NotFoundError('Bundle not found');
 
       await bundle.update({ is_active: false });
+      await ActivityController.logFromRequest(req, 'bundle_delete', 'bundle', bundle.id, { title: bundle.title }).catch(() => {});
       return ApiResponse.success(res, null, 'Bundle deactivated');
     } catch (error) {
       next(error);

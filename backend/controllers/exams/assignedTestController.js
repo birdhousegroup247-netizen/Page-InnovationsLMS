@@ -76,6 +76,7 @@ class AssignedTestController {
       });
 
       logger.info(`Assigned test created: ${test_name} by ${req.user.email}`);
+      await ActivityController.logFromRequest(req, 'test_create', 'test', test.id, { title: test_name, course_id: course_id || null }).catch(() => {});
 
       return ApiResponse.created(res, { test }, 'Test created successfully');
     } catch (error) {
@@ -682,6 +683,13 @@ class AssignedTestController {
         priority: 'normal',
       }).catch(() => {});
 
+      await ActivityController.logFromRequest(req, 'test_complete', 'test', test.id, {
+        title: test.test_name,
+        score: totalScore,
+        percentage: parseFloat(percentage.toFixed(1)),
+        passed,
+      }).catch(() => {});
+
       return ApiResponse.success(res, {
         results: {
           attempt_id: attemptId,
@@ -974,6 +982,7 @@ class AssignedTestController {
       }
 
       logger.info(`Test ${testId} published and assigned to ${newAssignments.length} students`);
+      await ActivityController.logFromRequest(req, 'test_publish', 'test', test.id, { title: test.test_name, assigned_count: newAssignments.length }).catch(() => {});
 
       return ApiResponse.success(res, { test, assignedCount: newAssignments.length }, `Test published and assigned to ${newAssignments.length} students`);
     } catch (error) {
@@ -994,6 +1003,7 @@ class AssignedTestController {
         throw new ForbiddenError('You can only archive your own tests');
 
       await test.update({ status: 'archived' });
+      await ActivityController.logFromRequest(req, 'test_archive', 'test', test.id, { title: test.test_name }).catch(() => {});
       return ApiResponse.success(res, { test }, 'Test archived successfully');
     } catch (error) {
       next(error);
@@ -1020,6 +1030,7 @@ class AssignedTestController {
       await test.update(updates);
 
       logger.info(`Test updated: ${test.test_name}`);
+      await ActivityController.logFromRequest(req, 'test_update', 'test', test.id, { title: test.test_name }).catch(() => {});
 
       return ApiResponse.success(res, { test }, 'Test updated successfully');
     } catch (error) {
@@ -1047,6 +1058,7 @@ class AssignedTestController {
       await test.update({ status: 'archived' });
 
       logger.info(`Test archived: ${test.test_name}`);
+      await ActivityController.logFromRequest(req, 'test_delete', 'test', test.id, { title: test.test_name }).catch(() => {});
 
       return ApiResponse.success(res, null, 'Test deleted successfully');
     } catch (error) {

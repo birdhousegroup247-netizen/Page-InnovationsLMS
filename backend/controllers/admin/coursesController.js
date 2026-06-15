@@ -3,6 +3,7 @@ const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ForbiddenError } = require('../../utils/errors');
 const { Op, fn, col, literal } = require('sequelize');
+const ActivityController = require('../activity/activityController');
 
 class AdminCoursesController {
     // Get all courses with filters (admin view)
@@ -227,6 +228,13 @@ class AdminCoursesController {
             }
 
             logger.info(`Course ${id} status updated from ${oldStatus} to ${status} by admin ${req.user.email}`);
+            const statusAction =
+              status === 'published' ? 'course_publish'
+              : status === 'archived' ? 'course_archive'
+              : 'course_status_change';
+            await ActivityController.logFromRequest(req, statusAction, 'course', course.id, {
+              title: course.title, from: oldStatus, to: status,
+            }).catch(() => {});
 
             return ApiResponse.success(res, { course }, 'Course status updated successfully');
         } catch (error) {

@@ -2,6 +2,7 @@ const { Assignment, AssignmentSubmission, User, Course, Enrollment, ModuleConten
 const ApiResponse = require('../../utils/response');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
+const ActivityController = require('../activity/activityController');
 
 const instructorInclude = [{ model: User, as: 'instructor', attributes: ['id', 'full_name'] }];
 const studentInclude = [{ model: User, as: 'student', attributes: ['id', 'full_name', 'profile_picture'] }];
@@ -45,6 +46,9 @@ class AssignmentsController {
         allow_file_upload: allow_file_upload !== false,
         allow_text_submission: allow_text_submission !== false,
       });
+      await ActivityController.logFromRequest(req, 'assignment_create', 'assignment', assignment.id, {
+        title: assignment.title, course_id: parseInt(courseId),
+      }).catch(() => {});
       return ApiResponse.success(res, { assignment }, 'Assignment created', 201);
     } catch (err) { next(err); }
   }
@@ -106,6 +110,9 @@ class AssignmentsController {
         priority: 'normal',
       }).catch(() => {});
 
+      await ActivityController.logFromRequest(req, 'assignment_grade', 'assignment', submission.assignment_id, {
+        student_id: submission.student_id, title: submission.assignment.title, score,
+      }).catch(() => {});
       return ApiResponse.success(res, { submission }, 'Submission graded');
     } catch (err) { next(err); }
   }
@@ -172,6 +179,9 @@ class AssignmentsController {
         priority: 'normal',
       }).catch(() => {});
 
+      await ActivityController.logFromRequest(req, 'assignment_submit', 'assignment', assignment.id, {
+        title: assignment.title, course_id: assignment.course_id, late: isLate,
+      }).catch(() => {});
       return ApiResponse.success(res, { submission }, 'Assignment submitted', 201);
     } catch (err) { next(err); }
   }

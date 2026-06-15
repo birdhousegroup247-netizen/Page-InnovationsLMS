@@ -4,6 +4,7 @@ const logger = require('../../utils/logger');
 const { BadRequestError, NotFoundError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
+const ActivityController = require('../activity/activityController');
 
 class AdminAnnouncementsController {
   // GET /api/admin/announcements — history
@@ -114,6 +115,9 @@ class AdminAnnouncementsController {
       );
 
       logger.info(`Admin ${req.user.email} sent announcement "${title}" to ${recipientIds.length} users (target: ${target})`);
+      await ActivityController.logFromRequest(req, 'announcement_send', 'announcement', announcement.id, {
+        title, target, recipient_count: recipientIds.length, course_id: course_id || null,
+      }).catch(() => {});
 
       return ApiResponse.created(res, { announcement }, `Announcement sent to ${recipientIds.length} users`);
     } catch (error) {

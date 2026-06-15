@@ -131,6 +131,96 @@ export default function Activity() {
           type = 'user_suspended';
           actionText = 'suspended user';
           target = log.metadata?.target_user_name || '';
+        } else if (log.action === 'course_create') {
+          actionText = 'created course';
+          target = log.metadata?.title || `course #${log.entity_id}`;
+        } else if (log.action === 'course_publish') {
+          severity = 'success';
+          actionText = 'published course';
+          target = log.metadata?.title || `course #${log.entity_id}`;
+        } else if (log.action === 'course_archive') {
+          severity = 'warning';
+          actionText = 'archived course';
+          target = log.metadata?.title || `course #${log.entity_id}`;
+        } else if (log.action === 'course_update') {
+          actionText = 'updated course';
+          target = log.metadata?.title || `course #${log.entity_id}`;
+        } else if (log.action === 'course_delete') {
+          severity = 'error';
+          actionText = 'deleted course';
+          target = log.metadata?.title || `course #${log.entity_id}`;
+        } else if (log.action === 'category_create' || log.action === 'category_update' || log.action === 'category_delete') {
+          actionText = log.action.replace('category_', '') + ' category';
+          target = log.metadata?.name || `#${log.entity_id}`;
+          if (log.action === 'category_delete') severity = 'warning';
+        } else if (log.action.startsWith('coupon_')) {
+          actionText = log.action.replace('coupon_', '') + ' coupon';
+          target = log.metadata?.code || `#${log.entity_id}`;
+          if (log.action === 'coupon_delete') severity = 'warning';
+        } else if (log.action.startsWith('bundle_')) {
+          actionText = log.action.replace('bundle_', '') + ' bundle';
+          target = log.metadata?.title || `#${log.entity_id}`;
+          if (log.action === 'bundle_delete') severity = 'warning';
+        } else if (log.action === 'enrollment_create') {
+          actionText = 'enrolled student in';
+          target = log.metadata?.course_title || `course #${log.metadata?.course_id}`;
+        } else if (log.action === 'enrollment_delete') {
+          severity = 'warning';
+          actionText = 'unenrolled student from';
+          target = `course #${log.metadata?.course_id}`;
+        } else if (log.action === 'payment_refund') {
+          severity = 'warning';
+          actionText = 'refunded payment of';
+          target = `$${log.metadata?.amount || '?'}`;
+        } else if (log.action === 'announcement_send') {
+          severity = 'success';
+          actionText = `announced "${log.metadata?.title}" to`;
+          target = `${log.metadata?.recipient_count || 0} ${log.metadata?.target?.replace('_', ' ') || 'users'}`;
+        } else if (log.action === 'test_create' || log.action === 'test_update') {
+          actionText = log.action === 'test_create' ? 'created test' : 'updated test';
+          target = log.metadata?.title || `#${log.entity_id}`;
+        } else if (log.action === 'test_publish') {
+          severity = 'success';
+          actionText = 'published test';
+          target = log.metadata?.title || `#${log.entity_id}`;
+        } else if (log.action === 'test_archive' || log.action === 'test_delete') {
+          severity = 'warning';
+          actionText = log.action === 'test_archive' ? 'archived test' : 'deleted test';
+          target = log.metadata?.title || `#${log.entity_id}`;
+        } else if (log.action === 'test_complete') {
+          severity = log.metadata?.passed ? 'success' : 'warning';
+          actionText = `${log.metadata?.passed ? 'passed' : 'attempted'} test`;
+          target = `${log.metadata?.title} (${log.metadata?.percentage || 0}%)`;
+        } else if (log.action === 'review_create') {
+          actionText = `left a ${log.metadata?.rating || 5}-star review for`;
+          target = log.metadata?.course_title || `course #${log.entity_id}`;
+        } else if (log.action === 'forum_post') {
+          actionText = 'posted in forum';
+          target = log.metadata?.title || `course #${log.metadata?.course_id}`;
+        } else if (log.action === 'forum_reply') {
+          actionText = 'replied to forum post';
+          target = log.metadata?.post_title || `#${log.entity_id}`;
+        } else if (log.action === 'assignment_create') {
+          actionText = 'created assignment';
+          target = log.metadata?.title || `#${log.entity_id}`;
+        } else if (log.action === 'assignment_submit') {
+          actionText = `submitted assignment${log.metadata?.late ? ' (late)' : ''}`;
+          target = log.metadata?.title || `#${log.entity_id}`;
+          if (log.metadata?.late) severity = 'warning';
+        } else if (log.action === 'assignment_grade') {
+          severity = 'success';
+          actionText = `graded assignment (${log.metadata?.score})`;
+          target = log.metadata?.title || `#${log.entity_id}`;
+        } else if (log.action === 'admin_user_create' || log.action === 'admin_user_update' || log.action === 'admin_user_deactivate') {
+          actionText = log.action === 'admin_user_create' ? 'created user'
+            : log.action === 'admin_user_deactivate' ? 'deactivated user'
+            : 'updated user';
+          target = log.metadata?.email || `user #${log.entity_id}`;
+          if (log.action === 'admin_user_deactivate') severity = 'error';
+        } else if (log.action === 'admin_user_access_change') {
+          severity = log.metadata?.registration_status === 'suspended' ? 'error' : 'warning';
+          actionText = `set user access to ${log.metadata?.registration_status}`;
+          target = log.metadata?.email || `user #${log.entity_id}`;
         }
 
         return {

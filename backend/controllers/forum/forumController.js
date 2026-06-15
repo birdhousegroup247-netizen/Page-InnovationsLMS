@@ -4,6 +4,7 @@ const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
 const logger = require('../../utils/logger');
+const ActivityController = require('../activity/activityController');
 
 const authorInclude = { model: User, as: 'author', attributes: ['id', 'full_name', 'profile_picture'] };
 
@@ -46,6 +47,9 @@ class ForumController {
       });
 
       const postWithAuthor = await ForumPost.findByPk(post.id, { include: [authorInclude] });
+      await ActivityController.logFromRequest(req, 'forum_post', 'forum_post', post.id, {
+        title: post.title, course_id: parseInt(courseId),
+      }).catch(() => {});
       return ApiResponse.created(res, { post: postWithAuthor }, 'Post created');
     } catch (error) {
       next(error);
@@ -160,6 +164,9 @@ class ForumController {
         }
       }
 
+      await ActivityController.logFromRequest(req, 'forum_reply', 'forum_post', parseInt(postId), {
+        post_title: post.title, course_id: post.course_id,
+      }).catch(() => {});
       return ApiResponse.created(res, { reply: replyWithAuthor }, 'Reply added');
     } catch (error) {
       next(error);

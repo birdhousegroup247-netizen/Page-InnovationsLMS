@@ -6,6 +6,7 @@ const { getPaginationParams, getPaginationMeta } = require('../../utils/paginati
 const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
 const emailService = require('../../services/email/emailService');
+const ActivityController = require('../activity/activityController');
 
 class UsersController {
   // Get all users with filters
@@ -99,6 +100,7 @@ class UsersController {
       });
 
       logger.info(`User created by admin: ${email} with role ${role}`);
+      await ActivityController.logFromRequest(req, 'admin_user_create', 'user', user.id, { email, role: role || 'student' }).catch(() => {});
 
       // Remove password from response
       const userResponse = user.toJSON();
@@ -135,6 +137,7 @@ class UsersController {
       await user.update(updates);
 
       logger.info(`User updated by admin: ${user.email}`);
+      await ActivityController.logFromRequest(req, 'admin_user_update', 'user', user.id, { email: user.email, changes: Object.keys(updates) }).catch(() => {});
 
       const userResponse = user.toJSON();
       delete userResponse.password;
@@ -165,6 +168,7 @@ class UsersController {
       await user.update({ is_active: false });
 
       logger.info(`User deactivated by admin: ${user.email}`);
+      await ActivityController.logFromRequest(req, 'admin_user_deactivate', 'user', user.id, { email: user.email }).catch(() => {});
 
       return ApiResponse.success(res, null, 'User deactivated successfully');
     } catch (error) {
@@ -231,6 +235,9 @@ class UsersController {
       logger.info(
         `[Admin] registration_status of user ${userId} set to '${registration_status}' by admin ${req.user.id}${note ? ` — ${note}` : ''}`
       );
+      await ActivityController.logFromRequest(req, 'admin_user_access_change', 'user', user.id, {
+        email: user.email, registration_status, note: note || null,
+      }).catch(() => {});
 
       return ApiResponse.success(res, { user: { id: user.id, email: user.email, registration_status } },
         `User access updated to '${registration_status}'`);

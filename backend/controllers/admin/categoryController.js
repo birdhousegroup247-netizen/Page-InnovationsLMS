@@ -3,6 +3,7 @@ const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { BadRequestError, NotFoundError } = require('../../utils/errors');
 const { Op } = require('sequelize');
+const ActivityController = require('../activity/activityController');
 
 /**
  * Admin Category Controller
@@ -155,6 +156,7 @@ class AdminCategoryController {
       });
 
       logger.info(`Admin ${req.user.email} created category: ${category.name} (ID: ${category.id})`);
+      await ActivityController.logFromRequest(req, 'category_create', 'category', category.id, { name: category.name }).catch(() => {});
 
       return ApiResponse.created(res, {
         category,
@@ -232,6 +234,7 @@ class AdminCategoryController {
       await category.save();
 
       logger.info(`Admin ${req.user.email} updated category: ${category.name} (ID: ${category.id})`);
+      await ActivityController.logFromRequest(req, 'category_update', 'category', category.id, { name: category.name }).catch(() => {});
 
       return ApiResponse.success(res, {
         category,
@@ -278,9 +281,11 @@ class AdminCategoryController {
       }
 
       // Delete category
+      const catName = category.name;
       await category.destroy();
 
-      logger.warn(`Admin ${req.user.email} deleted category: ${category.name} (ID: ${category.id})`);
+      logger.warn(`Admin ${req.user.email} deleted category: ${catName} (ID: ${id})`);
+      await ActivityController.logFromRequest(req, 'category_delete', 'category', id, { name: catName }).catch(() => {});
 
       return ApiResponse.success(res, null, 'Category deleted successfully');
     } catch (error) {

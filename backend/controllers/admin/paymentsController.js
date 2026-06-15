@@ -5,6 +5,7 @@ const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { Op, fn, col, literal, sequelize: seq } = require('sequelize');
 const { sequelize } = require('../../config/database');
+const ActivityController = require('../activity/activityController');
 
 class AdminPaymentsController {
   // GET /api/admin/payments/stats
@@ -249,6 +250,11 @@ class AdminPaymentsController {
       }
 
       logger.info(`Admin ${req.user.email} issued refund for payment ${id} — enrollment revoked`);
+      await ActivityController.logFromRequest(req, 'payment_refund', 'payment', payment.id, {
+        amount: payment.amount,
+        student_id: payment.student_id,
+        course_id: payment.course_id,
+      }).catch(() => {});
 
       return ApiResponse.success(res, { payment }, 'Refund issued and course access revoked');
     } catch (error) {

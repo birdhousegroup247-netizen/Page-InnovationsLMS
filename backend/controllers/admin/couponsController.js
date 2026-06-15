@@ -7,6 +7,7 @@ const { Op } = require('sequelize');
 const { CouponCode, CouponCodeCourse, CouponRedemption, Course, User } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
+const ActivityController = require('../activity/activityController');
 
 class CouponsController {
   /**
@@ -118,6 +119,7 @@ class CouponsController {
       }
 
       logger.info(`[Coupons] Created coupon '${coupon.code}' by admin ${req.user.id}`);
+      await ActivityController.logFromRequest(req, 'coupon_create', 'coupon', coupon.id, { code: coupon.code, discount_type: coupon.discount_type, discount_value: coupon.discount_value }).catch(() => {});
       return ApiResponse.created(res, { coupon });
     } catch (error) {
       next(error);
@@ -162,6 +164,7 @@ class CouponsController {
       }
 
       logger.info(`[Coupons] Updated coupon ${coupon.id} by admin ${req.user.id}`);
+      await ActivityController.logFromRequest(req, 'coupon_update', 'coupon', coupon.id, { code: coupon.code }).catch(() => {});
       return ApiResponse.success(res, { coupon });
     } catch (error) {
       next(error);
@@ -179,6 +182,7 @@ class CouponsController {
 
       await coupon.update({ is_active: false });
       logger.info(`[Coupons] Deactivated coupon ${coupon.id} by admin ${req.user.id}`);
+      await ActivityController.logFromRequest(req, 'coupon_delete', 'coupon', coupon.id, { code: coupon.code }).catch(() => {});
       return ApiResponse.success(res, { message: 'Coupon deactivated' });
     } catch (error) {
       next(error);

@@ -10,6 +10,7 @@ const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
 const CacheService = require('../../services/cache/cacheService');
+const ActivityController = require('../activity/activityController');
 
 class ReviewsController {
   /**
@@ -64,6 +65,9 @@ class ReviewsController {
       await ReviewsController.updateCourseRating(courseId);
 
       logger.info(`Student ${studentId} reviewed course ${courseId} with rating ${rating}`);
+      await ActivityController.logFromRequest(req, 'review_create', 'course', courseId, {
+        course_title: course.title, rating,
+      }).catch(() => {});
 
       return ApiResponse.success(res, { review }, 'Review submitted successfully', 201);
     } catch (error) {

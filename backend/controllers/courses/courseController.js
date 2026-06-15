@@ -262,6 +262,9 @@ class CourseController {
       });
 
       logger.info(`Course created: ${title} by ${req.user.email}`);
+      await ActivityController.logFromRequest(req, 'course_create', 'course', course.id, {
+        title: course.title, status: courseStatus,
+      }).catch(() => {});
 
       return ApiResponse.created(res, { course }, 'Course created successfully');
     } catch (error) {
@@ -332,6 +335,13 @@ class CourseController {
       }
 
       logger.info(`Course updated: ${course.title}`);
+      await ActivityController.logFromRequest(
+        req,
+        wasPublished ? 'course_publish' : 'course_update',
+        'course',
+        course.id,
+        { title: course.title, status: course.status }
+      ).catch(() => {});
 
       return ApiResponse.success(res, { course }, 'Course updated successfully');
     } catch (error) {
@@ -359,6 +369,9 @@ class CourseController {
       await course.update({ status: 'archived' });
 
       logger.info(`Course archived: ${course.title}`);
+      await ActivityController.logFromRequest(req, 'course_delete', 'course', course.id, {
+        title: course.title,
+      }).catch(() => {});
 
       return ApiResponse.success(res, null, 'Course deleted successfully');
     } catch (error) {

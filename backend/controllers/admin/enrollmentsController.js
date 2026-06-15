@@ -4,6 +4,7 @@ const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ConflictError } = require('../../utils/errors');
 const { Op, fn, col, literal } = require('sequelize');
 const emailService = require('../../services/email/emailService');
+const ActivityController = require('../activity/activityController');
 
 class AdminEnrollmentsController {
   // GET /api/admin/enrollments — list all enrollments with filters
@@ -133,6 +134,10 @@ class AdminEnrollmentsController {
       BadgesController.checkAndAward(student_id, 'enrollment_count').catch(() => {});
 
       logger.info(`Admin ${req.user.email} manually enrolled student ${student_id} in course ${course_id}`);
+      await ActivityController.logFromRequest(req, 'enrollment_create', 'enrollment', enrollment.id, {
+        student_name: student.full_name, student_email: student.email,
+        course_title: course.title, course_id,
+      }).catch(() => {});
 
       return ApiResponse.created(res, { enrollment }, 'Student enrolled successfully');
     } catch (error) {
@@ -173,6 +178,9 @@ class AdminEnrollmentsController {
       );
 
       logger.info(`Admin ${req.user.email} removed enrollment ${id}`);
+      await ActivityController.logFromRequest(req, 'enrollment_delete', 'enrollment', id, {
+        student_id: studentId, course_id: courseId,
+      }).catch(() => {});
 
       return ApiResponse.success(res, null, 'Enrollment removed successfully');
     } catch (error) {
