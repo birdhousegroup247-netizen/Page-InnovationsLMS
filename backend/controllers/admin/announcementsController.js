@@ -49,7 +49,16 @@ class AdminAnnouncementsController {
   // POST /api/admin/announcements — send announcement
   static async send(req, res, next) {
     try {
-      const { title, message, target, course_id, link } = req.body;
+      const {
+        title,
+        message,
+        target,
+        course_id,
+        link,
+        attachment_url,
+        attachment_type,
+        attachment_name,
+      } = req.body;
 
       if (!title || !message || !target) {
         throw new BadRequestError('title, message, and target are required');
@@ -84,6 +93,9 @@ class AdminAnnouncementsController {
         target,
         course_id: course_id || null,
         link: link || null,
+        attachment_url: attachment_url || null,
+        attachment_type: attachment_type || null,
+        attachment_name: attachment_name || null,
         recipient_count: recipientIds.length,
       });
 

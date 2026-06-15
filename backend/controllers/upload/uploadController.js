@@ -109,6 +109,47 @@ class UploadController {
   }
 
   /**
+   * Upload an attachment for an admin announcement.
+   * Accepts images OR documents; classifies type so the renderer can pick
+   * inline preview vs link-card.
+   * POST /api/upload/announcement-attachment
+   */
+  static async uploadAnnouncementAttachment(req, res, next) {
+    try {
+      if (!req.file) {
+        throw new BadRequestError('No file uploaded');
+      }
+
+      const isImage = req.file.mimetype.startsWith('image/');
+      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      const ext = req.file.originalname.match(/\.([^/.]+)$/)?.[1] || '';
+      const baseName = req.file.originalname.replace(/\.[^/.]+$/, '');
+      const publicId = `announcement_${Date.now()}_${baseName}${ext ? '.' + ext : ''}`;
+
+      const result = isImage
+        ? await CloudinaryService.uploadImage(base64File, 'announcement-attachments', publicId)
+        : await CloudinaryService.uploadDocument(base64File, 'announcement-attachments', publicId);
+
+      logger.info(`Announcement attachment uploaded (${isImage ? 'image' : 'document'}): ${result.url}`);
+
+      return ApiResponse.success(
+        res,
+        {
+          url: result.url,
+          public_id: result.public_id,
+          type: isImage ? 'image' : 'document',
+          name: req.file.originalname,
+          format: ext || result.format,
+          size_mb: (result.size / (1024 * 1024)).toFixed(2),
+        },
+        'Attachment uploaded'
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Upload certificate template
    * POST /api/upload/certificate-template
    */

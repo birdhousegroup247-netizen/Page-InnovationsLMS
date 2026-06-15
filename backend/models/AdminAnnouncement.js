@@ -24,6 +24,11 @@ const AdminAnnouncement = sequelize.define(
       references: { model: 'courses', key: 'id' },
     },
     link: { type: DataTypes.STRING(500), allowNull: true },
+    // Optional file attachment (Cloudinary URL). attachment_type is 'image'
+    // or 'document' so the renderer picks the right preview.
+    attachment_url: { type: DataTypes.STRING(500), allowNull: true },
+    attachment_type: { type: DataTypes.STRING(20), allowNull: true },
+    attachment_name: { type: DataTypes.STRING(255), allowNull: true },
     recipient_count: { type: DataTypes.INTEGER, defaultValue: 0 },
   },
   {

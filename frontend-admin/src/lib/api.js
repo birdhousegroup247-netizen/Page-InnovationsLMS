@@ -383,6 +383,14 @@ export const adminAnnouncementsAPI = {
   getAll: (params) => api.get('/api/admin/announcements', { params }),
   getRecipientCount: (target, course_id) => api.get('/api/admin/announcements/recipient-count', { params: { target, course_id } }),
   send: (data) => api.post('/api/admin/announcements', data),
+  uploadAttachment: (file, onUploadProgress) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/api/upload/announcement-attachment', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress,
+    });
+  },
 };
 
 export const adminBundlesAPI = {

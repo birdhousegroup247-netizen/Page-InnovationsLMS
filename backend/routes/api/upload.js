@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 const UploadController = require('../../controllers/upload/uploadController');
 const { authenticate } = require('../../middleware/auth/authMiddleware');
@@ -16,6 +17,28 @@ const {
   uploadMultiple,
   handleUploadErrors,
 } = require('../../middleware/upload/uploadMiddleware');
+
+// Combined image-or-document multer for announcement attachments. Images
+// cap at the announcement upload's 10 MB; documents same.
+const uploadAnnouncementAttachment = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain',
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error(`Invalid file type. Allowed: images, PDF, Word, PowerPoint, Excel, text.`), false);
+  },
+});
 
 // Apply upload rate limiting to all upload routes
 router.use(uploadRateLimiter);
@@ -99,6 +122,23 @@ router.post(
   uploadImage.single('file'),
   handleUploadErrors,
   UploadController.uploadArticleImage
+);
+
+// =============================================================================
+// ANNOUNCEMENT ATTACHMENTS
+// =============================================================================
+
+/**
+ * @route   POST /api/upload/announcement-attachment
+ * @desc    Upload image or document for an admin announcement
+ * @access  Private (Admin)
+ */
+router.post(
+  '/announcement-attachment',
+  authenticate,
+  uploadAnnouncementAttachment.single('file'),
+  handleUploadErrors,
+  UploadController.uploadAnnouncementAttachment
 );
 
 // =============================================================================

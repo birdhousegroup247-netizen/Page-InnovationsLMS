@@ -718,7 +718,7 @@ const startServer = async () => {
         require('./models/CourseReview'),
         require('./models/Wishlist'),
         require('./models/Referral'),
-        require('./models/AdminAnnouncement'),
+        require('./models/AdminAnnouncement'), // adds attachment_url/_type/_name on prod
         require('./models/Assignment'),
         require('./models/AssignmentSubmission'),
         require('./models/CourseAnnouncement'),
