@@ -560,6 +560,54 @@ const startServer = async () => {
           await qi.addColumn('payments', 'paypal_capture_id', { type: Sequelize.STRING, allowNull: true, unique: true });
           logger.info('  ✓ Added paypal_capture_id column to payments');
         }
+
+        // /admin/payments list 500s because the Sequelize model declares many
+        // columns added after the table was first created on prod. SELECT *
+        // implicit, so one missing column 500s the whole list. Use raw SQL
+        // ALTER TABLE ADD COLUMN IF NOT EXISTS — safer than addColumn() for
+        // ENUM/JSON types because it avoids Sequelize's type-creation paths
+        // that can fail when the enum_type already exists from a partial run.
+        const paymentsExtras = [
+          ['coupon_code_id',                 'INTEGER'],
+          ['original_amount',                'DECIMAL(10,2)'],
+          ['discount_amount',                'DECIMAL(10,2) NOT NULL DEFAULT 0'],
+          ['stripe_checkout_session_id',     'VARCHAR(255)'],
+          ['paystack_reference',             'VARCHAR(255)'],
+          ['installment_percentage',         'DECIMAL(5,2)'],
+          ['installment_remaining_amount',   'DECIMAL(10,2)'],
+          ['installment_due_date',           'TIMESTAMP'],
+          ['installment_paid_at',            'TIMESTAMP'],
+          ['metadata',                       'JSON'],
+        ];
+        for (const [colName, colType] of paymentsExtras) {
+          if (!paymentsDesc[colName]) {
+            try {
+              await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS ${colName} ${colType}`);
+              logger.info(`  ✓ Added ${colName} column to payments`);
+            } catch (e) {
+              logger.warn(`  ⚠ Could not add ${colName} to payments: ${e.message}`);
+            }
+          }
+        }
+        // ENUM columns need their type created first; raw SQL keeps it idempotent.
+        if (!paymentsDesc.payment_plan) {
+          await sequelize.query(`
+            DO $$ BEGIN
+              CREATE TYPE "enum_payments_payment_plan" AS ENUM ('full', 'installment');
+            EXCEPTION WHEN duplicate_object THEN null; END $$;
+          `).catch(() => {});
+          await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_plan "enum_payments_payment_plan" NOT NULL DEFAULT 'full'`).catch((e) => logger.warn(`  ⚠ payment_plan add failed: ${e.message}`));
+          logger.info('  ✓ Added payment_plan column to payments');
+        }
+        if (!paymentsDesc.installment_status) {
+          await sequelize.query(`
+            DO $$ BEGIN
+              CREATE TYPE "enum_payments_installment_status" AS ENUM ('not_applicable', 'pending', 'completed', 'overdue');
+            EXCEPTION WHEN duplicate_object THEN null; END $$;
+          `).catch(() => {});
+          await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_status "enum_payments_installment_status" NOT NULL DEFAULT 'not_applicable'`).catch((e) => logger.warn(`  ⚠ installment_status add failed: ${e.message}`));
+          logger.info('  ✓ Added installment_status column to payments');
+        }
       }
 
       // Add missing columns to module_contents if needed.
