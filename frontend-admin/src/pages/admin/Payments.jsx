@@ -67,7 +67,7 @@ export default function Payments() {
       setPayments(response.data.data.payments || []);
       setPagination(response.data.data.pagination);
     } catch (error) {
-      showToast('Failed to load payments', 'error');
+      showToast(error.response?.data?.message || 'Failed to load payments', 'error');
     } finally {
       setLoading(false);
     }

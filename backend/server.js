@@ -737,6 +737,50 @@ const startServer = async () => {
         // columns (cv_url, credential_urls, applied_at, reviewed_by, etc.)
         // never materialized on prod.
         require('./models/InstructorApplication'),
+        // /admin/payments — model has installment_*, coupon_code_id,
+        // original_amount, discount_amount, payment_gateway, paystack_reference,
+        // stripe_checkout_session_id, metadata etc. that may be missing on
+        // older prod tables. Sequelize SELECTs every declared column.
+        require('./models/Payment'),
+        // ── Broader sweep — every model with a list endpoint somewhere in the
+        // app. If columns drift behind any one of these, that page 500s with
+        // "column X does not exist". Cheap on startup (one describeTable each)
+        // and idempotent — skips columns that already exist.
+        require('./models/User'),
+        require('./models/Course'),
+        require('./models/Category'),
+        require('./models/CourseModule'),
+        require('./models/ModuleContent'),
+        require('./models/ContentProgress'),
+        require('./models/CourseInstructor'),
+        require('./models/Lead'),
+        require('./models/CouponCode'),
+        require('./models/CouponCodeCourse'),
+        require('./models/CouponRedemption'),
+        require('./models/ChatRoom'),
+        require('./models/ChatRoomMember'),
+        require('./models/Conversation'),
+        require('./models/Message'),
+        require('./models/MessageReaction'),
+        require('./models/MutedChat'),
+        require('./models/LiveSession'),
+        require('./models/ForumPost'),
+        require('./models/ForumReply'),
+        require('./models/InstructorReview'),
+        require('./models/KnowledgeArticle'),
+        require('./models/LessonNote'),
+        require('./models/LessonQuestion'),
+        require('./models/QuestionReply'),
+        require('./models/LessonBookmark'),
+        require('./models/ArticleBookmark'),
+        require('./models/QuestionBank'),
+        require('./models/PracticeTestAttempt'),
+        require('./models/PracticeTestQuestion'),
+        require('./models/PracticeTestAnswer'),
+        require('./models/Badge'),
+        require('./models/UserBadge'),
+        require('./models/EmailVerification'),
+        require('./models/PasswordReset'),
       ];
       for (const Model of safetyNetModels) {
         try {
