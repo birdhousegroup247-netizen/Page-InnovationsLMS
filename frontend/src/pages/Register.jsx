@@ -465,17 +465,6 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Instructor CTA — applies separately so we can collect documents */}
-              <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg">
-                <p className="text-blue-800 dark:text-blue-400 text-xs">
-                  Want to teach on TekyPro?{' '}
-                  <Link to="/instructor-apply" className="font-semibold underline">
-                    Apply as an instructor
-                  </Link>{' '}
-                  — we'll need a few extra details and supporting documents.
-                </p>
-              </div>
-
               {/* Terms & Conditions */}
               <div>
                 <label className="flex items-start gap-2 cursor-pointer">

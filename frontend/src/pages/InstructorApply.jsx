@@ -566,14 +566,6 @@ export default function InstructorApply() {
           </div>
         </div>
 
-        {!isAuthenticated && (
-          <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6">
-            Just want to learn?{' '}
-            <Link to="/register" className="text-brand-blue hover:underline font-medium">
-              Sign up as a student instead
-            </Link>
-          </p>
-        )}
       </div>
     </div>
   );

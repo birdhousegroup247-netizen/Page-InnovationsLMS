@@ -264,10 +264,8 @@ export default function LandingPage() {
               {/* Student Card */}
               <button
                 onClick={() => {
-                  console.log('[LandingPage] Student card clicked');
                   localStorage.setItem('selectedRole', 'student');
-                  console.log('[LandingPage] selectedRole set to:', localStorage.getItem('selectedRole'));
-                  navigate('/login');
+                  navigate('/register');
                 }}
                 className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-blue/20 text-left overflow-hidden"
               >
@@ -293,13 +291,12 @@ export default function LandingPage() {
                 </div>
               </button>
 
-              {/* Instructor Card */}
+              {/* Instructor Card — straight to the apply wizard. The wizard
+                  handles both anonymous (Account step) and logged-in users. */}
               <button
                 onClick={() => {
-                  console.log('[LandingPage] Instructor card clicked');
                   localStorage.setItem('selectedRole', 'instructor');
-                  console.log('[LandingPage] selectedRole set to:', localStorage.getItem('selectedRole'));
-                  navigate('/login');
+                  navigate('/instructor-apply');
                 }}
                 className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-purple/20 text-left overflow-hidden"
               >
@@ -575,7 +572,7 @@ export default function LandingPage() {
               <h4 className="font-bold text-gray-900 dark:text-white mb-6 text-lg">Platform</h4>
               <ul className="space-y-4 text-sm text-gray-700 dark:text-gray-300 font-medium">
                 <li><Link to="/courses" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Browse Courses</Link></li>
-                <li><Link to="/register?role=instructor" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Become an Instructor</Link></li>
+                <li><Link to="/instructor-apply" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Become an Instructor</Link></li>
                 <li><Link to="/login" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Login</Link></li>
               </ul>
             </div>
