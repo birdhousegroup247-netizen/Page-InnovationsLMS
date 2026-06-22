@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const COUNTRIES = [
@@ -127,9 +127,24 @@ export default function Register() {
     }
   };
 
-  const selectClass = 'w-full pl-10 pr-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all appearance-none';
-  const inputClass = 'w-full pl-10 pr-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all';
-  const labelClass = 'block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2 transition-colors';
+  // Shared modern input styling — taller, rounded-xl, hover-border, ring-on-focus.
+  const selectClass = 'w-full pl-11 pr-9 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all appearance-none';
+  const inputClass = 'w-full pl-11 pr-4 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all';
+  const labelClass = 'block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5 uppercase tracking-wider';
+
+  // Live password-strength score 0-4 (length, lowercase, uppercase, digit, symbol).
+  const pwd = formData.password;
+  const pwdScore = (() => {
+    if (!pwd) return 0;
+    let s = 0;
+    if (pwd.length >= 8) s++;
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) s++;
+    if (/\d/.test(pwd)) s++;
+    if (/[^A-Za-z0-9]/.test(pwd)) s++;
+    return s;
+  })();
+  const pwdLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][pwdScore] || '';
+  const pwdColor = ['bg-gray-200 dark:bg-dark-600', 'bg-red-400', 'bg-yellow-400', 'bg-blue-400', 'bg-green-500'][pwdScore];
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-dark-900 transition-colors">
@@ -210,14 +225,18 @@ export default function Register() {
           </div>
 
           {/* Form Card */}
-          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg dark:shadow-elevated p-8 animate-scale-in transition-colors">
+          <div className="relative bg-white dark:bg-dark-800 rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-6 sm:p-8 animate-scale-in transition-colors">
             {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-                Create Account
+            <div className="mb-7">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" />
+                Free forever — no credit card
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Create your account
               </h1>
-              <p className="text-gray-600 dark:text-text-dark-secondary text-sm transition-colors">
-                Join TekyPro free — preview courses instantly
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
+                Sign up in under a minute and start learning today.
               </p>
             </div>
 
@@ -236,15 +255,22 @@ export default function Register() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Section: Your details */}
+              <div className="flex items-center gap-2 -mb-1">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Your details</span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
+              </div>
+
               {/* Full Name */}
               <div>
                 <label htmlFor="full_name" className={labelClass}>
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
                   </div>
                   <input
                     id="full_name"
@@ -268,8 +294,8 @@ export default function Register() {
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
                   </div>
                   <input
                     id="email"
@@ -293,8 +319,8 @@ export default function Register() {
                   Phone Number <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional)</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Phone className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Phone className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
                   </div>
                   <input
                     id="phone"
@@ -316,7 +342,7 @@ export default function Register() {
                     Country
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                       <Globe className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
                     </div>
                     <select
@@ -341,10 +367,8 @@ export default function Register() {
                     Experience
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <BarChart3 className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
                     </div>
                     <select
                       id="experience_level"
@@ -371,10 +395,8 @@ export default function Register() {
                   How did you hear about us?
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 dark:text-text-dark-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Sparkles className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
                   </div>
                   <select
                     id="referral_source"
@@ -397,38 +419,66 @@ export default function Register() {
                 </div>
               </div>
 
+              {/* Section: Account security */}
+              <div className="flex items-center gap-2 pt-2 -mb-1">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" /> Account security
+                </span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
+              </div>
+
               {/* Password */}
               <div>
                 <label htmlFor="password" className={labelClass}>
-                  Password <span className="text-red-500">*</span>
+                  Password <span className="text-red-500 normal-case">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
                   </div>
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
-                    placeholder="••••••••"
+                    placeholder="Enter a strong password"
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                    className="w-full pl-11 pr-11 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-text-dark-muted hover:text-gray-600 dark:hover:text-text-dark-secondary transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {/* Strength meter */}
+                {pwd && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex-1 grid grid-cols-4 gap-1">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-1 rounded-full transition-colors ${i <= pwdScore ? pwdColor : 'bg-gray-200 dark:bg-dark-600'}`}
+                        />
+                      ))}
+                    </div>
+                    <span className={`text-[11px] font-semibold w-12 text-right ${
+                      pwdScore <= 1 ? 'text-red-500'
+                      : pwdScore === 2 ? 'text-yellow-500'
+                      : pwdScore === 3 ? 'text-blue-500'
+                      : 'text-green-500'
+                    }`}>{pwdLabel}</span>
+                  </div>
+                )}
                 {validationErrors.password ? (
-                  <p className="text-red-600 dark:text-red-400 text-xs mt-1">{validationErrors.password}</p>
+                  <p className="text-red-600 dark:text-red-400 text-xs mt-1.5">{validationErrors.password}</p>
                 ) : (
-                  <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1">
-                    At least 8 characters with uppercase, lowercase, and number
+                  <p className="text-gray-500 dark:text-text-dark-muted text-[11px] mt-1.5">
+                    Minimum 8 characters — include uppercase, lowercase, and a number.
                   </p>
                 )}
               </div>
@@ -436,38 +486,41 @@ export default function Register() {
               {/* Confirm Password */}
               <div>
                 <label htmlFor="confirmPassword" className={labelClass}>
-                  Confirm Password <span className="text-red-500">*</span>
+                  Confirm password <span className="text-red-500 normal-case">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
                   </div>
                   <input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
-                    placeholder="••••••••"
+                    placeholder="Re-enter your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                    className="w-full pl-11 pr-11 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-text-dark-muted hover:text-gray-600 dark:hover:text-text-dark-secondary transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                  {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                    <CheckCircle2 className="absolute inset-y-0 right-10 my-auto h-4 w-4 text-green-500" />
+                  )}
                 </div>
                 {validationErrors.confirmPassword && (
-                  <p className="text-red-600 dark:text-red-400 text-xs mt-1">{validationErrors.confirmPassword}</p>
+                  <p className="text-red-600 dark:text-red-400 text-xs mt-1.5">{validationErrors.confirmPassword}</p>
                 )}
               </div>
 
               {/* Terms & Conditions */}
-              <div>
-                <label className="flex items-start gap-2 cursor-pointer">
+              <div className="pt-2">
+                <label className="flex items-start gap-2.5 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={agreedToTerms}
@@ -477,17 +530,17 @@ export default function Register() {
                         setValidationErrors({ ...validationErrors, terms: '' });
                       }
                     }}
-                    className="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-brand-blue focus:ring-brand-blue focus:ring-offset-0 dark:focus:ring-offset-dark-800 transition-colors"
+                    className="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-brand-blue focus:ring-brand-blue focus:ring-offset-0 dark:focus:ring-offset-dark-800 transition-colors cursor-pointer"
                   />
-                  <span className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
-                    I agree to the{' '}
-                    <Link to="/terms" className="text-brand-blue hover:text-brand-blue-light font-medium transition-colors">Terms of Service</Link>{' '}
+                  <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    I agree to TekyPro's{' '}
+                    <Link to="/terms" className="text-brand-blue hover:underline font-medium">Terms of Service</Link>{' '}
                     and{' '}
-                    <Link to="/privacy" className="text-brand-blue hover:text-brand-blue-light font-medium transition-colors">Privacy Policy</Link>
+                    <Link to="/privacy" className="text-brand-blue hover:underline font-medium">Privacy Policy</Link>.
                   </span>
                 </label>
                 {validationErrors.terms && (
-                  <p className="text-red-600 dark:text-red-400 text-xs mt-1">{validationErrors.terms}</p>
+                  <p className="text-red-600 dark:text-red-400 text-xs mt-1.5">{validationErrors.terms}</p>
                 )}
               </div>
 
@@ -495,20 +548,30 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full py-3.5 px-4 bg-gradient-to-r from-brand-blue to-cyan-600 hover:from-brand-blue-600 hover:to-cyan-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-blue/30 hover:shadow-xl hover:shadow-brand-blue/40 transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue/60 focus:ring-offset-2 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? 'Creating account...' : 'Create Free Account'}
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Creating account…
+                  </>
+                ) : (
+                  <>
+                    Create free account
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
               </button>
             </form>
 
             {/* Divider */}
-            <div className="relative my-6">
+            <div className="relative my-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-border-dark transition-colors" />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white dark:bg-dark-800 text-gray-500 dark:text-text-dark-muted transition-colors">
-                  Or continue with
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-white dark:bg-dark-800 text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">
+                  or
                 </span>
               </div>
             </div>
@@ -517,7 +580,7 @@ export default function Register() {
             <button
               type="button"
               onClick={() => { window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`; }}
-              className="w-full py-3 px-4 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark hover:bg-gray-50 dark:hover:bg-dark-600 text-gray-700 dark:text-text-dark-primary font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 dark:focus:ring-offset-dark-800 flex items-center justify-center gap-3"
+              className="w-full py-3 px-4 bg-white dark:bg-dark-700/50 border border-gray-200 dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-dark-700 text-gray-700 dark:text-text-dark-primary font-medium text-sm rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:ring-offset-2 dark:focus:ring-offset-dark-800 flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -529,10 +592,10 @@ export default function Register() {
             </button>
 
             {/* Sign In Link */}
-            <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6 transition-colors">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
               Already have an account?{' '}
-              <Link to="/login" className="text-brand-blue hover:text-brand-blue-light font-semibold transition-colors">
-                Sign in here
+              <Link to="/login" className="text-brand-blue dark:text-cyan-400 hover:underline font-semibold">
+                Sign in
               </Link>
             </p>
           </div>

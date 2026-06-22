@@ -255,9 +255,9 @@ export default function LandingPage() {
               Master database administration, cloud technologies, and more with <span className="text-brand-blue dark:text-cyan-400 font-bold">hands-on courses</span> from <span className="text-brand-purple dark:text-purple-400 font-bold">industry experts</span>.
             </p>
 
-            {/* Cards Container - Wider & Glassmorphism */}
+            {/* Role Selection — modern bento with gradient border + bullets */}
             <div
-              className={`grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[90%] mx-auto transition-all duration-700 delay-200 ${
+              className={`grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto transition-all duration-700 delay-200 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
             >
@@ -267,57 +267,106 @@ export default function LandingPage() {
                   localStorage.setItem('selectedRole', 'student');
                   navigate('/register');
                 }}
-                className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-blue/20 text-left overflow-hidden"
+                className="group relative text-left rounded-2xl p-[1.5px] bg-gradient-to-br from-brand-blue/40 via-cyan-400/20 to-transparent hover:from-brand-blue hover:via-cyan-400/60 hover:to-brand-blue/40 transition-all duration-500 shadow-xl shadow-brand-blue/5 hover:shadow-2xl hover:shadow-brand-blue/30 hover:-translate-y-1"
               >
-                {/* Shine Effect */}
-                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 transition-all duration-1000 z-0"></div>
-                
-                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
-                  <BookOpen className="w-32 h-32 text-brand-blue" />
-                </div>
-                <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-brand-blue/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-brand-blue/10">
-                    <BookOpen className="w-7 h-7 text-brand-blue" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-brand-blue dark:group-hover:text-cyan-400 transition-colors">
-                    I'm a Student
-                  </h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-8 text-lg font-medium">
-                    Start your learning journey and master new skills.
-                  </p>
-                  <div className="flex items-center gap-2 text-brand-blue dark:text-cyan-400 font-bold text-lg group-hover:gap-4 transition-all">
-                    Get Started <ArrowRight className="w-6 h-6" />
+                <div className="relative h-full rounded-2xl bg-white dark:bg-dark-800/95 backdrop-blur-xl p-6 sm:p-7 overflow-hidden">
+                  {/* Soft radial glow */}
+                  <div className="absolute -top-20 -right-20 w-56 h-56 bg-brand-blue/10 rounded-full blur-3xl group-hover:bg-brand-blue/20 transition-colors duration-500" />
+
+                  <div className="relative z-10">
+                    {/* Header row: icon + popular pill */}
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-blue to-cyan-500 flex items-center justify-center shadow-lg shadow-brand-blue/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                        <BookOpen className="w-6 h-6 text-white" strokeWidth={2.2} />
+                      </div>
+                      <span className="text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 border border-brand-blue/20">
+                        Most Popular
+                      </span>
+                    </div>
+
+                    <h3 className="text-2xl sm:text-[1.65rem] font-bold text-gray-900 dark:text-white mb-1.5 tracking-tight">
+                      I'm a Student
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base leading-relaxed">
+                      Master in-demand skills with hands-on courses, live sessions, and real projects.
+                    </p>
+
+                    {/* Benefits */}
+                    <ul className="space-y-2 mb-6">
+                      {[
+                        'Access 200+ expert-led courses',
+                        'Live Q&A and community support',
+                        'Certificate on completion',
+                      ].map((item) => (
+                        <li key={item} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                          <CheckCircle className="w-4 h-4 text-brand-blue dark:text-cyan-400 flex-shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* CTA */}
+                    <div className="flex items-center justify-between pt-5 border-t border-gray-100 dark:border-gray-700/60">
+                      <span className="text-brand-blue dark:text-cyan-400 font-semibold text-sm">
+                        Get Started — Free
+                      </span>
+                      <span className="w-9 h-9 rounded-full bg-brand-blue/10 group-hover:bg-brand-blue dark:group-hover:bg-cyan-500 flex items-center justify-center transition-all duration-300 group-hover:translate-x-1">
+                        <ArrowRight className="w-4 h-4 text-brand-blue dark:text-cyan-400 group-hover:text-white transition-colors" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </button>
 
-              {/* Instructor Card — straight to the apply wizard. The wizard
-                  handles both anonymous (Account step) and logged-in users. */}
+              {/* Instructor Card */}
               <button
                 onClick={() => {
                   localStorage.setItem('selectedRole', 'instructor');
                   navigate('/instructor-apply');
                 }}
-                className="group relative p-8 rounded-3xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 hover:border-brand-purple/50 dark:hover:border-brand-purple/50 transition-all duration-500 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-brand-purple/20 text-left overflow-hidden"
+                className="group relative text-left rounded-2xl p-[1.5px] bg-gradient-to-br from-brand-purple/40 via-fuchsia-400/20 to-transparent hover:from-brand-purple hover:via-fuchsia-400/60 hover:to-brand-purple/40 transition-all duration-500 shadow-xl shadow-brand-purple/5 hover:shadow-2xl hover:shadow-brand-purple/30 hover:-translate-y-1"
               >
-                {/* Shine Effect */}
-                <div className="absolute inset-0 -inset-x-full group-hover:inset-x-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 transition-all duration-1000 z-0"></div>
+                <div className="relative h-full rounded-2xl bg-white dark:bg-dark-800/95 backdrop-blur-xl p-6 sm:p-7 overflow-hidden">
+                  <div className="absolute -top-20 -right-20 w-56 h-56 bg-brand-purple/10 rounded-full blur-3xl group-hover:bg-brand-purple/20 transition-colors duration-500" />
 
-                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
-                  <Users className="w-32 h-32 text-brand-purple" />
-                </div>
-                <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-brand-purple/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-brand-purple/10">
-                    <Users className="w-7 h-7 text-brand-purple" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-brand-purple dark:group-hover:text-purple-400 transition-colors">
-                    I'm an Instructor
-                  </h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-8 text-lg font-medium">
-                    Share your expertise and earn money teaching.
-                  </p>
-                  <div className="flex items-center gap-2 text-brand-purple dark:text-purple-400 font-bold text-lg group-hover:gap-4 transition-all">
-                    Apply Now <ArrowRight className="w-6 h-6" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-purple to-fuchsia-500 flex items-center justify-center shadow-lg shadow-brand-purple/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                        <Users className="w-6 h-6 text-white" strokeWidth={2.2} />
+                      </div>
+                      <span className="text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-brand-purple/10 text-brand-purple dark:text-purple-300 border border-brand-purple/20">
+                        Earn Income
+                      </span>
+                    </div>
+
+                    <h3 className="text-2xl sm:text-[1.65rem] font-bold text-gray-900 dark:text-white mb-1.5 tracking-tight">
+                      I'm an Instructor
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base leading-relaxed">
+                      Teach what you love, build a global audience, and earn from every enrollment.
+                    </p>
+
+                    <ul className="space-y-2 mb-6">
+                      {[
+                        'Reach thousands of learners',
+                        'Keep up to 70% of revenue',
+                        'Pro tools — drip, live, analytics',
+                      ].map((item) => (
+                        <li key={item} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                          <CheckCircle className="w-4 h-4 text-brand-purple dark:text-purple-400 flex-shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="flex items-center justify-between pt-5 border-t border-gray-100 dark:border-gray-700/60">
+                      <span className="text-brand-purple dark:text-purple-300 font-semibold text-sm">
+                        Apply to Teach
+                      </span>
+                      <span className="w-9 h-9 rounded-full bg-brand-purple/10 group-hover:bg-brand-purple dark:group-hover:bg-fuchsia-500 flex items-center justify-center transition-all duration-300 group-hover:translate-x-1">
+                        <ArrowRight className="w-4 h-4 text-brand-purple dark:text-purple-300 group-hover:text-white transition-colors" />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </button>
