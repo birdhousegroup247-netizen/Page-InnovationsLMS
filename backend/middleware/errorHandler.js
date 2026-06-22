@@ -38,18 +38,54 @@ const errorHandler = (err, req, res, next) => {
     return ApiResponse.badRequest(res, 'Invalid reference to related resource');
   }
 
-  // Sequelize Database Error — surface the precise Postgres message
-  // (e.g. "null value in column 'X' violates not-null constraint", "column
-  // \"Y\" does not exist") in the response so the UI toast actually says
-  // what's wrong instead of the unhelpful "Database error occurred". Same
-  // pattern we did for SequelizeValidationError. Strips trailing SQL noise.
+  // Sequelize Database Error — surface the precise Postgres message in the
+  // response so the UI toast actually says what's wrong (column missing,
+  // constraint violated, etc.). Walk EVERY known message location because
+  // different driver / sequelize versions stash it in different places.
+  // Always dumps the full error shape to logs so when the toast IS the
+  // generic fallback, Railway logs still have the answer.
   if (err.name === 'SequelizeDatabaseError') {
-    const raw = err.original?.message || err.parent?.message || err.message || '';
+    const candidates = [
+      err.original?.message,
+      err.original?.detail,
+      err.parent?.message,
+      err.parent?.detail,
+      err.errors?.[0]?.message,
+      err.message,
+    ].filter((s) => typeof s === 'string' && s.trim());
+    const raw = candidates[0] || '';
     const clean = raw.split('\n')[0].replace(/\s+at .*$/, '').trim();
     logger.error('SequelizeDatabaseError details:', {
+      name: err.name,
       message: err.message,
-      sql: err.sql || err.parent?.sql,
-      original: raw,
+      code: err.original?.code || err.parent?.code,
+      detail: err.original?.detail || err.parent?.detail,
+      column: err.original?.column || err.parent?.column,
+      table: err.original?.table || err.parent?.table,
+      constraint: err.original?.constraint || err.parent?.constraint,
+      sql: (err.sql || err.parent?.sql || '').slice(0, 500),
+      original_keys: err.original ? Object.keys(err.original) : null,
+      parent_keys: err.parent ? Object.keys(err.parent) : null,
+      stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+    });
+    return ApiResponse.serverError(res, clean ? `Database error: ${clean}` : 'Database error occurred');
+  }
+
+  // Generic SequelizeBaseError — covers older driver shapes that don't
+  // report name === 'SequelizeDatabaseError' but still carry the same useful
+  // properties (.original.message, .parent.message). Without this branch the
+  // request would fall through to the default 500 handler which masks the
+  // real cause in production.
+  if (err.name && err.name.startsWith('Sequelize')) {
+    const raw = err.original?.message || err.parent?.message || err.message || '';
+    const clean = raw.split('\n')[0].replace(/\s+at .*$/, '').trim();
+    logger.error('Sequelize error (generic branch):', {
+      name: err.name,
+      message: err.message,
+      original: err.original?.message,
+      parent: err.parent?.message,
+      code: err.original?.code || err.parent?.code,
+      sql: (err.sql || err.parent?.sql || '').slice(0, 500),
     });
     return ApiResponse.serverError(res, clean ? `Database error: ${clean}` : 'Database error occurred');
   }

@@ -160,6 +160,17 @@ class AdminPaymentsController {
         },
       });
     } catch (error) {
+      // Log every shape so when the generic toast fires we still know why.
+      logger.error('getAllPayments failed:', {
+        name: error.name,
+        message: error.message,
+        original: error.original?.message,
+        parent: error.parent?.message,
+        code: error.original?.code || error.parent?.code,
+        column: error.original?.column || error.parent?.column,
+        table: error.original?.table || error.parent?.table,
+        sql: (error.sql || error.parent?.sql || '').slice(0, 500),
+      });
       next(error);
     }
   }

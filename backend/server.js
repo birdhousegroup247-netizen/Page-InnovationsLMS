@@ -937,7 +937,7 @@ const startServer = async () => {
           }
         }
       } catch (cronErr) {
-        logger.error('Session reminder cron error:', cronErr.message);
+        logger.error(`Session reminder cron error: ${cronErr.message || cronErr.name || 'unknown'}\n${cronErr.stack || ''}`);
       }
     }, 5 * 60 * 1000); // Run every 5 minutes
 

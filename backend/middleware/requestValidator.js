@@ -253,31 +253,20 @@ const validateFileUpload = (options = {}) => {
 };
 
 /**
- * Rate limit bypass prevention
- * Prevents common rate limit bypass techniques
+ * Rate limit bypass prevention — no-op behind a trusted reverse proxy.
+ *
+ * Railway (and any other PaaS) always sets x-forwarded-for / x-real-ip on
+ * incoming requests — they are the *normal* way the proxy hands us the real
+ * client IP. Logging those headers as "suspicious" produced thousands of
+ * false-positive WARN lines that drowned out real events.
+ *
+ * Because Express is configured with `trust proxy`, `req.ip` already
+ * resolves to the real client IP using the proxy chain, so spoofing those
+ * headers to defeat the rate limiter doesn't work anyway. There is nothing
+ * useful to detect here — leaving the middleware in place as a no-op so
+ * removing it from server.js isn't required.
  */
-const preventRateLimitBypass = (req, res, next) => {
-  // Check for suspicious headers that might be used to bypass rate limiting
-  const suspiciousHeaders = [
-    'x-forwarded-for',
-    'x-real-ip',
-    'x-originating-ip',
-    'x-remote-ip',
-    'x-client-ip',
-  ];
-
-  for (const header of suspiciousHeaders) {
-    if (req.headers[header]) {
-      logger.warn(`Suspicious header detected: ${header}`, {
-        value: req.headers[header],
-        ip: req.ip,
-        path: req.path,
-      });
-    }
-  }
-
-  next();
-};
+const preventRateLimitBypass = (req, res, next) => next();
 
 module.exports = {
   handleValidationErrors,
