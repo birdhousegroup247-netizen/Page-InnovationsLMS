@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '../ui/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { getNavigationItems } from '../../utils/navigationItems.jsx';
 import { chatAPI, notificationsAPI } from '../../lib/api';
@@ -36,37 +37,78 @@ export default function AppLayout({ children }) {
     localStorage.removeItem('selectedRole');
   }
 
-  // Connect socket and fetch unread count once
+  const location = useLocation();
+  const { showToast } = useToast();
+
+  // Pull the combined DM + @mention unread count from the dedicated
+  // endpoint. Refetched on focus, on socket events, and as a periodic
+  // poll so the badge never goes stale.
+  const refreshUnread = useCallback(() => {
+    chatAPI.getUnreadSummary()
+      .then((r) => setUnreadCount(r.data?.data?.total || 0))
+      .catch(() => {});
+  }, []);
+
+  // Connect socket and do the first fetch
   useEffect(() => {
     if (!user) return;
 
-    // Connect socket — per-tab Bearer token (see utils/tokenStorage.js).
     const token = tokenStorage.get('accessToken');
     if (token) connectSocket(token);
 
-    // Fetch total unread DMs
-    chatAPI.getConversations()
-      .then((r) => {
-        const convs = r.data?.data?.conversations || [];
-        const total = convs.reduce((s, c) => s + (c.unread_count || 0), 0);
-        setUnreadCount(total);
-      })
-      .catch(() => {});
-
-    // Fetch unread notification count
+    refreshUnread();
     notificationsAPI.getUnreadCount()
       .then((r) => setNotifCount(r.data?.data?.count || 0))
       .catch(() => {});
-  }, [user]);
+  }, [user, refreshUnread]);
 
-  // Listen for new notifications via socket
+  // Live updates: notifications, new DMs, room @mentions.
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
+
     const onNotif = () => setNotifCount((n) => n + 1);
+
+    const onNewDm = (payload) => {
+      refreshUnread();
+      // Only toast if the user isn't already on /messages — otherwise
+      // they're seeing the conversation directly and the popup is noise.
+      if (!location.pathname.startsWith('/messages')) {
+        const name = payload?.sender?.full_name || 'Someone';
+        showToast(`${name}: ${payload?.preview || 'new message'}`, 'info');
+      }
+    };
+
+    const onMention = (payload) => {
+      refreshUnread();
+      if (!location.pathname.startsWith('/messages')) {
+        const name = payload?.sender?.full_name || 'Someone';
+        showToast(`${name} mentioned you: ${payload?.preview || ''}`.trim(), 'info');
+      }
+    };
+
     socket.on('notification', onNotif);
-    return () => socket.off('notification', onNotif);
-  }, []);
+    socket.on('chat:new_dm', onNewDm);
+    socket.on('chat:mention', onMention);
+    return () => {
+      socket.off('notification', onNotif);
+      socket.off('chat:new_dm', onNewDm);
+      socket.off('chat:mention', onMention);
+    };
+  }, [refreshUnread, location.pathname, showToast]);
+
+  // Refresh count when the tab is re-focused or every 60s — covers
+  // gaps in socket coverage (sleep, weak network, etc.)
+  useEffect(() => {
+    if (!user) return;
+    const onFocus = () => refreshUnread();
+    window.addEventListener('focus', onFocus);
+    const id = setInterval(refreshUnread, 60_000);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(id);
+    };
+  }, [user, refreshUnread]);
 
   // Expose setter so Messages page can clear the badge
   const decrementUnread = useCallback((amount) => {

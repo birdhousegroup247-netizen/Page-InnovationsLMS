@@ -374,6 +374,9 @@ export const chatAPI = {
   unmuteMember: (roomId, userId) => api.patch(`/api/chat/rooms/${roomId}/members/${userId}/mute`, { unmute: true }),
   toggleLockRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/lock`),
   toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
+  // Sidebar Messages badge — combined DM + @mention unread count.
+  getUnreadSummary: () => api.get('/api/chat/unread-summary'),
+  markMentionsSeen: (roomId) => api.post(`/api/chat/rooms/${roomId}/mark-mentions-seen`),
   // Messages
   deleteMessage: (messageId) => api.delete(`/api/chat/messages/${messageId}`),
   toggleReaction: (messageId, emoji) => api.post(`/api/chat/messages/${messageId}/reactions`, { emoji }),

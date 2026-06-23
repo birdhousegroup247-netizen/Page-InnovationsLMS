@@ -38,6 +38,8 @@ router.get('/mute', ChatController.getMuteStatus);
 // COURSE CHAT ROOMS
 // ============================================================================
 router.get('/rooms', ChatController.getMyRooms);
+router.get('/unread-summary', ChatController.getUnreadSummary);
+router.post('/rooms/:roomId/mark-mentions-seen', ChatController.markMentionsSeen);
 router.get('/users/search', ChatController.searchCoursemates);
 router.get('/rooms/course/:courseId', ChatController.getRoomByCourse);
 router.get('/rooms/:roomId/members', ChatController.getRoomMembers);

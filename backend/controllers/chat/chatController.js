@@ -889,11 +889,12 @@ class ChatController {
 
       const fullMessage = await Message.findByPk(message.id, { include: MESSAGE_INCLUDE });
 
+      const recipientId = conversation.user_a === userId ? conversation.user_b : conversation.user_a;
+
       const io = req.app.get('io');
-      if (io) emitDirectMessage(io, parseInt(conversationId), fullMessage);
+      if (io) emitDirectMessage(io, parseInt(conversationId), fullMessage, recipientId);
 
       // Notify recipient if not muted and offline
-      const recipientId = conversation.user_a === userId ? conversation.user_b : conversation.user_a;
       const isMuted = await MutedChat.findOne({ where: { user_id: recipientId, conversation_id: parseInt(conversationId) } });
       if (!isMuted && !isUserOnline(recipientId)) {
         const recipient = await User.findByPk(recipientId, { attributes: ['email', 'full_name'] });
@@ -1151,6 +1152,92 @@ class ChatController {
       }
 
       return ApiResponse.success(res, { reactions, action }, `Reaction ${action}`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/chat/unread-summary
+   * Number-badge data for the sidebar Messages icon.
+   *   dm_unread       — sum of every conversation's unread_count for me
+   *   mention_unread  — count of room messages where mention_ids
+   *                     contains me AND created_at > mentions_seen_at
+   *   total           — dm_unread + mention_unread (what the badge shows)
+   * Pure read — safe to poll.
+   */
+  static async getUnreadSummary(req, res, next) {
+    try {
+      const userId = req.user.id;
+
+      // 1) DM unread — every message in a conversation I'm in, where
+      // I'm not the sender and is_read is false. Matches the existing
+      // per-conversation unread_count used by getConversations.
+      const myConvs = await Conversation.findAll({
+        where: { [Op.or]: [{ user_a: userId }, { user_b: userId }] },
+        attributes: ['id'],
+      });
+      const convIds = myConvs.map((c) => c.id);
+      const dmUnread = convIds.length
+        ? await Message.count({
+            where: {
+              conversation_id: { [Op.in]: convIds },
+              sender_id: { [Op.ne]: userId },
+              is_read: false,
+              deleted_at: null,
+            },
+          })
+        : 0;
+
+      // 2) Mentions unread — count unread `chat_mention` notification
+      // rows for this user. notifyMentions() already creates these
+      // whenever a room message @-mentions someone, so this stays in
+      // sync without any extra schema.
+      const Notification = require('../../models').Notification;
+      const mentionUnread = await Notification.count({
+        where: { user_id: userId, type: 'chat_mention', is_read: false },
+      });
+
+      return ApiResponse.success(res, {
+        dm_unread: dmUnread,
+        mention_unread: mentionUnread,
+        total: dmUnread + mentionUnread,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/chat/rooms/:roomId/mark-mentions-seen
+   * Bump the user's mentions_seen_at on this room so the badge
+   * count drops. Called when they open the room in the chat UI.
+   */
+  static async markMentionsSeen(req, res, next) {
+    try {
+      const { roomId } = req.params;
+      const member = await ChatRoomMember.findOne({
+        where: { room_id: roomId, user_id: req.user.id },
+      });
+      if (member) await member.update({ mentions_seen_at: new Date() });
+
+      // Also flip the linked chat_mention notifications to is_read so
+      // the sidebar badge updates immediately. The metadata column on
+      // Notification stores roomId — match on that to scope to this
+      // room only.
+      const Notification = require('../../models').Notification;
+      const all = await Notification.findAll({
+        where: { user_id: req.user.id, type: 'chat_mention', is_read: false },
+      });
+      const toMark = all.filter((n) => {
+        try {
+          const meta = typeof n.metadata === 'string' ? JSON.parse(n.metadata) : n.metadata;
+          return !meta?.roomId || String(meta.roomId) === String(roomId);
+        } catch { return true; }
+      });
+      await Promise.all(toMark.map((n) => n.update({ is_read: true, read_at: new Date() })));
+
+      return ApiResponse.success(res, { cleared: toMark.length }, 'Mentions marked seen');
     } catch (error) {
       next(error);
     }

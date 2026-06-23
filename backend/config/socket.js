@@ -336,6 +336,23 @@ function emitToRole(io, role, event, data) {
  */
 function emitRoomMessage(io, roomId, message) {
   io.to(`room:${roomId}`).emit('chat:message', { message, roomId });
+
+  // Also ping each @mentioned user on their personal channel so the
+  // sidebar badge / toast can update without them needing to be in the
+  // room channel. The `user:${id}` channel is joined on connect so this
+  // hits them regardless of which page they're on.
+  const mentionIds = Array.isArray(message?.mention_ids)
+    ? message.mention_ids
+    : (message?.mentions || []).map((m) => m.id || m.user_id).filter(Boolean);
+  for (const uid of mentionIds) {
+    io.to(`user:${uid}`).emit('chat:mention', {
+      roomId,
+      messageId: message?.id,
+      preview: (message?.body || '').slice(0, 120),
+      sender: message?.sender ? { id: message.sender.id, full_name: message.sender.full_name } : null,
+    });
+  }
+
   logger.info(`Chat message broadcast to room ${roomId}`);
 }
 
@@ -367,8 +384,20 @@ function emitRoomDisabled(io, roomId) {
  * @param {Number} conversationId
  * @param {Object} message
  */
-function emitDirectMessage(io, conversationId, message) {
+function emitDirectMessage(io, conversationId, message, recipientId) {
   io.to(`conversation:${conversationId}`).emit('chat:message', { message, conversationId });
+
+  // Ping the recipient on their personal channel for sidebar badge +
+  // toast. We don't ping the sender — they obviously know.
+  if (recipientId) {
+    io.to(`user:${recipientId}`).emit('chat:new_dm', {
+      conversationId,
+      messageId: message?.id,
+      preview: (message?.body || '').slice(0, 120),
+      sender: message?.sender ? { id: message.sender.id, full_name: message.sender.full_name } : null,
+    });
+  }
+
   logger.info(`DM broadcast to conversation ${conversationId}`);
 }
 

@@ -67,6 +67,14 @@ const ChatRoomMember = sequelize.define(
       references: { model: 'users', key: 'id' },
       onDelete: 'SET NULL',
     },
+    // Last time this member viewed @mentions of themselves in the room.
+    // Used to compute the sidebar badge — count mentions where
+    // created_at > mentions_seen_at. Updated when the user opens the
+    // room in the chat UI.
+    mentions_seen_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: 'chat_room_members',
