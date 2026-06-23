@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Lock, Unlock, X, UserMinus, Flag, Loader2, Megaphone, ShieldAlert } from 'lucide-react';
 import { chatAPI } from '../../lib/api';
+import Modal from '../ui/Modal';
+import Tooltip from '../ui/Tooltip';
 
 /**
- * RoomSettingsPanel — instructor-only moderation drawer for a course room.
+ * RoomSettingsPanel — instructor moderation drawer for a course room.
  *
  * Features:
- *   - List approved members (with badge for instructor / muted state)
- *   - Lock toggle (read-only mode — students can read, can't post)
- *   - Per-member Remove (deletes membership row; student can rejoin if
- *     still enrolled in the course)
- *   - Per-member Report (mutes them + pings every admin for review)
+ *   - Member list (with instructor / muted badges)
+ *   - Lock toggle (read-only mode)
+ *   - Per-member Remove (deletes membership; rejoinable while enrolled)
+ *   - Per-member Report (mutes + pings every admin for review)
  *
- * Renders as a right-side drawer over the chat. Closes on overlay click
- * or the X button.
+ * Renders as a right-side drawer. Confirmations use the shared <Modal>
+ * (not browser confirm()). Icon buttons get hover <Tooltip>s.
  */
 export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [members, setMembers] = useState([]);
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const [actionId, setActionId] = useState(null); // userId currently being acted on
+  const [actionId, setActionId] = useState(null);
   const [actionKind, setActionKind] = useState(null);
+  // Pending confirmation state — { kind: 'remove'|'report'|'unmute'|'lock', userId?, name? }
+  const [confirming, setConfirming] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !roomId) return;
@@ -43,7 +46,9 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
     return () => { cancelled = true; };
   }, [isOpen, roomId]);
 
-  const handleToggleLock = async () => {
+  /* ── Actions ────────────────────────────────────────────────────────── */
+
+  const performLockToggle = async () => {
     setActionKind('lock');
     setActionId('room');
     try {
@@ -54,11 +59,11 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
     } finally {
       setActionId(null);
       setActionKind(null);
+      setConfirming(null);
     }
   };
 
-  const handleRemove = async (userId) => {
-    if (!confirm('Remove this member from the room? They can rejoin if still enrolled.')) return;
+  const performRemove = async (userId) => {
     setActionKind('remove');
     setActionId(userId);
     try {
@@ -69,17 +74,13 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
     } finally {
       setActionId(null);
       setActionKind(null);
+      setConfirming(null);
     }
   };
 
-  const handleReport = async (userId, currentlyMuted) => {
-    const action = currentlyMuted ? 'unmute' : 'report';
-    const confirmMsg = currentlyMuted
-      ? 'Unmute this member? Their messages will become visible again.'
-      : 'Report this member? Their messages will be hidden and an admin will review.';
-    if (!confirm(confirmMsg)) return;
-
-    setActionKind(action);
+  const performReport = async (userId, currentlyMuted) => {
+    const kind = currentlyMuted ? 'unmute' : 'report';
+    setActionKind(kind);
     setActionId(userId);
     try {
       if (currentlyMuted) {
@@ -97,31 +98,77 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
     } finally {
       setActionId(null);
       setActionKind(null);
+      setConfirming(null);
     }
   };
+
+  /* ── Confirm modal copy ─────────────────────────────────────────────── */
+
+  const confirmCopy = (() => {
+    if (!confirming) return null;
+    if (confirming.kind === 'lock') {
+      return {
+        title: isReadOnly ? 'Unlock this room?' : 'Lock this room?',
+        body: isReadOnly
+          ? 'Members will be able to post messages again.'
+          : 'Students will be able to read history but won\'t be able to post. Only you can post while it\'s locked.',
+        cta: isReadOnly ? 'Unlock' : 'Lock',
+        ctaVariant: isReadOnly ? 'primary' : 'warning',
+      };
+    }
+    if (confirming.kind === 'remove') {
+      return {
+        title: `Remove ${confirming.name}?`,
+        body: 'They\'ll be kicked from the room immediately. If they\'re still enrolled in the course they can rejoin themselves.',
+        cta: 'Remove',
+        ctaVariant: 'danger',
+      };
+    }
+    if (confirming.kind === 'report') {
+      return {
+        title: `Report ${confirming.name}?`,
+        body: 'Their messages will be hidden from the room feed and they won\'t be able to send new ones. Every admin will be notified to review the report.',
+        cta: 'Report & Mute',
+        ctaVariant: 'danger',
+      };
+    }
+    if (confirming.kind === 'unmute') {
+      return {
+        title: `Unmute ${confirming.name}?`,
+        body: 'Their messages will become visible again and they\'ll be able to send new ones.',
+        cta: 'Unmute',
+        ctaVariant: 'primary',
+      };
+    }
+    return null;
+  })();
+
+  const handleConfirm = () => {
+    if (!confirming) return;
+    if (confirming.kind === 'lock') return performLockToggle();
+    if (confirming.kind === 'remove') return performRemove(confirming.userId);
+    if (confirming.kind === 'report') return performReport(confirming.userId, false);
+    if (confirming.kind === 'unmute') return performReport(confirming.userId, true);
+  };
+
+  /* ── Render ─────────────────────────────────────────────────────────── */
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/40 z-40"
-        onClick={onClose}
-      />
-      {/* Drawer */}
+      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+
       <div className="fixed right-0 top-0 bottom-0 w-full sm:w-[420px] bg-white dark:bg-dark-800 z-50 shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-dark-700">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Room settings</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Manage members and posting permissions
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Manage members and posting permissions</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-500 dark:text-gray-400 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-500 dark:text-gray-400"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -130,7 +177,7 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
-          {/* Lock toggle */}
+          {/* Lock card */}
           <div className="p-5 border-b border-gray-100 dark:border-dark-700/60">
             <div className="flex items-start gap-3">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -151,13 +198,13 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
                 </p>
               </div>
               <button
-                onClick={handleToggleLock}
+                onClick={() => setConfirming({ kind: 'lock' })}
                 disabled={actionKind === 'lock'}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${
                   isReadOnly
                     ? 'bg-brand-blue text-white hover:bg-brand-blue-600'
                     : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200'
-                } disabled:opacity-50`}
+                }`}
               >
                 {actionKind === 'lock' ? '…' : isReadOnly ? 'Unlock' : 'Lock'}
               </button>
@@ -197,7 +244,6 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
                           : 'bg-gray-50 dark:bg-dark-700/50 border-transparent hover:border-gray-200 dark:hover:border-dark-600'
                       }`}
                     >
-                      {/* Avatar */}
                       {m.profile_picture ? (
                         <img src={m.profile_picture} alt={m.full_name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
                       ) : (
@@ -208,9 +254,7 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {m.full_name}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{m.full_name}</p>
                           {isInstructorMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 font-semibold uppercase tracking-wider">
                               Instructor
@@ -224,39 +268,47 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
                         </div>
                       </div>
 
-                      {/* Actions — instructor row gets no action buttons */}
                       {!isInstructorMember && (
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <button
-                            onClick={() => handleReport(m.id, muted)}
-                            disabled={busy}
-                            title={muted ? 'Unmute' : 'Report (mute + notify admin)'}
-                            className={`p-2 rounded-lg transition-colors ${
-                              muted
-                                ? 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/20'
-                                : 'text-amber-600 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/20'
-                            } disabled:opacity-30`}
-                          >
-                            {busy && (actionKind === 'report' || actionKind === 'unmute') ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : muted ? (
-                              <ShieldAlert className="w-4 h-4" />
-                            ) : (
-                              <Flag className="w-4 h-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleRemove(m.id)}
-                            disabled={busy}
-                            title="Remove from room"
-                            className="p-2 rounded-lg text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-30 transition-colors"
-                          >
-                            {busy && actionKind === 'remove' ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <UserMinus className="w-4 h-4" />
-                            )}
-                          </button>
+                          <Tooltip content={muted ? 'Unmute member' : 'Report — mute and notify admin'} position="top">
+                            <button
+                              onClick={() => setConfirming({
+                                kind: muted ? 'unmute' : 'report',
+                                userId: m.id,
+                                name: m.full_name,
+                              })}
+                              disabled={busy}
+                              aria-label={muted ? 'Unmute' : 'Report'}
+                              className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${
+                                muted
+                                  ? 'text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/20'
+                                  : 'text-amber-600 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/20'
+                              }`}
+                            >
+                              {busy && (actionKind === 'report' || actionKind === 'unmute') ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : muted ? (
+                                <ShieldAlert className="w-4 h-4" />
+                              ) : (
+                                <Flag className="w-4 h-4" />
+                              )}
+                            </button>
+                          </Tooltip>
+
+                          <Tooltip content="Remove from room" position="top">
+                            <button
+                              onClick={() => setConfirming({ kind: 'remove', userId: m.id, name: m.full_name })}
+                              disabled={busy}
+                              aria-label="Remove"
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-30 transition-colors"
+                            >
+                              {busy && actionKind === 'remove' ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <UserMinus className="w-4 h-4" />
+                              )}
+                            </button>
+                          </Tooltip>
                         </div>
                       )}
                     </li>
@@ -278,6 +330,38 @@ export default function RoomSettingsPanel({ roomId, isOpen, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Confirmation modal — replaces browser confirm() for a real UX */}
+      <Modal isOpen={!!confirming} onClose={() => setConfirming(null)} size="sm" title={confirmCopy?.title}>
+        {confirmCopy && (
+          <div className="space-y-5">
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{confirmCopy.body}</p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirming(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={!!actionId}
+                className={`px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors disabled:opacity-60 ${
+                  confirmCopy.ctaVariant === 'danger'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : confirmCopy.ctaVariant === 'warning'
+                    ? 'bg-amber-600 hover:bg-amber-700'
+                    : 'bg-brand-blue hover:bg-brand-blue-600'
+                }`}
+              >
+                {actionId ? 'Working…' : confirmCopy.cta}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
