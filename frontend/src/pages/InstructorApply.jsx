@@ -276,7 +276,7 @@ export default function InstructorApply() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-8 px-4">
+    <div className="min-h-screen flex bg-gray-50 dark:bg-dark-900 transition-colors">
       <button
         onClick={toggleTheme}
         className="fixed top-4 right-4 p-3 rounded-lg bg-white dark:bg-dark-800 shadow-md z-50"
@@ -285,14 +285,91 @@ export default function InstructorApply() {
         {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-700" />}
       </button>
 
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-6">
-          <img src={logo} alt="TekyPro" className="h-12 mx-auto mb-2" />
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-text-dark-primary">Apply to Teach on TekyPro</h1>
-          <p className="text-sm text-gray-600 dark:text-text-dark-secondary mt-1">
-            Tell us about yourself — we review every application personally.
-          </p>
+      {/* Left editorial panel — instructor-flavored, brand-purple/fuchsia accent. */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-[#0B1220]">
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-purple/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
+            <span className="text-xs uppercase tracking-[0.18em] text-white/40 font-semibold">
+              · Teach. Earn. Inspire.
+            </span>
+          </div>
+
+          <div className="max-w-md">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-fuchsia-300/80 font-semibold mb-4">
+              For expert practitioners
+            </span>
+            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5">
+              Share what<br />
+              you know.<br />
+              <span className="text-fuchsia-400">Earn doing it.</span>
+            </h1>
+            <p className="text-base text-white/60 leading-relaxed mb-10 max-w-sm">
+              Turn your expertise into a real income stream. Reach global learners with our pro instructor tools.
+            </p>
+
+            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5">
+              <div className="absolute -top-2.5 left-5 text-fuchsia-400 text-3xl leading-none font-serif">"</div>
+              <p className="text-sm text-white/80 leading-relaxed pt-1">
+                I made $14k in my first six months teaching Oracle on TekyPro. The drip tools and live sessions make it easy to scale.
+              </p>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-brand-purple flex items-center justify-center font-bold text-sm">
+                  CN
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Chinedu N.</p>
+                  <p className="text-xs text-white/50">Oracle Specialist · Abuja</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/[0.08]">
+            {[
+              { value: '70%', label: 'Revenue Share' },
+              { value: '1k+', label: 'Instructors' },
+              { value: '$2k+', label: 'Avg/Month' },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="text-2xl font-bold text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
+
+      {/* Right side — wizard */}
+      <div className="w-full lg:w-1/2 flex items-start justify-center px-4 sm:px-8 pt-6 pb-10 lg:py-12 overflow-y-auto">
+        <div className="w-full max-w-xl">
+          {/* Mobile-only logo + title */}
+          <div className="lg:hidden text-center mb-5">
+            <img src={logo} alt="TekyPro" className="h-9 mx-auto mb-3" />
+          </div>
+
+          <div className="mb-6 text-center lg:text-left">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-purple/10 text-brand-purple dark:text-purple-300 text-[11px] font-semibold mb-3">
+              Instructor application
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-dark-primary tracking-tight">
+              Apply to teach on TekyPro
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-text-dark-secondary mt-1.5">
+              Tell us about yourself — we review every application personally.
+            </p>
+          </div>
 
         {/* Stepper */}
         <div className="flex items-center justify-between mb-6 px-1">
@@ -305,12 +382,12 @@ export default function InstructorApply() {
                 <div className={`flex flex-col items-center text-center flex-1 ${i === 0 ? '' : ''}`}>
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
                     done ? 'bg-green-500 text-white'
-                    : active ? 'bg-brand-blue text-white'
+                    : active ? 'bg-brand-purple text-white shadow-lg shadow-brand-purple/30'
                     : 'bg-gray-200 dark:bg-dark-700 text-gray-500 dark:text-text-dark-muted'
                   }`}>
                     {done ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </div>
-                  <span className={`mt-1 text-xs ${active ? 'font-semibold text-brand-blue' : 'text-gray-500 dark:text-text-dark-muted'}`}>
+                  <span className={`mt-1 text-xs ${active ? 'font-semibold text-brand-purple dark:text-purple-300' : 'text-gray-500 dark:text-text-dark-muted'}`}>
                     {s.label}
                   </span>
                 </div>
@@ -322,7 +399,7 @@ export default function InstructorApply() {
           })}
         </div>
 
-        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-6 sm:p-8">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-5 sm:p-7">
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -549,7 +626,7 @@ export default function InstructorApply() {
               <button
                 type="button"
                 onClick={next}
-                className="px-5 py-2.5 inline-flex items-center gap-2 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg"
+                className="px-5 py-2.5 inline-flex items-center gap-2 bg-brand-purple hover:bg-brand-purple/90 text-white font-semibold rounded-lg shadow-lg shadow-brand-purple/20 transition-all"
               >
                 Continue <ArrowRight className="w-4 h-4" />
               </button>
@@ -558,14 +635,14 @@ export default function InstructorApply() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="px-5 py-2.5 inline-flex items-center gap-2 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg disabled:opacity-50"
+                className="px-5 py-2.5 inline-flex items-center gap-2 bg-brand-purple hover:bg-brand-purple/90 text-white font-semibold rounded-lg shadow-lg shadow-brand-purple/20 disabled:opacity-50 transition-all"
               >
                 {submitting ? 'Submitting...' : 'Submit Application'}
               </button>
             )}
           </div>
         </div>
-
+        </div>
       </div>
     </div>
   );

@@ -162,13 +162,10 @@ export default function Register() {
         )}
       </button>
 
-      {/* Left Side — editorial dark with subtle accent glow, stats strip,
-          and a real testimonial card. No purple-to-blue rainbow. */}
+      {/* Left editorial panel — student-flavored, brand-blue/cyan accent. */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-[#0B1220]">
-        {/* Subtle radial accents — single colour, asymmetric, restrained. */}
         <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-blue/15 blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-cyan-500/10 blur-[120px]" />
-        {/* Faint grid texture */}
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
@@ -179,7 +176,6 @@ export default function Register() {
         />
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
-          {/* Top: logo + tagline */}
           <div className="flex items-center gap-3">
             <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
             <span className="text-xs uppercase tracking-[0.18em] text-white/40 font-semibold">
@@ -187,23 +183,19 @@ export default function Register() {
             </span>
           </div>
 
-          {/* Middle: headline + testimonial */}
           <div className="max-w-md">
             <span className="inline-block text-xs uppercase tracking-[0.18em] text-cyan-300/80 font-semibold mb-4">
               For ambitious learners
             </span>
             <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5">
-              Real skills.
-              <br />
-              Real instructors.
-              <br />
+              Real skills.<br />
+              Real instructors.<br />
               <span className="text-cyan-400">Real careers.</span>
             </h1>
             <p className="text-base text-white/60 leading-relaxed mb-10 max-w-sm">
               Sign up free, preview every course, and pay only when you're ready to enroll.
             </p>
 
-            {/* Testimonial — real social proof, not generic bullets */}
             <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5">
               <div className="absolute -top-2.5 left-5 text-cyan-400 text-3xl leading-none font-serif">"</div>
               <p className="text-sm text-white/80 leading-relaxed pt-1">
@@ -221,7 +213,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Bottom: stats strip */}
           <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/[0.08]">
             {[
               { value: '10k+', label: 'Learners' },
@@ -237,15 +228,14 @@ export default function Register() {
         </div>
       </div>
 
-      {/* Right Side - Registration Form */}
+      {/* Right side — form */}
       <div className="w-full lg:w-1/2 flex items-start justify-center px-4 sm:px-8 pt-6 pb-10 lg:py-12 overflow-y-auto">
         <div className="w-full max-w-md">
-          {/* Mobile Logo — smaller, tighter so the form is what users see */}
+          {/* Mobile-only logo */}
           <div className="lg:hidden text-center mb-5 animate-fade-in">
             <img src={logo} alt="TekyPro" className="h-9 w-auto mx-auto" />
           </div>
 
-          {/* Form Card */}
           <div className="relative bg-white dark:bg-dark-800 rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-5 sm:p-8 animate-scale-in transition-colors">
             {/* Header — pill + tight headline */}
             <div className="mb-6">
