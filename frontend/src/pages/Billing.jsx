@@ -27,7 +27,13 @@ export default function Billing() {
     paymentsAPI
       .getMyPayments()
       .then((res) => setPayments(res.data?.data?.payments || []))
-      .catch(() => setError('Unable to load payment history'))
+      .catch((err) => {
+        // Surface the real API message so we don't sit on the generic
+        // "Unable to load payment history" with no clue what broke.
+        const msg = err.response?.data?.message || err.message || 'Unable to load payment history';
+        console.error('Billing: getMyPayments failed', err);
+        setError(msg);
+      })
       .finally(() => setLoading(false));
   }, []);
 
