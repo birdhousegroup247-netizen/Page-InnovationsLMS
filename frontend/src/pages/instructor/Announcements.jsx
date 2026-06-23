@@ -136,17 +136,16 @@ export default function Announcements() {
       setError('');
 
       if (editingAnnouncement) {
-        // Update existing announcement
+        // Backend's column is `message` (not `content`) — match it.
         await announcementsAPI.update(editingAnnouncement.id, {
           title: formData.title,
-          content: formData.content,
+          message: formData.content,
         });
         setSuccess('Announcement updated successfully!');
       } else {
-        // Create new announcement
         await announcementsAPI.createAnnouncement(formData.course_id, {
           title: formData.title,
-          content: formData.content,
+          message: formData.content,
         });
         setSuccess('Announcement created successfully!');
       }

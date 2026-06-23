@@ -12,7 +12,14 @@ const { authenticate, authorize } = require('../../middleware/auth/authMiddlewar
 // COURSE ANNOUNCEMENT ROUTES
 // ============================================================================
 
-// Get announcements for enrolled courses (Student)
+// Get announcements for enrolled courses (Student).
+// MUST be declared before /announcements/:announcementId — Express would
+// otherwise interpret "my" as the :announcementId param and try to cast
+// it to an integer, which is what produced the
+// "invalid input syntax for type integer: 'my'" error on /announcements.
+router.get('/announcements/my', authenticate, authorize('student'), AnnouncementsController.getMyAnnouncements);
+// Backwards-compat alias — keep the old /api/my path live so any cached
+// frontend bundle that still calls it doesn't 404.
 router.get('/my', authenticate, authorize('student'), AnnouncementsController.getMyAnnouncements);
 
 // Get all announcements for a course (Enrolled students can view)

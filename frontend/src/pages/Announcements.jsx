@@ -67,7 +67,7 @@ export default function Announcements() {
                 )}
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {a.content}
+                {a.message || a.content}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                 {a.course?.title && (
