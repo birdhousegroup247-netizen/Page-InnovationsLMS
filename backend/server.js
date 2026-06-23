@@ -211,8 +211,21 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Health check endpoints
-app.get('/health', async (req, res) => {
+// Lightweight health endpoint — returns 200 the moment the process is
+// listening. Heavy DB / Redis / disk checks moved to /health/full so a
+// long-running boot migration can't drag the healthcheck past Railway's
+// 5-minute timeout and bin the whole deployment.
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+// Detailed health (DB + Redis + disk + memory + CPU) — kept for
+// monitoring dashboards, no longer the Railway healthcheck target.
+app.get('/health/full', async (req, res) => {
   try {
     const health = await performHealthCheck();
     const statusCode = health.status === 'healthy' ? 200 : health.status === 'warning' ? 200 : 503;
@@ -408,6 +421,17 @@ const startServer = async () => {
       logger.error('Full error:', modelError);
       throw modelError;
     }
+
+    // ── Bind the port NOW so Railway's healthcheck passes immediately.
+    // The heavy migrations below (describeTable + ALTER TABLE for
+    // ~40 models) used to take 2-5 minutes on cold boot, blowing past
+    // Railway's healthcheck timeout and causing every deploy to be
+    // rolled back to the previous "Active" build. With the port up
+    // first, /health returns 200 in <1s and the deployment promotes
+    // immediately; migrations finish in the background.
+    server.listen(PORT, '0.0.0.0', () => {
+      logger.info(`🚀 Server listening on 0.0.0.0:${PORT} — running migrations in background…`);
+    });
 
     // Create missing tables on startup only outside production.
     // In production, schema changes must go through explicit SQL migrations.
