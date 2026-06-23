@@ -1002,28 +1002,17 @@ const startServer = async () => {
       }
     }, 5 * 60 * 1000); // Run every 5 minutes
 
-    // Start server — explicit 0.0.0.0 so Railway's proxy can reach us
-    // (Node sometimes binds IPv6-only otherwise, which the proxy can't route to).
-    server.listen(PORT, '0.0.0.0', () => {
-      logger.info(`
+    // server.listen() now fires earlier in startServer (right after model
+    // load) so Railway's healthcheck can pass while migrations run in the
+    // background. Removed the duplicate listen() that used to live here —
+    // calling listen() twice on the same server throws EADDRINUSE on the
+    // second call, which is what was crashing every deploy.
+    logger.info(`
 ╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║   🚀 TekyPro LMS API Server                              ║
-║                                                           ║
-║   Environment: ${process.env.NODE_ENV?.padEnd(42) || 'development'.padEnd(42)}║
+║   🚀 TekyPro LMS API — all startup tasks complete         ║
 ║   Port: ${PORT.toString().padEnd(50)}║
-║   Database: ${process.env.DB_NAME?.padEnd(46) || 'Not Connected'.padEnd(46)}║
-║   WebSocket: Enabled${' '.padEnd(43)}║
-║                                                           ║
-║   Server URL: http://localhost:${PORT.toString().padEnd(29)}║
-║   Health Check: http://localhost:${PORT}/health${' '.padEnd(15)}║
-║                                                           ║
-║   TekyPro - The Leading Remote DBA Service Provider      ║
-║   https://www.tekypro.com                                 ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-      `);
-    });
+║   Environment: ${process.env.NODE_ENV?.padEnd(42) || 'development'.padEnd(42)}║
+╚═══════════════════════════════════════════════════════════╝`);
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);
