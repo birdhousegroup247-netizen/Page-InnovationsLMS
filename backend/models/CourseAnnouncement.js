@@ -44,6 +44,13 @@ const CourseAnnouncement = sequelize.define(
       type: DataTypes.ENUM('low', 'normal', 'high', 'urgent'),
       defaultValue: 'normal',
     },
+    // Optional publish-at — if null, the announcement is live from the
+    // moment it's created. If set in the future, students don't see it
+    // until that timestamp; instructors still see it in their own list.
+    scheduled_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: 'course_announcements',

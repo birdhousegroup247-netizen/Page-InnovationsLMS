@@ -18,7 +18,7 @@ class AnnouncementsController {
   static async createAnnouncement(req, res, next) {
     try {
       const { courseId } = req.params;
-      const { title, message, priority } = req.body;
+      const { title, message, priority, scheduled_at } = req.body;
       const instructorId = req.user.id;
 
       if (!title || !message) {
@@ -43,6 +43,7 @@ class AnnouncementsController {
         title,
         message,
         priority: priority || 'normal',
+        scheduled_at: scheduled_at || null,
       });
 
       // Get all enrolled students

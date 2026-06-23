@@ -37,6 +37,7 @@ export default function Announcements() {
     title: '',
     content: '',
     course_id: '',
+    scheduled_at: '', // empty = publish now
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -92,8 +93,11 @@ export default function Announcements() {
       setEditingAnnouncement(announcement);
       setFormData({
         title: announcement.title,
-        content: announcement.content,
+        content: announcement.message || announcement.content || '',
         course_id: announcement.course_id,
+        scheduled_at: announcement.scheduled_at
+          ? new Date(announcement.scheduled_at).toISOString().slice(0, 16)
+          : '',
       });
     } else {
       setEditingAnnouncement(null);
@@ -101,6 +105,7 @@ export default function Announcements() {
         title: '',
         content: '',
         course_id: courses[0]?.id || '',
+        scheduled_at: '',
       });
     }
     setFormErrors({});
@@ -110,7 +115,7 @@ export default function Announcements() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingAnnouncement(null);
-    setFormData({ title: '', content: '', course_id: '' });
+    setFormData({ title: '', content: '', course_id: '', scheduled_at: '' });
     setFormErrors({});
   };
 
@@ -136,16 +141,17 @@ export default function Announcements() {
       setError('');
 
       if (editingAnnouncement) {
-        // Backend's column is `message` (not `content`) — match it.
         await announcementsAPI.update(editingAnnouncement.id, {
           title: formData.title,
           message: formData.content,
+          scheduled_at: formData.scheduled_at || null,
         });
         setSuccess('Announcement updated successfully!');
       } else {
         await announcementsAPI.createAnnouncement(formData.course_id, {
           title: formData.title,
           message: formData.content,
+          scheduled_at: formData.scheduled_at || null,
         });
         setSuccess('Announcement created successfully!');
       }
@@ -335,7 +341,7 @@ export default function Announcements() {
                         </div>
 
                         <p className="text-gray-700 dark:text-text-dark-secondary whitespace-pre-wrap">
-                          {announcement.content}
+                          {announcement.message || announcement.content}
                         </p>
                       </div>
 
@@ -450,6 +456,30 @@ export default function Announcements() {
               {formErrors.content && (
                 <p className="text-red-600 dark:text-red-400 text-sm mt-1">{formErrors.content}</p>
               )}
+            </div>
+
+            {/* Publish at (optional) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2">
+                Publish at <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional)</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.scheduled_at}
+                onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border-gray-300 dark:border-border-dark focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+              />
+              <p className="text-xs text-gray-500 dark:text-text-dark-muted mt-1">
+                Leave empty to publish immediately. Future dates hide the announcement from students until then.
+              </p>
+            </div>
+
+            {/* Recipients note */}
+            <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+              <Megaphone className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                This announcement will be sent to every student currently enrolled in the selected course only.
+              </p>
             </div>
 
             {/* Actions */}
