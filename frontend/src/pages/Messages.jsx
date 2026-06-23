@@ -440,11 +440,17 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
     socket.emit(type === 'room' ? 'join:room' : 'join:conversation', id);
 
     const onMessage = ({ message, roomId, conversationId }) => {
-      const matches = (type === 'room' && roomId === id) || (type === 'dm' && conversationId === id);
+      // Loose-compare IDs because the backend may send numbers while
+      // activeChat.id can be a string from the URL/state. With ===
+      // every payload was rejected and the live feed silently froze
+      // (especially noticeable on student↔instructor DMs).
+      const matches =
+        (type === 'room' && Number(roomId) === Number(id)) ||
+        (type === 'dm' && Number(conversationId) === Number(id));
       if (!matches) return;
       setMessages((prev) => prev.find((m) => m.id === message.id) ? prev : [...prev, message]);
       if (message.is_pinned) setPinnedMsg(message);
-      // Mark read immediately when window is open
+      // Mark read immediately when the window is already open
       if (type === 'dm' && message.sender_id !== userId) {
         chatAPI.markConversationRead(id).catch(() => {});
         socket.emit('chat:read', { conversationId: id });
@@ -455,11 +461,11 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
       setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, reactions } : m));
 
     const onRead = ({ conversationId, readBy }) => {
-      if (type === 'dm' && conversationId === id && readBy !== userId) setSeenAt(new Date());
+      if (type === 'dm' && Number(conversationId) === Number(id) && readBy !== userId) setSeenAt(new Date());
     };
 
     const onPin = ({ roomId, messageId, is_pinned }) => {
-      if (type === 'room' && roomId === id) {
+      if (type === 'room' && Number(roomId) === Number(id)) {
         setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, is_pinned } : m));
         setMessages((prev) => {
           const pinned = prev.find((m) => m.id === messageId && is_pinned);
