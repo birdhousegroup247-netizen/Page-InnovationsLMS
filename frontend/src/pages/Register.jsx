@@ -272,7 +272,7 @@ export default function Register() {
             <div className="mb-6">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 text-[11px] font-semibold mb-3">
                 <Sparkles className="w-3 h-3" />
-                Free forever — no credit card
+                Free signup — pay only when you enroll
               </div>
               <h1 className="text-[1.5rem] sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
                 Create your account
