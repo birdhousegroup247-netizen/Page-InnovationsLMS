@@ -4,10 +4,11 @@ import { chatAPI } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { Spinner } from '../components/ui';
 import { cn } from '../utils/cn';
+import RoomSettingsPanel from '../components/chat/RoomSettingsPanel';
 import {
   MessageSquare, Send, BookOpen, User, Clock, Users, ChevronRight,
   AlertCircle, Reply, X, AtSign, Paperclip, FileText, Search,
-  SmilePlus, Pin, Forward, BellOff, Bell, CheckCheck,
+  SmilePlus, Pin, Forward, BellOff, Bell, CheckCheck, Settings,
 } from 'lucide-react';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -877,6 +878,7 @@ export default function Messages() {
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [activeChat, setActiveChat]     = useState(null);
   const [showRequests, setShowRequests] = useState(false);
+  const [showRoomSettings, setShowRoomSettings] = useState(false);
   const [search, setSearch]             = useState('');
   const [onlineUsers, setOnlineUsers]   = useState(new Set());
   const [showNewDM, setShowNewDM]       = useState(false);
@@ -1096,17 +1098,14 @@ export default function Messages() {
         {activeChat ? (
           <>
             {isInstructor && activeChat.type === 'room' && (
-              <div>
-                {!showRequests ? (
-                  <button onClick={() => setShowRequests(true)}
-                    className="w-full flex items-center gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/20 text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 transition-colors">
-                    <Users className="w-3.5 h-3.5" />View pending join requests
-                    <ChevronRight className="w-3.5 h-3.5 ml-auto" />
-                  </button>
-                ) : (
-                  <PendingRequests roomId={activeChat.id} onClose={() => setShowRequests(false)} />
-                )}
-              </div>
+              <button
+                onClick={() => setShowRoomSettings(true)}
+                className="w-full flex items-center gap-2 px-6 py-2 bg-brand-blue/5 dark:bg-brand-blue/10 border-b border-brand-blue/20 dark:border-brand-blue/30 text-xs font-semibold text-brand-blue dark:text-cyan-400 hover:bg-brand-blue/10 transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Room settings — manage members, lock, report
+                <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+              </button>
             )}
             <div className="flex-1 overflow-hidden">
               <ChatWindow
@@ -1134,6 +1133,15 @@ export default function Messages() {
           </div>
         )}
       </div>
+
+      {/* Instructor moderation drawer for the active room */}
+      {isInstructor && activeChat?.type === 'room' && (
+        <RoomSettingsPanel
+          roomId={activeChat.id}
+          isOpen={showRoomSettings}
+          onClose={() => setShowRoomSettings(false)}
+        />
+      )}
     </div>
   );
 }

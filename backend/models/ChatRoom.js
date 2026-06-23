@@ -28,6 +28,13 @@ const ChatRoom = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    // Read-only lock. When true, only the course instructor (and
+    // admins) can send messages; everyone else can still read history.
+    // Toggled by the instructor from the room settings menu.
+    is_read_only: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     tableName: 'chat_rooms',

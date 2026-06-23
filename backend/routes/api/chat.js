@@ -45,6 +45,8 @@ router.post('/rooms/:roomId/messages', withAttachment(ChatController.sendRoomMes
 router.get('/rooms/:roomId/requests', ChatController.getPendingRequests);
 router.patch('/rooms/:roomId/requests/:userId', ChatController.handleJoinRequest);
 router.delete('/rooms/:roomId/members/:userId', ChatController.removeMember);
+router.patch('/rooms/:roomId/members/:userId/mute', ChatController.muteMember);
+router.patch('/rooms/:roomId/lock', ChatController.toggleLockRoom);
 router.patch('/rooms/:roomId/toggle', ChatController.toggleRoom);
 
 // ============================================================================

@@ -308,7 +308,19 @@ class ChatController {
         order: [['joined_at', 'ASC']],
       });
 
-      return ApiResponse.success(res, { members: members.map((m) => m.user) }, 'Members retrieved');
+      // Surface room membership state per row (room_role, muted_at)
+      // alongside the user payload — the instructor menu needs both.
+      const payload = members.map((m) => ({
+        ...(m.user ? m.user.toJSON() : {}),
+        room_role: m.role,
+        muted_at: m.muted_at,
+        joined_at: m.joined_at,
+      }));
+
+      return ApiResponse.success(res, {
+        members: payload,
+        room: { id: room.id, is_read_only: !!room.is_read_only },
+      }, 'Members retrieved');
     } catch (error) {
       next(error);
     }
@@ -320,11 +332,14 @@ class ChatController {
       const { roomId } = req.params;
       const { page = 1, limit = 50, before } = req.query;
 
-      const room = await ChatRoom.findByPk(roomId);
+      const room = await ChatRoom.findByPk(roomId, {
+        include: [{ model: Course, as: 'course', attributes: ['instructor_id'] }],
+      });
       if (!room) throw new NotFoundError('Chat room not found');
       if (!room.is_active) throw new ForbiddenError('This chat room has been disabled');
 
       const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const isInstructor = room.course && room.course.instructor_id === req.user.id;
       if (!isAdmin) {
         const membership = await ChatRoomMember.findOne({
           where: { room_id: roomId, user_id: req.user.id, status: 'approved' },
@@ -335,6 +350,17 @@ class ChatController {
       const where = { room_id: roomId, deleted_at: null };
       if (before) where.id = { [Op.lt]: parseInt(before) };
 
+      // Hide messages from currently-muted members for non-staff viewers.
+      // Instructor/admin still see them so they can review what was sent.
+      if (!isAdmin && !isInstructor) {
+        const mutedRows = await ChatRoomMember.findAll({
+          where: { room_id: roomId, muted_at: { [Op.ne]: null } },
+          attributes: ['user_id'],
+        });
+        const mutedIds = mutedRows.map((m) => m.user_id);
+        if (mutedIds.length) where.sender_id = { [Op.notIn]: mutedIds };
+      }
+
       const messages = await Message.findAll({
         where,
         include: MESSAGE_INCLUDE,
@@ -343,7 +369,10 @@ class ChatController {
         offset: (parseInt(page) - 1) * parseInt(limit),
       });
 
-      return ApiResponse.success(res, { messages: messages.reverse() }, 'Messages retrieved');
+      return ApiResponse.success(res, {
+        messages: messages.reverse(),
+        room: { id: room.id, is_read_only: !!room.is_read_only },
+      }, 'Messages retrieved');
     } catch (error) {
       next(error);
     }
@@ -361,16 +390,30 @@ class ChatController {
 
       if (!body.trim() && !req.file) throw new BadRequestError('Message cannot be empty');
 
-      const room = await ChatRoom.findByPk(roomId);
+      const room = await ChatRoom.findByPk(roomId, {
+        include: [{ model: Course, as: 'course', attributes: ['instructor_id'] }],
+      });
       if (!room) throw new NotFoundError('Chat room not found');
       if (!room.is_active) throw new ForbiddenError('This chat room has been disabled');
 
       const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const isInstructor = room.course && room.course.instructor_id === req.user.id;
+
+      // Read-only lock: only instructor + admin can send while it's on.
+      if (room.is_read_only && !isAdmin && !isInstructor) {
+        throw new ForbiddenError('This room is read-only. Only the instructor can post.');
+      }
+
       if (!isAdmin) {
         const membership = await ChatRoomMember.findOne({
           where: { room_id: roomId, user_id: req.user.id, status: 'approved' },
         });
         if (!membership) throw new ForbiddenError('You are not an approved member of this chat room');
+        // Muted users can't post. Their existing messages are also hidden
+        // from the room feed for non-staff viewers (see getRoomMessages).
+        if (membership.muted_at) {
+          throw new ForbiddenError('Your messages in this room are paused pending admin review.');
+        }
       }
 
       if (reply_to_id) {
@@ -529,13 +572,125 @@ class ChatController {
         throw new ForbiddenError('Cannot remove the course instructor from the room');
       }
 
-      await member.update({ status: 'banned' });
+      // Actually delete the row (not status='banned') so the student can
+      // rejoin from the course while their enrollment is still valid.
+      // Per product spec — "removed but can rejoin if still enrolled".
+      await member.destroy();
 
       const io = req.app.get('io');
       if (io) emitRoomMemberUpdate(io, parseInt(roomId), 'chat:member_removed', parseInt(userId));
 
       logger.info(`User ${userId} removed from room ${roomId} by ${req.user.id}`);
       return ApiResponse.success(res, {}, 'Member removed');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PATCH /api/chat/rooms/:roomId/lock — toggle the read-only lock.
+   * Only the course instructor or an admin may toggle it. When locked,
+   * non-staff members can read but not send (enforced in sendRoomMessage).
+   */
+  static async toggleLockRoom(req, res, next) {
+    try {
+      const { roomId } = req.params;
+
+      const room = await ChatRoom.findByPk(roomId, {
+        include: [{ model: Course, as: 'course', attributes: ['instructor_id'] }],
+      });
+      if (!room) throw new NotFoundError('Chat room not found');
+
+      const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const isInstructor = room.course && room.course.instructor_id === req.user.id;
+      if (!isAdmin && !isInstructor) {
+        throw new ForbiddenError('Only the course instructor or admin can lock this room');
+      }
+
+      await room.update({ is_read_only: !room.is_read_only });
+      logger.info(`Chat room ${roomId} ${room.is_read_only ? 'locked (read-only)' : 'unlocked'} by ${req.user.id}`);
+
+      return ApiResponse.success(
+        res,
+        { room: { id: room.id, is_read_only: room.is_read_only } },
+        room.is_read_only ? 'Room locked (read-only)' : 'Room unlocked'
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/chat/rooms/:roomId/members/:userId/mute
+   * Instructor "reports" the user. Sets muted_at on the member row
+   * (their messages disappear from the feed + they can't send) and
+   * fires a notification to every admin so they can review.
+   * Pass { unmute: true } in the body to clear.
+   */
+  static async muteMember(req, res, next) {
+    try {
+      const { roomId, userId } = req.params;
+      const { unmute, reason } = req.body || {};
+
+      const room = await ChatRoom.findByPk(roomId, {
+        include: [
+          { model: Course, as: 'course', attributes: ['id', 'instructor_id', 'title'] },
+        ],
+      });
+      if (!room) throw new NotFoundError('Chat room not found');
+
+      const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+      const isInstructor = room.course && room.course.instructor_id === req.user.id;
+      if (!isAdmin && !isInstructor) {
+        throw new ForbiddenError('Only the course instructor or admin can report members');
+      }
+
+      const member = await ChatRoomMember.findOne({
+        where: { room_id: roomId, user_id: userId },
+        include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'email'] }],
+      });
+      if (!member) throw new NotFoundError('Member not found');
+      if (member.role === 'instructor') {
+        throw new ForbiddenError('Cannot report the course instructor');
+      }
+
+      if (unmute) {
+        await member.update({ muted_at: null, muted_by: null });
+        logger.info(`User ${userId} unmuted in room ${roomId} by ${req.user.id}`);
+        return ApiResponse.success(res, {}, 'Member unmuted');
+      }
+
+      await member.update({ muted_at: new Date(), muted_by: req.user.id });
+
+      // Notify every admin so they can review.
+      try {
+        const NotificationsController = require('../notifications/notificationsController');
+        const admins = await User.findAll({
+          where: { role: { [Op.in]: ['admin', 'super_admin'] } },
+          attributes: ['id'],
+        });
+        const reporterName = req.user.full_name || `User #${req.user.id}`;
+        const targetName = member.user?.full_name || `User #${userId}`;
+        const courseTitle = room.course?.title || 'a course';
+        await NotificationsController.createBulkNotifications(
+          admins.map((a) => ({
+            user_id: a.id,
+            type: 'chat_report',
+            title: 'Chat member reported',
+            message: `${reporterName} reported ${targetName} in ${courseTitle}${reason ? `: ${reason}` : ''}`,
+            link: `/chat`,
+            priority: 'high',
+          }))
+        );
+      } catch (notifyErr) {
+        logger.warn('Failed to notify admins of chat report:', notifyErr.message);
+      }
+
+      const io = req.app.get('io');
+      if (io) emitRoomMemberUpdate(io, parseInt(roomId), 'chat:member_muted', parseInt(userId));
+
+      logger.info(`User ${userId} muted in room ${roomId} by ${req.user.id}`);
+      return ApiResponse.success(res, {}, 'Member reported and muted pending admin review');
     } catch (error) {
       next(error);
     }

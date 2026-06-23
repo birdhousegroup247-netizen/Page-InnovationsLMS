@@ -53,6 +53,20 @@ const ChatRoomMember = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // Set when the instructor "reports" the user. While non-null:
+    //   - the user can't send messages in this room
+    //   - their existing messages are filtered out of the room feed
+    //   - admins are notified for review and can clear it
+    muted_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    muted_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
   },
   {
     tableName: 'chat_room_members',

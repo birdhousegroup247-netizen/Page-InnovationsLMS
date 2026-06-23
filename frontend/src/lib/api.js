@@ -369,6 +369,10 @@ export const chatAPI = {
   getPendingRequests: (roomId) => api.get(`/api/chat/rooms/${roomId}/requests`),
   handleJoinRequest: (roomId, userId, action) => api.patch(`/api/chat/rooms/${roomId}/requests/${userId}`, { action }),
   removeMember: (roomId, userId) => api.delete(`/api/chat/rooms/${roomId}/members/${userId}`),
+  // Instructor moderation: report = mute now, admin reviews.
+  muteMember: (roomId, userId, reason) => api.patch(`/api/chat/rooms/${roomId}/members/${userId}/mute`, { reason }),
+  unmuteMember: (roomId, userId) => api.patch(`/api/chat/rooms/${roomId}/members/${userId}/mute`, { unmute: true }),
+  toggleLockRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/lock`),
   toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
   // Messages
   deleteMessage: (messageId) => api.delete(`/api/chat/messages/${messageId}`),
