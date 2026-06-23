@@ -203,7 +203,11 @@ class StudentManagementController {
         throw new NotFoundError('Student not enrolled in this course');
       }
 
-      // Get all content with progress
+      // Get all content with progress. Column names had drifted from the
+      // actual schema: module_contents uses duration_minutes (not duration);
+      // content_progress uses `completed` (boolean) and watch_time_seconds
+      // (not `status`/`time_spent`). The wrong names made the whole query
+      // 500 with "column X does not exist".
       const modules = await sequelize.query(`
         SELECT
           m.id as module_id,
@@ -212,11 +216,11 @@ class StudentManagementController {
           mc.id as content_id,
           mc.title as content_title,
           mc.content_type,
-          mc.duration,
+          mc.duration_minutes as duration,
           mc.order_index as content_order,
-          cp.status as progress_status,
+          cp.completed as progress_completed,
           cp.completed_at,
-          cp.time_spent
+          cp.watch_time_seconds as time_spent
         FROM course_modules m
         LEFT JOIN module_contents mc ON m.id = mc.module_id
         LEFT JOIN content_progress cp ON mc.id = cp.content_id AND cp.student_id = :studentId
@@ -240,13 +244,21 @@ class StudentManagementController {
         }
 
         if (row.content_id) {
+          // ContentProgress stores a boolean `completed` flag (not the
+          // not_started/in_progress/completed string the FE expects), so
+          // map it: row missing → not_started; completed=true → completed;
+          // present-but-incomplete → in_progress.
+          let status = 'not_started';
+          if (row.progress_completed === true) status = 'completed';
+          else if (row.progress_completed === false) status = 'in_progress';
+
           moduleMap[row.module_id].contents.push({
             content_id: row.content_id,
             content_title: row.content_title,
             content_type: row.content_type,
             duration: row.duration,
             content_order: row.content_order,
-            status: row.progress_status || 'not_started',
+            status,
             completed_at: row.completed_at,
             time_spent: row.time_spent
           });

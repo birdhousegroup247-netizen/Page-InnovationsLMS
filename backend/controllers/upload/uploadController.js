@@ -104,6 +104,17 @@ class UploadController {
         'Course document uploaded successfully'
       );
     } catch (error) {
+      // Surface the real Cloudinary error so a "couldn't upload TXT"
+      // toast in the UI tells us why (auth, quota, file too big, etc.).
+      const logger = require('../../utils/logger');
+      logger.error('uploadCourseDocument failed:', {
+        mimetype: req.file?.mimetype,
+        size: req.file?.size,
+        name: req.file?.originalname,
+        message: error.message,
+        cloudinary: error.error?.message,
+        http_code: error.http_code,
+      });
       next(error);
     }
   }

@@ -89,10 +89,14 @@ class CloudinaryService {
    */
   static async uploadDocument(fileBuffer, folder = 'documents', fileName = null) {
     try {
+      // Note: `allowed_formats` removed. For resource_type=raw Cloudinary
+      // matches it against the *public_id* extension which is brittle —
+      // .txt uploads were 500'ing here despite multer's fileFilter already
+      // having passed the MIME type. The multer middleware is the
+      // authoritative gatekeeper at the route layer.
       const uploadOptions = {
         folder: `tekypro-lms/${folder}`,
         resource_type: 'raw',
-        allowed_formats: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'],
       };
 
       if (fileName) {
