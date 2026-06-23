@@ -41,9 +41,11 @@ EXPOSE 5000
 # Switch to non-root user
 USER teky
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# Healthcheck removed — was hardcoded to port 5000 which Railway
+# overrides via its dynamic $PORT env var, so the container always
+# reported "unhealthy" to Docker even though the app was serving fine
+# on Railway's port. Healthcheck is now Railway's responsibility via
+# its external /health probe.
 
 # Start application
 CMD ["node", "server.js"]
