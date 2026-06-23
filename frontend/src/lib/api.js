@@ -488,6 +488,10 @@ export const couponsAPI = {
   validate: (data) => api.post('/api/coupons/validate', data),
 };
 
+export const referralsAPI = {
+  getMyStats: () => api.get('/api/referrals/my-stats'),
+};
+
 export const wishlistAPI = {
   getMyWishlist: () => api.get('/api/wishlist'),
   add: (courseId) => api.post(`/api/wishlist/${courseId}`),
