@@ -95,7 +95,7 @@ const StudentProgress = lazyWithReload(() => import('./pages/instructor/StudentP
 const TestAnalytics = lazyWithReload(() => import('./pages/instructor/TestAnalytics'));
 const MyQuestions = lazyWithReload(() => import('./pages/instructor/MyQuestions'));
 const CourseAnalytics = lazyWithReload(() => import('./pages/instructor/CourseAnalytics'));
-const Announcements = lazyWithReload(() => import('./pages/instructor/Announcements'));
+const InstructorAnnouncements = lazyWithReload(() => import('./pages/instructor/Announcements'));
 const EnrollmentManagement = lazyWithReload(() => import('./pages/instructor/EnrollmentManagement'));
 const ManageTests = lazyWithReload(() => import('./pages/instructor/ManageTests'));
 const CreateTest = lazyWithReload(() => import('./pages/instructor/CreateTest'));
@@ -500,7 +500,7 @@ function App() {
             path="/instructor/announcements"
             element={
               <InstructorRoute>
-                <Announcements />
+                <InstructorAnnouncements />
               </InstructorRoute>
             }
           />
