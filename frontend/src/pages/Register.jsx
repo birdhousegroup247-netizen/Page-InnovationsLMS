@@ -4,6 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import logo from '../assets/logo.png';
+import {
+  inputClass as fInput,
+  inputClassWithRightAction as fInputAction,
+  selectClass as fSelect,
+  labelClass as fLabel,
+  primaryButtonClass,
+  secondaryButtonClass,
+  formCardClass,
+} from '../utils/authForm';
 
 const COUNTRIES = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Nigeria',
@@ -128,10 +137,10 @@ export default function Register() {
     }
   };
 
-  // Shared modern input styling — taller, rounded-xl, hover-border, ring-on-focus.
-  const selectClass = 'w-full pl-11 pr-9 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all appearance-none';
-  const inputClass = 'w-full pl-11 pr-4 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all';
-  const labelClass = 'block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5 uppercase tracking-wider';
+  // Use shared form tokens — single source of truth across all auth flows.
+  const inputClass = fInput;
+  const selectClass = fSelect;
+  const labelClass = fLabel;
 
   // Live password-strength score 0-4 (length, lowercase, uppercase, digit, symbol).
   const pwd = formData.password;
@@ -255,7 +264,7 @@ export default function Register() {
             <img src={logo} alt="TekyPro" className="h-9 w-auto mx-auto" />
           </div>
 
-          <div className="relative bg-white dark:bg-dark-800 rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-5 sm:p-8 animate-scale-in transition-colors">
+          <div className={formCardClass}>
             {/* Header — pill + tight headline */}
             <div className="mb-6">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 text-[11px] font-semibold mb-3">
@@ -303,6 +312,7 @@ export default function Register() {
                     value={formData.full_name}
                     onChange={handleChange}
                     required
+                    autoComplete="name"
                     className={inputClass}
                   />
                 </div>
@@ -328,6 +338,7 @@ export default function Register() {
                     value={formData.email}
                     onChange={handleChange}
                     required
+                    autoComplete="email"
                     className={inputClass}
                   />
                 </div>
@@ -353,7 +364,8 @@ export default function Register() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-11 pr-11 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
+                    autoComplete="new-password"
+                    className={fInputAction}
                   />
                   <button
                     type="button"
@@ -408,7 +420,8 @@ export default function Register() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    className="w-full pl-11 pr-11 py-3 text-sm bg-gray-50 dark:bg-dark-700/60 border border-gray-200 dark:border-border-dark rounded-xl text-gray-900 dark:text-text-dark-primary placeholder-gray-400 dark:placeholder-text-dark-muted hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
+                    autoComplete="new-password"
+                    className={fInputAction}
                   />
                   <button
                     type="button"
@@ -552,7 +565,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full py-3.5 px-4 bg-gradient-to-r from-brand-blue to-cyan-600 hover:from-brand-blue-600 hover:to-cyan-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-blue/30 hover:shadow-xl hover:shadow-brand-blue/40 transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue/60 focus:ring-offset-2 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className={primaryButtonClass}
               >
                 {loading ? (
                   <>
@@ -584,7 +597,7 @@ export default function Register() {
             <button
               type="button"
               onClick={() => { window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`; }}
-              className="w-full py-3 px-4 bg-white dark:bg-dark-700/50 border border-gray-200 dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-dark-700 text-gray-700 dark:text-text-dark-primary font-medium text-sm rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:ring-offset-2 dark:focus:ring-offset-dark-800 flex items-center justify-center gap-3"
+              className={secondaryButtonClass}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

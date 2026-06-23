@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowLeft, ArrowRight } from 'lucide-react';
 import logo from '../assets/logo.png';
+import {
+  inputClass as fInput,
+  inputClassWithRightAction as fInputAction,
+  labelClass as fLabel,
+  primaryButtonClass,
+  secondaryButtonClass,
+  formCardClass,
+} from '../utils/authForm';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -42,10 +50,6 @@ export default function Login() {
         const { user } = result;
         const selectedRole = localStorage.getItem('selectedRole');
 
-        console.log('[Login] Login successful');
-        console.log('[Login] User role:', user.role);
-        console.log('[Login] Selected role from localStorage:', selectedRole);
-
         // Admins should use the admin portal
         if (user.role === 'admin' || user.role === 'super_admin') {
           await logout();
@@ -53,38 +57,26 @@ export default function Login() {
           return;
         }
 
-        // Check if user selected a role from landing page
+        // Honour role chosen on landing page; otherwise route by actual role.
         if (selectedRole === 'student') {
-          console.log('[Login] User selected student role from landing page');
-          // User clicked "I'm a Student" - only allow students
           if (user.role !== 'student') {
-            console.log('[Login] MISMATCH - User is not a student, logging out');
             await logout();
             setError('This login is for students only. If you are an instructor, please go back and select "I\'m an Instructor".');
             return;
           }
-          console.log('[Login] Navigating to /dashboard');
           navigate('/dashboard');
         } else if (selectedRole === 'instructor') {
-          console.log('[Login] User selected instructor role from landing page');
-          // User clicked "I'm an Instructor" - only allow instructors
           if (user.role !== 'instructor') {
-            console.log('[Login] MISMATCH - User is not an instructor, logging out');
             await logout();
             setError('This login is for instructors only. If you are a student, please go back and select "I\'m a Student".');
             return;
           }
-          console.log('[Login] Navigating to /instructor/dashboard');
           navigate('/instructor/dashboard');
         } else {
-          console.log('[Login] No role selected (direct login) - redirecting based on actual role');
-          // No role selected (direct login link) - set selectedRole and redirect based on actual role
           if (user.role === 'instructor') {
-            console.log('[Login] User is instructor, setting selectedRole and navigating to /instructor/dashboard');
             localStorage.setItem('selectedRole', 'instructor');
             navigate('/instructor/dashboard');
           } else {
-            console.log('[Login] User is student, setting selectedRole and navigating to /dashboard');
             localStorage.setItem('selectedRole', 'student');
             navigate('/dashboard');
           }
@@ -208,14 +200,14 @@ export default function Login() {
           </div>
 
           {/* Form Card */}
-          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg dark:shadow-elevated p-8 animate-scale-in transition-colors">
+          <div className={formCardClass}>
             {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-                Welcome Back
+            <div className="mb-7">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Welcome back
               </h1>
-              <p className="text-gray-600 dark:text-text-dark-secondary text-sm transition-colors">
-                Sign in to continue to your account
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
+                Sign in to continue to your account.
               </p>
             </div>
 
@@ -235,15 +227,12 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2 transition-colors"
-                >
-                  Email address <span className="text-red-500 dark:text-red-400">*</span>
+                <label htmlFor="email" className={fLabel}>
+                  Email address <span className="text-red-500 normal-case">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
                   </div>
                   <input
                     id="email"
@@ -253,39 +242,38 @@ export default function Login() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                    autoComplete="email"
+                    className={fInput}
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2 transition-colors"
-                >
-                  Password <span className="text-red-500 dark:text-red-400">*</span>
+                <label htmlFor="password" className={fLabel}>
+                  Password <span className="text-red-500 normal-case">*</span>
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
                   </div>
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
-                    placeholder="••••••••"
+                    placeholder="Your password"
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                    autoComplete="current-password"
+                    className={fInputAction}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-text-dark-muted hover:text-gray-600 dark:hover:text-text-dark-secondary transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -315,9 +303,19 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={primaryButtonClass}
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Signing in…
+                  </>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
               </button>
             </form>
 
@@ -337,7 +335,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => { window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`; }}
-              className="w-full py-3 px-4 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark hover:bg-gray-50 dark:hover:bg-dark-600 text-gray-700 dark:text-text-dark-primary font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 dark:focus:ring-offset-dark-800 flex items-center justify-center gap-3"
+              className={secondaryButtonClass}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path

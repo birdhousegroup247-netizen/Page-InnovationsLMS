@@ -8,6 +8,13 @@ import {
   AlertCircle, GraduationCap, Briefcase, FilePlus2, ClipboardCheck,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
+import {
+  inputClassNoIcon as fInput,
+  selectClass as fSelect,
+  textareaClass as fTextarea,
+  labelClass as fLabel,
+  formCardClass,
+} from '../utils/authForm';
 
 const COUNTRIES = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Nigeria',
@@ -211,9 +218,12 @@ export default function InstructorApply() {
     }
   };
 
-  const inputClass = 'w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue';
-  const labelClass = 'block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2';
-  const textareaClass = inputClass + ' min-h-[110px] resize-y';
+  // Shared form tokens — keeps the instructor flow visually identical to
+  // Login + Signup. Selects use the no-icon input class (browser native
+  // chevron is fine here).
+  const inputClass = fInput;
+  const labelClass = fLabel;
+  const textareaClass = fTextarea;
 
   if (submitted) {
     return (
@@ -416,7 +426,7 @@ export default function InstructorApply() {
           })}
         </div>
 
-        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-5 sm:p-7">
+        <div className={formCardClass}>
           {error && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
