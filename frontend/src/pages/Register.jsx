@@ -149,10 +149,11 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-dark-900 transition-colors">
-      {/* Back to role selection */}
+      {/* Back to role selection — sits in the right column on desktop so it
+          doesn't overlap the editorial logo on the left panel. */}
       <Link
         to="/"
-        className="group fixed top-4 left-4 inline-flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-brand-blue/40 transition-all z-50"
+        className="group fixed top-4 left-4 lg:left-[calc(50%+1rem)] inline-flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-brand-blue/40 transition-all z-50"
         aria-label="Back to role selection"
       >
         <span className="w-7 h-7 rounded-full bg-gray-100 dark:bg-dark-700 group-hover:bg-brand-blue group-hover:text-white flex items-center justify-center transition-colors">
@@ -176,74 +177,78 @@ export default function Register() {
         )}
       </button>
 
-      {/* Left editorial panel — student-flavored, brand-blue/cyan accent. */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-[#0B1220]">
+      {/* Left editorial panel — theme-aware. Light mode: clean off-white
+          with brand-blue accents and dark text. Dark mode: deep navy with
+          glowing brand-blue/cyan accents and light text. */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-slate-50 dark:bg-[#0B1220] transition-colors">
         <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-blue/15 blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-cyan-500/10 blur-[120px]" />
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.04]"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+              'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
             backgroundSize: '40px 40px',
+            color: 'rgba(0,0,0,0.6)',
           }}
         />
 
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-gray-900 dark:text-white transition-colors">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
-            <span className="text-xs uppercase tracking-[0.18em] text-white/40 font-semibold">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto dark:filter dark:brightness-0 dark:invert" />
+            <span className="text-xs uppercase tracking-[0.18em] text-gray-500 dark:text-white/40 font-semibold">
               · Learn. Build. Ship.
             </span>
           </div>
 
           <div className="max-w-md">
-            <span className="inline-block text-xs uppercase tracking-[0.18em] text-cyan-300/80 font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-brand-blue dark:text-cyan-300/80 font-semibold mb-4">
               For ambitious learners
             </span>
-            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5">
+            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-gray-900 dark:text-white">
               Real skills.<br />
               Real instructors.<br />
-              <span className="text-cyan-400">Real careers.</span>
+              <span className="text-brand-blue dark:text-cyan-400">Real careers.</span>
             </h1>
-            <p className="text-base text-white/60 leading-relaxed mb-10 max-w-sm">
+            <p className="text-base text-gray-600 dark:text-white/60 leading-relaxed mb-10 max-w-sm">
               Sign up free, preview every course, and pay only when you're ready to enroll.
             </p>
 
-            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5">
-              <div className="absolute -top-2.5 left-5 text-cyan-400 text-3xl leading-none font-serif">"</div>
-              <p className="text-sm text-white/80 leading-relaxed pt-1">
+            <div className="relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] backdrop-blur-sm p-5 shadow-sm dark:shadow-none">
+              <div className="absolute -top-2.5 left-5 text-brand-blue dark:text-cyan-400 text-3xl leading-none font-serif">"</div>
+              <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed pt-1">
                 I went from junior to senior DBA in 8 months. The hands-on labs and live sessions made the difference.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-brand-blue flex items-center justify-center font-bold text-sm">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-brand-blue flex items-center justify-center font-bold text-sm text-white">
                   AO
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Adeola O.</p>
-                  <p className="text-xs text-white/50">Senior DBA · Lagos</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Adeola O.</p>
+                  <p className="text-xs text-gray-500 dark:text-white/50">Senior DBA · Lagos</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/[0.08]">
+          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
             {[
               { value: '10k+', label: 'Learners' },
               { value: '200+', label: 'Courses' },
               { value: '4.9★', label: 'Rating' },
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-2xl font-bold text-white tracking-tight">{s.value}</p>
-                <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mt-0.5">{s.label}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-white/40 font-semibold mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Right side — form */}
-      <div className="w-full lg:w-1/2 flex items-start justify-center px-4 sm:px-8 pt-6 pb-10 lg:py-12 overflow-y-auto">
+      {/* Right side — form. lg:items-center vertically centers on tall
+          desktop viewports so the card doesn't jam against the top edge. */}
+      <div className="w-full lg:w-1/2 flex items-start lg:items-center justify-center px-4 sm:px-8 pt-20 pb-10 lg:py-12 overflow-y-auto">
         <div className="w-full max-w-md">
           {/* Mobile-only logo */}
           <div className="lg:hidden text-center mb-5 animate-fade-in">

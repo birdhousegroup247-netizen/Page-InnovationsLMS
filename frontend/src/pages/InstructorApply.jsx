@@ -277,10 +277,11 @@ export default function InstructorApply() {
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-dark-900 transition-colors">
-      {/* Back to role selection — purple accent on hover to match this flow */}
+      {/* Back to role selection — sits in the right column on desktop so it
+          doesn't overlap the editorial logo on the left panel. */}
       <Link
         to="/"
-        className="group fixed top-4 left-4 inline-flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-brand-purple/40 transition-all z-50"
+        className="group fixed top-4 left-4 lg:left-[calc(50%+1rem)] inline-flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-brand-purple/40 transition-all z-50"
         aria-label="Back to role selection"
       >
         <span className="w-7 h-7 rounded-full bg-gray-100 dark:bg-dark-700 group-hover:bg-brand-purple group-hover:text-white flex items-center justify-center transition-colors">
@@ -299,74 +300,76 @@ export default function InstructorApply() {
         {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-700" />}
       </button>
 
-      {/* Left editorial panel — instructor-flavored, brand-purple/fuchsia accent. */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-[#0B1220]">
+      {/* Left editorial panel — theme-aware, instructor purple accent. */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-slate-50 dark:bg-[#0B1220] transition-colors">
         <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-purple/20 blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+              'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
             backgroundSize: '40px 40px',
+            color: 'rgba(0,0,0,0.6)',
           }}
         />
 
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-gray-900 dark:text-white transition-colors">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
-            <span className="text-xs uppercase tracking-[0.18em] text-white/40 font-semibold">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto dark:filter dark:brightness-0 dark:invert" />
+            <span className="text-xs uppercase tracking-[0.18em] text-gray-500 dark:text-white/40 font-semibold">
               · Teach. Earn. Inspire.
             </span>
           </div>
 
           <div className="max-w-md">
-            <span className="inline-block text-xs uppercase tracking-[0.18em] text-fuchsia-300/80 font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-brand-purple dark:text-fuchsia-300/80 font-semibold mb-4">
               For expert practitioners
             </span>
-            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5">
+            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-gray-900 dark:text-white">
               Share what<br />
               you know.<br />
-              <span className="text-fuchsia-400">Earn doing it.</span>
+              <span className="text-brand-purple dark:text-fuchsia-400">Earn doing it.</span>
             </h1>
-            <p className="text-base text-white/60 leading-relaxed mb-10 max-w-sm">
+            <p className="text-base text-gray-600 dark:text-white/60 leading-relaxed mb-10 max-w-sm">
               Turn your expertise into a real income stream. Reach global learners with our pro instructor tools.
             </p>
 
-            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5">
-              <div className="absolute -top-2.5 left-5 text-fuchsia-400 text-3xl leading-none font-serif">"</div>
-              <p className="text-sm text-white/80 leading-relaxed pt-1">
+            <div className="relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] backdrop-blur-sm p-5 shadow-sm dark:shadow-none">
+              <div className="absolute -top-2.5 left-5 text-brand-purple dark:text-fuchsia-400 text-3xl leading-none font-serif">"</div>
+              <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed pt-1">
                 I made $14k in my first six months teaching Oracle on TekyPro. The drip tools and live sessions make it easy to scale.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-brand-purple flex items-center justify-center font-bold text-sm">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-brand-purple flex items-center justify-center font-bold text-sm text-white">
                   CN
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Chinedu N.</p>
-                  <p className="text-xs text-white/50">Oracle Specialist · Abuja</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Chinedu N.</p>
+                  <p className="text-xs text-gray-500 dark:text-white/50">Oracle Specialist · Abuja</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/[0.08]">
+          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
             {[
               { value: '70%', label: 'Revenue Share' },
               { value: '1k+', label: 'Instructors' },
               { value: '$2k+', label: 'Avg/Month' },
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-2xl font-bold text-white tracking-tight">{s.value}</p>
-                <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mt-0.5">{s.label}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-white/40 font-semibold mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Right side — wizard */}
-      <div className="w-full lg:w-1/2 flex items-start justify-center px-4 sm:px-8 pt-6 pb-10 lg:py-12 overflow-y-auto">
+      {/* Right side — wizard. lg:items-center vertically centers the form on
+          tall desktop viewports so it doesn't sit jammed against the top edge. */}
+      <div className="w-full lg:w-1/2 flex items-start lg:items-center justify-center px-4 sm:px-8 pt-20 pb-10 lg:py-12 overflow-y-auto">
         <div className="w-full max-w-xl">
           {/* Mobile-only logo + title */}
           <div className="lg:hidden text-center mb-5">
