@@ -1,5 +1,5 @@
 const { User, InstructorApplication } = require('../../models');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../../utils/errors');
