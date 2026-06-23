@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
-      const response = await authAPI.login({ email, password });
+      const response = await authAPI.login({ email, password, remember_me: rememberMe });
       const { user, accessToken, refreshToken } = response.data.data;
 
       // Store tokens in localStorage

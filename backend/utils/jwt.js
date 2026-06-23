@@ -7,33 +7,33 @@ const { UnauthorizedError } = require('./errors');
 
 class JWT {
   /**
-   * Generate access token
-   * @param {Object} payload - User data to encode in token
-   * @returns {string} - JWT token
+   * Generate access token. `opts.rememberMe` extends the JWT expiry to
+   * match the longer cookie maxAge — otherwise the cookie outlives the
+   * signed claim.
    */
-  static generateAccessToken(payload) {
-    return jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRE || '24h',
-    });
+  static generateAccessToken(payload, opts = {}) {
+    const expiresIn = opts.rememberMe
+      ? (process.env.JWT_REMEMBER_EXPIRE || '7d')
+      : (process.env.JWT_EXPIRE || '24h');
+    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
   }
 
   /**
-   * Generate refresh token
-   * @param {Object} payload - User data to encode in token
-   * @returns {string} - JWT refresh token
+   * Generate refresh token. With rememberMe, lasts 30 days — matches
+   * the "trust this device" pattern from GitHub/Google web.
    */
-  static generateRefreshToken(payload) {
-    return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d',
-    });
+  static generateRefreshToken(payload, opts = {}) {
+    const expiresIn = opts.rememberMe
+      ? (process.env.JWT_REFRESH_REMEMBER_EXPIRE || '30d')
+      : (process.env.JWT_REFRESH_EXPIRE || '7d');
+    return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn });
   }
 
   /**
-   * Generate both access and refresh tokens
-   * @param {Object} user - User object
-   * @returns {Object} - { accessToken, refreshToken }
+   * Generate both tokens. Pass { rememberMe: true } to extend lifetimes
+   * to match the "Remember me" cookie window.
    */
-  static generateTokens(user) {
+  static generateTokens(user, opts = {}) {
     const payload = {
       id: user.id,
       email: user.email,
@@ -41,8 +41,8 @@ class JWT {
     };
 
     return {
-      accessToken: this.generateAccessToken(payload),
-      refreshToken: this.generateRefreshToken(payload),
+      accessToken: this.generateAccessToken(payload, opts),
+      refreshToken: this.generateRefreshToken(payload, opts),
     };
   }
 

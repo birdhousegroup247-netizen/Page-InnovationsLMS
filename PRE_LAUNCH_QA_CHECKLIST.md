@@ -50,7 +50,7 @@ Have two browsers open: one for the **student** journey (incognito), one for the
 - [ ] **Congrats email** arrives separately
 - [ ] Course shows up under "My Courses"
 - [ ] Auto-joined the course chat room (Messages page → room visible)
-- [ ] Discord invite link visible on course detail page (if Discord configured)
+- [ ] Discord invite link    on course detail page (if Discord configured)
 - [ ] Any auto-assigned tests appear under "My Assigned Tests"
 
 ## 5. Enrollment — paid course, **60/40 installment** (PayPal sandbox)

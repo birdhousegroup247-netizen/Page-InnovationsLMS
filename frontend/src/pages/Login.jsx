@@ -38,7 +38,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, rememberMe);
 
       // Email not verified — send them to the verify page
       if (!result.success && result.emailNotVerified) {

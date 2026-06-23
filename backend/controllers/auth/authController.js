@@ -18,26 +18,38 @@ class AuthController {
    * Helper: Set authentication cookies
    * @private
    */
-  static setAuthCookies(res, tokens) {
+  static setAuthCookies(res, tokens, opts = {}) {
     const isProduction = process.env.NODE_ENV === 'production';
+    const rememberMe = !!opts.rememberMe;
 
-    // Set access token cookie (httpOnly for security)
+    // Access token: short-lived. Bump to 7 days when "Remember me" is on so
+    // the user isn't kicked out daily, otherwise keep the normal 24h window.
+    const accessMaxAge = rememberMe
+      ? 7 * 24 * 60 * 60 * 1000     // 7 days
+      : 24 * 60 * 60 * 1000;         // 24 hours
+
+    // Refresh token: persistent session. 30 days when Remember me, 7 days
+    // otherwise (current behavior). 30d is the standard "trust this device"
+    // window most modern auth uses (GitHub, Google web).
+    const refreshMaxAge = rememberMe
+      ? 30 * 24 * 60 * 60 * 1000    // 30 days
+      : 7 * 24 * 60 * 60 * 1000;     // 7 days
+
     res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
-      secure: isProduction, // HTTPS only in production
-      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for dev
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: accessMaxAge,
     });
 
-    // Set refresh token cookie (httpOnly for security)
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for dev
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: refreshMaxAge,
     });
 
-    // Set CSRF token cookie (readable by JavaScript for headers)
+    // CSRF cookie (JS-readable for header echo).
     CSRF.setCookie(res);
   }
 
@@ -489,7 +501,7 @@ class AuthController {
    */
   static async login(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const { email, password, remember_me } = req.body;
 
       // Find user
       const user = await User.findByEmail(email);
@@ -530,11 +542,11 @@ class AuthController {
       // Update last login
       await user.updateLastLogin();
 
-      // Generate tokens
-      const tokens = JWT.generateTokens(user);
+      // Generate tokens — extend lifetimes when Remember me is on.
+      const tokens = JWT.generateTokens(user, { rememberMe: !!remember_me });
 
-      // Set authentication cookies
-      this.setAuthCookies(res, tokens);
+      // Set authentication cookies — Remember me extends them to 30 days.
+      this.setAuthCookies(res, tokens, { rememberMe: !!remember_me });
 
       // Log successful login activity
       await ActivityController.logActivity({
