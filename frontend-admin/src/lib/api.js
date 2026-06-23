@@ -360,6 +360,24 @@ export const chatAPI = {
   // Or escalates by removing the user from the room entirely.
   adminRemoveMember: (roomId, userId) =>
     api.delete(`/api/chat/rooms/${roomId}/members/${userId}`),
+  // Room state controls.
+  adminGetRoomMembers: (roomId) => api.get(`/api/chat/rooms/${roomId}/members`),
+  adminToggleLockRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/lock`),
+  adminToggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
+  adminMuteMember: (roomId, userId, reason) =>
+    api.patch(`/api/chat/rooms/${roomId}/members/${userId}/mute`, { reason }),
+  adminUnmuteMember: (roomId, userId) =>
+    api.patch(`/api/chat/rooms/${roomId}/members/${userId}/mute`, { unmute: true }),
+  // Admin can post in any room (sendRoomMessage already bypasses
+  // membership checks for admins server-side).
+  adminSendRoomMessage: (roomId, body) =>
+    api.post(`/api/chat/rooms/${roomId}/messages`, { body }),
+  // Platform-wide chat suspension.
+  adminGetSuspendedUsers: () => api.get('/api/chat/admin/suspended-users'),
+  adminSuspendChat: (userId, reason) =>
+    api.post(`/api/chat/admin/users/${userId}/suspend-chat`, { reason }),
+  adminUnsuspendChat: (userId) =>
+    api.post(`/api/chat/admin/users/${userId}/suspend-chat`, { unsuspend: true }),
   toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
   deleteMessage: (msgId) => api.delete(`/api/chat/messages/${msgId}`),
   // Support DMs

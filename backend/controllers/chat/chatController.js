@@ -399,6 +399,13 @@ class ChatController {
       const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
       const isInstructor = room.course && room.course.instructor_id === req.user.id;
 
+      // Platform-wide chat ban (admin-set, see /api/chat/admin/users/.../
+      // suspend-chat). Even admins shouldn't be sending if their own
+      // account is suspended; the check is simple and uniform.
+      if (req.user.chat_suspended_at) {
+        throw new ForbiddenError('Your chat access has been suspended by an admin.');
+      }
+
       // Read-only lock: only instructor + admin can send while it's on.
       if (room.is_read_only && !isAdmin && !isInstructor) {
         throw new ForbiddenError('This room is read-only. Only the instructor can post.');
@@ -568,8 +575,10 @@ class ChatController {
       const member = await ChatRoomMember.findOne({ where: { room_id: roomId, user_id: userId } });
       if (!member) throw new NotFoundError('Member not found');
 
-      if (member.role === 'instructor') {
-        throw new ForbiddenError('Cannot remove the course instructor from the room');
+      // Admin can remove anyone including the instructor (super-power).
+      // Instructor themselves still can't remove an instructor row.
+      if (member.role === 'instructor' && !isAdmin) {
+        throw new ForbiddenError('Only an admin can remove the course instructor from the room');
       }
 
       // Actually delete the row (not status='banned') so the student can
@@ -852,6 +861,11 @@ class ChatController {
       const userId = req.user.id;
 
       if (!body.trim() && !req.file) throw new BadRequestError('Message cannot be empty');
+
+      // Platform-wide chat ban check (admin-set).
+      if (req.user.chat_suspended_at) {
+        throw new ForbiddenError('Your chat access has been suspended by an admin.');
+      }
 
       const conversation = await Conversation.findByPk(conversationId);
       if (!conversation) throw new NotFoundError('Conversation not found');
@@ -1238,6 +1252,72 @@ class ChatController {
       await Promise.all(toMark.map((n) => n.update({ is_read: true, read_at: new Date() })));
 
       return ApiResponse.success(res, { cleared: toMark.length }, 'Mentions marked seen');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/chat/admin/users/:userId/suspend-chat
+   * Platform-wide chat ban — user can't send any DM or room message.
+   * Pass { unsuspend: true } in the body to clear.
+   */
+  static async adminToggleChatSuspension(req, res, next) {
+    try {
+      if (!['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('Admin access required');
+      }
+      const { userId } = req.params;
+      const { unsuspend, reason } = req.body || {};
+
+      const user = await User.findByPk(userId);
+      if (!user) throw new NotFoundError('User not found');
+
+      if (unsuspend) {
+        await user.update({ chat_suspended_at: null, chat_suspended_by: null });
+        logger.info(`Chat suspension lifted for user ${userId} by admin ${req.user.id}`);
+        return ApiResponse.success(res, {}, 'Chat suspension lifted');
+      }
+
+      await user.update({ chat_suspended_at: new Date(), chat_suspended_by: req.user.id });
+      logger.warn(`User ${userId} chat-suspended platform-wide by admin ${req.user.id}${reason ? `: ${reason}` : ''}`);
+
+      // Notify the suspended user.
+      try {
+        const NotificationsController = require('../notifications/notificationsController');
+        await NotificationsController.createBulkNotifications([{
+          user_id: user.id,
+          type: 'chat_suspended',
+          title: 'Chat access suspended',
+          message: 'Your chat access has been suspended by an admin. Contact support if you believe this is in error.',
+          link: '/messages',
+          priority: 'high',
+        }]);
+      } catch (notifyErr) {
+        logger.warn(`Suspension notification failed: ${notifyErr.message}`);
+      }
+
+      return ApiResponse.success(res, {}, 'User chat-suspended platform-wide');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/chat/admin/suspended-users
+   * Lists every user with an active chat suspension.
+   */
+  static async adminGetSuspendedUsers(req, res, next) {
+    try {
+      if (!['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('Admin access required');
+      }
+      const users = await User.findAll({
+        where: { chat_suspended_at: { [Op.ne]: null } },
+        attributes: ['id', 'full_name', 'email', 'role', 'profile_picture', 'chat_suspended_at', 'chat_suspended_by'],
+        order: [['chat_suspended_at', 'DESC']],
+      });
+      return ApiResponse.success(res, { users });
     } catch (error) {
       next(error);
     }

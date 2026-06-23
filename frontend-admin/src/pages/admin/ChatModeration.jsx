@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../../lib/api';
+import { connectSocket, getSocket } from '../../lib/socket';
+import { tokenStorage } from '../../utils/tokenStorage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import {
@@ -14,7 +16,7 @@ import { cn } from '../../utils/cn';
 import {
   MessageSquare, Users, Trash2, ChevronLeft, RefreshCw,
   CheckCircle, ShieldCheck, Send, Search, Plus, X, Mail,
-  Flag, UserMinus, BookOpen, Clock,
+  Flag, UserMinus, BookOpen, Clock, Lock, Unlock, ShieldAlert, Ban,
 } from 'lucide-react';
 
 function formatDate(d) {
@@ -130,6 +132,251 @@ function MessageRow({ msg, onDelete }) {
   );
 }
 
+// ─── Room detail (admin super-power view) ───────────────────────────────────
+
+function RoomDetail({ room, initialMessages, msgLoading, onBack, onDeleteMessage, onUpdateRoom, setMessages }) {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [messages, setMsgs] = useState(initialMessages || []);
+  const [members, setMembers] = useState([]);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [composer, setComposer] = useState('');
+  const [sending, setSending] = useState(false);
+  const [busyMember, setBusyMember] = useState(null);
+  const feedRef = useRef(null);
+
+  // Sync upstream messages when admin first opens the room.
+  useEffect(() => { setMsgs(initialMessages || []); }, [initialMessages]);
+
+  // Auto-scroll to latest message.
+  useEffect(() => {
+    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
+  }, [messages.length]);
+
+  // Load members + room state.
+  useEffect(() => {
+    chatAPI.adminGetRoomMembers(room.id)
+      .then((r) => {
+        setMembers(r.data?.data?.members || []);
+        setIsReadOnly(!!r.data?.data?.room?.is_read_only);
+      })
+      .catch(() => {});
+  }, [room.id]);
+
+  // Connect socket once + join this room channel for live updates.
+  useEffect(() => {
+    const token = tokenStorage.get('accessToken');
+    if (token) connectSocket(token);
+    const socket = getSocket();
+    if (!socket) return;
+
+    socket.emit('join:room', room.id);
+
+    const onMessage = ({ message, roomId }) => {
+      if (Number(roomId) !== Number(room.id)) return;
+      setMsgs((prev) => (prev.find((m) => m.id === message.id) ? prev : [...prev, message]));
+      setMessages((prev) => (prev.find((m) => m.id === message.id) ? prev : [...prev, message]));
+    };
+    socket.on('chat:message', onMessage);
+
+    return () => {
+      socket.emit('leave:room', room.id);
+      socket.off('chat:message', onMessage);
+    };
+  }, [room.id, setMessages]);
+
+  /* ── Actions ───────────────────────────────────────────────────────── */
+
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    const body = composer.trim();
+    if (!body || sending) return;
+    setSending(true);
+    try {
+      await chatAPI.adminSendRoomMessage(room.id, body);
+      setComposer('');
+      // Socket will deliver the message back into the feed.
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to send', 'error');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleToggleLock = async () => {
+    try {
+      const r = await chatAPI.adminToggleLockRoom(room.id);
+      const next = !!r.data?.data?.room?.is_read_only;
+      setIsReadOnly(next);
+      showToast(next ? 'Room locked (read-only)' : 'Room unlocked', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed', 'error');
+    }
+  };
+
+  const handleToggleActive = async () => {
+    try {
+      await chatAPI.adminToggleRoom(room.id);
+      onUpdateRoom({ is_active: !room.is_active });
+      showToast(room.is_active ? 'Room disabled' : 'Room enabled', 'success');
+    } catch {
+      showToast('Failed to toggle room', 'error');
+    }
+  };
+
+  const handleMute = async (m) => {
+    setBusyMember(m.id);
+    try {
+      if (m.muted_at) await chatAPI.adminUnmuteMember(room.id, m.id);
+      else await chatAPI.adminMuteMember(room.id, m.id, '');
+      setMembers((prev) => prev.map((x) => x.id === m.id ? { ...x, muted_at: m.muted_at ? null : new Date().toISOString() } : x));
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed', 'error');
+    } finally { setBusyMember(null); }
+  };
+
+  const handleRemove = async (m) => {
+    if (!window.confirm(`Remove ${m.full_name}? They can rejoin while still enrolled.`)) return;
+    setBusyMember(m.id);
+    try {
+      await chatAPI.adminRemoveMember(room.id, m.id);
+      setMembers((prev) => prev.filter((x) => x.id !== m.id));
+      showToast('Member removed', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed', 'error');
+    } finally { setBusyMember(null); }
+  };
+
+  const handleSuspendPlatform = async (m) => {
+    if (!window.confirm(`Suspend ${m.full_name} from ALL chat platform-wide? They won't be able to send any message anywhere until you reverse it.`)) return;
+    setBusyMember(m.id);
+    try {
+      await chatAPI.adminSuspendChat(m.id, '');
+      showToast(`${m.full_name} suspended platform-wide`, 'success');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed', 'error');
+    } finally { setBusyMember(null); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <Button variant="outline" size="sm" onClick={onBack}>
+        <ChevronLeft className="w-4 h-4 mr-1" />Back to rooms
+      </Button>
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            {room.course?.title}
+            {isReadOnly && <Badge variant="warning"><Lock className="w-3 h-3 mr-1 inline" />Locked</Badge>}
+            {!room.is_active && <Badge variant="danger">Disabled</Badge>}
+          </h2>
+          <p className="text-sm text-gray-500">
+            {messages.length} message{messages.length !== 1 ? 's' : ''} · {members.length} member{members.length !== 1 ? 's' : ''} · Admin super-view
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleToggleLock}
+            leftIcon={isReadOnly ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}>
+            {isReadOnly ? 'Unlock' : 'Lock'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleToggleActive}>
+            {room.is_active ? 'Disable room' : 'Enable room'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Messages + composer */}
+        <div className="lg:col-span-2 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark overflow-hidden flex flex-col" style={{ minHeight: 500 }}>
+          <div ref={feedRef} className="flex-1 overflow-y-auto" style={{ maxHeight: 500 }}>
+            {msgLoading ? (
+              <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No messages in this room</p>
+              </div>
+            ) : (
+              messages.map((msg) => <MessageRow key={msg.id} msg={msg} onDelete={onDeleteMessage} />)
+            )}
+          </div>
+
+          {/* Composer — admin can post anywhere */}
+          <form onSubmit={handleSend} className="border-t border-gray-200 dark:border-border-dark p-3 flex items-center gap-2 bg-gray-50 dark:bg-dark-700/50">
+            <input
+              type="text"
+              value={composer}
+              onChange={(e) => setComposer(e.target.value)}
+              placeholder="Post as admin…"
+              className="flex-1 px-3 py-2 bg-white dark:bg-dark-700 border border-gray-200 dark:border-border-dark rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+              disabled={sending || !room.is_active}
+            />
+            <Button type="submit" size="sm" disabled={sending || !composer.trim() || !room.is_active}
+              leftIcon={<Send className="w-4 h-4" />}>
+              Send
+            </Button>
+          </form>
+        </div>
+
+        {/* Members panel */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
+            Members ({members.length})
+          </h3>
+          <ul className="space-y-2 max-h-[500px] overflow-y-auto">
+            {members.map((m) => {
+              const isInst = m.room_role === 'instructor' || m.role === 'instructor';
+              const muted = !!m.muted_at;
+              const busy = busyMember === m.id;
+              return (
+                <li key={m.id} className={`flex items-center gap-2 p-2 rounded-lg border ${muted ? 'border-red-200 dark:border-red-700/50 bg-red-50/40 dark:bg-red-900/10' : 'border-transparent bg-gray-50 dark:bg-dark-700/50'}`}>
+                  {m.profile_picture ? (
+                    <img src={m.profile_picture} alt={m.full_name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {(m.full_name || '?').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{m.full_name}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {isInst && <span className="text-[9px] px-1.5 py-px rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 font-bold uppercase">Inst</span>}
+                      {muted && <span className="text-[9px] px-1.5 py-px rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-bold uppercase">Muted</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button title={muted ? 'Unmute' : 'Mute'} disabled={busy} onClick={() => handleMute(m)}
+                      className="p-1.5 rounded hover:bg-amber-100 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400 disabled:opacity-30">
+                      {muted ? <ShieldAlert className="w-3.5 h-3.5" /> : <Flag className="w-3.5 h-3.5" />}
+                    </button>
+                    <button title="Remove from room" disabled={busy} onClick={() => handleRemove(m)}
+                      className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 disabled:opacity-30">
+                      <UserMinus className="w-3.5 h-3.5" />
+                    </button>
+                    <button title="Suspend chat platform-wide" disabled={busy} onClick={() => handleSuspendPlatform(m)}
+                      className="p-1.5 rounded hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 disabled:opacity-30">
+                      <Ban className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+            {members.length === 0 && (
+              <li className="py-4 text-center text-xs text-gray-500">No members yet</li>
+            )}
+          </ul>
+
+          <p className="mt-3 text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+            🚩 Mute · 🗑 Remove · 🚫 Suspend platform-wide
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Room Moderation tab ──────────────────────────────────────────────────────
 
 function RoomModeration() {
@@ -195,30 +442,17 @@ function RoomModeration() {
 
   if (viewRoom) {
     return (
-      <div className="space-y-4">
-        <Button variant="outline" size="sm" onClick={() => setViewRoom(null)}>
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Back to rooms
-        </Button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{viewRoom.course?.title}</h2>
-            <p className="text-sm text-gray-500">{messages.length} message{messages.length !== 1 ? 's' : ''} · Admin view</p>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark overflow-hidden">
-          {msgLoading ? (
-            <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-          ) : messages.length === 0 ? (
-            <div className="text-center py-12">
-              <MessageSquare className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No messages in this room</p>
-            </div>
-          ) : (
-            messages.map((msg) => <MessageRow key={msg.id} msg={msg} onDelete={handleDelete} />)
-          )}
-        </div>
-      </div>
+      <RoomDetail
+        room={viewRoom}
+        initialMessages={messages}
+        msgLoading={msgLoading}
+        onBack={() => setViewRoom(null)}
+        onDeleteMessage={handleDelete}
+        onUpdateRoom={(patch) =>
+          setRooms((prev) => prev.map((r) => (r.id === viewRoom.id ? { ...r, ...patch } : r)))
+        }
+        setMessages={setMessages}
+      />
     );
   }
 

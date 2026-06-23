@@ -90,6 +90,19 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    // Platform-wide chat ban — when non-null, the user cannot send any
+    // message anywhere (DM or room). Set by admin from Chat Moderation.
+    // Reversible by setting back to null.
+    chat_suspended_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    chat_suspended_by: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
     registration_status: {
       type: DataTypes.ENUM('preview', 'active', 'suspended'),
       defaultValue: 'preview',

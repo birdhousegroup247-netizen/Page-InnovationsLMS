@@ -27,6 +27,8 @@ const withAttachment = (handler) => (req, res, next) => {
 router.get('/admin/rooms', authorize('admin', 'super_admin'), ChatController.adminGetAllRooms);
 router.get('/admin/rooms/:roomId/messages', authorize('admin', 'super_admin'), ChatController.adminGetRoomMessages);
 router.get('/admin/reports', authorize('admin', 'super_admin'), ChatController.adminGetReports);
+router.get('/admin/suspended-users', authorize('admin', 'super_admin'), ChatController.adminGetSuspendedUsers);
+router.post('/admin/users/:userId/suspend-chat', authorize('admin', 'super_admin'), ChatController.adminToggleChatSuspension);
 
 // ============================================================================
 // MUTE
