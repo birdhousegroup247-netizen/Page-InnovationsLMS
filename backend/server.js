@@ -593,24 +593,40 @@ const startServer = async () => {
             }
           }
         }
-        // ENUM columns need their type created first; raw SQL keeps it idempotent.
-        if (!paymentsDesc.payment_plan) {
-          await sequelize.query(`
-            DO $$ BEGIN
-              CREATE TYPE "enum_payments_payment_plan" AS ENUM ('full', 'installment');
-            EXCEPTION WHEN duplicate_object THEN null; END $$;
-          `).catch(() => {});
-          await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_plan "enum_payments_payment_plan" NOT NULL DEFAULT 'full'`).catch((e) => logger.warn(`  ⚠ payment_plan add failed: ${e.message}`));
-          logger.info('  ✓ Added payment_plan column to payments');
+        // ENUM columns. Previous DO $$ ... END $$ blocks were getting
+        // swallowed silently by the pg driver — column never landed.
+        // Switched to plain CREATE TYPE statements (catch only the
+        // "already exists" error) followed by an unconditional ALTER
+        // TABLE ADD COLUMN IF NOT EXISTS. Idempotent and verbose on
+        // failure so we can see what's wrong in Railway logs.
+        try {
+          await sequelize.query(`CREATE TYPE "enum_payments_payment_plan" AS ENUM ('full', 'installment')`);
+          logger.info('  ✓ Created enum_payments_payment_plan type');
+        } catch (e) {
+          if (!/already exists/i.test(e.message)) {
+            logger.warn(`  ⚠ enum_payments_payment_plan create failed: ${e.message}`);
+          }
         }
-        if (!paymentsDesc.installment_status) {
-          await sequelize.query(`
-            DO $$ BEGIN
-              CREATE TYPE "enum_payments_installment_status" AS ENUM ('not_applicable', 'pending', 'completed', 'overdue');
-            EXCEPTION WHEN duplicate_object THEN null; END $$;
-          `).catch(() => {});
-          await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_status "enum_payments_installment_status" NOT NULL DEFAULT 'not_applicable'`).catch((e) => logger.warn(`  ⚠ installment_status add failed: ${e.message}`));
+        try {
+          await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_plan "enum_payments_payment_plan" NOT NULL DEFAULT 'full'`);
+          logger.info('  ✓ Added payment_plan column to payments');
+        } catch (e) {
+          logger.error(`  ⚠ payment_plan ALTER failed: ${e.message}`);
+        }
+
+        try {
+          await sequelize.query(`CREATE TYPE "enum_payments_installment_status" AS ENUM ('not_applicable', 'pending', 'completed', 'overdue')`);
+          logger.info('  ✓ Created enum_payments_installment_status type');
+        } catch (e) {
+          if (!/already exists/i.test(e.message)) {
+            logger.warn(`  ⚠ enum_payments_installment_status create failed: ${e.message}`);
+          }
+        }
+        try {
+          await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_status "enum_payments_installment_status" NOT NULL DEFAULT 'not_applicable'`);
           logger.info('  ✓ Added installment_status column to payments');
+        } catch (e) {
+          logger.error(`  ⚠ installment_status ALTER failed: ${e.message}`);
         }
 
         // Snapshot AFTER all the explicit fixes so we can confirm every
