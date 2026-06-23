@@ -222,6 +222,21 @@ class StripeController {
 
       return ApiResponse.success(res, { payments });
     } catch (error) {
+      // Detailed log so a recurring schema-drift fault is diagnosable
+      // from the Railway logs alone — no need to crack open the toast.
+      const logger = require('../../utils/logger');
+      logger.error('getMyPayments failed:', {
+        user_id: req.user?.id,
+        name: error.name,
+        message: error.message,
+        original: error.original?.message,
+        parent: error.parent?.message,
+        code: error.original?.code || error.parent?.code,
+        column: error.original?.column || error.parent?.column,
+        table: error.original?.table || error.parent?.table,
+        constraint: error.original?.constraint || error.parent?.constraint,
+        sql: (error.sql || error.parent?.sql || '').slice(0, 500),
+      });
       next(error);
     }
   }

@@ -547,6 +547,10 @@ const startServer = async () => {
       // `invalid input value for enum ... "paypal"` / missing paypal_* columns.
       const paymentsDesc = await qi.describeTable('payments').catch(() => null);
       if (paymentsDesc) {
+        // Snapshot what's there at boot so a recurring /billing 500 is
+        // diagnosable from Railway logs alone — compare this list to
+        // the Payment model attributes and you'll see the missing one.
+        logger.info(`[payments columns at startup] ${Object.keys(paymentsDesc).sort().join(', ')}`);
         // Add 'paypal' to the gateway enum (ALTER TYPE ADD VALUE must be outside
         // a transaction; IF NOT EXISTS makes it idempotent; non-fatal on failure).
         await sequelize
@@ -607,6 +611,14 @@ const startServer = async () => {
           `).catch(() => {});
           await sequelize.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_status "enum_payments_installment_status" NOT NULL DEFAULT 'not_applicable'`).catch((e) => logger.warn(`  ⚠ installment_status add failed: ${e.message}`));
           logger.info('  ✓ Added installment_status column to payments');
+        }
+
+        // Snapshot AFTER all the explicit fixes so we can confirm every
+        // column actually landed. If the model declares one this list
+        // doesn't have, that's the next thing to add.
+        const after = await qi.describeTable('payments').catch(() => null);
+        if (after) {
+          logger.info(`[payments columns after migration] ${Object.keys(after).sort().join(', ')}`);
         }
       }
 
