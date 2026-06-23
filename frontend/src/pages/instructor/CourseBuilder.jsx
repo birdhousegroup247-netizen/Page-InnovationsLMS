@@ -387,7 +387,7 @@ export default function CourseBuilder() {
       <Container className="py-8">
         <div className="text-center">
           <p className="text-gray-500">Course not found</p>
-          <Button onClick={() => navigate('/instructor-dashboard')} className="mt-4">
+          <Button onClick={() => navigate('/instructor/courses')} className="mt-4">
             Back to Dashboard
           </Button>
         </div>
@@ -405,7 +405,7 @@ export default function CourseBuilder() {
               <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
-                  onClick={() => navigate('/instructor-dashboard')}
+                  onClick={() => navigate('/instructor/courses')}
                   className="text-white hover:bg-white/20"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />

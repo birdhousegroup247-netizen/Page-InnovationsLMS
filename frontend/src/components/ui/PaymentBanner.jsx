@@ -9,12 +9,20 @@ import { useAuth } from '../../contexts/AuthContext';
  *   - Installment overdue users (yellow/orange/red/amber based on stage)
  */
 export default function PaymentBanner() {
-  const { isPreview, installmentStage, installmentData } = useAuth();
+  const { user, isPreview, installmentStage, installmentData } = useAuth();
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
   if (!isPreview && !installmentStage) return null;
+
+  // Instructors and admins don't enrol in their own platform, so the
+  // "Preview Mode — only Lesson 1 is unlocked" prompt is nonsense for
+  // them. Suppress the banner entirely for those roles.
+  const role = user?.role;
+  if (role === 'instructor' || role === 'admin' || role === 'super_admin') {
+    return null;
+  }
 
   const payUrl = installmentData
     ? `/checkout?course_id=${installmentData.course_id}&installment_payment=1`

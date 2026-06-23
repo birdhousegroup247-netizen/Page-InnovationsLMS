@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { coursesAPI, instructorReviewsAPI, liveSessionsAPI, discordAPI } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowLeft,
   Clock,
@@ -31,6 +32,7 @@ import PaymentModal from '../components/payment/PaymentModal';
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,18 @@ export default function CourseDetail() {
   useEffect(() => {
     fetchCourse();
   }, [id]);
+
+  // Viewer is the course owner if their id matches the course's
+  // instructor_id, or they're an admin/super_admin. Used to:
+  //   - hide student CTAs (Enroll / Wishlist / "Free")
+  //   - show owner-only CTAs (Share / Edit / Manage)
+  //   - unlock every lesson in the curriculum preview
+  //   - send the Back button to /instructor/courses instead of /courses
+  const isOwner =
+    !!user && !!course &&
+    (user.id === course.instructor_id ||
+      user.role === 'admin' ||
+      user.role === 'super_admin');
 
   const fetchCourse = async () => {
     setLoading(true);
@@ -199,16 +213,19 @@ export default function CourseDetail() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
 
-          {/* Back Button */}
+          {/* Back Button — owners go back to /instructor/courses,
+              everyone else to the public catalogue */}
           <div className="absolute top-6 left-6">
-            <Link to="/courses">
+            <Link to={isOwner ? '/instructor/courses' : '/courses'}>
               <Button
                 variant="outline"
                 size="sm"
                 leftIcon={<ArrowLeft className="h-4 w-4" />}
                 className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20"
               >
-                <span className="hidden sm:inline">Back to Courses</span>
+                <span className="hidden sm:inline">
+                  {isOwner ? 'Back to My Courses' : 'Back to Courses'}
+                </span>
               </Button>
             </Link>
           </div>
@@ -324,25 +341,29 @@ export default function CourseDetail() {
 
                         {expandedModules[module.id] && module.contents && (
                           <div className="border-t border-gray-200 dark:border-border-dark bg-white dark:bg-dark-800 transition-colors">
-                            {module.contents.map((content) => (
-                              <div
-                                key={content.id}
-                                className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors border-b border-gray-100 dark:border-border-dark last:border-0"
-                              >
-                                <PlayCircle className="h-5 w-5 text-brand-blue flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-gray-900 dark:text-text-dark-primary text-sm font-medium transition-colors">
-                                    {content.title}
-                                  </p>
-                                  {content.duration_minutes && (
-                                    <p className="text-gray-500 dark:text-text-dark-muted text-xs transition-colors">
-                                      {content.duration_minutes} min
+                            {module.contents.map((content) => {
+                              // Owners + admins + enrolled students see no lock.
+                              const showLock = !isOwner && !isEnrolled;
+                              return (
+                                <div
+                                  key={content.id}
+                                  className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors border-b border-gray-100 dark:border-border-dark last:border-0"
+                                >
+                                  <PlayCircle className="h-5 w-5 text-brand-blue flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-gray-900 dark:text-text-dark-primary text-sm font-medium transition-colors">
+                                      {content.title}
                                     </p>
-                                  )}
+                                    {content.duration_minutes && (
+                                      <p className="text-gray-500 dark:text-text-dark-muted text-xs transition-colors">
+                                        {content.duration_minutes} min
+                                      </p>
+                                    )}
+                                  </div>
+                                  {showLock && <span className="text-sm text-gray-500 dark:text-text-dark-muted">🔒</span>}
                                 </div>
-                                {!isEnrolled && <span className="text-sm text-gray-500 dark:text-text-dark-muted">🔒</span>}
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -475,7 +496,8 @@ export default function CourseDetail() {
             {/* Right Column - Enrollment Card */}
             <div className="lg:col-span-1">
               <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm dark:shadow-card p-6 sticky top-24 animate-scale-in transition-colors">
-                {/* Price */}
+                {/* Price — hidden for owners (they don't buy their own course) */}
+                {!isOwner && (
                 <div className="mb-6">
                   <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-2 transition-colors">
                     Course Price
@@ -509,6 +531,19 @@ export default function CourseDetail() {
                     </p>
                   )}
                 </div>
+                )}
+
+                {/* Owner badge — replaces the price for the course owner */}
+                {isOwner && (
+                  <div className="mb-6 p-3 bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 rounded-lg">
+                    <p className="text-xs font-semibold text-brand-blue dark:text-cyan-400 uppercase tracking-wider mb-1">
+                      You own this course
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      You can preview every lesson, edit details, and manage content.
+                    </p>
+                  </div>
+                )}
 
                 {/* Prerequisite Notice */}
                 {course.prerequisite && !isEnrolled && (
@@ -529,9 +564,48 @@ export default function CourseDetail() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Action Buttons — owner gets Share/Edit/Manage,
+                    everyone else gets Enroll + Wishlist + Share. */}
                 <div className="space-y-3 mb-6">
-                  {isEnrolled ? (
+                  {isOwner ? (
+                    <>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        fullWidth
+                        leftIcon={<Share2 className="h-5 w-5" />}
+                        onClick={async () => {
+                          const url = `${window.location.origin}/courses/${id}`;
+                          try {
+                            if (navigator.share) {
+                              await navigator.share({ title: course.title, url });
+                            } else {
+                              await navigator.clipboard.writeText(url);
+                              alert('Course link copied to clipboard');
+                            }
+                          } catch {}
+                        }}
+                      >
+                        Share course
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        onClick={() => navigate(`/instructor/courses/${id}/edit`)}
+                      >
+                        Edit course
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        fullWidth
+                        onClick={() => navigate(`/instructor/courses/${id}/builder`)}
+                      >
+                        Manage content
+                      </Button>
+                    </>
+                  ) : isEnrolled ? (
                     <Button
                       variant="primary"
                       size="lg"
@@ -542,30 +616,32 @@ export default function CourseDetail() {
                       Continue Learning
                     </Button>
                   ) : (
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      fullWidth
-                      onClick={handleEnrollClick}
-                      leftIcon={<BookOpen className="h-5 w-5" />}
-                      className="bg-gradient-to-r from-brand-blue to-brand-purple hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-                    >
-                      {course.price > 0 ? 'Enroll Now' : 'Enroll For Free'}
-                    </Button>
+                    <>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        fullWidth
+                        onClick={handleEnrollClick}
+                        leftIcon={<BookOpen className="h-5 w-5" />}
+                        className="bg-gradient-to-r from-brand-blue to-brand-purple hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                      >
+                        {course.price > 0 ? 'Enroll Now' : 'Enroll For Free'}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        leftIcon={<Bookmark className="h-4 w-4" />}
+                      >
+                        Add to Wishlist
+                      </Button>
+
+                      <Button variant="ghost" size="lg" fullWidth leftIcon={<Share2 className="h-4 w-4" />}>
+                        Share Course
+                      </Button>
+                    </>
                   )}
-
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    fullWidth
-                    leftIcon={<Bookmark className="h-4 w-4" />}
-                  >
-                    Add to Wishlist
-                  </Button>
-
-                  <Button variant="ghost" size="lg" fullWidth leftIcon={<Share2 className="h-4 w-4" />}>
-                    Share Course
-                  </Button>
                 </div>
 
                 {/* Course Includes */}
