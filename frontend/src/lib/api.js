@@ -227,7 +227,10 @@ export const assignedTestsAPI = {
 
 // Questions API (for practice test generation & instructor contributions)
 export const questionsAPI = {
-  getApproved: (params) => api.get('/api/questions/approved', { params }),
+  // /api/questions/approved does not exist as a route — it was being
+  // swallowed by /api/questions/:id (id="approved") and silently
+  // returning nothing. Use the real endpoint with the is_approved filter.
+  getApproved: (params) => api.get('/api/questions', { params: { ...params, is_approved: true } }),
   getByCategory: (categoryId, params) => api.get(`/api/questions/category/${categoryId}`, { params }),
   getAll: (params) => api.get('/api/questions', { params }),
   getById: (id) => api.get(`/api/questions/${id}`),

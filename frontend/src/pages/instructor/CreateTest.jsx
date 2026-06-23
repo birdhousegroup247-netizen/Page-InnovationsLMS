@@ -102,9 +102,17 @@ export default function CreateTest() {
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
+      // Default the question fetch to the test's selected category +
+      // course so the instructor sees only the relevant pool. The user
+      // can still narrow further with the filters on this step.
       const params = {
         is_approved: true,
-        ...questionFilters,
+        category: questionFilters.category || testData.category_id || undefined,
+        course_id: testData.course_id || undefined,
+        search: questionFilters.search || undefined,
+        difficulty: questionFilters.difficulty || undefined,
+        type: questionFilters.type || undefined,
+        limit: 100,
       };
 
       const response = await questionsAPI.getApproved(params);
@@ -134,7 +142,7 @@ export default function CreateTest() {
     if (currentStep === 1) {
       fetchQuestions();
     }
-  }, [currentStep, questionFilters]);
+  }, [currentStep, questionFilters, testData.category_id, testData.course_id]);
 
   useEffect(() => {
     if (currentStep === 2 && testData.course_id) {
