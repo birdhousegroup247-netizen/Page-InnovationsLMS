@@ -215,13 +215,22 @@ if (process.env.NODE_ENV !== 'production') {
 // listening. Heavy DB / Redis / disk checks moved to /health/full so a
 // long-running boot migration can't drag the healthcheck past Railway's
 // 5-minute timeout and bin the whole deployment.
-app.get('/health', (req, res) => {
+//
+// Registered at EVERY common path because Railway / Render / Fly /
+// Heroku each default to a different one and the service config might
+// be set to any of them.
+const healthHandler = (req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
-});
+};
+app.get('/health', healthHandler);
+app.get('/healthz', healthHandler);
+app.get('/api/health', healthHandler);
+app.get('/_health', healthHandler);
+app.get('/ping', healthHandler);
 
 // Detailed health (DB + Redis + disk + memory + CPU) — kept for
 // monitoring dashboards, no longer the Railway healthcheck target.
