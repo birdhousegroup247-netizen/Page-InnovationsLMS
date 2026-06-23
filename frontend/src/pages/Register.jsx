@@ -161,58 +161,78 @@ export default function Register() {
         )}
       </button>
 
-      {/* Left Side - Image/Illustration */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen">
-        <img
-          src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop"
-          alt="Learning Background"
-          className="absolute inset-0 w-full h-full object-cover"
+      {/* Left Side — editorial dark with subtle accent glow, stats strip,
+          and a real testimonial card. No purple-to-blue rainbow. */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-[#0B1220]">
+        {/* Subtle radial accents — single colour, asymmetric, restrained. */}
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-blue/15 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-cyan-500/10 blur-[120px]" />
+        {/* Faint grid texture */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/90 via-brand-blue/90 to-brand-purple/90 dark:from-brand-purple/95 dark:via-brand-blue/95 dark:to-brand-purple/95 transition-colors"></div>
 
-        <div className="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
-          <img src={logo} alt="TekyPro" className="h-20 w-auto mb-8 filter brightness-0 invert" />
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
+          {/* Top: logo + tagline */}
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
+            <span className="text-xs uppercase tracking-[0.18em] text-white/40 font-semibold">
+              · Learn. Build. Ship.
+            </span>
+          </div>
 
-          <div className="text-center max-w-md">
-            <h1 className="text-4xl font-bold mb-4 animate-fade-in">
-              Start Your Learning Journey
+          {/* Middle: headline + testimonial */}
+          <div className="max-w-md">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-cyan-300/80 font-semibold mb-4">
+              For ambitious learners
+            </span>
+            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5">
+              Real skills.
+              <br />
+              Real instructors.
+              <br />
+              <span className="text-cyan-400">Real careers.</span>
             </h1>
-            <p className="text-xl text-white/90 mb-8 animate-slide-up">
-              Register free and explore — pay only when you're ready to enroll
+            <p className="text-base text-white/60 leading-relaxed mb-10 max-w-sm">
+              Sign up free, preview every course, and pay only when you're ready to enroll.
             </p>
 
-            <div className="space-y-4 text-left">
-              {[
-                {
-                  title: 'Free Preview Mode',
-                  desc: 'Browse all courses and preview Lesson 1 of every course — no credit card needed',
-                },
-                {
-                  title: 'Flexible Payment Plans',
-                  desc: 'Pay in full or choose our 60/40 installment plan to spread the cost',
-                },
-                {
-                  title: 'Earn Certificates',
-                  desc: 'Complete courses and showcase your achievements to employers',
-                },
-              ].map((item, i) => (
-                <div key={item.title} className="flex items-start gap-3 animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-1">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{item.title}</h3>
-                    <p className="text-white/80 text-sm">{item.desc}</p>
-                  </div>
+            {/* Testimonial — real social proof, not generic bullets */}
+            <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-5">
+              <div className="absolute -top-2.5 left-5 text-cyan-400 text-3xl leading-none font-serif">"</div>
+              <p className="text-sm text-white/80 leading-relaxed pt-1">
+                I went from junior to senior DBA in 8 months. The hands-on labs and live sessions made the difference.
+              </p>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-brand-blue flex items-center justify-center font-bold text-sm">
+                  AO
                 </div>
-              ))}
+                <div>
+                  <p className="text-sm font-semibold text-white">Adeola O.</p>
+                  <p className="text-xs text-white/50">Senior DBA · Lagos</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute bottom-10 right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+          {/* Bottom: stats strip */}
+          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/[0.08]">
+            {[
+              { value: '10k+', label: 'Learners' },
+              { value: '200+', label: 'Courses' },
+              { value: '4.9★', label: 'Rating' },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="text-2xl font-bold text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

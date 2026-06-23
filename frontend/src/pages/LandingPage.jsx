@@ -205,7 +205,7 @@ export default function LandingPage() {
                 Log in
               </Link>
               <Link
-                to="/register"
+                to="/signup"
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-blue hover:bg-brand-blue-light text-white text-sm font-semibold rounded-full transition-all shadow-lg hover:shadow-brand-blue/25 hover:-translate-y-0.5"
               >
                 Get Started
@@ -265,7 +265,7 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   localStorage.setItem('selectedRole', 'student');
-                  navigate('/register');
+                  navigate('/signup');
                 }}
                 className="group relative text-left rounded-2xl p-[1.5px] bg-gradient-to-br from-brand-blue/40 via-cyan-400/20 to-transparent hover:from-brand-blue hover:via-cyan-400/60 hover:to-brand-blue/40 transition-all duration-500 shadow-xl shadow-brand-blue/5 hover:shadow-2xl hover:shadow-brand-blue/30 hover:-translate-y-1"
               >
@@ -585,7 +585,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  to="/register"
+                  to="/signup"
                   className="px-8 py-4 bg-white text-brand-blue font-bold rounded-full hover:bg-blue-50 transition-colors"
                 >
                   Get Started for Free

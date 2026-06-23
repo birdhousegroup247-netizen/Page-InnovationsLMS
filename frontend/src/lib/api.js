@@ -51,6 +51,7 @@ api.interceptors.response.use(
     // Skip refresh if we're on a public page (login, register, etc.) or if the request was for login
     const isPublicPage =
       window.location.pathname.startsWith('/login') ||
+      window.location.pathname.startsWith('/signup') ||
       window.location.pathname.startsWith('/register') ||
       window.location.pathname.startsWith('/forgot-password') ||
       window.location.pathname.startsWith('/reset-password') ||

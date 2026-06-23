@@ -281,13 +281,15 @@ function App() {
             }
           />
           <Route
-            path="/register"
+            path="/signup"
             element={
               <PublicRoute>
                 <Register />
               </PublicRoute>
             }
           />
+          {/* Legacy /register redirects to /signup so old links/emails still work. */}
+          <Route path="/register" element={<Navigate to="/signup" replace />} />
           <Route
             path="/forgot-password"
             element={

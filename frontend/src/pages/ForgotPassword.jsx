@@ -204,7 +204,7 @@ export default function ForgotPassword() {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500 dark:text-text-dark-muted transition-colors">
             Don't have an account?{' '}
-            <Link to="/register" className="text-brand-blue hover:text-brand-blue-light font-medium transition-colors">
+            <Link to="/signup" className="text-brand-blue hover:text-brand-blue-light font-medium transition-colors">
               Sign up
             </Link>
           </p>
