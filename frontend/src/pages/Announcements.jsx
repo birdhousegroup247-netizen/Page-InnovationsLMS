@@ -76,10 +76,11 @@ export default function Announcements() {
                     {a.course.title}
                   </span>
                 )}
-                {a.created_at && (
+                {(a.scheduled_at || a.scheduledAt || a.created_at || a.createdAt) && (
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5" />
-                    {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(a.scheduled_at || a.scheduledAt || a.created_at || a.createdAt)
+                      .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 )}
               </div>

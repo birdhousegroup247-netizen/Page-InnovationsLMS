@@ -330,7 +330,17 @@ export default function Announcements() {
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {formatDate(announcement.created_at)}
+                            {/* Prefer scheduled_at when set (the publish date
+                                the instructor chose), otherwise show the
+                                creation timestamp. Accept both snake and camel
+                                casing because the backend Sequelize config
+                                doesn't pin which one it serialises with. */}
+                            {formatDate(
+                              announcement.scheduled_at
+                              || announcement.scheduledAt
+                              || announcement.created_at
+                              || announcement.createdAt
+                            )}
                           </span>
                           {announcement.view_count !== undefined && (
                             <span className="flex items-center gap-1">
