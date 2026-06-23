@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../lib/api';
 import logger from '../utils/logger';
+import { tokenStorage } from '../utils/tokenStorage';
 
 const AuthContext = createContext(null);
 
@@ -29,19 +30,19 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.data.user);
       setIsAuthenticated(true);
 
-      // If we authenticated via cookie but don't yet have tokens in
-      // localStorage, mint a pair via /refresh so the Bearer-token CSRF
-      // bypass works on subsequent writes. Without this, anyone who was
-      // already logged in before the Bearer-token fix shipped stays stuck
-      // sending requests without an Authorization header.
-      if (!localStorage.getItem('accessToken')) {
+      // If we authenticated via cookie but this tab has no Bearer yet,
+      // mint a pair via /refresh so the CSRF auto-bypass works on writes.
+      // Tokens land per-tab (sessionStorage); the original Remember-me
+      // flag is preserved by checking the existing localStorage seed.
+      if (!tokenStorage.get('accessToken')) {
         try {
           const ref = await authAPI.refreshToken();
           const { accessToken, refreshToken } = ref.data?.data || {};
-          if (accessToken) localStorage.setItem('accessToken', accessToken);
-          if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+          const wasPersisted = !!localStorage.getItem('refreshToken');
+          if (accessToken) tokenStorage.set('accessToken', accessToken, { persist: wasPersisted });
+          if (refreshToken) tokenStorage.set('refreshToken', refreshToken, { persist: wasPersisted });
         } catch (_) {
-          // Refresh failing here is OK — most writes will then surface a CSRF
+          // Refresh failing here is OK — writes will then surface a CSRF
           // error that nudges the user to log in fresh.
         }
       }
@@ -60,11 +61,11 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login({ email, password, remember_me: rememberMe });
       const { user, accessToken, refreshToken } = response.data.data;
 
-      // Store tokens in localStorage so the api.js Bearer-token interceptor
-      // can attach them. This is what makes CSRF auto-bypass work across
-      // subdomains (admin app vs API on different *.up.railway.app hosts).
-      if (accessToken) localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      // Per-tab tokens. Bearer auto-bypasses CSRF (admin app and API are
+      // on different subdomains so cookie-only auth doesn't cut it).
+      // Remember me seeds localStorage so a closed-and-reopened tab can
+      // pick up the same session.
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe });
 
       setUser(user);
       setIsAuthenticated(true);
@@ -86,8 +87,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(userData);
       const { user, accessToken, refreshToken } = response.data.data || {};
 
-      if (accessToken) localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe: false });
 
       if (user) {
         setUser(user);
@@ -107,10 +107,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       logger.error('Logout error:', error);
     } finally {
-      // Clear every piece of auth state — without this, stale tokens in
-      // localStorage keep the user logged in after they click logout.
-      try { localStorage.removeItem('accessToken'); } catch (_) {}
-      try { localStorage.removeItem('refreshToken'); } catch (_) {}
+      // Clear every piece of auth state — without this, stale tokens
+      // keep the user logged in after they click logout.
+      tokenStorage.clearAll();
       try { sessionStorage.clear(); } catch (_) {}
       try {
         document.cookie = 'csrf-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';

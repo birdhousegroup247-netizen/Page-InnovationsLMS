@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { tokenStorage } from '../utils/tokenStorage';
 
 // Base API URL - will use environment variable or fallback to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -25,7 +26,7 @@ const api = axios.create({
 // request that has an Authorization header.
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = tokenStorage.get('accessToken');
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -66,26 +67,25 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        // Pass refresh token explicitly when we have it — cookie fallback for
-        // cases where the browser kept it (same-site dev).
+        const refreshToken = tokenStorage.get('refreshToken');
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
           refreshToken ? { refreshToken } : {},
           { withCredentials: true }
         );
 
+        // Preserve persistence — if the original login was Remember me
+        // (=> localStorage has the refresh token), persist the rotated
+        // tokens too. Otherwise keep them tab-only.
+        const wasPersisted = !!localStorage.getItem('refreshToken');
         const { accessToken: newAccess, refreshToken: newRefresh } = response.data?.data || {};
-        if (newAccess) localStorage.setItem('accessToken', newAccess);
-        if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
+        if (newAccess) tokenStorage.set('accessToken', newAccess, { persist: wasPersisted });
+        if (newRefresh) tokenStorage.set('refreshToken', newRefresh, { persist: wasPersisted });
 
-        if (newAccess) {
-          originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-        }
+        if (newAccess) originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        tokenStorage.clearAll();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

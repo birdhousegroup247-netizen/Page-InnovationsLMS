@@ -95,8 +95,9 @@ export default function CloudinaryUpload({
         formData.append('folder', folder);
       }
 
-      // Upload to backend API
-      const token = localStorage.getItem('accessToken');
+      // Upload to backend API — per-tab Bearer token (see tokenStorage.js).
+      const { tokenStorage } = await import('../../utils/tokenStorage');
+      const token = tokenStorage.get('accessToken');
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}${uploadEndpoint}`,
         {

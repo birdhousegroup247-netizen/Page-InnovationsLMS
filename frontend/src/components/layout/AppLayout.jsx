@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getNavigationItems } from '../../utils/navigationItems.jsx';
 import { chatAPI, notificationsAPI } from '../../lib/api';
+import { tokenStorage } from '../../utils/tokenStorage';
 import { connectSocket, getSocket } from '../../lib/socket';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -39,8 +40,8 @@ export default function AppLayout({ children }) {
   useEffect(() => {
     if (!user) return;
 
-    // Connect socket
-    const token = localStorage.getItem('accessToken');
+    // Connect socket — per-tab Bearer token (see utils/tokenStorage.js).
+    const token = tokenStorage.get('accessToken');
     if (token) connectSocket(token);
 
     // Fetch total unread DMs

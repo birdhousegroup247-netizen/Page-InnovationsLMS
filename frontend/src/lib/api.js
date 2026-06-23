@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { tokenStorage } from '../utils/tokenStorage';
 
 // Base API URL - will use environment variable or fallback to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -16,8 +17,10 @@ const api = axios.create({
 // Request interceptor to add auth token and CSRF token
 api.interceptors.request.use(
   (config) => {
-    // Add Authorization header with token from localStorage
-    const accessToken = localStorage.getItem('accessToken');
+    // Per-tab Bearer token (sessionStorage > localStorage). See
+    // tokenStorage.js — this is what lets student and instructor tabs
+    // run with different sessions in the same browser.
+    const accessToken = tokenStorage.get('accessToken');
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -63,35 +66,33 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Get refresh token from localStorage
-        const refreshToken = localStorage.getItem('refreshToken');
-
+        const refreshToken = tokenStorage.get('refreshToken');
         if (!refreshToken) {
-          // No refresh token - redirect to login
-          localStorage.removeItem('accessToken');
+          tokenStorage.clearAll();
           window.location.href = '/login';
           return Promise.reject(error);
         }
 
-        // Attempt to refresh access token
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
           { refreshToken },
           { withCredentials: true }
         );
 
-        // Update tokens in localStorage
+        // Preserve the original persistence choice. If the user ticked
+        // "Remember me" we'd have seeded localStorage with the token, so
+        // check that as the indicator for whether to persist the rotated
+        // token too — otherwise the next browser restart would lose the
+        // session it should have kept.
+        const wasPersisted = !!localStorage.getItem('refreshToken');
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
-        localStorage.setItem('accessToken', newAccessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        tokenStorage.set('accessToken', newAccessToken, { persist: wasPersisted });
+        tokenStorage.set('refreshToken', newRefreshToken, { persist: wasPersisted });
 
-        // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - clear tokens and redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        tokenStorage.clearAll();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

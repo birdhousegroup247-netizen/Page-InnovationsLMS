@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../lib/api';
+import { tokenStorage } from '../utils/tokenStorage';
 import { Sun, Moon, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import logo from '../assets/logo.png';
 
@@ -88,10 +89,11 @@ export default function VerifyEmail() {
         setTimeout(() => navigate('/login'), 1200);
         return;
       }
-      // Server auto-logs us in on successful code verification
+      // Server auto-logs us in on successful code verification.
+      // First-login is not "Remember me" by default — user can tick it
+      // on Login next time. Tokens land per-tab via sessionStorage.
       const { accessToken, refreshToken } = res.data.data;
-      if (accessToken) localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe: false });
       await checkAuth();
       navigate('/dashboard');
     } catch (err) {

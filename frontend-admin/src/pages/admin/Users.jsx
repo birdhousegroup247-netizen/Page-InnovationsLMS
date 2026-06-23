@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { adminUsersAPI, adminCoursesAPI } from '../../lib/api';
+import { tokenStorage } from '../../utils/tokenStorage';
 import {
   Users as UsersIcon,
   Search,
@@ -628,7 +629,7 @@ export default function Users() {
         `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/users/import`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+          headers: { Authorization: `Bearer ${tokenStorage.get('accessToken')}` },
           body: formData,
         }
       );

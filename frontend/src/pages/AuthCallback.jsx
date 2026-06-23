@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { tokenStorage } from '../utils/tokenStorage';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -12,8 +13,9 @@ export default function AuthCallback() {
     const refreshToken = searchParams.get('refreshToken');
 
     if (accessToken && refreshToken) {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Google OAuth callback — treat as Remember me so the session
+      // survives a browser restart (matches Gmail/standard OAuth UX).
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe: true });
       checkAuth().then(() => {
         navigate('/dashboard', { replace: true });
       });

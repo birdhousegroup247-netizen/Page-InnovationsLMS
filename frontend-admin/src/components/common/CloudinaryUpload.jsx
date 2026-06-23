@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Upload, X, Image as ImageIcon, File, Check, AlertCircle } from 'lucide-react';
 import { Spinner } from '../ui';
+import { tokenStorage } from '../../utils/tokenStorage';
 
 /**
  * CloudinaryUpload Component
@@ -95,10 +96,10 @@ export default function CloudinaryUpload({
         formData.append('folder', folder);
       }
 
-      // Bearer token from localStorage — same pattern as api.js. The backend
-      // CSRF check exempts requests with an Authorization header, which is how
-      // we sidestep the cross-subdomain cookie problem.
-      const accessToken = localStorage.getItem('accessToken');
+      // Per-tab Bearer (see utils/tokenStorage.js). Backend CSRF check
+      // exempts any request with an Authorization header — that's how we
+      // sidestep the cross-subdomain cookie problem.
+      const accessToken = tokenStorage.get('accessToken');
       const csrfToken = document.cookie
         .split('; ')
         .find((row) => row.startsWith('csrf-token='))

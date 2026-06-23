@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { adminCoursesAPI, adminUsersAPI, categoriesAPI, adminQuestionsAPI } from '../../lib/api';
+import { tokenStorage } from '../../utils/tokenStorage';
 import {
   BookOpen,
   Search,
@@ -455,7 +456,7 @@ export default function AdminCourses() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${tokenStorage.get('accessToken')}`,
           },
         }
       );

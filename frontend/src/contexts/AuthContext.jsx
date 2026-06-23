@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI, paymentsAPI } from '../lib/api';
+import { tokenStorage } from '../utils/tokenStorage';
 
 const AuthContext = createContext(null);
 
@@ -67,8 +68,7 @@ export const AuthProvider = ({ children }) => {
       }
       // Legacy fallback if tokens are present (shouldn't happen post-verification rollout)
       const { user, accessToken, refreshToken } = data;
-      if (accessToken) localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe: false });
       if (user) {
         setUser(user);
         setIsAuthenticated(true);
@@ -85,9 +85,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login({ email, password, remember_me: rememberMe });
       const { user, accessToken, refreshToken } = response.data.data;
 
-      // Store tokens in localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Per-tab storage. rememberMe seeds localStorage so new tabs /
+      // browser restarts can recover the session; without it the tokens
+      // live only in this tab's sessionStorage.
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe });
 
       setUser(user);
       setIsAuthenticated(true);
@@ -114,8 +115,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       // Clear every piece of auth state we control. Anything left behind here
       // is exactly what causes "reopen browser and you're logged back in".
-      try { localStorage.removeItem('accessToken'); } catch (_) {}
-      try { localStorage.removeItem('refreshToken'); } catch (_) {}
+      tokenStorage.clearAll();
       try { localStorage.removeItem('selectedRole'); } catch (_) {}
       try { sessionStorage.clear(); } catch (_) {}
 
