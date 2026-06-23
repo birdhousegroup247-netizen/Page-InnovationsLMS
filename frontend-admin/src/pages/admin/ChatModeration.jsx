@@ -12,6 +12,7 @@ import {
 } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
 import { Container, PageHeader } from '../../components/layout';
+import Tooltip from '../../components/ui/Tooltip';
 import { cn } from '../../utils/cn';
 import {
   MessageSquare, Users, Trash2, ChevronLeft, RefreshCw,
@@ -347,18 +348,27 @@ function RoomDetail({ room, initialMessages, msgLoading, onBack, onDeleteMessage
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <button title={muted ? 'Unmute' : 'Mute'} disabled={busy} onClick={() => handleMute(m)}
-                      className="p-1.5 rounded hover:bg-amber-100 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400 disabled:opacity-30">
-                      {muted ? <ShieldAlert className="w-3.5 h-3.5" /> : <Flag className="w-3.5 h-3.5" />}
-                    </button>
-                    <button title="Remove from room" disabled={busy} onClick={() => handleRemove(m)}
-                      className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 disabled:opacity-30">
-                      <UserMinus className="w-3.5 h-3.5" />
-                    </button>
-                    <button title="Suspend chat platform-wide" disabled={busy} onClick={() => handleSuspendPlatform(m)}
-                      className="p-1.5 rounded hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 disabled:opacity-30">
-                      <Ban className="w-3.5 h-3.5" />
-                    </button>
+                    <Tooltip content={muted ? 'Unmute member' : 'Mute member · hides their messages and notifies them'} position="top">
+                      <button disabled={busy} onClick={() => handleMute(m)}
+                        aria-label={muted ? 'Unmute' : 'Mute'}
+                        className="p-1.5 rounded hover:bg-amber-100 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400 disabled:opacity-30">
+                        {muted ? <ShieldAlert className="w-3.5 h-3.5" /> : <Flag className="w-3.5 h-3.5" />}
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Remove from room · they can rejoin while still enrolled" position="top">
+                      <button disabled={busy} onClick={() => handleRemove(m)}
+                        aria-label="Remove"
+                        className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 disabled:opacity-30">
+                        <UserMinus className="w-3.5 h-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Suspend chat platform-wide · blocks them from every DM and room" position="top">
+                      <button disabled={busy} onClick={() => handleSuspendPlatform(m)}
+                        aria-label="Suspend platform-wide"
+                        className="p-1.5 rounded hover:bg-purple-100 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 disabled:opacity-30">
+                        <Ban className="w-3.5 h-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </li>
               );
@@ -368,9 +378,6 @@ function RoomDetail({ room, initialMessages, msgLoading, onBack, onDeleteMessage
             )}
           </ul>
 
-          <p className="mt-3 text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
-            🚩 Mute · 🗑 Remove · 🚫 Suspend platform-wide
-          </p>
         </div>
       </div>
     </div>
