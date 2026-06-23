@@ -33,12 +33,41 @@ const app = express();
 // Trust proxy (required for Render/Heroku to get correct IP)
 app.set('trust proxy', 1);
 
-// HTTPS redirect in production
+// ──────────────────────────────────────────────────────────────────────
+// HEALTHCHECK ENDPOINTS — registered FIRST, before any middleware.
+//
+// Reason: Railway's healthcheck probe MUST get a 200 back within ~5
+// minutes or it kills the deployment. If any middleware below this
+// (helmet, CORS, sanitizer, attack-pattern detection, etc.) is slow,
+// throws, or blocks for any reason, the probe fails and we lose the
+// whole deploy. Putting these routes at position zero makes them
+// reachable even if everything else is broken.
+//
+// All paths return the same lightweight payload — no DB, no Redis, no
+// disk check. Just "process is alive". Registered at every common
+// platform-default path (/health, /healthz, /api/health, /_health,
+// /ping, /live, /ready) so whatever Railway's config is set to, it
+// gets a 200.
+const healthHandler = (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+};
+app.get('/health', healthHandler);
+app.get('/healthz', healthHandler);
+app.get('/api/health', healthHandler);
+app.get('/_health', healthHandler);
+app.get('/ping', healthHandler);
+app.get('/live', healthHandler);
+app.get('/ready', healthHandler);
+
+// HTTPS redirect in production — runs AFTER healthchecks so probe
+// requests over HTTP aren't redirected (Railway's internal probe
+// doesn't follow 301s, which used to be enough to fail the deploy).
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
-    // Railway's internal healthchecks hit these paths over HTTP and don't follow
-    // 301s, so redirecting would fail the deploy. Let probes through as-is.
-    if (['/health', '/ready', '/live'].includes(req.path)) return next();
     if (req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
     }
@@ -211,26 +240,10 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Lightweight health endpoint — returns 200 the moment the process is
-// listening. Heavy DB / Redis / disk checks moved to /health/full so a
-// long-running boot migration can't drag the healthcheck past Railway's
-// 5-minute timeout and bin the whole deployment.
-//
-// Registered at EVERY common path because Railway / Render / Fly /
-// Heroku each default to a different one and the service config might
-// be set to any of them.
-const healthHandler = (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-};
-app.get('/health', healthHandler);
-app.get('/healthz', healthHandler);
-app.get('/api/health', healthHandler);
-app.get('/_health', healthHandler);
-app.get('/ping', healthHandler);
+// /health/full — detailed status, kept here for monitoring dashboards.
+// The lightweight /health, /live, /ready, /healthz, /api/health, /_health,
+// /ping handlers all live at the top of the file (before any middleware)
+// so Railway's healthcheck can never be blocked by a slow middleware.
 
 // Detailed health (DB + Redis + disk + memory + CPU) — kept for
 // monitoring dashboards, no longer the Railway healthcheck target.
@@ -249,33 +262,28 @@ app.get('/health/full', async (req, res) => {
   }
 });
 
-// Readiness probe (for Kubernetes)
-app.get('/ready', async (req, res) => {
+// Detailed readiness/liveness — for monitoring dashboards. The
+// platform-facing /ready and /live live at the top of the file (no
+// middleware in front of them) so Railway's healthcheck can't be
+// blocked by anything we ship. These detailed variants are mounted
+// at /ready/full and /live/full.
+app.get('/ready/full', async (req, res) => {
   try {
     const readiness = await performReadinessCheck();
     res.status(readiness.ready ? 200 : 503).json(readiness);
   } catch (error) {
     logger.error('Readiness check failed:', error);
-    res.status(503).json({
-      ready: false,
-      message: 'Readiness check failed',
-      error: error.message,
-    });
+    res.status(503).json({ ready: false, message: 'Readiness check failed', error: error.message });
   }
 });
 
-// Liveness probe (for Kubernetes)
-app.get('/live', async (req, res) => {
+app.get('/live/full', async (req, res) => {
   try {
     const liveness = await performLivenessCheck();
     res.status(liveness.alive ? 200 : 503).json(liveness);
   } catch (error) {
     logger.error('Liveness check failed:', error);
-    res.status(503).json({
-      alive: false,
-      message: 'Liveness check failed',
-      error: error.message,
-    });
+    res.status(503).json({ alive: false, message: 'Liveness check failed', error: error.message });
   }
 });
 
