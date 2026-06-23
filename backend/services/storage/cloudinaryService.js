@@ -89,14 +89,17 @@ class CloudinaryService {
    */
   static async uploadDocument(fileBuffer, folder = 'documents', fileName = null) {
     try {
-      // Note: `allowed_formats` removed. For resource_type=raw Cloudinary
-      // matches it against the *public_id* extension which is brittle —
-      // .txt uploads were 500'ing here despite multer's fileFilter already
-      // having passed the MIME type. The multer middleware is the
-      // authoritative gatekeeper at the route layer.
+      // PDFs need resource_type: 'image' for public delivery to work.
+      // Free Cloudinary plans block raw/PDF delivery by default
+      // (returns HTTP 401), so we route PDFs through the image
+      // pipeline which has no such restriction. Everything else
+      // (txt/doc/docx/etc) stays on raw — those formats deliver fine.
+      const looksPdf =
+        (fileName || '').toLowerCase().endsWith('.pdf') ||
+        (typeof fileBuffer === 'string' && fileBuffer.startsWith('data:application/pdf'));
       const uploadOptions = {
         folder: `tekypro-lms/${folder}`,
-        resource_type: 'raw',
+        resource_type: looksPdf ? 'image' : 'raw',
       };
 
       if (fileName) {

@@ -359,6 +359,27 @@ export default function CourseBuilder() {
   };
 
   /**
+   * Extract a YouTube video id from any URL format we might see.
+   * Handles:
+   *   • youtube.com/watch?v=ID  / &v=ID
+   *   • youtu.be/ID
+   *   • youtube.com/embed/ID
+   *   • youtube.com/shorts/ID
+   *   • Google search URLs with `vid:ID` (the page that links to YouTube)
+   *   • A bare 11-char video id
+   * Returns null if nothing matches.
+   */
+  const extractYouTubeId = (urlOrId) => {
+    if (!urlOrId) return null;
+    const s = String(urlOrId).trim();
+    if (/^[\w-]{11}$/.test(s)) return s;
+    const m = s.match(
+      /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/)|youtu\.be\/|[?&]v=|vid:)([\w-]{11})/
+    );
+    return m ? m[1] : null;
+  };
+
+  /**
    * Lesson drag-and-drop reorder. Native HTML5 DnD — no external lib.
    * On drop, recompute order_indexes for the whole module and POST a
    * single batch reorder call.
@@ -1070,44 +1091,74 @@ export default function CourseBuilder() {
               </p>
             )}
 
-            {previewContent.content_type === 'video' && (
-              previewContent.youtube_video_id ? (
-                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${previewContent.youtube_video_id}`}
-                    title={previewContent.title}
-                    className="absolute inset-0 w-full h-full rounded-lg"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+            {previewContent.content_type === 'video' && (() => {
+              // Resolve the video id from any URL the instructor may have
+              // saved — including Google search pages with vid:ID.
+              const videoId = extractYouTubeId(
+                previewContent.youtube_video_id || previewContent.youtube_url
+              );
+              if (videoId) {
+                return (
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title={previewContent.title}
+                      className="absolute inset-0 w-full h-full rounded-lg"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg space-y-2">
+                  <p className="text-sm text-amber-800 dark:text-amber-300">
+                    This lesson doesn't have a valid YouTube link. Paste a watch URL
+                    (e.g. https://www.youtube.com/watch?v=…) or a youtu.be link.
+                  </p>
+                  {previewContent.youtube_url && (
+                    <a href={previewContent.youtube_url} target="_blank" rel="noreferrer"
+                      className="text-sm text-brand-blue underline break-all">
+                      Open current URL in new tab
+                    </a>
+                  )}
                 </div>
-              ) : previewContent.youtube_url ? (
-                <a href={previewContent.youtube_url} target="_blank" rel="noreferrer"
-                  className="block p-4 bg-gray-50 dark:bg-dark-700 rounded-lg text-brand-blue underline">
-                  Open video in new tab
-                </a>
-              ) : (
-                <p className="text-sm text-gray-500">No video URL set for this lesson.</p>
-              )
-            )}
+              );
+            })()}
 
-            {previewContent.content_type === 'document' && (
-              previewContent.document_url ? (
+            {previewContent.content_type === 'document' && (() => {
+              const url = previewContent.document_url;
+              if (!url) {
+                return <p className="text-sm text-gray-500">No document uploaded for this lesson.</p>;
+              }
+              const isPdf = url.toLowerCase().split('?')[0].endsWith('.pdf');
+              // Cloudinary raw PDFs on free plans return HTTP 401 — the
+              // backend upload pipeline now stores PDFs via resource_type
+              // 'image' so this works for fresh uploads. For older URLs
+              // we fall through to the Google Docs Viewer which can also
+              // render most public documents in an iframe.
+              const viewerSrc = isPdf
+                ? url
+                : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+              return (
                 <div className="space-y-2">
                   <iframe
-                    src={previewContent.document_url}
+                    src={viewerSrc}
                     title={previewContent.title}
-                    className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-border-dark"
+                    className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-border-dark bg-white"
                   />
-                  <a href={previewContent.document_url} target="_blank" rel="noreferrer"
-                    className="text-sm text-brand-blue underline">
-                    Open document in new tab
-                  </a>
+                  <div className="flex items-center justify-between text-xs">
+                    <a href={url} target="_blank" rel="noreferrer"
+                      className="text-brand-blue underline">
+                      Open document in new tab
+                    </a>
+                    <span className="text-gray-500">
+                      If the preview is blank, the file may need to be re-uploaded.
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-gray-500">No document uploaded for this lesson.</p>
-              )
-            )}
+              );
+            })()}
 
             {previewContent.content_type === 'article' && (
               previewContent.article_content ? (
