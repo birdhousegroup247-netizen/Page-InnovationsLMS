@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const COUNTRIES = [
@@ -149,6 +149,20 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-dark-900 transition-colors">
+      {/* Back to role selection */}
+      <Link
+        to="/"
+        className="group fixed top-4 left-4 inline-flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg hover:border-brand-blue/40 transition-all z-50"
+        aria-label="Back to role selection"
+      >
+        <span className="w-7 h-7 rounded-full bg-gray-100 dark:bg-dark-700 group-hover:bg-brand-blue group-hover:text-white flex items-center justify-center transition-colors">
+          <ArrowLeft className="w-3.5 h-3.5" />
+        </span>
+        <span className="hidden sm:inline text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+          Choose role
+        </span>
+      </Link>
+
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
