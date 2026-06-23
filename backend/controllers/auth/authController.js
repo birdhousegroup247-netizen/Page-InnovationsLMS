@@ -7,6 +7,7 @@ const ActivityController = require('../activity/activityController');
 const TokenBlacklist = require('../../utils/tokenBlacklist');
 const CSRF = require('../../utils/csrf');
 const emailService = require('../../services/email/emailService');
+const { verifyTurnstile } = require('../../utils/turnstile');
 
 /**
  * Authentication Controller
@@ -80,7 +81,15 @@ class AuthController {
    */
   static async register(req, res, next) {
     try {
-      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref } = req.body;
+      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token } = req.body;
+
+      // Bot check — only enforced when TURNSTILE_SECRET_KEY is configured.
+      // A bot scripting against /api/auth/register without solving the
+      // Turnstile widget on the signup page is rejected here.
+      const captcha = await verifyTurnstile(turnstile_token, req.ip);
+      if (!captcha.ok) {
+        throw new BadRequestError('Captcha verification failed — please refresh and try again.');
+      }
 
       // Instructor applications use a separate endpoint with documents
       if (role === 'instructor') {
@@ -184,8 +193,14 @@ class AuthController {
       const {
         full_name, email, password, phone, country,
         bio, qualifications, teaching_experience, subject_expertise,
-        portfolio_url, cv_url, credential_urls,
+        portfolio_url, cv_url, credential_urls, turnstile_token,
       } = req.body;
+
+      // Bot check — see /api/auth/register for the rationale.
+      const captcha = await verifyTurnstile(turnstile_token, req.ip);
+      if (!captcha.ok) {
+        throw new BadRequestError('Captcha verification failed — please refresh and try again.');
+      }
 
       const existingUser = await User.findByEmail(email);
       if (existingUser) {

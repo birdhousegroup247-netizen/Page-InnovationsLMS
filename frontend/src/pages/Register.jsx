@@ -13,6 +13,7 @@ import {
   secondaryButtonClass,
   formCardClass,
 } from '../utils/authForm';
+import TurnstileWidget from '../components/auth/TurnstileWidget';
 
 const COUNTRIES = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Nigeria',
@@ -48,6 +49,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -110,6 +112,7 @@ export default function Register() {
         email: formData.email,
         password: formData.password,
         role: formData.role,
+        turnstile_token: turnstileToken || undefined,
         phone: formData.phone || undefined,
         country: formData.country || undefined,
         experience_level: formData.experience_level || undefined,
@@ -534,6 +537,9 @@ export default function Register() {
                   </div>
                 )}
               </div>
+
+              {/* Bot check — renders only if VITE_TURNSTILE_SITE_KEY is set */}
+              <TurnstileWidget onToken={setTurnstileToken} theme={theme === 'dark' ? 'dark' : 'light'} />
 
               {/* Terms & Conditions */}
               <div className="pt-2">

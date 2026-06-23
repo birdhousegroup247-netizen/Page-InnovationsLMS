@@ -15,6 +15,7 @@ import {
   labelClass as fLabel,
   formCardClass,
 } from '../utils/authForm';
+import TurnstileWidget from '../components/auth/TurnstileWidget';
 
 const COUNTRIES = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Nigeria',
@@ -87,6 +88,7 @@ export default function InstructorApply() {
   const [stepError, setStepError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const cvInputRef = useRef(null);
   const credInputRef = useRef(null);
@@ -206,6 +208,7 @@ export default function InstructorApply() {
         portfolio_url: formData.portfolio_url || undefined,
         cv_url: formData.cv_url,
         credential_urls: formData.credential_urls,
+        turnstile_token: turnstileToken || undefined,
       });
       setSubmitted(true);
     } catch (err) {
@@ -621,6 +624,11 @@ export default function InstructorApply() {
                   <p><strong>Credentials:</strong> {formData.credential_urls.length} document{formData.credential_urls.length === 1 ? '' : 's'}</p>
                 </div>
               </div>
+
+              {/* Bot check — renders only if VITE_TURNSTILE_SITE_KEY is set */}
+              {!isAuthenticated && (
+                <TurnstileWidget onToken={setTurnstileToken} theme={theme === 'dark' ? 'dark' : 'light'} />
+              )}
 
               <label className="flex items-start gap-2 cursor-pointer pt-2">
                 <input

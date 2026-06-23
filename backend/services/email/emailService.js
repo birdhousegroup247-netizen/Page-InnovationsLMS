@@ -1,33 +1,94 @@
 /**
  * Email Service
- * Handles sending emails using Nodemailer
+ *
+ * Supports two transports:
+ *   1. Resend HTTP API (preferred) — set RESEND_API_KEY in env. Works
+ *      reliably from PaaS hosts where outbound SMTP is often blocked
+ *      (Railway, Render, Fly, etc.). This is what fixes the Namecheap
+ *      SMTP timeouts seen in production logs.
+ *   2. SMTP via Nodemailer (fallback) — uses EMAIL_HOST/PORT/USER/PASSWORD
+ *      when RESEND_API_KEY is unset. Kept so existing dev/test setups
+ *      keep working.
  */
 
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 const logger = require('../../utils/logger');
 
 class EmailService {
   constructor() {
-    // Create transporter
-    this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT),
-      secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    this.resendKey = process.env.RESEND_API_KEY || '';
+    this.from = process.env.EMAIL_FROM || `TekyPro LMS <${process.env.EMAIL_USER || 'noreply@tekypro.com'}>`;
 
-    this.from = process.env.EMAIL_FROM || `TekyPro LMS <${process.env.EMAIL_USER}>`;
+    if (this.resendKey) {
+      logger.info('[Email] Using Resend HTTP API transport');
+      this.transport = 'resend';
+    } else if (process.env.EMAIL_HOST) {
+      logger.info(`[Email] Using SMTP transport (${process.env.EMAIL_HOST}:${process.env.EMAIL_PORT})`);
+      this.transport = 'smtp';
+      this.transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+        // Don't hang the whole drip scheduler if the SMTP host is unreachable.
+        connectionTimeout: 10000,
+        socketTimeout: 15000,
+        greetingTimeout: 10000,
+      });
+    } else {
+      logger.warn('[Email] No transport configured (set RESEND_API_KEY or EMAIL_HOST). Emails will fail.');
+      this.transport = 'none';
+    }
   }
 
   /**
-   * Send email
-   * @param {Object} options - Email options
-   * @returns {Promise<Object>} Send result
+   * Send email via the active transport. Throws so the caller can decide
+   * whether to retry / log / swallow.
    */
   async sendEmail(options) {
+    if (this.transport === 'resend') {
+      return this._sendViaResend(options);
+    }
+    if (this.transport === 'smtp') {
+      return this._sendViaSmtp(options);
+    }
+    throw new Error('Email transport not configured (set RESEND_API_KEY or EMAIL_HOST)');
+  }
+
+  async _sendViaResend(options) {
+    try {
+      const res = await axios.post(
+        'https://api.resend.com/emails',
+        {
+          from: this.from,
+          to: Array.isArray(options.to) ? options.to : [options.to],
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.resendKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        }
+      );
+      const id = res.data?.id;
+      logger.info(`Email sent (Resend): ${id} to ${options.to}`);
+      return { success: true, messageId: id };
+    } catch (error) {
+      const detail = error.response?.data?.message || error.response?.data?.error || error.message;
+      logger.error(`Email send failed (Resend) to ${options.to}: ${detail}`);
+      throw new Error(`Failed to send email: ${detail}`);
+    }
+  }
+
+  async _sendViaSmtp(options) {
     try {
       const mailOptions = {
         from: this.from,
@@ -36,18 +97,12 @@ class EmailService {
         html: options.html,
         text: options.text,
       };
-
       const info = await this.transporter.sendMail(mailOptions);
-
-      logger.info(`Email sent: ${info.messageId} to ${options.to}`);
-
-      return {
-        success: true,
-        messageId: info.messageId,
-      };
+      logger.info(`Email sent (SMTP): ${info.messageId} to ${options.to}`);
+      return { success: true, messageId: info.messageId };
     } catch (error) {
-      logger.error('Email sending error:', error);
-      throw new Error('Failed to send email');
+      logger.error(`Email send failed (SMTP) to ${options.to}: ${error.message}`);
+      throw new Error(`Failed to send email: ${error.message}`);
     }
   }
 
