@@ -313,67 +313,66 @@ export default function InstructorApply() {
         {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-700" />}
       </button>
 
-      {/* Left editorial panel — theme-aware, instructor purple accent. */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-slate-50 dark:bg-[#0B1220] transition-colors">
-        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-purple/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-            color: 'rgba(0,0,0,0.6)',
-          }}
+      {/* Left editorial panel — purple-themed branded background (matches
+          the Login / Signup pattern). Real photo + brand gradient overlay
+          gives a clear half-and-half split in both themes. */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen">
+        <img
+          src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=2070&auto=format&fit=crop"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/92 via-fuchsia-700/85 to-brand-purple/92" />
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-fuchsia-400/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-cyan-400/15 blur-[120px]" />
 
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-gray-900 dark:text-white transition-colors">
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="TekyPro" className="h-9 w-auto dark:filter dark:brightness-0 dark:invert" />
-            <span className="text-xs uppercase tracking-[0.18em] text-gray-500 dark:text-white/40 font-semibold">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
+            <span className="text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">
               · Teach. Earn. Inspire.
             </span>
           </div>
 
           <div className="max-w-md">
-            <span className="inline-block text-xs uppercase tracking-[0.18em] text-brand-purple dark:text-fuchsia-300/80 font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-fuchsia-200 font-semibold mb-4">
               For expert practitioners
             </span>
-            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-gray-900 dark:text-white">
+            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-white">
               Share what<br />
               you know.<br />
-              <span className="text-brand-purple dark:text-fuchsia-400">Earn doing it.</span>
+              <span className="text-fuchsia-300">Earn doing it.</span>
             </h1>
-            <p className="text-base text-gray-600 dark:text-white/60 leading-relaxed mb-10 max-w-sm">
+            <p className="text-base text-white/80 leading-relaxed mb-10 max-w-sm">
               Turn your expertise into a real income stream. Reach global learners with our pro instructor tools.
             </p>
 
-            <div className="relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] backdrop-blur-sm p-5 shadow-sm dark:shadow-none">
-              <div className="absolute -top-2.5 left-5 text-brand-purple dark:text-fuchsia-400 text-3xl leading-none font-serif">"</div>
-              <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed pt-1">
+            <div className="relative rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-md p-5">
+              <div className="absolute -top-2.5 left-5 text-fuchsia-300 text-3xl leading-none font-serif">"</div>
+              <p className="text-sm text-white/90 leading-relaxed pt-1">
                 I made $14k in my first six months teaching Oracle on TekyPro. The drip tools and live sessions make it easy to scale.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-500 to-brand-purple flex items-center justify-center font-bold text-sm text-white">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-400 to-brand-purple flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
                   CN
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Chinedu N.</p>
-                  <p className="text-xs text-gray-500 dark:text-white/50">Oracle Specialist · Abuja</p>
+                  <p className="text-sm font-semibold text-white">Chinedu N.</p>
+                  <p className="text-xs text-white/60">Oracle Specialist · Abuja</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
+          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/15">
             {[
               { value: '70%', label: 'Revenue Share' },
               { value: '1k+', label: 'Instructors' },
               { value: '$2k+', label: 'Avg/Month' },
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{s.value}</p>
-                <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-white/40 font-semibold mt-0.5">{s.label}</p>
+                <p className="text-2xl font-bold text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/60 font-semibold mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>

@@ -189,69 +189,68 @@ export default function Register() {
         )}
       </button>
 
-      {/* Left editorial panel — theme-aware. Light mode: clean off-white
-          with brand-blue accents and dark text. Dark mode: deep navy with
-          glowing brand-blue/cyan accents and light text. */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen bg-slate-50 dark:bg-[#0B1220] transition-colors">
-        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-blue/15 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-cyan-500/10 blur-[120px]" />
-        <div
-          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.04]"
-          style={{
-            backgroundImage:
-              'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-            color: 'rgba(0,0,0,0.6)',
-          }}
+      {/* Left editorial panel — always branded (matches the Login page
+          treatment: real photo + brand gradient overlay). White text on
+          coloured background gives a clear half-and-half split in both
+          light and dark themes. */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden sticky top-0 h-screen">
+        <img
+          src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/90 via-brand-purple/85 to-brand-blue/90" />
+        {/* Subtle accent glows over the gradient */}
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-cyan-400/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-fuchsia-400/15 blur-[120px]" />
 
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-gray-900 dark:text-white transition-colors">
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="TekyPro" className="h-9 w-auto dark:filter dark:brightness-0 dark:invert" />
-            <span className="text-xs uppercase tracking-[0.18em] text-gray-500 dark:text-white/40 font-semibold">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
+            <span className="text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">
               · Learn. Build. Ship.
             </span>
           </div>
 
           <div className="max-w-md">
-            <span className="inline-block text-xs uppercase tracking-[0.18em] text-brand-blue dark:text-cyan-300/80 font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-cyan-200 font-semibold mb-4">
               For ambitious learners
             </span>
-            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-gray-900 dark:text-white">
+            <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-white">
               Real skills.<br />
               Real instructors.<br />
-              <span className="text-brand-blue dark:text-cyan-400">Real careers.</span>
+              <span className="text-cyan-300">Real careers.</span>
             </h1>
-            <p className="text-base text-gray-600 dark:text-white/60 leading-relaxed mb-10 max-w-sm">
+            <p className="text-base text-white/80 leading-relaxed mb-10 max-w-sm">
               Sign up free, preview every course, and pay only when you're ready to enroll.
             </p>
 
-            <div className="relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] backdrop-blur-sm p-5 shadow-sm dark:shadow-none">
-              <div className="absolute -top-2.5 left-5 text-brand-blue dark:text-cyan-400 text-3xl leading-none font-serif">"</div>
-              <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed pt-1">
+            <div className="relative rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-md p-5">
+              <div className="absolute -top-2.5 left-5 text-cyan-300 text-3xl leading-none font-serif">"</div>
+              <p className="text-sm text-white/90 leading-relaxed pt-1">
                 I went from junior to senior DBA in 8 months. The hands-on labs and live sessions made the difference.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-brand-blue flex items-center justify-center font-bold text-sm text-white">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-brand-blue flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
                   AO
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Adeola O.</p>
-                  <p className="text-xs text-gray-500 dark:text-white/50">Senior DBA · Lagos</p>
+                  <p className="text-sm font-semibold text-white">Adeola O.</p>
+                  <p className="text-xs text-white/60">Senior DBA · Lagos</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-200 dark:border-white/[0.08]">
+          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-white/15">
             {[
               { value: '10k+', label: 'Learners' },
               { value: '200+', label: 'Courses' },
               { value: '4.9★', label: 'Rating' },
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{s.value}</p>
-                <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-white/40 font-semibold mt-0.5">{s.label}</p>
+                <p className="text-2xl font-bold text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/60 font-semibold mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
