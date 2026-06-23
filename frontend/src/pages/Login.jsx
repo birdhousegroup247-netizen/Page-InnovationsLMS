@@ -193,7 +193,7 @@ export default function Login() {
 
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8 animate-fade-in">
             <img src={logo} alt="TekyPro" className="h-12 w-auto mx-auto" />
@@ -358,15 +358,24 @@ export default function Login() {
               Sign in with Google
             </button>
 
-            {/* Sign Up Link */}
-            <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6 transition-colors">
-              Don't have an account?{' '}
-              <Link
-                to="/signup"
-                className="text-brand-blue hover:text-brand-blue-light dark:hover:text-brand-blue-light font-semibold transition-colors"
-              >
-                Sign up here
-              </Link>
+            {/* Sign Up / Apply Link — role-aware. Instructors apply (with
+                documents), students sign up directly. */}
+            <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6">
+              {(typeof window !== 'undefined' && localStorage.getItem('selectedRole') === 'instructor') ? (
+                <>
+                  New to teaching on TekyPro?{' '}
+                  <Link to="/instructor-apply" className="text-brand-purple dark:text-purple-300 hover:underline font-semibold">
+                    Apply to teach
+                  </Link>
+                </>
+              ) : (
+                <>
+                  Don't have an account?{' '}
+                  <Link to="/signup" className="text-brand-blue dark:text-cyan-400 hover:underline font-semibold">
+                    Sign up
+                  </Link>
+                </>
+              )}
             </p>
           </div>
 

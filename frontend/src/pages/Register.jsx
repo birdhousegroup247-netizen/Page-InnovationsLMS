@@ -259,21 +259,18 @@ export default function Register() {
       </div>
 
       {/* Right side — form. lg:items-center vertically centers on tall
-          desktop viewports so the card doesn't jam against the top edge. */}
+          desktop viewports so the card doesn't jam against the top edge.
+          max-w-xl matches Login + InstructorApply for visual consistency. */}
       <div className="w-full lg:w-1/2 flex items-start lg:items-center justify-center px-4 sm:px-8 pt-20 pb-10 lg:py-12 overflow-y-auto">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl">
           {/* Mobile-only logo */}
           <div className="lg:hidden text-center mb-5 animate-fade-in">
             <img src={logo} alt="TekyPro" className="h-9 w-auto mx-auto" />
           </div>
 
           <div className={formCardClass}>
-            {/* Header — pill + tight headline */}
+            {/* Header */}
             <div className="mb-6">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 text-[11px] font-semibold mb-3">
-                <Sparkles className="w-3 h-3" />
-                Free signup — pay only when you enroll
-              </div>
               <h1 className="text-[1.5rem] sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
                 Create your account
               </h1>

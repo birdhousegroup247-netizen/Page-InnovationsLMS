@@ -265,7 +265,7 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   localStorage.setItem('selectedRole', 'student');
-                  navigate('/signup');
+                  navigate('/login');
                 }}
                 className="group relative text-left rounded-2xl p-[1.5px] bg-gradient-to-br from-brand-blue/40 via-cyan-400/20 to-transparent hover:from-brand-blue hover:via-cyan-400/60 hover:to-brand-blue/40 transition-all duration-500 shadow-xl shadow-brand-blue/5 hover:shadow-2xl hover:shadow-brand-blue/30 hover:-translate-y-1"
               >
@@ -322,7 +322,7 @@ export default function LandingPage() {
               <button
                 onClick={() => {
                   localStorage.setItem('selectedRole', 'instructor');
-                  navigate('/instructor-apply');
+                  navigate('/login');
                 }}
                 className="group relative text-left rounded-2xl p-[1.5px] bg-gradient-to-br from-brand-purple/40 via-fuchsia-400/20 to-transparent hover:from-brand-purple hover:via-fuchsia-400/60 hover:to-brand-purple/40 transition-all duration-500 shadow-xl shadow-brand-purple/5 hover:shadow-2xl hover:shadow-brand-purple/30 hover:-translate-y-1"
               >
