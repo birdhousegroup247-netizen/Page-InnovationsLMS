@@ -362,10 +362,12 @@ export const chatAPI = {
   getRoomByCourse: (courseId) => api.get(`/api/chat/rooms/course/${courseId}`),
   getRoomMembers: (roomId) => api.get(`/api/chat/rooms/${roomId}/members`),
   getRoomMessages: (roomId, params) => api.get(`/api/chat/rooms/${roomId}/messages`, { params }),
+  // Do NOT set Content-Type manually for FormData — axios computes it
+  // including the multipart boundary. Setting it by hand strips the
+  // boundary and downstream multer can't parse the request, which has
+  // been showing up as "Invalid or missing CSRF token" 400s on send.
   sendRoomMessage: (roomId, formData) =>
-    api.post(`/api/chat/rooms/${roomId}/messages`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+    api.post(`/api/chat/rooms/${roomId}/messages`, formData),
   getPendingRequests: (roomId) => api.get(`/api/chat/rooms/${roomId}/requests`),
   handleJoinRequest: (roomId, userId, action) => api.patch(`/api/chat/rooms/${roomId}/requests/${userId}`, { action }),
   removeMember: (roomId, userId) => api.delete(`/api/chat/rooms/${roomId}/members/${userId}`),
@@ -386,9 +388,7 @@ export const chatAPI = {
   getOrCreateConversation: (recipientId) => api.post('/api/chat/conversations', { recipientId }),
   getConversationMessages: (conversationId, params) => api.get(`/api/chat/conversations/${conversationId}/messages`, { params }),
   sendDirectMessage: (conversationId, formData) =>
-    api.post(`/api/chat/conversations/${conversationId}/messages`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+    api.post(`/api/chat/conversations/${conversationId}/messages`, formData),
   markConversationRead: (conversationId) => api.patch(`/api/chat/conversations/${conversationId}/read`),
 };
 
