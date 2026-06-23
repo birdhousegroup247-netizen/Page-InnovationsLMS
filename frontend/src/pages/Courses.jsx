@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { coursesAPI, categoriesAPI } from '../lib/api';
+import { coursesAPI, categoriesAPI, enrollmentsAPI } from '../lib/api';
 import {
   Search,
   Filter,
@@ -26,6 +26,9 @@ export default function Courses() {
 
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
+  // Set of course IDs the user is enrolled in — used to swap the
+  // "Enroll" CTA for "Continue learning" on cards they already own.
+  const [enrolledIds, setEnrolledIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -59,17 +62,29 @@ export default function Courses() {
       if (selectedCategory) params.category = selectedCategory;
       if (selectedLevel) params.level = selectedLevel;
 
-      const [coursesRes, categoriesRes] = await Promise.all([
+      const [coursesRes, categoriesRes, enrollmentsRes] = await Promise.all([
         coursesAPI.getAll(params),
         categoriesAPI.getAll(),
+        // Failures here shouldn't break the page — just means we won't
+        // know which cards are already enrolled, so they'll show "Enroll"
+        // by default. That's an OK fallback.
+        enrollmentsAPI.getMyCourses().catch(() => null),
       ]);
 
       // Safely access nested data with fallbacks
       const coursesData = coursesRes?.data?.data?.courses || coursesRes?.data?.courses || [];
       const categoriesData = categoriesRes?.data?.data?.categories || categoriesRes?.data?.categories || [];
+      const enrollmentsData = enrollmentsRes?.data?.data?.enrollments
+        || enrollmentsRes?.data?.data?.courses
+        || enrollmentsRes?.data?.enrollments
+        || [];
+      const ids = new Set(
+        enrollmentsData.map((e) => e.course_id ?? e.course?.id ?? e.id).filter(Boolean)
+      );
 
       setCourses(coursesData);
       setCategories(categoriesData);
+      setEnrolledIds(ids);
     } catch (err) {
       setCourses([]);
       setCategories([]);
@@ -307,6 +322,7 @@ export default function Courses() {
                   course={course}
                   viewMode={viewMode}
                   onEnroll={handleEnroll}
+                  isEnrolled={enrolledIds.has(course.id)}
                   delay={index * 0.05}
                 />
               ))}
@@ -318,7 +334,7 @@ export default function Courses() {
 }
 
 // Course Card Component
-function CourseCard({ course, viewMode, onEnroll, delay }) {
+function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
   // Guard against null/undefined course
   if (!course) {
     return null;
@@ -392,14 +408,22 @@ function CourseCard({ course, viewMode, onEnroll, delay }) {
                   View Details
                 </Button>
               </Link>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => onEnroll(course.id)}
-                className="flex-1"
-              >
-                Enroll Now
-              </Button>
+              {isEnrolled ? (
+                <Link to={`/courses/${course.id}/learn`} className="flex-1">
+                  <Button variant="primary" size="sm" fullWidth>
+                    Continue learning
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onEnroll(course.id)}
+                  className="flex-1"
+                >
+                  Enroll Now
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -464,14 +488,22 @@ function CourseCard({ course, viewMode, onEnroll, delay }) {
               Details
             </Button>
           </Link>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => onEnroll(course.id)}
-            className="flex-1"
-          >
-            Enroll
-          </Button>
+          {isEnrolled ? (
+            <Link to={`/courses/${course.id}/learn`} className="flex-1">
+              <Button variant="primary" size="sm" fullWidth>
+                Continue
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => onEnroll(course.id)}
+              className="flex-1"
+            >
+              Enroll
+            </Button>
+          )}
         </div>
       </div>
     </div>

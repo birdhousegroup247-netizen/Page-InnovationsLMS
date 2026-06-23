@@ -336,12 +336,16 @@ export const lessonQuestionsAPI = {
 
 // Announcements API
 export const announcementsAPI = {
+  // Backend mounts the announcements router at /api (not /api/announcements),
+  // so the per-course paths are /api/courses/:id/announcements and the
+  // by-id paths are /api/announcements/:id. The earlier "double-prefixed"
+  // URLs (/api/announcements/courses/.../announcements) all 404'd.
   getMyAnnouncements: () => api.get('/api/announcements/my'),
-  getCourseAnnouncements: (courseId, params) => api.get(`/api/announcements/courses/${courseId}/announcements`, { params }),
-  createAnnouncement: (courseId, data) => api.post(`/api/announcements/courses/${courseId}/announcements`, data),
-  getById: (announcementId) => api.get(`/api/announcements/announcements/${announcementId}`),
-  update: (announcementId, data) => api.put(`/api/announcements/announcements/${announcementId}`, data),
-  delete: (announcementId) => api.delete(`/api/announcements/announcements/${announcementId}`),
+  getCourseAnnouncements: (courseId, params) => api.get(`/api/courses/${courseId}/announcements`, { params }),
+  createAnnouncement: (courseId, data) => api.post(`/api/courses/${courseId}/announcements`, data),
+  getById: (announcementId) => api.get(`/api/announcements/${announcementId}`),
+  update: (announcementId, data) => api.put(`/api/announcements/${announcementId}`, data),
+  delete: (announcementId) => api.delete(`/api/announcements/${announcementId}`),
 };
 
 // Chat API (course rooms + direct messages)

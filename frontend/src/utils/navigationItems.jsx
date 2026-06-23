@@ -86,6 +86,11 @@ export const getNavigationItems = (role = 'student') => {
       icon: <CreditCard className="w-5 h-5" />,
     },
     {
+      label: 'Announcements',
+      path: '/announcements',
+      icon: <Megaphone className="w-5 h-5" />,
+    },
+    {
       label: 'Knowledge Base',
       path: '/knowledge',
       icon: <Library className="w-5 h-5" />,

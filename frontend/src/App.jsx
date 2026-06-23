@@ -108,6 +108,7 @@ const Checkout = lazyWithReload(() => import('./pages/Checkout'));
 const PaymentSuccess = lazyWithReload(() => import('./pages/PaymentSuccess'));
 const PaymentCancelled = lazyWithReload(() => import('./pages/PaymentCancelled'));
 const Billing = lazyWithReload(() => import('./pages/Billing'));
+const Announcements = lazyWithReload(() => import('./pages/Announcements'));
 
 const KnowledgeBase = lazyWithReload(() => import('./pages/KnowledgeBase'));
 const CertificateVerify = lazyWithReload(() => import('./pages/CertificateVerify'));
@@ -704,6 +705,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Billing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/announcements"
+            element={
+              <ProtectedRoute>
+                <Announcements />
               </ProtectedRoute>
             }
           />

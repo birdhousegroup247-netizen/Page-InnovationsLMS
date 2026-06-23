@@ -136,20 +136,15 @@ export default function CreateCourse() {
   const validateForm = () => {
     const errors = {};
 
-    // Title validation
+    // Title — required only. Length caps removed per product call:
+    // instructors should be able to write what they want.
     if (!formData.title.trim()) {
       errors.title = 'Course title is required';
-    } else if (formData.title.trim().length < 5) {
-      errors.title = 'Title must be at least 5 characters';
-    } else if (formData.title.trim().length > 255) {
-      errors.title = 'Title must not exceed 255 characters';
     }
 
-    // Description validation
+    // Description — required only. No min/max length.
     if (!formData.description.trim()) {
       errors.description = 'Course description is required';
-    } else if (formData.description.trim().length < 20) {
-      errors.description = 'Description must be at least 20 characters';
     }
 
     // Category validation
