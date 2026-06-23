@@ -46,6 +46,7 @@ router.delete('/modules/:moduleId', authenticate, ModuleController.deleteModule)
 router.get('/modules/:moduleId/contents', optionalAuthenticate, ContentController.getModuleContents);
 router.get('/contents/:contentId', optionalAuthenticate, ContentController.getContentById);
 router.post('/modules/:moduleId/contents', authenticate, authorize('instructor', 'admin', 'super_admin'), ContentController.createContent);
+router.put('/modules/:moduleId/contents/reorder', authenticate, authorize('instructor', 'admin', 'super_admin'), ContentController.reorderContents);
 router.put('/contents/:contentId', authenticate, ContentController.updateContent);
 router.delete('/contents/:contentId', authenticate, ContentController.deleteContent);
 

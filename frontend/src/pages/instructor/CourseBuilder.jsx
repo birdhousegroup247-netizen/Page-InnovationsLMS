@@ -49,6 +49,11 @@ export default function CourseBuilder() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedContent, setSelectedContent] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Read-only "watch what students see" preview drawer.
+  const [previewContent, setPreviewContent] = useState(null);
+  // Drag-and-drop state for lesson reordering. Tracks the row being
+  // dragged so we know what to move on drop.
+  const [dragLesson, setDragLesson] = useState(null);
 
   // Forms
   const [moduleForm, setModuleForm] = useState({ title: '', description: '' });
@@ -353,6 +358,50 @@ export default function CourseBuilder() {
     }
   };
 
+  /**
+   * Lesson drag-and-drop reorder. Native HTML5 DnD — no external lib.
+   * On drop, recompute order_indexes for the whole module and POST a
+   * single batch reorder call.
+   */
+  const handleLessonDrop = async (moduleId, droppedOnContentId) => {
+    if (!dragLesson || dragLesson.module_id !== moduleId) {
+      setDragLesson(null);
+      return;
+    }
+    if (dragLesson.id === droppedOnContentId) {
+      setDragLesson(null);
+      return;
+    }
+    const module = modules.find((m) => m.id === moduleId);
+    if (!module?.contents) return;
+
+    const fromIdx = module.contents.findIndex((c) => c.id === dragLesson.id);
+    const toIdx = module.contents.findIndex((c) => c.id === droppedOnContentId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const next = [...module.contents];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+
+    // Optimistic UI update first.
+    const optimistic = next.map((c, i) => ({ ...c, order_index: i + 1 }));
+    setModules((prev) =>
+      prev.map((m) => (m.id === moduleId ? { ...m, contents: optimistic } : m))
+    );
+    setDragLesson(null);
+
+    try {
+      await contentsAPI.reorder(
+        moduleId,
+        optimistic.map((c) => ({ id: c.id, order_index: c.order_index }))
+      );
+    } catch (error) {
+      console.error('Reorder failed:', error);
+      showToast('Failed to reorder lessons', 'error');
+      fetchCourseData(); // re-sync on failure
+    }
+  };
+
   // Calculate course stats
   const getCourseStats = () => {
     const totalLessons = modules.reduce((acc, mod) => acc + (mod.contents?.length || 0), 0);
@@ -572,58 +621,81 @@ export default function CourseBuilder() {
                   <div className="p-4">
                     {module.contents && module.contents.length > 0 ? (
                       <div className="space-y-2 mb-4">
-                        {module.contents.map((content, contentIdx) => (
-                          <div
-                            key={content.id}
-                            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg"
-                          >
-                            <GripVertical className="w-4 h-4 text-gray-400" />
+                        {module.contents.map((content) => {
+                          const isDragging = dragLesson?.id === content.id;
+                          return (
+                            <div
+                              key={content.id}
+                              draggable
+                              onDragStart={() => setDragLesson({ id: content.id, module_id: module.id })}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                handleLessonDrop(module.id, content.id);
+                              }}
+                              onDragEnd={() => setDragLesson(null)}
+                              onClick={(e) => {
+                                // Don't open preview when clicking action buttons inside the row.
+                                if (e.target.closest('button')) return;
+                                setPreviewContent(content);
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              className={cn(
+                                'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all',
+                                'bg-gray-50 dark:bg-dark-700 hover:bg-brand-blue/5 dark:hover:bg-brand-blue/10',
+                                'hover:border-brand-blue/30 border border-transparent',
+                                isDragging && 'opacity-40'
+                              )}
+                            >
+                              <GripVertical className="w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing" />
 
-                            {content.content_type === 'video' && <Video className="w-4 h-4 text-blue-500" />}
-                            {content.content_type === 'document' && <File className="w-4 h-4 text-green-500" />}
-                            {content.content_type === 'article' && <FileText className="w-4 h-4 text-purple-500" />}
+                              {content.content_type === 'video' && <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                              {content.content_type === 'document' && <File className="w-4 h-4 text-green-500 flex-shrink-0" />}
+                              {content.content_type === 'article' && <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />}
 
-                            <div className="flex-1">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate">
+                                    {content.title}
+                                  </span>
+                                  {content.is_preview && <Badge variant="success" size="sm">Preview</Badge>}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-text-dark-secondary mt-1">
+                                  <span className="capitalize">{content.content_type}</span>
+                                  {content.duration_minutes > 0 && (
+                                    <>
+                                      <span>•</span>
+                                      <span>{content.duration_minutes} min</span>
+                                    </>
+                                  )}
+                                  <span>•</span>
+                                  <span className="text-brand-blue dark:text-cyan-400 font-medium">Click to preview</span>
+                                </div>
+                              </div>
+
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900 dark:text-text-dark-primary">
-                                  {content.title}
-                                </span>
-                                {content.is_preview && (
-                                  <Badge variant="success" size="sm">Preview</Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-text-dark-secondary mt-1">
-                                <span className="capitalize">{content.content_type}</span>
-                                {content.duration_minutes > 0 && (
-                                  <>
-                                    <span>•</span>
-                                    <span>{content.duration_minutes} min</span>
-                                  </>
-                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => { e.stopPropagation(); handleEditContent(module, content); }}
+                                  title="Edit lesson"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteContent(content); }}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Delete lesson"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
-
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditContent(module, content)}
-                                title="Edit Lesson"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteContent(content)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                title="Delete Lesson"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-gray-500 dark:text-text-dark-secondary mb-4">
@@ -981,6 +1053,95 @@ export default function CourseBuilder() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Lesson Preview — opened by clicking a lesson row */}
+      <Modal
+        isOpen={!!previewContent}
+        onClose={() => setPreviewContent(null)}
+        title={previewContent?.title || 'Lesson preview'}
+        size="lg"
+      >
+        {previewContent && (
+          <div className="space-y-4">
+            {previewContent.description && (
+              <p className="text-sm text-gray-600 dark:text-text-dark-secondary">
+                {previewContent.description}
+              </p>
+            )}
+
+            {previewContent.content_type === 'video' && (
+              previewContent.youtube_video_id ? (
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${previewContent.youtube_video_id}`}
+                    title={previewContent.title}
+                    className="absolute inset-0 w-full h-full rounded-lg"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : previewContent.youtube_url ? (
+                <a href={previewContent.youtube_url} target="_blank" rel="noreferrer"
+                  className="block p-4 bg-gray-50 dark:bg-dark-700 rounded-lg text-brand-blue underline">
+                  Open video in new tab
+                </a>
+              ) : (
+                <p className="text-sm text-gray-500">No video URL set for this lesson.</p>
+              )
+            )}
+
+            {previewContent.content_type === 'document' && (
+              previewContent.document_url ? (
+                <div className="space-y-2">
+                  <iframe
+                    src={previewContent.document_url}
+                    title={previewContent.title}
+                    className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-border-dark"
+                  />
+                  <a href={previewContent.document_url} target="_blank" rel="noreferrer"
+                    className="text-sm text-brand-blue underline">
+                    Open document in new tab
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No document uploaded for this lesson.</p>
+              )
+            )}
+
+            {previewContent.content_type === 'article' && (
+              previewContent.article_content ? (
+                <div
+                  className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-dark-700 rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: previewContent.article_content }}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">No article content set for this lesson.</p>
+              )
+            )}
+
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-border-dark">
+              <span className="text-xs text-gray-500 dark:text-text-dark-secondary capitalize">
+                {previewContent.content_type}
+                {previewContent.duration_minutes > 0 && ` · ${previewContent.duration_minutes} min`}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const mod = modules.find((m) => m.contents?.some((c) => c.id === previewContent.id));
+                    setPreviewContent(null);
+                    if (mod) handleEditContent(mod, previewContent);
+                  }}
+                >
+                  Edit lesson
+                </Button>
+                <Button size="sm" onClick={() => setPreviewContent(null)}>Close</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );

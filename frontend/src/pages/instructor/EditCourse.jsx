@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import { Button, Alert, Spinner } from '../../components/ui';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 
 export default function EditCourse() {
   const navigate = useNavigate();
@@ -491,49 +492,27 @@ export default function EditCourse() {
                 Course Thumbnail
               </label>
 
-              {thumbnailPreview ? (
-                <div className="relative">
-                  <img
-                    src={thumbnailPreview}
-                    alt="Thumbnail preview"
-                    className="w-full h-64 object-cover rounded-lg border border-gray-300 dark:border-border-dark transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeThumbnail}
-                    className="absolute top-2 right-2 p-2 bg-gray-900/80 hover:bg-gray-900 dark:bg-dark-900/80 dark:hover:bg-dark-900 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-white" />
-                  </button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 dark:border-border-dark rounded-lg p-8 text-center hover:border-brand-blue dark:hover:border-brand-blue transition-colors">
-                  <input
-                    id="thumbnail"
-                    name="thumbnail"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailChange}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="thumbnail"
-                    className="cursor-pointer flex flex-col items-center gap-3"
-                  >
-                    <div className="p-3 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-lg">
-                      <ImageIcon className="w-8 h-8 text-brand-blue" />
-                    </div>
-                    <div>
-                      <p className="text-gray-900 dark:text-text-dark-primary font-medium mb-1 transition-colors">
-                        Click to upload thumbnail
-                      </p>
-                      <p className="text-gray-500 dark:text-text-dark-muted text-sm transition-colors">
-                        PNG, JPG up to 5MB (Recommended: 1200x675px)
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              )}
+              {/* CloudinaryUpload uploads to Cloudinary and stores the
+                  resulting URL. Previous flow stored a base64 data-URL
+                  in formData.thumbnail which the backend silently
+                  rejected (and emitted no error toast either), so saves
+                  appeared to do "nothing". Now identical to CreateCourse. */}
+              <CloudinaryUpload
+                onUploadSuccess={(url) => {
+                  setFormData((prev) => ({ ...prev, thumbnail: url || '' }));
+                  setThumbnailPreview(url || null);
+                  if (validationErrors.thumbnail) {
+                    setValidationErrors((prev) => ({ ...prev, thumbnail: '' }));
+                  }
+                }}
+                onUploadError={(err) =>
+                  setValidationErrors((prev) => ({ ...prev, thumbnail: err || 'Upload failed' }))
+                }
+                acceptedTypes="image"
+                maxSizeMB={5}
+                currentFile={thumbnailPreview}
+                folder="tekyprolms/courses"
+              />
 
               {validationErrors.thumbnail && (
                 <p className="text-red-600 dark:text-red-400 text-xs mt-1 transition-colors">{validationErrors.thumbnail}</p>

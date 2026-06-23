@@ -276,6 +276,10 @@ export const contentsAPI = {
   create: (moduleId, data) => api.post(`/api/courses/modules/${moduleId}/contents`, data),
   update: (contentId, data) => api.put(`/api/courses/contents/${contentId}`, data),
   delete: (contentId) => api.delete(`/api/courses/contents/${contentId}`),
+  // Batch reorder: send an array of { id, order_index }. Server applies
+  // them all in one transaction and returns the new ordered list.
+  reorder: (moduleId, order) =>
+    api.put(`/api/courses/modules/${moduleId}/contents/reorder`, { order }),
 };
 
 // Profile API

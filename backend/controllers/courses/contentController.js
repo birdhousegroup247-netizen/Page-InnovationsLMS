@@ -1,6 +1,6 @@
 const { ModuleContent, CourseModule, Course, Enrollment } = require('../../models');
 const ApiResponse = require('../../utils/response');
-const { NotFoundError, ForbiddenError } = require('../../utils/errors');
+const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
 
 // Returns true if the user can access non-preview content for the given course
 async function _hasAccess(user, courseId) {
@@ -156,6 +156,60 @@ class ContentController {
       await content.destroy();
 
       return ApiResponse.success(res, null, 'Content deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/courses/modules/:moduleId/contents/reorder
+   * Body: { order: [{ id, order_index }, ...] }
+   * Applies all order_index updates inside a single transaction.
+   */
+  static async reorderContents(req, res, next) {
+    try {
+      const { moduleId } = req.params;
+      const { order = [] } = req.body || {};
+
+      if (!Array.isArray(order) || order.length === 0) {
+        throw new BadRequestError('order must be a non-empty array of { id, order_index }');
+      }
+
+      // Verify the module belongs to a course the user owns / can admin.
+      const moduleRow = await CourseModule.findByPk(moduleId, {
+        include: [{ model: Course, as: 'course' }],
+      });
+      if (!moduleRow) throw new NotFoundError('Module not found');
+      if (
+        moduleRow.course.instructor_id !== req.user.id &&
+        !['admin', 'super_admin'].includes(req.user.role)
+      ) {
+        throw new ForbiddenError('You can only reorder lessons in your own course');
+      }
+
+      // Sanity: every id must belong to this module so a malicious
+      // payload can't reach across modules.
+      const ids = order.map((o) => o.id).filter(Boolean);
+      const owned = await ModuleContent.findAll({
+        where: { id: ids, module_id: moduleId },
+        attributes: ['id'],
+      });
+      if (owned.length !== ids.length) {
+        throw new ForbiddenError('One or more lessons do not belong to this module');
+      }
+
+      await Promise.all(
+        order.map(({ id, order_index }) =>
+          ModuleContent.update({ order_index }, { where: { id, module_id: moduleId } })
+        )
+      );
+
+      const updated = await ModuleContent.findAll({
+        where: { module_id: moduleId },
+        order: [['order_index', 'ASC']],
+      });
+
+      return ApiResponse.success(res, { contents: updated }, 'Lessons reordered');
     } catch (error) {
       next(error);
     }
