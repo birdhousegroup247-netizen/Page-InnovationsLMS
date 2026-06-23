@@ -26,6 +26,7 @@ const withAttachment = (handler) => (req, res, next) => {
 // ============================================================================
 router.get('/admin/rooms', authorize('admin', 'super_admin'), ChatController.adminGetAllRooms);
 router.get('/admin/rooms/:roomId/messages', authorize('admin', 'super_admin'), ChatController.adminGetRoomMessages);
+router.get('/admin/reports', authorize('admin', 'super_admin'), ChatController.adminGetReports);
 
 // ============================================================================
 // MUTE

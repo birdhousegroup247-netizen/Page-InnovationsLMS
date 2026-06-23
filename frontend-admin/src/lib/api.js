@@ -352,6 +352,14 @@ export const chatAPI = {
   // Room moderation
   adminGetRooms: (params) => api.get('/api/chat/admin/rooms', { params }),
   adminGetRoomMessages: (roomId) => api.get(`/api/chat/admin/rooms/${roomId}/messages`),
+  // Pending moderation reports (every muted ChatRoomMember).
+  adminGetReports: () => api.get('/api/chat/admin/reports'),
+  // Admin resolves a report by unmuting the user.
+  adminResolveReport: (roomId, userId) =>
+    api.patch(`/api/chat/rooms/${roomId}/members/${userId}/mute`, { unmute: true }),
+  // Or escalates by removing the user from the room entirely.
+  adminRemoveMember: (roomId, userId) =>
+    api.delete(`/api/chat/rooms/${roomId}/members/${userId}`),
   toggleRoom: (roomId) => api.patch(`/api/chat/rooms/${roomId}/toggle`),
   deleteMessage: (msgId) => api.delete(`/api/chat/messages/${msgId}`),
   // Support DMs

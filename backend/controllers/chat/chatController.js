@@ -1155,6 +1155,64 @@ class ChatController {
       next(error);
     }
   }
+
+  /**
+   * GET /api/chat/admin/reports
+   * Pending chat-moderation queue. Every ChatRoomMember row with
+   * muted_at set, hydrated with the muted user, course, and the
+   * instructor who reported them.
+   */
+  static async adminGetReports(req, res, next) {
+    try {
+      if (!['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('Admin access required');
+      }
+
+      const rows = await ChatRoomMember.findAll({
+        where: { muted_at: { [Op.ne]: null } },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'full_name', 'email', 'profile_picture'],
+          },
+          {
+            model: ChatRoom,
+            as: 'room',
+            attributes: ['id', 'course_id'],
+            include: [
+              { model: Course, as: 'course', attributes: ['id', 'title', 'instructor_id'] },
+            ],
+          },
+        ],
+        order: [['muted_at', 'DESC']],
+      });
+
+      const reporterIds = [...new Set(rows.map((r) => r.muted_by).filter(Boolean))];
+      const reporters = reporterIds.length
+        ? await User.findAll({
+            where: { id: { [Op.in]: reporterIds } },
+            attributes: ['id', 'full_name', 'role'],
+          })
+        : [];
+      const reporterById = Object.fromEntries(reporters.map((u) => [u.id, u]));
+
+      const reports = rows.map((m) => ({
+        id: m.id,
+        room_id: m.room_id,
+        user_id: m.user_id,
+        muted_at: m.muted_at,
+        muted_by: m.muted_by,
+        reporter: m.muted_by ? reporterById[m.muted_by] || null : null,
+        user: m.user,
+        course: m.room?.course || null,
+      }));
+
+      return ApiResponse.success(res, { reports }, 'Reports retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = ChatController;

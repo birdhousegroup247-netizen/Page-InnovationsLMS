@@ -14,6 +14,7 @@ import { cn } from '../../utils/cn';
 import {
   MessageSquare, Users, Trash2, ChevronLeft, RefreshCw,
   CheckCircle, ShieldCheck, Send, Search, Plus, X, Mail,
+  Flag, UserMinus, BookOpen, Clock,
 } from 'lucide-react';
 
 function formatDate(d) {
@@ -663,6 +664,173 @@ function SupportInbox() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+// ─── Reports tab ──────────────────────────────────────────────────────────────
+
+function Reports() {
+  const { showToast } = useToast();
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(null); // memberId being acted on
+
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const r = await chatAPI.adminGetReports();
+      setReports(r.data?.data?.reports || []);
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to load reports', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchReports(); }, []);
+
+  const handleResolve = async (report) => {
+    setBusy(report.id);
+    try {
+      await chatAPI.adminResolveReport(report.room_id, report.user_id);
+      setReports((prev) => prev.filter((r) => r.id !== report.id));
+      showToast('Report resolved — member unmuted', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to resolve', 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleEscalate = async (report) => {
+    if (!window.confirm(`Remove ${report.user?.full_name || 'this member'} from the room? They can rejoin if still enrolled.`)) return;
+    setBusy(report.id);
+    try {
+      await chatAPI.adminRemoveMember(report.room_id, report.user_id);
+      setReports((prev) => prev.filter((r) => r.id !== report.id));
+      showToast('Member removed from the room', 'success');
+    } catch (e) {
+      showToast(e.response?.data?.message || 'Failed to remove', 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (loading) {
+    return <div className="py-20 flex justify-center"><Spinner size="lg" /></div>;
+  }
+
+  if (reports.length === 0) {
+    return (
+      <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 p-10 text-center">
+        <Flag className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+        <p className="text-gray-700 dark:text-gray-200 font-medium">No pending reports</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+          When an instructor reports a member, the case will appear here for review.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {reports.length} pending {reports.length === 1 ? 'report' : 'reports'} from instructors
+        </p>
+        <Button variant="outline" size="sm" onClick={fetchReports} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          Refresh
+        </Button>
+      </div>
+
+      {reports.map((r) => {
+        const isBusy = busy === r.id;
+        return (
+          <div
+            key={r.id}
+            className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 p-5"
+          >
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              {r.user?.profile_picture ? (
+                <img
+                  src={r.user.profile_picture}
+                  alt={r.user.full_name}
+                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-bold flex-shrink-0">
+                  {(r.user?.full_name || '?').slice(0, 2).toUpperCase()}
+                </div>
+              )}
+
+              {/* Body */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {r.user?.full_name || `User #${r.user_id}`}
+                  </p>
+                  <Badge variant="danger">Muted</Badge>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  {r.user?.email}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 p-3 bg-gray-50 dark:bg-dark-700/50 rounded-lg">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-0.5">
+                      Course
+                    </p>
+                    <p className="text-sm text-gray-900 dark:text-white flex items-center gap-1.5 truncate">
+                      <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
+                      {r.course?.title || 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-0.5">
+                      Reported by
+                    </p>
+                    <p className="text-sm text-gray-900 dark:text-white truncate">
+                      {r.reporter?.full_name || 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-0.5">
+                      When
+                    </p>
+                    <p className="text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                      {r.muted_at ? new Date(r.muted_at).toLocaleString() : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => handleResolve(r)}
+                    isLoading={isBusy}
+                    leftIcon={<CheckCircle className="w-4 h-4" />}
+                  >
+                    Resolve & Unmute
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => handleEscalate(r)}
+                    isLoading={isBusy}
+                    leftIcon={<UserMinus className="w-4 h-4" />}
+                  >
+                    Remove from room
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatModeration() {
   const [tab, setTab] = useState('rooms');
 
@@ -671,21 +839,22 @@ export default function ChatModeration() {
       <PageHeader
         icon={ShieldCheck}
         title="Chat Moderation"
-        subtitle="Monitor rooms · Moderate messages · Support users"
+        subtitle="Monitor rooms · Moderate messages · Review reports · Support users"
       />
 
       <Container className="py-8">
         {/* Tabs */}
-        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-dark-700 rounded-xl w-fit mb-8">
+        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-dark-700 rounded-xl w-fit mb-8 overflow-x-auto">
           {[
             { id: 'rooms', label: 'Chat Rooms', icon: MessageSquare },
+            { id: 'reports', label: 'Reports', icon: Flag },
             { id: 'inbox', label: 'Support Inbox', icon: Mail },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
                 tab === id
                   ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -698,6 +867,7 @@ export default function ChatModeration() {
         </div>
 
         {tab === 'rooms' && <RoomModeration />}
+        {tab === 'reports' && <Reports />}
         {tab === 'inbox' && <SupportInbox />}
       </Container>
     </>
