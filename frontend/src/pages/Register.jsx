@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const COUNTRIES = [
@@ -38,6 +38,7 @@ export default function Register() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOptional, setShowOptional] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -237,26 +238,26 @@ export default function Register() {
       </div>
 
       {/* Right Side - Registration Form */}
-      <div className="w-full lg:w-1/2 flex items-start justify-center p-4 sm:p-8 py-8 overflow-y-auto">
+      <div className="w-full lg:w-1/2 flex items-start justify-center px-4 sm:px-8 pt-6 pb-10 lg:py-12 overflow-y-auto">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden text-center mb-8 animate-fade-in">
-            <img src={logo} alt="TekyPro" className="h-12 w-auto mx-auto" />
+          {/* Mobile Logo — smaller, tighter so the form is what users see */}
+          <div className="lg:hidden text-center mb-5 animate-fade-in">
+            <img src={logo} alt="TekyPro" className="h-9 w-auto mx-auto" />
           </div>
 
           {/* Form Card */}
-          <div className="relative bg-white dark:bg-dark-800 rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-6 sm:p-8 animate-scale-in transition-colors">
-            {/* Header */}
-            <div className="mb-7">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 text-xs font-semibold mb-3">
-                <Sparkles className="w-3.5 h-3.5" />
+          <div className="relative bg-white dark:bg-dark-800 rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/40 dark:shadow-black/30 border border-gray-100 dark:border-gray-800 p-5 sm:p-8 animate-scale-in transition-colors">
+            {/* Header — pill + tight headline */}
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-blue/10 text-brand-blue dark:text-cyan-400 text-[11px] font-semibold mb-3">
+                <Sparkles className="w-3 h-3" />
                 Free forever — no credit card
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-[1.5rem] sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
                 Create your account
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
-                Sign up in under a minute and start learning today.
+                Just the essentials — extras are optional.
               </p>
             </div>
 
@@ -276,13 +277,6 @@ export default function Register() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Section: Your details */}
-              <div className="flex items-center gap-2 -mb-1">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Your details</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
-              </div>
-
               {/* Full Name */}
               <div>
                 <label htmlFor="full_name" className={labelClass}>
@@ -331,121 +325,6 @@ export default function Register() {
                 {validationErrors.email && (
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1">{validationErrors.email}</p>
                 )}
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label htmlFor="phone" className={labelClass}>
-                  Phone Number <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional)</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Phone className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
-                  </div>
-                  <input
-                    id="phone"
-                    type="tel"
-                    name="phone"
-                    placeholder="+1 (555) 000-0000"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-
-              {/* Country + Experience Level side by side */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Country */}
-                <div>
-                  <label htmlFor="country" className={labelClass}>
-                    Country
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Globe className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
-                    </div>
-                    <select
-                      id="country"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      className={selectClass}
-                    >
-                      <option value="">Select...</option>
-                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Experience Level */}
-                <div>
-                  <label htmlFor="experience_level" className={labelClass}>
-                    Experience
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <BarChart3 className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
-                    </div>
-                    <select
-                      id="experience_level"
-                      name="experience_level"
-                      value={formData.experience_level}
-                      onChange={handleChange}
-                      className={selectClass}
-                    >
-                      <option value="">Select...</option>
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Referral Source */}
-              <div>
-                <label htmlFor="referral_source" className={labelClass}>
-                  How did you hear about us?
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Sparkles className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
-                  </div>
-                  <select
-                    id="referral_source"
-                    name="referral_source"
-                    value={formData.referral_source}
-                    onChange={handleChange}
-                    className={selectClass}
-                  >
-                    <option value="">Select...</option>
-                    <option value="google">Google Search</option>
-                    <option value="youtube">YouTube</option>
-                    <option value="social_media">Social Media</option>
-                    <option value="friend">Friend / Colleague</option>
-                    <option value="whatsapp">WhatsApp Group</option>
-                    <option value="other">Other</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section: Account security */}
-              <div className="flex items-center gap-2 pt-2 -mb-1">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Account security
-                </span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent" />
               </div>
 
               {/* Password */}
@@ -535,6 +414,102 @@ export default function Register() {
                 </div>
                 {validationErrors.confirmPassword && (
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1.5">{validationErrors.confirmPassword}</p>
+                )}
+              </div>
+
+              {/* Optional details — collapsed by default so the required path
+                  feels short. Tap to reveal phone/country/experience/referral. */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowOptional((v) => !v)}
+                  className="w-full flex items-center justify-between text-left py-2 group"
+                >
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
+                    Tell us about you
+                    <span className="text-gray-400 dark:text-gray-500 font-normal normal-case">(optional)</span>
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showOptional ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showOptional && (
+                  <div className="space-y-4 pt-3 animate-fade-in">
+                    {/* Phone */}
+                    <div>
+                      <label htmlFor="phone" className={labelClass}>Phone Number</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <Phone className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
+                        </div>
+                        <input
+                          id="phone"
+                          type="tel"
+                          name="phone"
+                          placeholder="+1 (555) 000-0000"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="country" className={labelClass}>Country</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <Globe className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
+                          </div>
+                          <select id="country" name="country" value={formData.country} onChange={handleChange} className={selectClass}>
+                            <option value="">Select...</option>
+                            {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="experience_level" className={labelClass}>Experience</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <BarChart3 className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
+                          </div>
+                          <select id="experience_level" name="experience_level" value={formData.experience_level} onChange={handleChange} className={selectClass}>
+                            <option value="">Select...</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="referral_source" className={labelClass}>How did you hear about us?</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                          <Sparkles className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
+                        </div>
+                        <select id="referral_source" name="referral_source" value={formData.referral_source} onChange={handleChange} className={selectClass}>
+                          <option value="">Select...</option>
+                          <option value="google">Google Search</option>
+                          <option value="youtube">YouTube</option>
+                          <option value="social_media">Social Media</option>
+                          <option value="friend">Friend / Colleague</option>
+                          <option value="whatsapp">WhatsApp Group</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
