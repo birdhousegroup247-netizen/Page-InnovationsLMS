@@ -223,6 +223,11 @@ export const assignedTestsAPI = {
   assignTestToStudents: (testId, data) => api.post(`/api/assigned-tests/${testId}/assign`, data),
   getTestResults: (testId, params) => api.get(`/api/assigned-tests/${testId}/results`, { params }),
   getTestAttempts: (testId, params) => api.get(`/api/assigned-tests/${testId}/attempts`, { params }),
+  // Quick lifecycle actions from the My Tests row.
+  // publishTest takes { assign_to: 'all' | 'selected', student_ids?, due_date? }.
+  // archiveTest is a no-body PATCH.
+  publishTest: (testId, data) => api.patch(`/api/assigned-tests/${testId}/publish`, data || {}),
+  archiveTest: (testId) => api.patch(`/api/assigned-tests/${testId}/archive`),
 };
 
 // Questions API (for practice test generation & instructor contributions)

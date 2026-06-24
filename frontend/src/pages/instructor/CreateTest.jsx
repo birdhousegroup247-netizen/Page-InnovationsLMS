@@ -388,7 +388,11 @@ export default function CreateTest() {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = async () => {
+  // handleSubmit takes a target status — 'draft' parks the test in
+  // My Tests under Drafts (no student assignments fired, instructor
+  // can iterate later and Publish from EditTest); 'published' goes
+  // through the full flow including student assignments.
+  const handleSubmit = async (status = 'published') => {
     if (!validateStep()) return;
 
     setSubmitting(true);
@@ -419,32 +423,38 @@ export default function CreateTest() {
         show_results_immediately: !!testData.show_results_immediately,
         show_correct_answers: !!testData.show_correct_answers,
         show_explanations: !!testData.show_explanations,
-        // Publish straight away so Step 3 (assignment) doesn't bounce
-        // with "Only published tests can be assigned". The backend
-        // accepts status on create.
-        status: 'published',
+        status,
       };
 
       const createResponse = await assignedTestsAPI.createTest(testPayload);
       const testId = createResponse.data.data.test.id;
 
-      // Step 2: Add questions to the test
-      const questionsPayload = {
-        question_ids: selectedQuestions.map((q) => q.id),
-      };
-      await assignedTestsAPI.addQuestionsToTest(testId, questionsPayload);
+      // Step 2: Add questions to the test (works for drafts too —
+      // questions are part of the test, not the assignment).
+      if (selectedQuestions.length > 0) {
+        await assignedTestsAPI.addQuestionsToTest(testId, {
+          question_ids: selectedQuestions.map((q) => q.id),
+        });
+      }
 
-      // Step 3: Assign test to students. Backend's assign endpoint
-      // takes due_date directly (matches our state name).
-      const assignPayload = {
-        student_ids: selectedStudents,
-        due_date: testData.due_date,
-      };
-      await assignedTestsAPI.assignTestToStudents(testId, assignPayload);
+      // Step 3: Assign to students — only when publishing. Drafts
+      // skip this step on purpose: the backend's assign endpoint
+      // requires status === 'published' and we don't want to ping
+      // students about a draft anyway.
+      if (status === 'published' && selectedStudents.length > 0) {
+        await assignedTestsAPI.assignTestToStudents(testId, {
+          student_ids: selectedStudents,
+          due_date: testData.due_date,
+        });
+      }
 
-      // Success - redirect to tests list
       navigate('/instructor/tests', {
-        state: { message: 'Test created and assigned successfully!' },
+        state: {
+          message:
+            status === 'draft'
+              ? 'Saved as draft — publish from the test row when you’re ready.'
+              : 'Test created and assigned successfully!',
+        },
       });
     } catch (error) {
       console.error('Failed to create test:', error);
@@ -1410,14 +1420,23 @@ export default function CreateTest() {
                   Next
                 </Button>
               ) : (
-                <Button
-                  variant="primary"
-                  rightIcon={<Check className="h-4 w-4" />}
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                >
-                  {submitting ? 'Creating Test...' : 'Create Test'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSubmit('draft')}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Saving…' : 'Save as Draft'}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    rightIcon={<Check className="h-4 w-4" />}
+                    onClick={() => handleSubmit('published')}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Publishing…' : 'Publish & Assign'}
+                  </Button>
+                </div>
               )}
             </div>
           </>

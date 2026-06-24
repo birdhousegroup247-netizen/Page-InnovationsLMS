@@ -9,7 +9,9 @@ import {
   Users,
   CheckCircle,
   Clock,
-  Archive
+  Archive,
+  Send,
+  RotateCcw,
 } from 'lucide-react';
 import { assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
@@ -38,6 +40,57 @@ export default function ManageTests() {
       console.error('Failed to fetch tests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Per-row lifecycle action ids that are mid-flight (so the spinner
+  // shows on the right row instead of disabling the whole table).
+  const [actingOn, setActingOn] = useState(null);
+
+  const handlePublish = async (test) => {
+    if (!window.confirm(
+      test.course_id
+        ? `Publish "${test.test_name}" and assign it to every enrolled student in the course?`
+        : `Publish "${test.test_name}"? You can fine-tune student assignment later from Edit.`
+    )) return;
+    setActingOn(test.id);
+    try {
+      // assign_to: 'all' fans out to every course enrollee on the
+      // backend; if the test isn't tied to a course (category-wide
+      // test) we just flip status and the instructor can assign
+      // specific students from Edit.
+      await assignedTestsAPI.publishTest(test.id, test.course_id ? { assign_to: 'all' } : {});
+      await fetchTests();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to publish test');
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  const handleArchive = async (test) => {
+    if (!window.confirm(`Archive "${test.test_name}"? Students who already started keep access; new attempts will be blocked.`)) return;
+    setActingOn(test.id);
+    try {
+      await assignedTestsAPI.archiveTest(test.id);
+      await fetchTests();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to archive test');
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  const handleRestore = async (test) => {
+    setActingOn(test.id);
+    try {
+      // Archive -> Draft so the instructor can re-publish deliberately.
+      await assignedTestsAPI.updateTest(test.id, { status: 'draft' });
+      await fetchTests();
+    } catch (e) {
+      alert(e?.response?.data?.message || 'Failed to restore test');
+    } finally {
+      setActingOn(null);
     }
   };
 
@@ -240,6 +293,45 @@ export default function ManageTests() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
+                    {test.status === 'draft' && (
+                      <Tooltip content="Publish (and assign to enrolled students)">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Publish test"
+                          disabled={actingOn === test.id}
+                          onClick={() => handlePublish(test)}
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {test.status === 'published' && (
+                      <Tooltip content="Archive test">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Archive test"
+                          disabled={actingOn === test.id}
+                          onClick={() => handleArchive(test)}
+                        >
+                          <Archive className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {test.status === 'archived' && (
+                      <Tooltip content="Move back to drafts">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Restore to drafts"
+                          disabled={actingOn === test.id}
+                          onClick={() => handleRestore(test)}
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                    )}
                     <Tooltip content="View results & analytics">
                       <Button
                         size="sm"
