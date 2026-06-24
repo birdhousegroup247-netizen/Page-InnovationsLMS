@@ -54,7 +54,7 @@ export default function EditCourse() {
       // Check if user owns this course
       if (course.instructor_id !== user?.id && !['admin', 'super_admin'].includes(user?.role)) {
         setError('You do not have permission to edit this course');
-        setTimeout(() => navigate('/instructor/dashboard'), 2000);
+        setTimeout(() => navigate('/instructor/courses'), 2000);
         return;
       }
 
@@ -85,7 +85,7 @@ export default function EditCourse() {
     } catch (err) {
       console.error('Failed to load course:', err);
       setError(err.response?.data?.message || 'Failed to load course data');
-      setTimeout(() => navigate('/instructor/dashboard'), 2000);
+      setTimeout(() => navigate('/instructor/courses'), 2000);
     } finally {
       setFetchingCourse(false);
     }
@@ -244,8 +244,9 @@ export default function EditCourse() {
       const response = await coursesAPI.update(id, courseData);
 
       if (response.data.success) {
-        // Success! Redirect to instructor dashboard
-        navigate('/instructor/dashboard', {
+        // Land back on My Courses — that's where the user came from
+        // and where the updated thumbnail/title is visible.
+        navigate('/instructor/courses', {
           state: {
             message: 'Course updated successfully!',
           },
@@ -533,7 +534,7 @@ export default function EditCourse() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => navigate('/instructor/dashboard')}
+              onClick={() => navigate('/instructor/courses')}
               disabled={loading}
             >
               Cancel
