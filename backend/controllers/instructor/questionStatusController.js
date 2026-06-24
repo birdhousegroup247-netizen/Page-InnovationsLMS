@@ -61,22 +61,33 @@ class QuestionStatusController {
         order: [['created_at', 'DESC']]
       });
 
-      // Format questions
+      // Return the full question payload — earlier this formatter
+      // was dropping options / correct_answer / explanation /
+      // time_limit_seconds so the View Details modal had nothing to
+      // render for MCQs. Also pass course + category as objects (not
+      // just their names) since the View modal reads .title / .name.
       const formattedQuestions = questions.map(q => ({
         id: q.id,
         question_text: q.question_text,
         question_type: q.question_type,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation,
         difficulty: q.difficulty,
-        category: q.category?.name,
-        course: q.course?.title,
+        category: q.category ? { id: q.category.id, name: q.category.name } : null,
+        course: q.course ? { id: q.course.id, title: q.course.title } : null,
+        category_id: q.category_id,
+        course_id: q.course_id,
         marks: q.marks,
+        time_limit_seconds: q.time_limit_seconds,
+        tags: q.tags,
         approval_status: q.approval_status || 'pending',
         is_approved: q.is_approved,
         rejection_reason: q.rejection_reason,
         reviewed_by: q.reviewer?.full_name,
         reviewed_at: q.reviewed_at,
         times_used: q.times_used,
-        created_at: q.created_at
+        created_at: q.created_at,
       }));
 
       // Calculate statistics
