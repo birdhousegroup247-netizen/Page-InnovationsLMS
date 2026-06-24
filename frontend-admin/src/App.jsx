@@ -87,6 +87,7 @@ const Referrals = lazyWithReload(() => import('./pages/admin/Referrals'));
 const Badges = lazyWithReload(() => import('./pages/admin/Badges'));
 const AdminProfile = lazyWithReload(() => import('./pages/admin/AdminProfile'));
 const AdminSettings = lazyWithReload(() => import('./pages/admin/AdminSettings'));
+const AdminUserDetail = lazyWithReload(() => import('./pages/admin/AdminUserDetail'));
 
 // Root redirect honors the admin's saved default_landing preference
 // (set on AdminSettings). Falls back to /dashboard for new admins.
@@ -204,6 +205,16 @@ function App() {
               element={
                 <AdminRoute>
                   <Users />
+                </AdminRoute>
+              }
+            />
+            {/* Per-user profile page — full record, replaces the
+                old User Details modal so admins can deep link / share. */}
+            <Route
+              path="/users/:userId"
+              element={
+                <AdminRoute>
+                  <AdminUserDetail />
                 </AdminRoute>
               }
             />

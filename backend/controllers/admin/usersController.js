@@ -60,18 +60,52 @@ class UsersController {
         throw new NotFoundError('User not found');
       }
 
-      // Get user statistics
-      const enrollments = await Enrollment.count({ where: { student_id: userId } });
-      const certificates = await Certificate.count({ where: { student_id: userId } });
-      const coursesCreated = await Course.count({ where: { instructor_id: userId } });
+      // High-level counts (cheap).
+      const [enrollmentsCount, certificatesCount, coursesCreatedCount, paymentsCount] = await Promise.all([
+        Enrollment.count({ where: { student_id: userId } }),
+        Certificate.count({ where: { student_id: userId } }),
+        Course.count({ where: { instructor_id: userId } }),
+        Payment.count({ where: { user_id: userId } }).catch(() => 0),
+      ]);
+
+      // Lifetime spend across paid payments (best-effort — if Payment
+      // model has 'status' use it, otherwise sum all).
+      const totalSpent = await Payment.sum('amount', {
+        where: { user_id: userId, status: 'paid' },
+      }).catch(async () => Payment.sum('amount', { where: { user_id: userId } }).catch(() => 0));
+
+      // Enrollment list — cap at 20 most recent, with course title.
+      const recentEnrollments = user.role === 'student'
+        ? await Enrollment.findAll({
+            where: { student_id: userId },
+            include: [{ model: Course, as: 'course', attributes: ['id', 'title', 'thumbnail'] }],
+            order: [['enrollment_date', 'DESC']],
+            limit: 20,
+          }).catch(() => [])
+        : [];
+
+      // Recent payments — cap at 10 most recent.
+      const recentPayments = await Payment.findAll({
+        where: { user_id: userId },
+        attributes: ['id', 'amount', 'currency', 'status', 'created_at', 'provider', 'course_id'],
+        include: [{ model: Course, as: 'course', attributes: ['id', 'title'], required: false }],
+        order: [['created_at', 'DESC']],
+        limit: 10,
+      }).catch(() => []);
 
       return ApiResponse.success(res, {
         user,
         stats: {
-          enrollments: user.role === 'student' ? enrollments : null,
-          certificates: user.role === 'student' ? certificates : null,
-          coursesCreated: ['instructor', 'admin', 'super_admin'].includes(user.role) ? coursesCreated : null,
+          // Older callers read these top-level keys — keep them.
+          enrollments: user.role === 'student' ? enrollmentsCount : null,
+          certificates: user.role === 'student' ? certificatesCount : null,
+          coursesCreated: ['instructor', 'admin', 'super_admin'].includes(user.role) ? coursesCreatedCount : null,
+          // New richer fields for the AdminUserDetail page.
+          payments_count: paymentsCount,
+          total_spent: Number(totalSpent || 0),
         },
+        recent_enrollments: recentEnrollments,
+        recent_payments: recentPayments,
       });
     } catch (error) {
       next(error);

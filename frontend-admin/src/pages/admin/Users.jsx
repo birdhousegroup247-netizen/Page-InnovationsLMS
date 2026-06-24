@@ -976,10 +976,18 @@ export default function Users() {
                           </td>
                         )}
                         <td className="px-3 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
+                          {/* Clicking name/email/avatar deep-links to
+                              the full profile page. Replaces the old
+                              modal — admins can now share URLs and
+                              browser-back to the list. */}
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/users/${user.id}`)}
+                            className="flex items-center text-left group focus:outline-none focus:ring-2 focus:ring-brand-blue rounded"
+                          >
                             <Avatar src={user.profile_picture} alt={user.full_name} size="sm" className="mr-3" />
                             <div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-brand-blue transition-colors">
                                 {user.full_name}
                                 {user.id === currentUser?.id && (
                                   <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">(You)</span>
@@ -987,7 +995,7 @@ export default function Users() {
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                             </div>
-                          </div>
+                          </button>
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
                           <Badge variant={getRoleBadgeColor(user.role)}>{user.role.replace('_', ' ')}</Badge>
@@ -1026,7 +1034,7 @@ export default function Users() {
                                       icon={Edit}
                                       onClick={() => {
                                         setIsOpen(false);
-                                        handleViewUserDetails(user);
+                                        navigate(`/users/${user.id}`);
                                       }}
                                     >
                                       View / Edit
