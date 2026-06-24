@@ -29,7 +29,10 @@ export default function ManageTests() {
   const fetchTests = async () => {
     try {
       setLoading(true);
-      const response = await assignedTestsAPI.getMyTests();
+      // getMyTests hits the student endpoint (/student/my-tests) which
+      // 403s for instructor accounts. Instructors own tests, so use
+      // the instructor list endpoint instead.
+      const response = await assignedTestsAPI.getInstructorTests();
       setTests(response.data.data.tests || []);
     } catch (error) {
       console.error('Failed to fetch tests:', error);
@@ -38,10 +41,14 @@ export default function ManageTests() {
     }
   };
 
-  const filteredTests = tests.filter(test =>
-    test.title.toLowerCase().includes(search.toLowerCase()) ||
-    test.course?.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTests = tests.filter(test => {
+    const q = search.toLowerCase();
+    // Backend column is test_name; keep .title fallback in case any
+    // other shape sneaks in.
+    const name = (test.test_name || test.title || '').toLowerCase();
+    const courseTitle = (test.course?.title || '').toLowerCase();
+    return name.includes(q) || courseTitle.includes(q);
+  });
 
   const stats = {
     total: tests.length,
@@ -207,7 +214,7 @@ export default function ManageTests() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {test.title}
+                        {test.test_name || test.title}
                       </h3>
                       {getStatusBadge(test.status)}
                     </div>
