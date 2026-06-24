@@ -27,7 +27,8 @@ export default function Announcements() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Filters
+  // Filters — source chip (all/admin/mine) + per-course narrow.
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [selectedCourse, setSelectedCourse] = useState('all');
 
   // Modal state
@@ -54,32 +55,21 @@ export default function Announcements() {
       setLoading(true);
       setError('');
 
-      // Fetch instructor's courses
-      const coursesResponse = await coursesAPI.getInstructorCourses();
+      // The new /feed endpoint returns the unified list (admin/platform
+      // broadcasts + course announcements on every course I teach).
+      // Courses are still loaded separately for the Create dropdown and
+      // the per-course filter chips.
+      const [coursesResponse, feedResponse] = await Promise.all([
+        coursesAPI.getInstructorCourses(),
+        announcementsAPI.getFeed(),
+      ]);
       const coursesData = coursesResponse.data.data.courses || [];
       setCourses(coursesData);
 
-      // Fetch announcements for all courses
-      const announcementPromises = coursesData.map((course) =>
-        announcementsAPI.getCourseAnnouncements(course.id).catch(() => ({ data: { data: { announcements: [] } } }))
-      );
-      const announcementResponses = await Promise.all(announcementPromises);
-
-      // Combine and enrich announcements with course info
-      const allAnnouncements = [];
-      announcementResponses.forEach((response, idx) => {
-        const courseAnnouncements = response.data.data.announcements || [];
-        courseAnnouncements.forEach((announcement) => {
-          allAnnouncements.push({
-            ...announcement,
-            course: coursesData[idx],
-          });
-        });
-      });
-
-      // Sort by created date (newest first)
-      allAnnouncements.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setAnnouncements(allAnnouncements);
+      // Feed rows already carry source + author info from the backend.
+      // No fan-out / merge needed on the client.
+      const merged = feedResponse.data.data.announcements || [];
+      setAnnouncements(merged);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.response?.data?.message || 'Failed to load announcements');
@@ -192,10 +182,35 @@ export default function Announcements() {
     });
   };
 
-  // Filter announcements by selected course
-  const filteredAnnouncements = selectedCourse === 'all' || !selectedCourse
-    ? announcements
-    : announcements.filter((a) => a.course_id === parseInt(selectedCourse, 10));
+  // Apply source + course filters to the merged feed.
+  const filteredAnnouncements = announcements.filter((a) => {
+    if (sourceFilter === 'admin' && a.source !== 'admin') return false;
+    if (sourceFilter === 'mine' && a.source !== 'mine') return false;
+    if (selectedCourse !== 'all' && selectedCourse) {
+      if (String(a.course_id) !== String(selectedCourse)) return false;
+    }
+    return true;
+  });
+
+  const counts = {
+    all: announcements.length,
+    admin: announcements.filter((a) => a.source === 'admin').length,
+    mine: announcements.filter((a) => a.source === 'mine').length,
+  };
+
+  const formatRelative = (dateString) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    const ms = Date.now() - d.getTime();
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return 'just now';
+    if (min < 60) return `${min}m ago`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h}h ago`;
+    const days = Math.floor(h / 24);
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   return (
     <>
@@ -265,17 +280,39 @@ export default function Announcements() {
               </div>
             )}
 
-            {/* Filter */}
-            {courses.length > 1 && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-gray-200 dark:border-border-dark mb-6 transition-colors">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-gray-400 dark:text-text-dark-muted" />
+            {/* Filter chips — Source on top, Course narrow underneath
+                (only when the instructor teaches more than one course). */}
+            <div className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-gray-200 dark:border-border-dark mb-6 transition-colors space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: 'all',   label: 'All',                count: counts.all },
+                  { id: 'admin', label: 'From TekyPro',       count: counts.admin },
+                  { id: 'mine',  label: 'My announcements',   count: counts.mine },
+                ].map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setSourceFilter(chip.id)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                      sourceFilter === chip.id
+                        ? 'bg-brand-blue text-white border-brand-blue'
+                        : 'bg-gray-50 dark:bg-dark-700 text-gray-700 dark:text-text-dark-secondary border-gray-200 dark:border-border-dark hover:border-brand-blue/40'
+                    )}
+                  >
+                    {chip.label} <span className="opacity-70">· {chip.count}</span>
+                  </button>
+                ))}
+              </div>
+              {courses.length > 1 && (
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-border-dark">
+                  <BookOpen className="w-4 h-4 text-gray-400 dark:text-text-dark-muted shrink-0" />
                   <select
                     value={selectedCourse}
                     onChange={(e) => setSelectedCourse(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-border-dark rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-border-dark rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
                   >
-                    <option value="all">All Courses</option>
+                    <option value="all">Any course</option>
                     {courses.map((course) => (
                       <option key={course.id} value={course.id}>
                         {course.title}
@@ -283,22 +320,28 @@ export default function Announcements() {
                     ))}
                   </select>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Announcements List */}
             {filteredAnnouncements.length === 0 ? (
               <EmptyState
                 image={emptyAnnouncements}
                 icon={<Megaphone className="w-16 h-16" />}
-                title={courses.length === 0 ? 'No courses yet' : 'No announcements yet'}
+                title={
+                  announcements.length === 0
+                    ? (courses.length === 0 ? 'No courses yet' : 'No announcements yet')
+                    : 'No announcements match this filter'
+                }
                 description={
-                  courses.length === 0
-                    ? 'Create a course first before making announcements.'
-                    : 'Start engaging with your students by creating your first announcement.'
+                  announcements.length === 0
+                    ? (courses.length === 0
+                        ? 'Create a course first before making announcements.'
+                        : 'Start engaging with your students by creating your first announcement.')
+                    : 'Try switching the chip above or pick a different course.'
                 }
                 action={
-                  courses.length > 0 && (
+                  courses.length > 0 && announcements.length === 0 && (
                     <Button
                       onClick={() => handleOpenModal()}
                       leftIcon={<Plus className="w-4 h-4" />}
@@ -309,75 +352,95 @@ export default function Announcements() {
                 }
               />
             ) : (
-              <div className="space-y-4">
-                {filteredAnnouncements.map((announcement) => (
-                  <div
-                    key={announcement.id}
-                    className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark hover:border-brand-blue/50 dark:hover:border-brand-blue/50 transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900 dark:text-text-dark-primary">
-                            {announcement.title}
-                          </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {filteredAnnouncements.map((a) => {
+                  const isAdminSrc = a.source === 'admin';
+                  const sourceBg =
+                    isAdminSrc
+                      ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200/60 dark:border-purple-800/60 text-purple-700 dark:text-purple-400'
+                      : a.source === 'mine'
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200/60 dark:border-green-800/60 text-green-700 dark:text-green-400'
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-800/60 text-blue-700 dark:text-blue-400';
+                  const sourceLabel = isAdminSrc ? 'TekyPro' : (a.source === 'mine' ? 'You posted this' : 'Course');
+                  const body = a.message || a.content || '';
+                  return (
+                    <div
+                      key={`${a.source}-${a.id}`}
+                      className="group relative bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-5 transition-all hover:border-brand-blue/40 hover:shadow-md"
+                    >
+                      {/* Top row: source pill + relative time + actions */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${sourceBg}`}>
+                          <Megaphone className="w-3 h-3" />
+                          {sourceLabel}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-gray-500 dark:text-text-dark-muted">
+                            {formatRelative(a.scheduled_at || a.created_at)}
+                          </span>
+                          {a.can_edit && (
+                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                aria-label="Edit announcement"
+                                onClick={() => handleOpenModal(a)}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Delete announcement"
+                                onClick={() => setDeleteConfirm(a)}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
+                      </div>
 
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-text-dark-muted mb-3">
-                          <span className="flex items-center gap-1">
-                            <BookOpen className="w-4 h-4" />
-                            {announcement.course?.title || 'Unknown Course'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {/* Prefer scheduled_at when set (the publish date
-                                the instructor chose), otherwise show the
-                                creation timestamp. Accept both snake and camel
-                                casing because the backend Sequelize config
-                                doesn't pin which one it serialises with. */}
-                            {formatDate(
-                              announcement.scheduled_at
-                              || announcement.scheduledAt
-                              || announcement.created_at
-                              || announcement.createdAt
-                            )}
-                          </span>
-                          {announcement.view_count !== undefined && (
-                            <span className="flex items-center gap-1">
-                              <Eye className="w-4 h-4" />
-                              {announcement.view_count} view{announcement.view_count !== 1 ? 's' : ''}
+                      {/* Title */}
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2">
+                        {a.title}
+                      </h3>
+
+                      {/* Body preview */}
+                      <p className="text-sm text-gray-600 dark:text-text-dark-secondary line-clamp-3 whitespace-pre-wrap mb-3">
+                        {body}
+                      </p>
+
+                      {/* Footer: author + course + view count */}
+                      <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-text-dark-muted pt-3 border-t border-gray-100 dark:border-border-dark">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {a.author_avatar ? (
+                            <img src={a.author_avatar} alt={a.author_name} className="w-5 h-5 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple text-white text-[10px] font-semibold flex items-center justify-center shrink-0">
+                              {(a.author_name || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate">{a.author_name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {a.course?.title && (
+                            <span className="inline-flex items-center gap-1">
+                              <BookOpen className="w-3 h-3" />
+                              <span className="truncate max-w-[10rem]">{a.course.title}</span>
+                            </span>
+                          )}
+                          {typeof a.view_count === 'number' && (
+                            <span className="inline-flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              {a.view_count}
                             </span>
                           )}
                         </div>
-
-                        <p className="text-gray-700 dark:text-text-dark-secondary whitespace-pre-wrap">
-                          {announcement.message || announcement.content}
-                        </p>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          leftIcon={<Edit className="w-4 h-4" />}
-                          onClick={() => handleOpenModal(announcement)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          leftIcon={<Trash2 className="w-4 h-4" />}
-                          onClick={() => setDeleteConfirm(announcement)}
-                          className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                        >
-                          Delete
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>

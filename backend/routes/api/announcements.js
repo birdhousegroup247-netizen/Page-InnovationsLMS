@@ -22,6 +22,14 @@ router.get('/announcements/my', authenticate, authorize('student'), Announcement
 // frontend bundle that still calls it doesn't 404.
 router.get('/my', authenticate, authorize('student'), AnnouncementsController.getMyAnnouncements);
 
+// Unified announcement feed for the caller. Merges:
+//  - Admin / platform broadcasts targeted at this user
+//  - Course announcements posted on courses they're enrolled in (students)
+//    OR courses they teach (instructors)
+// Any authenticated user can call it; the scope is decided server-side
+// from their role + relationships.
+router.get('/announcements/feed', authenticate, AnnouncementsController.getMyFeed);
+
 // Get all announcements for a course (Enrolled students can view)
 router.get('/courses/:courseId/announcements', AnnouncementsController.getCourseAnnouncements);
 

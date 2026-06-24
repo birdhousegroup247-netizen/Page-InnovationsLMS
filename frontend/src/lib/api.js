@@ -350,6 +350,9 @@ export const announcementsAPI = {
   // by-id paths are /api/announcements/:id. The earlier "double-prefixed"
   // URLs (/api/announcements/courses/.../announcements) all 404'd.
   getMyAnnouncements: () => api.get('/api/announcements/my'),
+  // Unified feed — admin/platform + course announcements relevant to me.
+  // Authenticated for all roles; backend scopes by role + relationships.
+  getFeed: () => api.get('/api/announcements/feed'),
   getCourseAnnouncements: (courseId, params) => api.get(`/api/courses/${courseId}/announcements`, { params }),
   createAnnouncement: (courseId, data) => api.post(`/api/courses/${courseId}/announcements`, data),
   getById: (announcementId) => api.get(`/api/announcements/${announcementId}`),
