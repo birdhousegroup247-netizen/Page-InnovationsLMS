@@ -65,6 +65,14 @@ export default function CreateTest() {
     start_date: '',
     due_date: '',
     instructions: '',
+    // Display + scoring toggles — defaulted to "useful defaults" so a
+    // quick test still feels right out of the box, but the instructor
+    // can flip any of these in the Settings step.
+    randomize_questions: true,
+    randomize_options: true,
+    show_results_immediately: true,
+    show_correct_answers: true,
+    show_explanations: true,
   });
 
   const [selectedQuestions, setSelectedQuestions] = useState([]);
@@ -406,6 +414,11 @@ export default function CreateTest() {
         total_questions: selectedQuestions.length,
         start_date: testData.start_date || null,
         end_date: testData.due_date || null,
+        randomize_questions: !!testData.randomize_questions,
+        randomize_options: !!testData.randomize_options,
+        show_results_immediately: !!testData.show_results_immediately,
+        show_correct_answers: !!testData.show_correct_answers,
+        show_explanations: !!testData.show_explanations,
         // Publish straight away so Step 3 (assignment) doesn't bounce
         // with "Only published tests can be assigned". The backend
         // accepts status on create.
@@ -603,6 +616,36 @@ export default function CreateTest() {
             placeholder="Special instructions, allowed resources, etc..."
             className="w-full px-4 py-2 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
           />
+        </div>
+
+        {/* Display & scoring options — surfaced here so they're not a
+            hidden setting only visible after creation. Defaults are
+            sensible for a quick test; instructors can flip any of
+            them. Matches the same set on EditTest so updates feel
+            symmetric. */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2">
+            Display & scoring
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 dark:bg-dark-700 rounded-lg p-4">
+            {[
+              { key: 'randomize_questions', label: 'Randomize question order' },
+              { key: 'randomize_options', label: 'Randomize answer options' },
+              { key: 'show_results_immediately', label: 'Show results immediately after submit' },
+              { key: 'show_correct_answers', label: 'Show correct answers on review' },
+              { key: 'show_explanations', label: 'Show explanations on review' },
+            ].map((opt) => (
+              <label key={opt.key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-primary">
+                <input
+                  type="checkbox"
+                  checked={!!testData[opt.key]}
+                  onChange={(e) => handleInputChange(opt.key, e.target.checked)}
+                  className="w-4 h-4 text-brand-blue border-gray-300 rounded focus:ring-brand-blue"
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
         </div>
       </div>
     </div>

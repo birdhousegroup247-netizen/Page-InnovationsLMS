@@ -301,7 +301,7 @@ class CourseAnalyticsController {
         at.test_name,
         COUNT(DISTINCT ata.id) as total_attempts,
         ROUND(AVG(ata.percentage), 2) as avg_score,
-        SUM(CASE WHEN ata.passed = 1 THEN 1 ELSE 0 END) as passed_count
+        SUM(CASE WHEN ata.passed = TRUE THEN 1 ELSE 0 END) as passed_count
       FROM assigned_tests at
       LEFT JOIN assigned_test_attempts ata ON at.id = ata.test_id AND ata.completed_at IS NOT NULL
       WHERE at.course_id = :courseId

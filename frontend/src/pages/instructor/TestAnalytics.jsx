@@ -83,12 +83,12 @@ export default function TestAnalytics() {
 
     switch (sortBy) {
       case 'name':
-        compareA = a.student_name?.toLowerCase() || '';
-        compareB = b.student_name?.toLowerCase() || '';
+        compareA = (a.student?.name || a.student_name || '').toLowerCase();
+        compareB = (b.student?.name || b.student_name || '').toLowerCase();
         break;
       case 'score':
-        compareA = parseFloat(a.score_percentage) || 0;
-        compareB = parseFloat(b.score_percentage) || 0;
+        compareA = parseFloat(a.percentage ?? a.score_percentage) || 0;
+        compareB = parseFloat(b.percentage ?? b.score_percentage) || 0;
         break;
       case 'date':
         compareA = new Date(a.completed_at);
@@ -372,59 +372,112 @@ export default function TestAnalytics() {
             </p>
           ) : (
             <div className="space-y-3">
-              {sortedResults.map((result) => (
-                <div
-                  key={result.attempt_id}
-                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="flex-shrink-0">
-                      {result.student_avatar ? (
-                        <img
-                          src={result.student_avatar}
-                          alt={result.student_name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center">
-                          <span className="text-white font-medium">
-                            {result.student_name?.charAt(0).toUpperCase() || '?'}
-                          </span>
-                        </div>
-                      )}
+              {sortedResults.map((result) => {
+                // Backend returns: result.student.{id,name,email,avatar},
+                // result.percentage, result.correct_answers,
+                // result.total_questions, result.attempt_number,
+                // result.passed, result.time_spent_seconds, result.completed_at,
+                // result.score, result.total_marks. Reading the actual
+                // shape (previous code was looking at flat student_name /
+                // score_percentage that don't exist in the response).
+                const student = result.student || {};
+                const name = student.name || result.student_name || 'Unknown Student';
+                const email = student.email || result.student_email;
+                const avatar = student.avatar || result.student_avatar;
+                const pct = parseFloat(result.percentage ?? result.score_percentage ?? 0);
+                const correct = result.correct_answers ?? 0;
+                const total = result.total_questions ?? 0;
+                const incorrect = Math.max(0, total - correct);
+                const score = result.score ?? 0;
+                const totalMarks = result.total_marks ?? result.total_points ?? 0;
+                const timeSec = result.time_spent_seconds ?? 0;
+                const mins = Math.floor(timeSec / 60);
+                const secs = timeSec % 60;
+                const passed = !!result.passed;
+                return (
+                  <div
+                    key={result.attempt_id}
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-gray-50 dark:bg-dark-700 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors"
+                  >
+                    {/* Identity */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0">
+                        {avatar ? (
+                          <img src={avatar} alt={name} className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center">
+                            <span className="text-white font-medium">{name.charAt(0).toUpperCase()}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 dark:text-text-dark-primary truncate">
+                          {name}
+                        </h3>
+                        {email && (
+                          <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">{email}</p>
+                        )}
+                        <p className="text-xs text-gray-600 dark:text-text-dark-secondary mt-0.5">
+                          Submitted {formatDate(result.completed_at)}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 dark:text-text-dark-primary">
-                        {result.student_name || 'Unknown Student'}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-text-dark-secondary">
-                        Submitted {formatDate(result.completed_at)}
-                      </p>
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                      <div className="text-center">
+                        <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-text-dark-muted">Correct</p>
+                        <p className="text-sm font-semibold text-green-600 dark:text-green-400">{correct}/{total}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-text-dark-muted">Missed</p>
+                        <p className="text-sm font-semibold text-red-600 dark:text-red-400">{incorrect}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-text-dark-muted">Attempt</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-text-dark-primary">#{result.attempt_number ?? 1}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-text-dark-muted">Time</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-text-dark-primary">
+                          {timeSec ? `${mins}m ${secs}s` : '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Score + verdict + action */}
+                    <div className="flex items-center gap-3 justify-end md:ml-2">
+                      <div className={cn('px-4 py-2 rounded-lg text-center min-w-[88px]', getScoreBgColor(pct))}>
+                        <p className={cn('text-2xl font-bold leading-none', getScoreColor(pct))}>
+                          {Math.round(pct)}%
+                        </p>
+                        <p className="text-[11px] text-gray-600 dark:text-text-dark-muted mt-1">
+                          {score}/{totalMarks} pts
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
+                          passed
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        )}
+                      >
+                        {passed ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                        {passed ? 'Passed' : 'Failed'}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        leftIcon={<Eye className="w-4 h-4" />}
+                        onClick={() => navigate(`/instructor/attempts/${result.attempt_id}/details`)}
+                      >
+                        View
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className={cn('px-4 py-2 rounded-lg text-center', getScoreBgColor(result.score_percentage))}>
-                      <p className={cn('text-2xl font-bold', getScoreColor(result.score_percentage))}>
-                        {Math.round(result.score_percentage || 0)}%
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-text-dark-muted">
-                        {result.score || 0}/{result.total_points || 0} pts
-                      </p>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      leftIcon={<Eye className="w-4 h-4" />}
-                      onClick={() => navigate(`/instructor/attempts/${result.attempt_id}/details`)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

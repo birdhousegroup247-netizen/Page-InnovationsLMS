@@ -299,8 +299,8 @@ class TestAnalyticsController {
         q.question_text,
         q.question_type,
         COUNT(ata.id) as total_attempts,
-        SUM(CASE WHEN ata.is_correct = 1 THEN 1 ELSE 0 END) as correct_count,
-        ROUND(AVG(CASE WHEN ata.is_correct = 1 THEN 100 ELSE 0 END), 2) as success_rate
+        SUM(CASE WHEN ata.is_correct = TRUE THEN 1 ELSE 0 END) as correct_count,
+        ROUND(AVG(CASE WHEN ata.is_correct = TRUE THEN 100 ELSE 0 END), 2) as success_rate
       FROM assigned_test_questions atq
       JOIN question_bank q ON atq.question_id = q.id
       LEFT JOIN assigned_test_answers ata ON q.id = ata.question_id
