@@ -30,6 +30,11 @@ const AdminAnnouncement = sequelize.define(
     attachment_type: { type: DataTypes.STRING(20), allowNull: true },
     attachment_name: { type: DataTypes.STRING(255), allowNull: true },
     recipient_count: { type: DataTypes.INTEGER, defaultValue: 0 },
+    // Optional publish-at — same semantics as CourseAnnouncement.
+    scheduled_at: { type: DataTypes.DATE, allowNull: true },
+    notifications_sent_at: { type: DataTypes.DATE, allowNull: true },
+    is_important: { type: DataTypes.BOOLEAN, defaultValue: false },
+    is_pinned:    { type: DataTypes.BOOLEAN, defaultValue: false },
   },
   {
     tableName: 'admin_announcements',

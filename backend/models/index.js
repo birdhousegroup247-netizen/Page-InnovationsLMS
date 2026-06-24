@@ -58,6 +58,7 @@ const Bundle = require('./Bundle');
 const BundleCourse = require('./BundleCourse');
 const Referral = require('./Referral');
 const AdminAnnouncement = require('./AdminAnnouncement');
+const AnnouncementReaction = require('./AnnouncementReaction');
 const CourseInstructor = require('./CourseInstructor');
 
 // ============================================================================
@@ -439,5 +440,6 @@ module.exports = {
   BundleCourse,
   Referral,
   AdminAnnouncement,
+  AnnouncementReaction,
   CourseInstructor,
 };

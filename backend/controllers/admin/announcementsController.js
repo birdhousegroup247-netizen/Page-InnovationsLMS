@@ -86,7 +86,12 @@ class AdminAnnouncementsController {
         throw new BadRequestError('No recipients found for the selected audience');
       }
 
-      // Save announcement record first
+      // Accept the new fields. is_important / is_pinned / scheduled_at
+      // come from the admin compose modal; if scheduled in the future
+      // we defer notification fan-out to the cron job.
+      const { is_important, is_pinned, scheduled_at } = req.body;
+      const isFutureSchedule = scheduled_at && new Date(scheduled_at).getTime() > Date.now();
+
       const announcement = await AdminAnnouncement.create({
         admin_id: req.user.id,
         title,
@@ -98,21 +103,26 @@ class AdminAnnouncementsController {
         attachment_type: attachment_type || null,
         attachment_name: attachment_name || null,
         recipient_count: recipientIds.length,
+        is_important: !!is_important,
+        is_pinned: !!is_pinned,
+        scheduled_at: scheduled_at || null,
+        notifications_sent_at: isFutureSchedule ? null : new Date(),
       });
 
-      // Bulk create notifications (fire in background — don't block response)
-      const notifications = recipientIds.map(user_id => ({
-        user_id,
-        type: 'announcement',
-        title,
-        message,
-        link: link || null,
-        priority: 'normal',
-      }));
+      if (!isFutureSchedule) {
+        const notifications = recipientIds.map(user_id => ({
+          user_id,
+          type: 'announcement',
+          title,
+          message,
+          link: link || null,
+          priority: 'normal',
+        }));
 
-      NotificationsController.createBulkNotifications(notifications).catch(err =>
-        logger.error('Announcement bulk notify error:', err.message)
-      );
+        NotificationsController.createBulkNotifications(notifications).catch(err =>
+          logger.error('Announcement bulk notify error:', err.message)
+        );
+      }
 
       logger.info(`Admin ${req.user.email} sent announcement "${title}" to ${recipientIds.length} users (target: ${target})`);
       await ActivityController.logFromRequest(req, 'announcement_send', 'announcement', announcement.id, {

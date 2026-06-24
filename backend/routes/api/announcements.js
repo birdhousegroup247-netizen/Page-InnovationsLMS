@@ -45,4 +45,11 @@ router.put('/announcements/:announcementId', authenticate, authorize('instructor
 // Delete announcement (Instructor/Admin)
 router.delete('/announcements/:announcementId', authenticate, authorize('instructor', 'admin', 'super_admin'), AnnouncementsController.deleteAnnouncement);
 
+// Toggle a reaction. source = 'admin' | 'course' (polymorphic — the
+// two announcement tables are kept separate, so we discriminate by
+// source on the join table).
+router.post('/announcements/:source/:announcementId/reactions',
+  authenticate,
+  AnnouncementsController.toggleReaction);
+
 module.exports = router;

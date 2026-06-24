@@ -744,7 +744,7 @@ const startServer = async () => {
         ChatRoom, ChatRoomMember, Conversation, Message, MessageReaction, MutedChat,
         LessonNote, LessonQuestion, QuestionReply, CourseAnnouncement,
         InstructorReview, LiveSession, ForumPost, ForumReply,
-        Assignment, AssignmentSubmission, AdminAnnouncement,
+        Assignment, AssignmentSubmission, AdminAnnouncement, AnnouncementReaction,
         CouponCode, CouponCodeCourse, CouponRedemption, Lead,
         EmailVerification, InstructorApplication, CourseInstructor,
         // Tables that were probably created in the original seed but are
@@ -806,6 +806,7 @@ const startServer = async () => {
         [Assignment, 'assignments'],
         [AssignmentSubmission, 'assignment_submissions'],
         [AdminAnnouncement, 'admin_announcements'],
+        [AnnouncementReaction, 'announcement_reactions'],
         // Week 4 — payment & leads models
         [CouponCode, 'coupon_codes'],
         [CouponCodeCourse, 'coupon_code_courses'],
@@ -835,12 +836,13 @@ const startServer = async () => {
         require('./models/CourseReview'),
         require('./models/Wishlist'),
         require('./models/Referral'),
-        require('./models/AdminAnnouncement'), // adds attachment_url/_type/_name on prod
+        require('./models/AdminAnnouncement'), // adds attachment_url/_type/_name + is_important/is_pinned/scheduled_at/notifications_sent_at
         require('./models/Bundle'),            // /bundles save was returning "Database error"
         require('./models/BundleCourse'),
         require('./models/Assignment'),
         require('./models/AssignmentSubmission'),
-        require('./models/CourseAnnouncement'),
+        require('./models/CourseAnnouncement'), // adds attachment_url/_type/_name + is_important/is_pinned/notifications_sent_at
+        require('./models/AnnouncementReaction'),
         // Tests family — recurring 500 source on /api/assigned-tests/my-tests
         // when production drifts behind the model (Sequelize SELECTs every
         // declared column, so one missing column breaks the whole list).
@@ -981,6 +983,25 @@ const startServer = async () => {
       startBirthdayScheduler();
     } catch (bdErr) {
       logger.error('Failed to start birthday scheduler:', bdErr.message);
+    }
+
+    // Announcement scheduler — every 5 minutes, fires notifications
+    // for course + admin announcements whose scheduled_at has passed
+    // but haven't been delivered yet. Idempotent via
+    // notifications_sent_at on the announcement row.
+    try {
+      const cron = require('node-cron');
+      const AnnouncementsController = require('./controllers/announcements/announcementsController');
+      cron.schedule('*/5 * * * *', async () => {
+        try {
+          await AnnouncementsController.runScheduledNotificationsJob();
+        } catch (err) {
+          logger.error(`[announcements.cron] crashed: ${err.message}\n${err.stack || ''}`);
+        }
+      });
+      logger.info('[announcements.cron] Started — runs every 5 minutes');
+    } catch (annErr) {
+      logger.error('Failed to start announcement scheduler:', annErr.message);
     }
 
     // Session reminder cron: notify students 15 min before scheduled live sessions

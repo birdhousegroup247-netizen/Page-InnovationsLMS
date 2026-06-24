@@ -358,6 +358,9 @@ export const announcementsAPI = {
   getById: (announcementId) => api.get(`/api/announcements/${announcementId}`),
   update: (announcementId, data) => api.put(`/api/announcements/${announcementId}`, data),
   delete: (announcementId) => api.delete(`/api/announcements/${announcementId}`),
+  // Reactions — source: 'admin' | 'course'.
+  toggleReaction: (source, announcementId, emoji) =>
+    api.post(`/api/announcements/${source}/${announcementId}/reactions`, { emoji }),
 };
 
 // Chat API (course rooms + direct messages)

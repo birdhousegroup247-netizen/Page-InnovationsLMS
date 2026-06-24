@@ -11,10 +11,16 @@ import {
   BookOpen,
   Users,
   AlertCircle,
+  Pin,
+  Star,
+  Clock,
+  Paperclip,
 } from 'lucide-react';
 import { announcementsAPI, coursesAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
 import { Button, Spinner, Alert, Modal } from '../../components/ui';
+import CloudinaryUpload from '../../components/common/CloudinaryUpload';
+import ReactionsBar from '../../components/announcements/ReactionsBar';
 import emptyAnnouncements from '../../assets/empty-announcements.svg';
 import { cn } from '../../utils/cn';
 
@@ -39,6 +45,11 @@ export default function Announcements() {
     content: '',
     course_id: '',
     scheduled_at: '', // empty = publish now
+    is_important: false,
+    is_pinned: false,
+    attachment_url: '',
+    attachment_type: '',
+    attachment_name: '',
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -78,6 +89,18 @@ export default function Announcements() {
     }
   };
 
+  const blankForm = (courseId = '') => ({
+    title: '',
+    content: '',
+    course_id: courseId,
+    scheduled_at: '',
+    is_important: false,
+    is_pinned: false,
+    attachment_url: '',
+    attachment_type: '',
+    attachment_name: '',
+  });
+
   const handleOpenModal = (announcement = null) => {
     if (announcement) {
       setEditingAnnouncement(announcement);
@@ -88,15 +111,15 @@ export default function Announcements() {
         scheduled_at: announcement.scheduled_at
           ? new Date(announcement.scheduled_at).toISOString().slice(0, 16)
           : '',
+        is_important: !!announcement.is_important,
+        is_pinned: !!announcement.is_pinned,
+        attachment_url: announcement.attachment_url || '',
+        attachment_type: announcement.attachment_type || '',
+        attachment_name: announcement.attachment_name || '',
       });
     } else {
       setEditingAnnouncement(null);
-      setFormData({
-        title: '',
-        content: '',
-        course_id: courses[0]?.id || '',
-        scheduled_at: '',
-      });
+      setFormData(blankForm(courses[0]?.id || ''));
     }
     setFormErrors({});
     setShowModal(true);
@@ -105,7 +128,7 @@ export default function Announcements() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingAnnouncement(null);
-    setFormData({ title: '', content: '', course_id: '', scheduled_at: '' });
+    setFormData(blankForm());
     setFormErrors({});
   };
 
@@ -130,19 +153,21 @@ export default function Announcements() {
       setSubmitting(true);
       setError('');
 
+      const payload = {
+        title: formData.title,
+        message: formData.content,
+        scheduled_at: formData.scheduled_at || null,
+        is_important: !!formData.is_important,
+        is_pinned: !!formData.is_pinned,
+        attachment_url:  formData.attachment_url  || null,
+        attachment_type: formData.attachment_type || null,
+        attachment_name: formData.attachment_name || null,
+      };
       if (editingAnnouncement) {
-        await announcementsAPI.update(editingAnnouncement.id, {
-          title: formData.title,
-          message: formData.content,
-          scheduled_at: formData.scheduled_at || null,
-        });
+        await announcementsAPI.update(editingAnnouncement.id, payload);
         setSuccess('Announcement updated successfully!');
       } else {
-        await announcementsAPI.createAnnouncement(formData.course_id, {
-          title: formData.title,
-          message: formData.content,
-          scheduled_at: formData.scheduled_at || null,
-        });
+        await announcementsAPI.createAnnouncement(formData.course_id, payload);
         setSuccess('Announcement created successfully!');
       }
 
@@ -368,12 +393,32 @@ export default function Announcements() {
                       key={`${a.source}-${a.id}`}
                       className="group relative bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-5 transition-all hover:border-brand-blue/40 hover:shadow-md"
                     >
-                      {/* Top row: source pill + relative time + actions */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${sourceBg}`}>
-                          <Megaphone className="w-3 h-3" />
-                          {sourceLabel}
-                        </span>
+                      {/* Top row: source pill + status pills + actions */}
+                      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${sourceBg}`}>
+                            <Megaphone className="w-3 h-3" />
+                            {sourceLabel}
+                          </span>
+                          {a.is_pinned && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border bg-purple-50 dark:bg-purple-900/20 border-purple-200/60 dark:border-purple-800/60 text-purple-700 dark:text-purple-400">
+                              <Pin className="w-2.5 h-2.5" />
+                              Pinned
+                            </span>
+                          )}
+                          {a.is_important && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border bg-amber-50 dark:bg-amber-900/20 border-amber-200/60 dark:border-amber-800/60 text-amber-700 dark:text-amber-400">
+                              <Star className="w-2.5 h-2.5" />
+                              Important
+                            </span>
+                          )}
+                          {a.scheduled_at && new Date(a.scheduled_at).getTime() > Date.now() && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border bg-blue-50 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-800/60 text-blue-700 dark:text-blue-400">
+                              <Clock className="w-2.5 h-2.5" />
+                              Scheduled
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] text-gray-500 dark:text-text-dark-muted">
                             {formatRelative(a.scheduled_at || a.created_at)}
@@ -410,6 +455,29 @@ export default function Announcements() {
                       <p className="text-sm text-gray-600 dark:text-text-dark-secondary line-clamp-3 whitespace-pre-wrap mb-3">
                         {body}
                       </p>
+
+                      {/* Attachment chip */}
+                      {a.attachment_url && (
+                        <a
+                          href={a.attachment_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 rounded-lg border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 text-xs text-gray-700 dark:text-text-dark-secondary hover:border-brand-blue/40 transition-colors max-w-full"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 text-brand-blue shrink-0" />
+                          <span className="truncate">{a.attachment_name || 'Attachment'}</span>
+                        </a>
+                      )}
+
+                      {/* Reactions */}
+                      <div className="mb-3">
+                        <ReactionsBar
+                          source={a.source === 'admin' ? 'admin' : 'course'}
+                          announcementId={a.id}
+                          initialTally={a.reactions || {}}
+                          initialMine={a.my_reactions || []}
+                        />
+                      </div>
 
                       {/* Footer: author + course + view count */}
                       <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-text-dark-muted pt-3 border-t border-gray-100 dark:border-border-dark">
@@ -543,8 +611,84 @@ export default function Announcements() {
                 className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border-gray-300 dark:border-border-dark focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
               />
               <p className="text-xs text-gray-500 dark:text-text-dark-muted mt-1">
-                Leave empty to publish immediately. Future dates hide the announcement from students until then.
+                Leave empty to publish immediately. Future dates hide the announcement from students until then and the notification fires at the scheduled time.
               </p>
+            </div>
+
+            {/* Important / Pinned toggles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-border-dark cursor-pointer hover:border-brand-blue/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={formData.is_important}
+                  onChange={(e) => setFormData({ ...formData, is_important: e.target.checked })}
+                  className="mt-0.5 w-4 h-4 text-brand-blue rounded"
+                />
+                <div className="text-sm">
+                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-500" />
+                    Mark as important
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-text-dark-muted">Adds a highlighted badge so students notice it.</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-border-dark cursor-pointer hover:border-brand-blue/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={formData.is_pinned}
+                  onChange={(e) => setFormData({ ...formData, is_pinned: e.target.checked })}
+                  className="mt-0.5 w-4 h-4 text-brand-blue rounded"
+                />
+                <div className="text-sm">
+                  <p className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <Pin className="w-3.5 h-3.5 text-brand-purple" />
+                    Pin to top
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-text-dark-muted">Stays at the top of the feed regardless of date.</p>
+                </div>
+              </label>
+            </div>
+
+            {/* Attachment (image or doc) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2">
+                Attachment <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional — image or document)</span>
+              </label>
+              {formData.attachment_url ? (
+                <div className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg border border-gray-200 dark:border-border-dark">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Paperclip className="w-4 h-4 text-brand-blue shrink-0" />
+                    <span className="text-sm text-gray-800 dark:text-text-dark-primary truncate">
+                      {formData.attachment_name || formData.attachment_url}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((p) => ({ ...p, attachment_url: '', attachment_type: '', attachment_name: '' }))}
+                    className="text-xs text-red-600 hover:underline shrink-0"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <CloudinaryUpload
+                  onUploadSuccess={(url, meta) => {
+                    if (!url) return;
+                    setFormData((p) => ({
+                      ...p,
+                      attachment_url: url,
+                      attachment_type: meta?.type || (url.match(/\.(png|jpe?g|gif|webp|svg)$/i) ? 'image' : 'document'),
+                      attachment_name: meta?.name || url.split('/').pop(),
+                    }));
+                  }}
+                  onUploadError={(err) => setError(err || 'Upload failed')}
+                  acceptedTypes="any"
+                  maxSizeMB={10}
+                  currentFile={null}
+                  uploadEndpoint="/api/upload/announcement-attachment"
+                  folder="tekyprolms/announcements"
+                />
+              )}
             </div>
 
             {/* Recipients note */}

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { announcementsAPI } from '../lib/api';
-import { Megaphone, BookOpen, Eye } from 'lucide-react';
+import { Megaphone, BookOpen, Eye, Pin, Star, Paperclip } from 'lucide-react';
 import { cn } from '../utils/cn';
+import ReactionsBar from '../components/announcements/ReactionsBar';
 
 /**
  * Student Announcements — unified feed of admin broadcasts targeted
@@ -132,11 +133,25 @@ export default function Announcements() {
                 key={`${a.source}-${a.id}`}
                 className="group relative bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 p-5 transition-all hover:border-brand-blue/40 hover:shadow-md"
               >
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${sourceBg}`}>
-                    <Megaphone className="w-3 h-3" />
-                    {sourceLabel}
-                  </span>
+                <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${sourceBg}`}>
+                      <Megaphone className="w-3 h-3" />
+                      {sourceLabel}
+                    </span>
+                    {a.is_pinned && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border bg-purple-50 dark:bg-purple-900/20 border-purple-200/60 dark:border-purple-800/60 text-purple-700 dark:text-purple-400">
+                        <Pin className="w-2.5 h-2.5" />
+                        Pinned
+                      </span>
+                    )}
+                    {a.is_important && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border bg-amber-50 dark:bg-amber-900/20 border-amber-200/60 dark:border-amber-800/60 text-amber-700 dark:text-amber-400">
+                        <Star className="w-2.5 h-2.5" />
+                        Important
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
                     {formatRelative(a.scheduled_at || a.created_at)}
                   </span>
@@ -149,6 +164,27 @@ export default function Announcements() {
                 <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-4 whitespace-pre-wrap mb-3">
                   {body}
                 </p>
+
+                {a.attachment_url && (
+                  <a
+                    href={a.attachment_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 rounded-lg border border-gray-200 dark:border-dark-700 bg-gray-50 dark:bg-dark-700 text-xs text-gray-700 dark:text-gray-300 hover:border-brand-blue/40 transition-colors max-w-full"
+                  >
+                    <Paperclip className="w-3.5 h-3.5 text-brand-blue shrink-0" />
+                    <span className="truncate">{a.attachment_name || 'Attachment'}</span>
+                  </a>
+                )}
+
+                <div className="mb-3">
+                  <ReactionsBar
+                    source={a.source === 'admin' ? 'admin' : 'course'}
+                    announcementId={a.id}
+                    initialTally={a.reactions || {}}
+                    initialMine={a.my_reactions || []}
+                  />
+                </div>
 
                 <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-dark-700">
                   <div className="flex items-center gap-2 min-w-0">
