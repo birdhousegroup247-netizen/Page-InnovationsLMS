@@ -93,7 +93,7 @@ class AuthController {
    */
   static async register(req, res, next) {
     try {
-      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token, profile_picture } = req.body;
+      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token, profile_picture, date_of_birth } = req.body;
 
       // Bot check — only enforced when TURNSTILE_SECRET_KEY is configured.
       // A bot scripting against /api/auth/register without solving the
@@ -127,6 +127,7 @@ class AuthController {
         instructor_status: 'none',
         phone: phone || null,
         profile_picture: profile_picture || null,
+        date_of_birth: date_of_birth || null,
       });
 
       // Create lead record for marketing funnel (fire-and-forget — don't block registration)

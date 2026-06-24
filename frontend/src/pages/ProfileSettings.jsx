@@ -46,6 +46,7 @@ export default function ProfileSettings() {
     website: '',
     linkedin_url: '',
     github_url: '',
+    date_of_birth: '',
   });
 
   // Password form state
@@ -121,6 +122,14 @@ export default function ProfileSettings() {
         website: userData.website || '',
         linkedin_url: userData.linkedin_url || '',
         github_url: userData.github_url || '',
+        // DATEONLY comes back as YYYY-MM-DD from the API; if Sequelize
+        // hands us a Date object, slice the ISO so the date input
+        // accepts it directly.
+        date_of_birth: userData.date_of_birth
+          ? (typeof userData.date_of_birth === 'string'
+              ? userData.date_of_birth.slice(0, 10)
+              : new Date(userData.date_of_birth).toISOString().slice(0, 10))
+          : '',
       });
 
       setAvatarPreview(userData.profile_picture || userData.avatar_url || '');
@@ -473,6 +482,20 @@ export default function ProfileSettings() {
                       <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
                         Email cannot be changed. Contact support if needed.
                       </p>
+                    </div>
+
+                    {/* Date of birth — drives birthday wishes + the
+                        in-app celebration modal. Optional. */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
+                        Date of Birth <span className="text-gray-400 text-xs font-normal">(optional — so we can celebrate with you)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={profileForm.date_of_birth}
+                        onChange={(e) => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border border-gray-300 dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                      />
                     </div>
 
                     {/* Phone */}

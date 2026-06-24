@@ -974,6 +974,15 @@ const startServer = async () => {
       logger.error('Failed to start drip scheduler:', dripErr.message);
     }
 
+    // Start birthday scheduler — fires the daily "Happy Birthday from
+    // TekyPro" notification at 06:05 UTC.
+    try {
+      const { startBirthdayScheduler } = require('./services/birthday/birthdayService');
+      startBirthdayScheduler();
+    } catch (bdErr) {
+      logger.error('Failed to start birthday scheduler:', bdErr.message);
+    }
+
     // Session reminder cron: notify students 15 min before scheduled live sessions
     setInterval(async () => {
       try {

@@ -64,6 +64,22 @@ const User = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    // Optional birthday — collected on register / Profile Settings.
+    // Drives the daily birthday-wish notification + the in-app
+    // celebration modal. Year stored only for record; the cron
+    // matches by month + day so it fires every year.
+    date_of_birth: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    // Year we last showed the birthday celebration modal for this
+    // user. Lets us replay a missed birthday for up to N days
+    // ("your birthday was 3 days ago, we kept the surprise"). Reset
+    // implicitly when the year changes.
+    birthday_celebrated_year: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

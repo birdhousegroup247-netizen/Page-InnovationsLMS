@@ -11,6 +11,7 @@ import Topbar from './Topbar';
 import { Modal, Button } from '../ui';
 import PaymentBanner from '../ui/PaymentBanner';
 import SuspensionModal from '../ui/SuspensionModal';
+import BirthdayCelebration from '../birthday/BirthdayCelebration';
 import { LogOut } from 'lucide-react';
 
 /**
@@ -180,6 +181,9 @@ export default function AppLayout({ children }) {
 
       {/* Suspension / Soft-lock Modal */}
       <SuspensionModal />
+
+      {/* Birthday celebration — auto-pops once per year on app open */}
+      <BirthdayCelebration user={user} />
 
       {/* Logout Confirmation Modal */}
       <Modal

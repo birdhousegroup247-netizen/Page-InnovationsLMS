@@ -42,6 +42,7 @@ export default function Register() {
     confirmPassword: '',
     role: 'student',
     profile_picture: '',
+    date_of_birth: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -120,6 +121,7 @@ export default function Register() {
         experience_level: formData.experience_level || undefined,
         referral_source: formData.referral_source || undefined,
         profile_picture: formData.profile_picture || undefined,
+        date_of_birth: formData.date_of_birth || undefined,
       });
 
       if (result.success) {
@@ -514,6 +516,22 @@ export default function Register() {
 
                 {showOptional && (
                   <div className="space-y-4 pt-3 animate-fade-in">
+                    {/* Date of birth — drives the birthday celebration
+                        modal + the system birthday wish notification. */}
+                    <div>
+                      <label htmlFor="date_of_birth" className={labelClass}>
+                        Date of Birth <span className="text-gray-400 text-xs font-normal">(so we can celebrate with you)</span>
+                      </label>
+                      <input
+                        id="date_of_birth"
+                        type="date"
+                        name="date_of_birth"
+                        value={formData.date_of_birth}
+                        onChange={handleChange}
+                        className={inputClass}
+                      />
+                    </div>
+
                     {/* Phone */}
                     <div>
                       <label htmlFor="phone" className={labelClass}>Phone Number</label>

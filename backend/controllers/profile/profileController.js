@@ -40,7 +40,7 @@ class ProfileController {
   static async updateProfile(req, res, next) {
     try {
       const userId = req.user.id;
-      const { full_name, bio, phone, linkedin_url, github_url, website, location, timezone } = req.body;
+      const { full_name, bio, phone, linkedin_url, github_url, website, location, timezone, date_of_birth } = req.body;
 
       const user = await User.findByPk(userId);
 
@@ -57,6 +57,10 @@ class ProfileController {
       if (website !== undefined) user.website = website;
       if (location !== undefined) user.location = location;
       if (timezone !== undefined) user.timezone = timezone;
+      // Accept '' or null to clear; YYYY-MM-DD otherwise. Validates
+      // implicitly via DATEONLY — anything Sequelize can't parse will
+      // throw and fall into the error handler.
+      if (date_of_birth !== undefined) user.date_of_birth = date_of_birth || null;
 
       await user.save();
 
@@ -506,6 +510,50 @@ class ProfileController {
     } catch (error) {
       logger.error(`Error calculating learning streak: ${error.message}`);
       return 0;
+    }
+  }
+
+  /**
+   * GET /api/profile/birthday-celebration
+   * Returns the celebration payload for the in-app modal, or null.
+   * - { status: 'today',   days_ago: 0 }            if today is their bday
+   * - { status: 'belated', days_ago: 1..10 }        if they missed the day
+   *                                                   (within the grace window)
+   * - null                                          everything else
+   * Idempotent — returns the same value on every call until the
+   * client POSTs /seen. Lets the modal survive a page refresh.
+   */
+  static async getBirthdayCelebration(req, res, next) {
+    try {
+      const { getCelebrationFor } = require('../../services/birthday/birthdayService');
+      const user = await User.findByPk(req.user.id, {
+        attributes: ['id', 'full_name', 'date_of_birth', 'birthday_celebrated_year'],
+      });
+      const celebration = getCelebrationFor(user);
+      return ApiResponse.success(res, {
+        celebration,
+        first_name: (user?.full_name || '').split(' ')[0] || null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/profile/birthday-celebration/seen
+   * Marks the current year's celebration as seen so the modal
+   * stops re-appearing on subsequent app opens.
+   */
+  static async markBirthdayCelebrationSeen(req, res, next) {
+    try {
+      const year = new Date().getUTCFullYear();
+      await User.update(
+        { birthday_celebrated_year: year },
+        { where: { id: req.user.id } }
+      );
+      return ApiResponse.success(res, { celebrated_year: year });
+    } catch (error) {
+      next(error);
     }
   }
 }

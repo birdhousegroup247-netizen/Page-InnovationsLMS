@@ -33,6 +33,10 @@ router.get('/stats', ProfileController.getStats);
 // Get activity timeline
 router.get('/activity', ProfileController.getActivity);
 
+// Birthday celebration — drives the in-app confetti modal.
+router.get('/birthday-celebration', ProfileController.getBirthdayCelebration);
+router.post('/birthday-celebration/seen', ProfileController.markBirthdayCelebrationSeen);
+
 // ============================================================================
 // PUBLIC PROFILE ROUTES
 // ============================================================================
