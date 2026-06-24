@@ -60,6 +60,22 @@ router.post(
   UploadController.uploadProfilePicture
 );
 
+/**
+ * @route   POST /api/upload/signup-avatar
+ * @desc    Upload an avatar during signup (no auth yet — user is being
+ *          created). Rate-limited by IP via the upload rate-limiter
+ *          applied to this router. Falls through to the same controller
+ *          that the authenticated path uses; we just don't attach a
+ *          user id to the public_id when there's no session.
+ * @access  Public
+ */
+router.post(
+  '/signup-avatar',
+  uploadProfilePicture.single('file'),
+  handleUploadErrors,
+  UploadController.uploadSignupAvatar
+);
+
 // =============================================================================
 // COURSE UPLOADS
 // =============================================================================

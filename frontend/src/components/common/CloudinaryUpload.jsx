@@ -108,15 +108,17 @@ export default function CloudinaryUpload({
       }
 
       // Upload to backend API — per-tab Bearer token (see tokenStorage.js).
+      // Public endpoints (e.g. /api/upload/signup-avatar during
+      // registration) won't have a session yet, so only attach the
+      // Authorization header when we actually have a token.
       const { tokenStorage } = await import('../../utils/tokenStorage');
       const token = tokenStorage.get('accessToken');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}${uploadEndpoint}`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+          headers,
           body: formData,
         }
       );

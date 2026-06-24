@@ -38,6 +38,32 @@ class UploadController {
   }
 
   /**
+   * Upload an avatar during signup (public — no req.user yet).
+   * Same shape as uploadProfilePicture but the public_id doesn't
+   * include a user id (we don't have one), so we anchor it to a
+   * timestamp + random suffix instead. The rate-limiter on this
+   * router keeps this from being abused.
+   * POST /api/upload/signup-avatar
+   */
+  static async uploadSignupAvatar(req, res, next) {
+    try {
+      if (!req.file) {
+        throw new BadRequestError('No file uploaded');
+      }
+      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      const result = await CloudinaryService.uploadImage(
+        base64File,
+        'signup-avatars',
+        `signup_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      );
+      logger.info(`Signup avatar uploaded: ${result.url}`);
+      return ApiResponse.success(res, result, 'Avatar uploaded successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Upload course thumbnail
    * POST /api/upload/course-thumbnail
    */

@@ -14,6 +14,7 @@ import {
   formCardClass,
 } from '../utils/authForm';
 import TurnstileWidget from '../components/auth/TurnstileWidget';
+import CloudinaryUpload from '../components/common/CloudinaryUpload';
 
 const COUNTRIES = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Nigeria',
@@ -40,6 +41,7 @@ export default function Register() {
     password: '',
     confirmPassword: '',
     role: 'student',
+    profile_picture: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -117,6 +119,7 @@ export default function Register() {
         country: formData.country || undefined,
         experience_level: formData.experience_level || undefined,
         referral_source: formData.referral_source || undefined,
+        profile_picture: formData.profile_picture || undefined,
       });
 
       if (result.success) {
@@ -294,6 +297,61 @@ export default function Register() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Profile Picture (Optional) — compact avatar tile.
+                  Keeps the signup funnel light: students who want to
+                  personalize from day one can; everyone else can skip
+                  and add one later from Profile Settings. */}
+              <div>
+                <label className={labelClass}>
+                  Profile Picture <span className="text-gray-400 dark:text-text-dark-muted text-xs font-normal">(optional)</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="relative shrink-0">
+                    {formData.profile_picture ? (
+                      <img
+                        src={formData.profile_picture}
+                        alt="Avatar preview"
+                        className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-border-dark"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center">
+                        <span className="text-white font-semibold text-xl">
+                          {formData.full_name?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {formData.profile_picture ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, profile_picture: '' })}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-text-dark-secondary bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600 transition-colors"
+                        >
+                          Remove
+                        </button>
+                        <p className="text-xs text-gray-500 dark:text-text-dark-muted">
+                          Looks good — finish the rest of the form.
+                        </p>
+                      </div>
+                    ) : (
+                      <CloudinaryUpload
+                        onUploadSuccess={(url) => {
+                          if (url) setFormData((prev) => ({ ...prev, profile_picture: url }));
+                        }}
+                        onUploadError={(err) => setError(err || 'Upload failed')}
+                        acceptedTypes="image"
+                        maxSizeMB={3}
+                        currentFile={null}
+                        uploadEndpoint="/api/upload/signup-avatar"
+                        folder="tekyprolms/signup-avatars"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Full Name */}
               <div>
                 <label htmlFor="full_name" className={labelClass}>

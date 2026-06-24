@@ -93,7 +93,7 @@ class AuthController {
    */
   static async register(req, res, next) {
     try {
-      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token } = req.body;
+      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token, profile_picture } = req.body;
 
       // Bot check — only enforced when TURNSTILE_SECRET_KEY is configured.
       // A bot scripting against /api/auth/register without solving the
@@ -116,7 +116,9 @@ class AuthController {
         throw new BadRequestError('Email already registered');
       }
 
-      // Create user
+      // Create user. profile_picture is optional from the registration
+      // form — students can upload one upfront via the CloudinaryUpload
+      // widget, or skip it and set one later from Profile Settings.
       const user = await User.createUser({
         full_name,
         email,
@@ -124,6 +126,7 @@ class AuthController {
         role: 'student',
         instructor_status: 'none',
         phone: phone || null,
+        profile_picture: profile_picture || null,
       });
 
       // Create lead record for marketing funnel (fire-and-forget — don't block registration)
