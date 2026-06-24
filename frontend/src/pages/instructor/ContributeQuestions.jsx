@@ -9,11 +9,13 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Eye,
 } from 'lucide-react';
 import { questionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
-import { Button, Spinner, Badge, Tooltip } from '../../components/ui';
+import { Button, Spinner, Tooltip } from '../../components/ui';
 import QuestionModal from '../../components/questions/QuestionModal';
+import QuestionViewModal from '../../components/questions/QuestionViewModal';
 
 export default function ContributeQuestions() {
   const [questions, setQuestions] = useState([]);
@@ -23,6 +25,7 @@ export default function ContributeQuestions() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
 
   useEffect(() => {
@@ -240,93 +243,120 @@ export default function ContributeQuestions() {
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm overflow-hidden">
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredQuestions.map((question) => {
-                const status = getStatus(question);
-                const statusColor =
-                  status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'yellow';
-                const statusLabel =
-                  status === 'approved'
-                    ? 'Approved'
-                    : status === 'rejected'
-                    ? 'Rejected'
-                    : 'Pending Review';
-                const editLocked = status === 'approved';
-                return (
-                  <div
-                    key={question.id}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          {question.course && (
-                            <Badge color="purple">{question.course.title}</Badge>
-                          )}
-                          <Badge color={statusColor}>{statusLabel}</Badge>
-                          <Badge
-                            color={
-                              question.difficulty === 'easy'
-                                ? 'green'
-                                : question.difficulty === 'medium'
-                                ? 'yellow'
-                                : 'red'
-                            }
-                          >
-                            {question.difficulty}
-                          </Badge>
-                          <Badge color="blue">
-                            {question.question_type.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                        <p className="text-gray-900 dark:text-white font-medium mb-1">
-                          {question.question_text}
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {question.marks} mark(s)
-                          {question.time_limit_seconds ? ` · ${question.time_limit_seconds}s time limit` : ''}
-                        </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredQuestions.map((question) => {
+              const status = getStatus(question);
+              const editLocked = status === 'approved';
+              // Modern status chip with a dot — cleaner than the
+              // old pill stack, and still readable at a glance.
+              const statusDotClass =
+                status === 'approved'
+                  ? 'bg-green-500'
+                  : status === 'rejected'
+                  ? 'bg-red-500'
+                  : 'bg-amber-500';
+              const statusTextClass =
+                status === 'approved'
+                  ? 'text-green-700 dark:text-green-400'
+                  : status === 'rejected'
+                  ? 'text-red-700 dark:text-red-400'
+                  : 'text-amber-700 dark:text-amber-400';
+              const statusBgClass =
+                status === 'approved'
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200/60 dark:border-green-800/60'
+                  : status === 'rejected'
+                  ? 'bg-red-50 dark:bg-red-900/20 border-red-200/60 dark:border-red-800/60'
+                  : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200/60 dark:border-amber-800/60';
+              const statusLabel =
+                status === 'approved'
+                  ? 'Approved'
+                  : status === 'rejected'
+                  ? 'Rejected'
+                  : 'Pending';
 
-                        {/* Surface admin's rejection note so the instructor
-                            actually knows why and can fix + resubmit. */}
-                        {status === 'rejected' && question.rejection_reason && (
-                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm">
-                              <p className="font-medium text-red-900 dark:text-red-300">Rejection reason</p>
-                              <p className="text-red-700 dark:text-red-400">{question.rejection_reason}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 ml-4">
-                        <Tooltip content={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            aria-label={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}
-                            onClick={() => {
-                              setSelectedQuestion(question);
-                              setShowModal(true);
-                            }}
-                            disabled={editLocked}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </Tooltip>
-                      </div>
+              return (
+                <div
+                  key={question.id}
+                  onClick={() => {
+                    setSelectedQuestion(question);
+                    setShowViewModal(true);
+                  }}
+                  className="group relative bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-5 cursor-pointer transition-all hover:border-brand-blue/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedQuestion(question);
+                      setShowViewModal(true);
+                    }
+                  }}
+                >
+                  {/* Status pill (top) */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusBgClass} ${statusTextClass}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass}`} />
+                      {statusLabel}
+                    </span>
+                    {/* Action buttons — only visible on hover/focus on
+                        desktop; always visible on touch screens. */}
+                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
+                      <Tooltip content="View details">
+                        <button
+                          type="button"
+                          aria-label="View details"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedQuestion(question);
+                            setShowViewModal(true);
+                          }}
+                          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
+                      <Tooltip content={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}>
+                        <button
+                          type="button"
+                          aria-label={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}
+                          disabled={editLocked}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedQuestion(question);
+                            setShowModal(true);
+                          }}
+                          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Question text — the prominent thing */}
+                  <p className="text-base font-medium text-gray-900 dark:text-white line-clamp-3 leading-snug mb-3">
+                    {question.question_text}
+                  </p>
+
+                  {/* Minimal meta footer: course + marks */}
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-text-dark-muted">
+                    <span className="truncate">
+                      {question.course?.title || 'No course'}
+                    </span>
+                    <span className="shrink-0 ml-3">
+                      {question.marks ?? 1} mark{(question.marks ?? 1) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </Container>
 
-      {/* Question Modal */}
+      {/* Edit/Create Modal */}
       {showModal && (
         <QuestionModal
           isOpen={showModal}
@@ -342,6 +372,18 @@ export default function ContributeQuestions() {
           }}
           courses={courses}
           categories={categories}
+        />
+      )}
+
+      {/* Read-only details modal */}
+      {showViewModal && (
+        <QuestionViewModal
+          isOpen={showViewModal}
+          onClose={() => {
+            setShowViewModal(false);
+            setSelectedQuestion(null);
+          }}
+          question={selectedQuestion}
         />
       )}
     </>
