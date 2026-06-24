@@ -1,10 +1,12 @@
-import { X, CheckCircle, AlertCircle, Tag, Clock, BookOpen, Award } from 'lucide-react';
-import { Badge } from '../ui';
+import { X, CheckCircle, AlertCircle, Tag, Clock, BookOpen, Award, Edit } from 'lucide-react';
+import { Badge, Button } from '../ui';
 
 // Read-only modal showing every field on a question. Mirrors the
-// QuestionModal layout so editing feels familiar, but no inputs —
-// purely a "see what this question is" view. Used from ContributeQuestions.
-export default function QuestionViewModal({ isOpen, onClose, question }) {
+// QuestionModal layout so editing feels familiar, but no inputs.
+// onEdit is optional — when provided we render an Edit button in
+// the footer that hands the question off to the parent (which
+// closes this modal and opens QuestionModal for the same row).
+export default function QuestionViewModal({ isOpen, onClose, question, onEdit }) {
   if (!isOpen || !question) return null;
 
   const status =
@@ -13,6 +15,7 @@ export default function QuestionViewModal({ isOpen, onClose, question }) {
     status === 'approved' ? 'success' : status === 'rejected' ? 'danger' : 'warning';
   const statusLabel =
     status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Pending Review';
+  const editLocked = status === 'approved';
 
   const difficultyVariant =
     question.difficulty === 'easy'
@@ -21,16 +24,34 @@ export default function QuestionViewModal({ isOpen, onClose, question }) {
       ? 'warning'
       : 'danger';
 
-  // For multiple choice, options can be an array of strings OR
-  // objects { text, is_correct }. Handle both. For true/false the
-  // correct_answer is 'true' or 'false'. For fill_blank it's the
-  // raw expected string.
-  const options = Array.isArray(question.options) ? question.options : [];
-  const isCorrectOption = (opt) => {
-    if (typeof opt === 'object') return !!opt.is_correct;
-    return String(opt).trim() === String(question.correct_answer).trim();
+  // Backend can return options three different ways depending on
+  // who saved the row: a real array, a JSON-stringified array, or
+  // an array of objects {text,is_correct}. Normalize all three to
+  // a flat list of strings + an isCorrect tagger that handles both
+  // the object-flag case and the "correct_answer === option text"
+  // case from QuestionModal's create flow. Indexes also count as a
+  // valid correct_answer (some legacy rows store "0"/"1"/"2"/"3").
+  let rawOptions = question.options;
+  if (typeof rawOptions === 'string') {
+    try {
+      rawOptions = JSON.parse(rawOptions);
+    } catch {
+      rawOptions = [];
+    }
+  }
+  const options = Array.isArray(rawOptions) ? rawOptions : [];
+  const correctAnswer = String(question.correct_answer ?? '').trim();
+  const isCorrectOption = (opt, idx) => {
+    if (opt && typeof opt === 'object' && 'is_correct' in opt) return !!opt.is_correct;
+    const text = typeof opt === 'object' ? opt?.text ?? '' : opt;
+    if (String(text).trim() === correctAnswer) return true;
+    if (correctAnswer === String(idx)) return true; // legacy index-based
+    // Letter-based ("A", "B", ...) — some imports use these
+    const letter = String.fromCharCode(65 + idx);
+    if (correctAnswer.toUpperCase() === letter) return true;
+    return false;
   };
-  const optionText = (opt) => (typeof opt === 'object' ? opt.text : opt);
+  const optionText = (opt) => (typeof opt === 'object' ? opt?.text ?? '' : opt);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -41,13 +62,27 @@ export default function QuestionViewModal({ isOpen, onClose, question }) {
           {/* Header */}
           <div className="sticky top-0 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Question details</h2>
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  onClick={() => onEdit(question)}
+                  disabled={editLocked}
+                  title={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}
+                >
+                  Edit
+                </Button>
+              )}
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           <div className="p-6 space-y-6">
@@ -92,7 +127,7 @@ export default function QuestionViewModal({ isOpen, onClose, question }) {
                 </p>
                 <div className="space-y-2">
                   {options.map((opt, i) => {
-                    const correct = isCorrectOption(opt);
+                    const correct = isCorrectOption(opt, i);
                     return (
                       <div
                         key={i}
@@ -106,7 +141,7 @@ export default function QuestionViewModal({ isOpen, onClose, question }) {
                           {String.fromCharCode(65 + i)}.
                         </span>
                         <p className="flex-1 text-sm text-gray-900 dark:text-white">
-                          {optionText(opt)}
+                          {optionText(opt) || <span className="text-gray-400 italic">(empty)</span>}
                         </p>
                         {correct && (
                           <span className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">

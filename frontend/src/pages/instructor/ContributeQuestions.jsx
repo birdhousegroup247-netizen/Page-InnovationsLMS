@@ -375,7 +375,9 @@ export default function ContributeQuestions() {
         />
       )}
 
-      {/* Read-only details modal */}
+      {/* Read-only details modal. onEdit lets the user jump straight
+          to the editor without closing + reopening — we close the
+          view modal and open QuestionModal with the same row. */}
       {showViewModal && (
         <QuestionViewModal
           isOpen={showViewModal}
@@ -384,6 +386,11 @@ export default function ContributeQuestions() {
             setSelectedQuestion(null);
           }}
           question={selectedQuestion}
+          onEdit={(q) => {
+            setShowViewModal(false);
+            setSelectedQuestion(q);
+            setShowModal(true);
+          }}
         />
       )}
     </>
