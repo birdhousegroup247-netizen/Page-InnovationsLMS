@@ -102,16 +102,15 @@ export default function CreateTest() {
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
-      // Filter by category only by default. course_id on QuestionBank is
-      // nullable — most questions are tagged to a category and live in
-      // the bank for the whole category. Strict AND on (category AND
-      // course) was returning zero results any time a course didn't have
-      // its own dedicated bank, even when plenty of relevant questions
-      // existed under the same category. The instructor can still
-      // narrow via the search/difficulty/type filters on this step.
+      // In this codebase questions are organized by course_id (required
+      // on QuestionModal — "Questions are organized by course"), and
+      // category_id is optional metadata. So the natural pool for a
+      // test is "every approved question linked to the selected course"
+      // — not the strict (course AND category) intersection the picker
+      // used before.
       const params = {
         is_approved: true,
-        category: questionFilters.category || testData.category_id || undefined,
+        course_id: testData.course_id || undefined,
         search: questionFilters.search || undefined,
         difficulty: questionFilters.difficulty || undefined,
         type: questionFilters.type || undefined,
@@ -145,7 +144,7 @@ export default function CreateTest() {
     if (currentStep === 1) {
       fetchQuestions();
     }
-  }, [currentStep, questionFilters, testData.category_id]);
+  }, [currentStep, questionFilters, testData.course_id]);
 
   useEffect(() => {
     if (currentStep === 2 && testData.course_id) {
@@ -546,12 +545,12 @@ export default function CreateTest() {
             <HelpCircle className="w-6 h-6 text-gray-400" />
           </div>
           <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
-            No questions in the bank yet for this category
+            No approved questions in this course's bank yet
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {questionFilters.search || questionFilters.difficulty || questionFilters.type
               ? 'Clear the filters above to widen the search, or add new questions.'
-              : 'Add some questions to the bank first — then come back to build the test.'}
+              : 'Add questions to this course’s bank first — then come back to build the test.'}
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             {(questionFilters.search || questionFilters.difficulty || questionFilters.type) && (
