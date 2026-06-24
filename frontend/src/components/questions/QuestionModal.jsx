@@ -57,8 +57,12 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess, co
       newErrors.question_text = 'Question text is required';
     }
 
-    if (!formData.course_id) {
-      newErrors.course_id = 'Please select a course';
+    // Category is the primary organizer now — every question must live
+    // in one. Course is optional: leave it blank for questions that
+    // apply category-wide (e.g. "Web Dev" general questions usable in
+    // any course-level test), or pick one to tie it to that course.
+    if (!formData.category_id) {
+      newErrors.category_id = 'Please select a category';
     }
 
     if (formData.question_type === 'multiple_choice') {
@@ -92,8 +96,8 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess, co
 
       const payload = {
         ...formData,
-        course_id: parseInt(formData.course_id),
-        category_id: formData.category_id ? parseInt(formData.category_id) : null,
+        course_id: formData.course_id ? parseInt(formData.course_id) : null,
+        category_id: parseInt(formData.category_id),
         marks: parseInt(formData.marks),
         time_limit_seconds: parseInt(formData.time_limit_seconds)
       };
@@ -136,46 +140,49 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess, co
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Course Selection */}
+            {/* Category — primary organizer */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Course *
-              </label>
-              <select
-                value={formData.course_id}
-                onChange={(e) => handleChange('course_id', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white ${
-                  errors.course_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                }`}
-              >
-                <option value="">Select a course</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>{course.title}</option>
-                ))}
-              </select>
-              {errors.course_id && (
-                <p className="mt-1 text-sm text-red-600">{errors.course_id}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                Questions are organized by course (e.g., MySQL, PostgreSQL, JavaScript)
-              </p>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Category (Optional)
+                Category *
               </label>
               <select
                 value={formData.category_id}
                 onChange={(e) => handleChange('category_id', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white ${
+                  errors.category_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                }`}
               >
                 <option value="">Select a category</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
+              {errors.category_id && (
+                <p className="mt-1 text-sm text-red-600">{errors.category_id}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Questions are organized by category (e.g., Web Dev, Databases, Data Science).
+              </p>
+            </div>
+
+            {/* Course — optional, narrows the question to a specific course */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Course (Optional)
+              </label>
+              <select
+                value={formData.course_id}
+                onChange={(e) => handleChange('course_id', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white"
+              >
+                <option value="">No specific course — applies category-wide</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Leave blank for general category questions (usable in any test in this category), or pick a course to narrow it to that course only.
+              </p>
             </div>
 
             {/* Question Text */}

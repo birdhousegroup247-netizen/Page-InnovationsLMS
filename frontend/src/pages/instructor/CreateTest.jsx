@@ -77,6 +77,11 @@ export default function CreateTest() {
     type: '',
   });
 
+  // Step-2 course narrowing. 'all' = whole category pool, 'general' =
+  // questions with no course_id (category-wide), or a specific course id.
+  // Defaults to whatever the instructor picked in Step 1 (or 'all' if none).
+  const [courseFilter, setCourseFilter] = useState('all');
+
   useEffect(() => {
     // Note: Role check is handled by InstructorRoute wrapper in App.jsx
     fetchInitialData();
@@ -102,19 +107,21 @@ export default function CreateTest() {
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
-      // In this codebase questions are organized by course_id (required
-      // on QuestionModal — "Questions are organized by course"), and
-      // category_id is optional metadata. So the natural pool for a
-      // test is "every approved question linked to the selected course"
-      // — not the strict (course AND category) intersection the picker
-      // used before.
+      // Category is the primary organizer now (required on QuestionModal,
+      // required in Step 1 of this wizard). Course is optional metadata
+      // — a question with no course belongs to the whole category, a
+      // question with a course belongs to that course only. We fetch
+      // the full category pool here and narrow further on the client
+      // via courseFilter + search/difficulty/type — that way switching
+      // the course filter is instant and we can show accurate per-course
+      // counts in the dropdown.
       const params = {
         is_approved: true,
-        course_id: testData.course_id || undefined,
+        category: testData.category_id || undefined,
         search: questionFilters.search || undefined,
         difficulty: questionFilters.difficulty || undefined,
         type: questionFilters.type || undefined,
-        limit: 100,
+        limit: 200,
       };
 
       const response = await questionsAPI.getApproved(params);
@@ -126,15 +133,40 @@ export default function CreateTest() {
     }
   };
 
-  const fetchStudents = async (courseId) => {
-    if (!courseId) return;
-
+  const fetchStudents = async ({ courseId, categoryId }) => {
     setLoadingStudents(true);
     try {
-      const response = await coursesAPI.getCourseEnrollments(courseId);
-      setStudents(response.data.data.enrollments || []);
+      if (courseId) {
+        // Course-scoped test → just that course's enrollees.
+        const response = await coursesAPI.getCourseEnrollments(courseId);
+        setStudents(response.data.data.enrollments || []);
+        return;
+      }
+      // Category-wide test → pool every student enrolled in any
+      // course the instructor owns in this category, deduplicated by
+      // student_id so the same person doesn't show up twice.
+      const myCourses = (courses || []).filter(
+        (c) => String(c.category_id) === String(categoryId)
+      );
+      if (myCourses.length === 0) {
+        setStudents([]);
+        return;
+      }
+      const all = await Promise.all(
+        myCourses.map((c) =>
+          coursesAPI.getCourseEnrollments(c.id).catch(() => ({ data: { data: { enrollments: [] } } }))
+        )
+      );
+      const dedup = new Map();
+      for (const r of all) {
+        for (const e of r?.data?.data?.enrollments || []) {
+          if (!dedup.has(e.student_id)) dedup.set(e.student_id, e);
+        }
+      }
+      setStudents(Array.from(dedup.values()));
     } catch (error) {
       console.error('Failed to load students:', error);
+      setStudents([]);
     } finally {
       setLoadingStudents(false);
     }
@@ -144,13 +176,20 @@ export default function CreateTest() {
     if (currentStep === 1) {
       fetchQuestions();
     }
-  }, [currentStep, questionFilters, testData.course_id]);
+  }, [currentStep, questionFilters, testData.category_id]);
+
+  // When the instructor picks a course in Step 1, default Step 2's
+  // course filter to that course so they see the narrow pool first.
+  // 'all' if no course was selected.
+  useEffect(() => {
+    setCourseFilter(testData.course_id ? String(testData.course_id) : 'all');
+  }, [testData.course_id]);
 
   useEffect(() => {
-    if (currentStep === 2 && testData.course_id) {
-      fetchStudents(testData.course_id);
+    if (currentStep === 2 && (testData.course_id || testData.category_id)) {
+      fetchStudents({ courseId: testData.course_id, categoryId: testData.category_id });
     }
-  }, [currentStep, testData.course_id]);
+  }, [currentStep, testData.course_id, testData.category_id, courses]);
 
   const handleInputChange = (field, value) => {
     setTestData((prev) => ({
@@ -199,10 +238,9 @@ export default function CreateTest() {
           alert('Please select a category');
           return false;
         }
-        if (!testData.course_id) {
-          alert('Please select a course');
-          return false;
-        }
+        // Course is optional — leaving it blank scopes the test to the
+        // whole category so it covers general questions plus questions
+        // from any course in the category.
         if (testData.time_limit_minutes < 1) {
           alert('Time limit must be at least 1 minute');
           return false;
@@ -268,7 +306,7 @@ export default function CreateTest() {
         title: testData.title,
         description: testData.description,
         category_id: testData.category_id,
-        course_id: testData.course_id,
+        course_id: testData.course_id || null,
         difficulty: testData.difficulty,
         time_limit_minutes: parseInt(testData.time_limit_minutes),
         total_points: parseInt(testData.total_points),
@@ -346,23 +384,26 @@ export default function CreateTest() {
           </select>
         </div>
 
-        {/* Course */}
+        {/* Course (optional — narrows the question pool) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-primary mb-2">
-            Course <span className="text-red-500">*</span>
+            Course <span className="text-gray-400 text-xs font-normal">(optional)</span>
           </label>
           <select
             value={testData.course_id}
             onChange={(e) => handleInputChange('course_id', e.target.value)}
             className="w-full px-4 py-2 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
           >
-            <option value="">Select a course</option>
+            <option value="">All courses (general test for this category)</option>
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-text-dark-muted">
+            Leave blank to pull from every question in this category. Pick a course to limit the pool to that course only.
+          </p>
         </div>
 
         {/* Difficulty */}
@@ -472,6 +513,28 @@ export default function CreateTest() {
     }
 
     if (currentStep === 1) {
+      // Build a course-breakdown of the fetched category pool so the
+      // dropdown can show real counts. 'general' bucket holds questions
+      // with no course_id (category-wide questions).
+      const courseBreakdown = (() => {
+        const map = new Map();
+        let general = 0;
+        for (const q of availableQuestions) {
+          if (q.course_id) {
+            map.set(q.course_id, (map.get(q.course_id) || 0) + 1);
+          } else {
+            general += 1;
+          }
+        }
+        return { byCourse: map, general };
+      })();
+
+      const displayedQuestions = availableQuestions.filter((q) => {
+        if (courseFilter === 'all') return true;
+        if (courseFilter === 'general') return !q.course_id;
+        return String(q.course_id) === String(courseFilter);
+      });
+
       return (
     <div className="space-y-6">
       {/* Filters */}
@@ -525,12 +588,45 @@ export default function CreateTest() {
             </select>
           </div>
         </div>
+
+        {/* Course narrowing — operates on the already-fetched category pool */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-text-dark-primary whitespace-nowrap">
+            Show questions from:
+          </label>
+          <select
+            value={courseFilter}
+            onChange={(e) => setCourseFilter(e.target.value)}
+            className="flex-1 px-4 py-2 bg-white dark:bg-dark-600 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+          >
+            <option value="all">
+              All courses in this category ({availableQuestions.length})
+            </option>
+            {courseBreakdown.general > 0 && (
+              <option value="general">
+                General — no specific course ({courseBreakdown.general})
+              </option>
+            )}
+            {courses
+              .filter((c) => courseBreakdown.byCourse.has(c.id))
+              .map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.title} ({courseBreakdown.byCourse.get(c.id)})
+                </option>
+              ))}
+          </select>
+        </div>
       </div>
 
       {/* Selected Questions Summary */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4">
         <p className="text-sm font-medium text-blue-800 dark:text-blue-400">
           {selectedQuestions.length} question(s) selected
+          {courseFilter !== 'all' && (
+            <span className="text-blue-600 dark:text-blue-300 font-normal">
+              {' '}· showing {displayedQuestions.length} of {availableQuestions.length}
+            </span>
+          )}
         </p>
       </div>
 
@@ -545,12 +641,12 @@ export default function CreateTest() {
             <HelpCircle className="w-6 h-6 text-gray-400" />
           </div>
           <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
-            No approved questions in this course's bank yet
+            No approved questions in this category yet
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {questionFilters.search || questionFilters.difficulty || questionFilters.type
               ? 'Clear the filters above to widen the search, or add new questions.'
-              : 'Add questions to this course’s bank first — then come back to build the test.'}
+              : 'Add some questions to this category — then come back to build the test.'}
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             {(questionFilters.search || questionFilters.difficulty || questionFilters.type) && (
@@ -571,9 +667,25 @@ export default function CreateTest() {
             </Link>
           </div>
         </div>
+      ) : displayedQuestions.length === 0 ? (
+        <div className="text-center py-10 px-4">
+          <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+            No questions match this course filter
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Switch to "All courses" above to see the full category pool, or pick a different course.
+          </p>
+          <button
+            type="button"
+            onClick={() => setCourseFilter('all')}
+            className="px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90 transition-colors"
+          >
+            Show all courses
+          </button>
+        </div>
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {availableQuestions.map((question) => {
+          {displayedQuestions.map((question) => {
             const isSelected = selectedQuestions.find((q) => q.id === question.id);
             return (
               <div
@@ -695,7 +807,9 @@ export default function CreateTest() {
           </div>
         ) : students.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            No students enrolled in this course.
+            {testData.course_id
+              ? 'No students enrolled in this course yet.'
+              : 'No students enrolled in any of your courses in this category yet.'}
           </div>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto border border-gray-200 dark:border-border-dark rounded-lg p-4">
