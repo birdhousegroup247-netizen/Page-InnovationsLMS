@@ -139,39 +139,47 @@ export default function CreateTest() {
     }
   };
 
-  // Pulls enrollments for every instructor course in one shot and
-  // unifies them — each student is deduped by student_id and gets a
-  // `courses` array of every course they're enrolled in (with the
-  // instructor). This is the source of truth; the picker filters on
-  // top of it client-side so toggling between "this course only" and
-  // "all my students" is instant.
+  // Pulls every enrollment across the instructor's courses in one
+  // backend call (/api/courses/my/students). Each row from the API is
+  // an enrollment with eager-loaded student + course, so we dedupe by
+  // student_id and collect a `courses` array per student so the picker
+  // can show what they're enrolled in. The previous approach fanned
+  // out N parallel /enrollments calls — slow, and the per-course
+  // endpoint silently swallowed permissions errors which is why the
+  // picker came up empty.
   const fetchStudents = async () => {
-    if (!courses || courses.length === 0) {
-      setStudents([]);
-      return;
-    }
     setLoadingStudents(true);
     try {
-      const responses = await Promise.all(
-        courses.map((c) =>
-          coursesAPI
-            .getCourseEnrollments(c.id)
-            .then((r) => ({ courseId: c.id, courseTitle: c.title, categoryId: c.category_id, enrollments: r?.data?.data?.enrollments || [] }))
-            .catch(() => ({ courseId: c.id, courseTitle: c.title, categoryId: c.category_id, enrollments: [] }))
-        )
+      const response = await coursesAPI.getInstructorStudents();
+      const rows = response?.data?.data?.students || [];
+      const courseCategoryById = new Map(
+        (courses || []).map((c) => [c.id, c.category_id])
       );
       const dedup = new Map();
-      for (const { courseId, courseTitle, categoryId, enrollments } of responses) {
-        for (const e of enrollments) {
-          const existing = dedup.get(e.student_id);
-          if (existing) {
-            existing.courses.push({ id: courseId, title: courseTitle, category_id: categoryId });
-          } else {
-            dedup.set(e.student_id, {
-              ...e,
-              courses: [{ id: courseId, title: courseTitle, category_id: categoryId }],
-            });
+      for (const r of rows) {
+        const studentId = r.student_id ?? r.student?.id;
+        if (!studentId) continue;
+        const courseInfo = {
+          id: r.course_id ?? r.course?.id,
+          title: r.course?.title || `Course #${r.course_id}`,
+          category_id:
+            r.course?.category_id ??
+            courseCategoryById.get(r.course_id ?? r.course?.id) ??
+            null,
+        };
+        const existing = dedup.get(studentId);
+        if (existing) {
+          if (!existing.courses.some((c) => c.id === courseInfo.id)) {
+            existing.courses.push(courseInfo);
           }
+        } else {
+          dedup.set(studentId, {
+            student_id: studentId,
+            student_name: r.student?.full_name || r.student_name,
+            student_email: r.student?.email || r.student_email,
+            student_avatar: r.student?.avatar_url || r.student?.profile_picture,
+            courses: [courseInfo],
+          });
         }
       }
       setStudents(Array.from(dedup.values()));
@@ -197,7 +205,7 @@ export default function CreateTest() {
   }, [testData.course_id]);
 
   useEffect(() => {
-    if (currentStep === 2 && courses.length > 0) {
+    if (currentStep === 2) {
       fetchStudents();
     }
   }, [currentStep, courses]);
