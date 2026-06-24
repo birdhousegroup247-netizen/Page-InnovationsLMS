@@ -890,15 +890,14 @@ class AssignedTestController {
     try {
       const { testId } = req.params;
 
+      // Load the base test row separately from the heavy joins so a
+      // schema-drift error on QuestionBank doesn't 500 the entire
+      // endpoint and lock the Edit page out. The lighter includes
+      // (instructor + course) are well-trodden and safe.
       const test = await AssignedTest.findByPk(testId, {
         include: [
           { model: User, as: 'instructor', attributes: ['id', 'full_name'] },
           { model: Course, as: 'course', attributes: ['id', 'title'] },
-          {
-            model: AssignedTestQuestion,
-            as: 'test_questions',
-            include: [{ model: QuestionBank, as: 'question' }],
-          },
         ],
       });
 
@@ -906,9 +905,26 @@ class AssignedTestController {
         throw new NotFoundError('Test not found');
       }
 
-      // Same shape the list endpoint returns — the TestResults / Edit pages
-      // read title/due_date and the count fields.
+      // Try to attach the questions list, but don't fail the whole
+      // request if the QuestionBank include errors (missing column,
+      // pending auto-migration, etc.) — log it and fall back to the
+      // raw question_ids so Edit/TestResults can still render.
+      let testQuestions = [];
+      let questionCount = 0;
+      try {
+        testQuestions = await AssignedTestQuestion.findAll({
+          where: { test_id: test.id },
+          include: [{ model: QuestionBank, as: 'question' }],
+          order: [['order_index', 'ASC']],
+        });
+        questionCount = testQuestions.length;
+      } catch (qErr) {
+        logger.warn(`getTestById: questions include failed for test ${test.id}: ${qErr.message}`);
+        questionCount = await AssignedTestQuestion.count({ where: { test_id: test.id } }).catch(() => 0);
+      }
+
       const plain = test.toJSON();
+      plain.test_questions = testQuestions.map((q) => (typeof q.toJSON === 'function' ? q.toJSON() : q));
       const [assignedCount, enrolledCount] = await Promise.all([
         TestAssignment.count({ where: { test_id: test.id } }),
         test.course_id
@@ -917,7 +933,7 @@ class AssignedTestController {
       ]);
       plain.title = plain.test_name;
       plain.due_date = plain.end_date;
-      plain.question_count = Array.isArray(plain.test_questions) ? plain.test_questions.length : 0;
+      plain.question_count = questionCount;
       plain.assigned_students_count = assignedCount;
       plain.enrolled_students_count = enrolledCount;
 

@@ -71,6 +71,7 @@ const PracticeTests = lazyWithReload(() => import('./pages/PracticeTests'));
 const Certificates = lazyWithReload(() => import('./pages/Certificates'));
 const GeneratePracticeTest = lazyWithReload(() => import('./pages/GeneratePracticeTest'));
 const TakeTest = lazyWithReload(() => import('./pages/TakeTest'));
+const EditTest = lazyWithReload(() => import('./pages/instructor/EditTest'));
 const TestResults = lazyWithReload(() => import('./pages/TestResults'));
 const MyAssignedTests = lazyWithReload(() => import('./pages/MyAssignedTests'));
 const Messages = lazyWithReload(() => import('./pages/Messages'));
@@ -452,7 +453,7 @@ function App() {
             path="/instructor/tests/:testId/edit"
             element={
               <InstructorRoute>
-                <TakeTest />
+                <EditTest />
               </InstructorRoute>
             }
           />
