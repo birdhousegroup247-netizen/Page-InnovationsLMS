@@ -513,15 +513,26 @@ export default function CreateTest() {
     }
 
     if (currentStep === 1) {
-      // Build a course-breakdown of the fetched category pool so the
-      // dropdown can show real counts. 'general' bucket holds questions
-      // with no course_id (category-wide questions).
+      // Build the course-breakdown straight from the question pool so
+      // we include every course represented in the bank — not just the
+      // instructor's own. Admin-created questions or co-instructor
+      // questions might point at courses outside the instructor's list,
+      // but they're still valid options for the test pool. We grab the
+      // title from question.course (eager-loaded on the backend).
       const courseBreakdown = (() => {
-        const map = new Map();
+        const map = new Map(); // id -> { title, count }
         let general = 0;
         for (const q of availableQuestions) {
           if (q.course_id) {
-            map.set(q.course_id, (map.get(q.course_id) || 0) + 1);
+            const existing = map.get(q.course_id);
+            if (existing) {
+              existing.count += 1;
+            } else {
+              map.set(q.course_id, {
+                title: q.course?.title || `Course #${q.course_id}`,
+                count: 1,
+              });
+            }
           } else {
             general += 1;
           }
@@ -607,11 +618,11 @@ export default function CreateTest() {
                 General — no specific course ({courseBreakdown.general})
               </option>
             )}
-            {courses
-              .filter((c) => courseBreakdown.byCourse.has(c.id))
-              .map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  {c.title} ({courseBreakdown.byCourse.get(c.id)})
+            {Array.from(courseBreakdown.byCourse.entries())
+              .sort((a, b) => a[1].title.localeCompare(b[1].title))
+              .map(([courseId, info]) => (
+                <option key={courseId} value={String(courseId)}>
+                  {info.title} ({info.count})
                 </option>
               ))}
           </select>
