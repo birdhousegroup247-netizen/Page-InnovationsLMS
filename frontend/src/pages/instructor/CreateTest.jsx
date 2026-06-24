@@ -385,18 +385,31 @@ export default function CreateTest() {
 
     setSubmitting(true);
     try {
-      // Step 1: Create the test
+      // Step 1: Create the test. Backend's AssignedTest model uses
+      // test_name + a unique test_code (both NOT NULL) and end_date,
+      // not the title/due_date the wizard renders. Map them here and
+      // generate a short unique-ish code from the title + timestamp so
+      // the unique constraint doesn't reject duplicate titles.
+      const slug = (testData.title || 'test')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 30);
       const testPayload = {
-        title: testData.title,
+        test_name: testData.title,
+        test_code: `${slug || 'test'}-${Date.now().toString(36)}`,
         description: testData.description,
-        category_id: testData.category_id,
         course_id: testData.course_id || null,
-        difficulty: testData.difficulty,
         time_limit_minutes: parseInt(testData.time_limit_minutes),
-        total_points: parseInt(testData.total_points),
         passing_score: parseInt(testData.passing_score),
         max_attempts: parseInt(testData.max_attempts),
-        instructions: testData.instructions,
+        total_questions: selectedQuestions.length,
+        start_date: testData.start_date || null,
+        end_date: testData.due_date || null,
+        // Publish straight away so Step 3 (assignment) doesn't bounce
+        // with "Only published tests can be assigned". The backend
+        // accepts status on create.
+        status: 'published',
       };
 
       const createResponse = await assignedTestsAPI.createTest(testPayload);
@@ -408,10 +421,10 @@ export default function CreateTest() {
       };
       await assignedTestsAPI.addQuestionsToTest(testId, questionsPayload);
 
-      // Step 3: Assign test to students
+      // Step 3: Assign test to students. Backend's assign endpoint
+      // takes due_date directly (matches our state name).
       const assignPayload = {
         student_ids: selectedStudents,
-        start_date: testData.start_date,
         due_date: testData.due_date,
       };
       await assignedTestsAPI.assignTestToStudents(testId, assignPayload);
