@@ -52,7 +52,7 @@ class TestAnalyticsController {
             attributes: ['id', 'full_name', 'email']
           }
         ],
-        order: [['submitted_at', 'DESC']]
+        order: [['completed_at', 'DESC']]
       });
 
       // Calculate statistics
@@ -84,7 +84,7 @@ class TestAnalyticsController {
         percentage: parseFloat(attempt.percentage || 0),
         passed: attempt.passed,
         time_spent: attempt.time_taken_seconds,
-        submitted_at: attempt.submitted_at
+        completed_at: attempt.completed_at
       }));
 
       return ApiResponse.success(res, {
@@ -161,7 +161,7 @@ class TestAnalyticsController {
         ],
         limit: parseInt(limit),
         offset: offset,
-        order: [['submitted_at', 'DESC']]
+        order: [['completed_at', 'DESC']]
       });
 
       const results = attempts.map(attempt => ({
@@ -180,7 +180,7 @@ class TestAnalyticsController {
         correct_answers: attempt.answers?.filter(a => a.is_correct).length || 0,
         total_questions: test.total_questions,
         time_spent_seconds: attempt.time_taken_seconds,
-        submitted_at: attempt.submitted_at
+        completed_at: attempt.completed_at
       }));
 
       return ApiResponse.success(res, {
@@ -261,7 +261,7 @@ class TestAnalyticsController {
           id: attempt.id,
           attempt_number: attempt.attempt_number,
           started_at: attempt.started_at,
-          submitted_at: attempt.submitted_at,
+          completed_at: attempt.completed_at,
           time_spent_seconds: attempt.time_taken_seconds
         },
         student: {

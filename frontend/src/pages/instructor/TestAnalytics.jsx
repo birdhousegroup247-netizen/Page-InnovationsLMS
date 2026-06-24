@@ -91,8 +91,8 @@ export default function TestAnalytics() {
         compareB = parseFloat(b.score_percentage) || 0;
         break;
       case 'date':
-        compareA = new Date(a.submitted_at);
-        compareB = new Date(b.submitted_at);
+        compareA = new Date(a.completed_at);
+        compareB = new Date(b.completed_at);
         break;
       default:
         compareA = a;
@@ -399,7 +399,7 @@ export default function TestAnalytics() {
                         {result.student_name || 'Unknown Student'}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-text-dark-secondary">
-                        Submitted {formatDate(result.submitted_at)}
+                        Submitted {formatDate(result.completed_at)}
                       </p>
                     </div>
                   </div>

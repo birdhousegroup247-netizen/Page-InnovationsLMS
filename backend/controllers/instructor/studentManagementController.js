@@ -342,7 +342,7 @@ class StudentManagementController {
             }] : []
           }
         ],
-        order: [['submitted_at', 'DESC']]
+        order: [['completed_at', 'DESC']]
       });
 
       const testResults = attempts.map(attempt => ({
@@ -356,7 +356,7 @@ class StudentManagementController {
         passing_score: attempt.test?.passing_score,
         passed: attempt.percentage >= attempt.test?.passing_score,
         time_spent: attempt.time_spent,
-        submitted_at: attempt.submitted_at,
+        completed_at: attempt.completed_at,
         attempt_number: attempt.attempt_number
       }));
 

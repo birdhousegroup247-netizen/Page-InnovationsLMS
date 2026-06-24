@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
-import { Button, Spinner, Badge } from '../../components/ui';
+import { Button, Spinner, Badge, Tooltip } from '../../components/ui';
 import { cn } from '../../utils/cn';
 
 export default function ManageTests() {
@@ -240,20 +240,26 @@ export default function ManageTests() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/instructor/tests/${test.id}/results`)}
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/instructor/tests/${test.id}/edit`)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <Tooltip content="View results & analytics">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        aria-label="View results & analytics"
+                        onClick={() => navigate(`/instructor/tests/${test.id}/results`)}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Edit test">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        aria-label="Edit test"
+                        onClick={() => navigate(`/instructor/tests/${test.id}/edit`)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 </div>
               </div>
