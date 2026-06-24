@@ -144,8 +144,8 @@ class ProfileController {
         throw new BadRequestError('Current password and new password are required');
       }
 
-      if (new_password.length < 6) {
-        throw new BadRequestError('New password must be at least 6 characters');
+      if (new_password.length < 8) {
+        throw new BadRequestError('New password must be at least 8 characters');
       }
 
       const user = await User.findByPk(userId);

@@ -101,8 +101,8 @@ export const validateUserForm = (formData, isCreate = false) => {
   if (isCreate) {
     if (!isRequired(formData.password)) {
       errors.password = 'Password is required';
-    } else if (!minLength(formData.password, 6)) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (!minLength(formData.password, 8)) {
+      errors.password = 'Password must be at least 8 characters';
     }
   }
 

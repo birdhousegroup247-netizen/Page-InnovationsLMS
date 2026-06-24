@@ -22,6 +22,7 @@ import { Button, Spinner, Alert, Tabs } from '../components/ui';
 import TwoFactorSettings from '../components/auth/TwoFactorSettings';
 import CloudinaryUpload from '../components/common/CloudinaryUpload';
 import NotificationPreferences from '../components/settings/NotificationPreferences';
+import TimezoneSelect from '../components/settings/TimezoneSelect';
 import { cn } from '../utils/cn';
 
 export default function ProfileSettings() {
@@ -239,8 +240,8 @@ export default function ProfileSettings() {
 
     if (!passwordForm.new_password) {
       errors.new_password = 'New password is required';
-    } else if (passwordForm.new_password.length < 6) {
-      errors.new_password = 'Password must be at least 6 characters';
+    } else if (passwordForm.new_password.length < 8) {
+      errors.new_password = 'Password must be at least 8 characters';
     }
 
     if (passwordForm.new_password !== passwordForm.confirm_password) {
@@ -603,27 +604,16 @@ export default function ProfileSettings() {
                       />
                     </div>
 
-                    {/* Timezone — drives due-date displays + live sessions. */}
+                    {/* Timezone — full IANA list with offsets +
+                        one-click "use my current timezone" button. */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
                         Timezone
                       </label>
-                      <input
-                        type="text"
-                        list="tz-list"
+                      <TimezoneSelect
                         value={profileForm.timezone}
-                        onChange={(e) => setProfileForm({ ...profileForm, timezone: e.target.value })}
-                        placeholder="e.g. Africa/Lagos"
-                        className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border border-gray-300 dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                        onChange={(v) => setProfileForm({ ...profileForm, timezone: v })}
                       />
-                      <datalist id="tz-list">
-                        {(typeof Intl?.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []).map((z) => (
-                          <option key={z} value={z} />
-                        ))}
-                      </datalist>
-                      <p className="text-[11px] text-gray-500 dark:text-text-dark-muted mt-1">
-                        Used for assignment due-date displays and live session times.
-                      </p>
                     </div>
 
                     {/* Date of birth — drives birthday wishes + the

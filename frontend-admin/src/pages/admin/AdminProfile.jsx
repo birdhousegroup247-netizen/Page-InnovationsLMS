@@ -4,6 +4,7 @@ import { profileAPI } from '../../lib/api';
 import { Container, PageHeader } from '../../components/layout';
 import { Button, Spinner, Alert } from '../../components/ui';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
+import TimezoneSelect from '../../components/settings/TimezoneSelect';
 
 // Admin Profile — same backend as the student/instructor profile
 // (everything lives on the User row) but presented in the admin app's
@@ -25,6 +26,8 @@ export default function AdminProfile() {
     linkedin_url: '',
     github_url: '',
     date_of_birth: '',
+    display_name: '',
+    timezone: '',
   });
 
   useEffect(() => {
@@ -49,6 +52,8 @@ export default function AdminProfile() {
                 ? u.date_of_birth.slice(0, 10)
                 : new Date(u.date_of_birth).toISOString().slice(0, 10))
             : '',
+          display_name: u.display_name || '',
+          timezone: u.timezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
         });
       } catch (e) {
         setError(e?.response?.data?.message || 'Failed to load profile');
@@ -160,6 +165,15 @@ export default function AdminProfile() {
                     className="w-full pl-10 pr-3 py-2.5 bg-gray-50 dark:bg-dark-600 border border-gray-300 dark:border-border-dark rounded-lg text-gray-600 dark:text-text-dark-muted cursor-not-allowed"
                   />
                 </Field>
+                <Field label="Display Name (optional)">
+                  <input
+                    type="text"
+                    value={form.display_name}
+                    onChange={(e) => update('display_name', e.target.value)}
+                    placeholder={form.full_name || 'How you want to appear'}
+                    className="w-full px-3 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  />
+                </Field>
                 <Field label="Date of Birth (optional)">
                   <input
                     type="date"
@@ -168,6 +182,13 @@ export default function AdminProfile() {
                     className="w-full px-3 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
                   />
                 </Field>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2">Timezone</label>
+                  <TimezoneSelect
+                    value={form.timezone}
+                    onChange={(v) => update('timezone', v)}
+                  />
+                </div>
                 <Field label="Phone" icon={Phone}>
                   <input
                     type="tel"
