@@ -5,6 +5,7 @@ import {
   assignedTestsAPI,
   categoriesAPI,
   coursesAPI,
+  instructorAPI,
   questionsAPI,
 } from '../../lib/api';
 import {
@@ -170,7 +171,7 @@ export default function CreateTest() {
         // Fallback: fan out per-course to /api/instructor/courses/:id/enrollments
         const responses = await Promise.all(
           courses.map((c) =>
-            coursesAPI
+            instructorAPI
               .getCourseEnrollments(c.id)
               .then((r) => ({
                 courseId: c.id,
