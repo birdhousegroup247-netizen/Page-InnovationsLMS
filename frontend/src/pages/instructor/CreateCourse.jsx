@@ -188,8 +188,8 @@ export default function CreateCourse() {
       const response = await coursesAPI.create(courseData);
 
       if (response.data.success) {
-        // Success! Redirect to instructor dashboard
-        navigate('/instructor/dashboard', {
+        // Land on My Courses so the new course is visible immediately.
+        navigate('/instructor/courses', {
           state: {
             message:
               submitStatus === 'pending'
