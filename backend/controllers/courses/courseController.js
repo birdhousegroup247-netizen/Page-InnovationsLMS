@@ -608,19 +608,22 @@ class CourseController {
         return ApiResponse.success(res, { students: [] });
       }
 
-      // Get all enrollments for instructor's courses
+      // Get all enrollments for instructor's courses. The User model
+      // uses `profile_picture`, not `avatar_url` — selecting a
+      // non-existent column was throwing 500 here. Course.category_id
+      // is included so the frontend picker can scope by category.
       const enrollments = await Enrollment.findAll({
         where: { course_id: { [Op.in]: courseIds } },
         include: [
           {
             model: User,
             as: 'student',
-            attributes: ['id', 'full_name', 'email', 'avatar_url'],
+            attributes: ['id', 'full_name', 'email', 'profile_picture'],
           },
           {
             model: Course,
             as: 'course',
-            attributes: ['id', 'title', 'thumbnail'],
+            attributes: ['id', 'title', 'thumbnail', 'category_id'],
           },
         ],
         order: [['enrollment_date', 'DESC']],
