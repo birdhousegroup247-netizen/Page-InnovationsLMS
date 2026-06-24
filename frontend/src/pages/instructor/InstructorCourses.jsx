@@ -282,11 +282,17 @@ export default function InstructorCourses() {
 
 // Course Card Component for Instructor
 function CourseCard({ course, viewMode, onEdit, onView, onManageContent, delay }) {
+  const placeholder = `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(
+    course.title || 'Course'
+  )}`;
+  // Legacy thumbnails stored as base64 data: URLs got truncated by the
+  // STRING(500) column and now load as broken images. Filter to http(s)
+  // URLs only — anything else falls through to the placeholder.
+  const stored = course.thumbnail_url || course.thumbnail;
   const thumbnail =
-    course.thumbnail_url ||
-    `https://placehold.co/400x225/0e2b5c/ffffff?text=${encodeURIComponent(
-      course.title || 'Course'
-    )}`;
+    typeof stored === 'string' && /^(https?:)?\/\//i.test(stored)
+      ? stored
+      : placeholder;
 
   return (
     <div
@@ -310,6 +316,11 @@ function CourseCard({ course, viewMode, onEdit, onView, onManageContent, delay }
           alt={course.title}
           className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            if (e.currentTarget.src !== placeholder) {
+              e.currentTarget.src = placeholder;
+            }
+          }}
         />
       </div>
 

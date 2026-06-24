@@ -58,21 +58,29 @@ export default function EditCourse() {
         return;
       }
 
-      // Populate form with existing data
+      // Pre-CloudinaryUpload courses stored a truncated base64 data: URL
+      // in the 500-char thumbnail column. Those won't render and saving
+      // the form would write them right back. Treat anything that isn't
+      // an http(s) URL as "no thumbnail" so the form starts clean.
+      const savedThumb =
+        typeof course.thumbnail === 'string' &&
+        /^(https?:)?\/\//i.test(course.thumbnail)
+          ? course.thumbnail
+          : '';
+
       setFormData({
         title: course.title || '',
         description: course.description || '',
         category_id: course.category_id || '',
         difficulty: course.difficulty || 'beginner',
         duration_hours: course.duration_hours || '',
-        thumbnail: course.thumbnail || '',
+        thumbnail: savedThumb,
         status: course.status || 'draft',
         prerequisite_course_id: course.prerequisite_course_id || '',
       });
 
-      // Set thumbnail preview if exists
-      if (course.thumbnail) {
-        setThumbnailPreview(course.thumbnail);
+      if (savedThumb) {
+        setThumbnailPreview(savedThumb);
       }
     } catch (err) {
       console.error('Failed to load course:', err);

@@ -192,9 +192,13 @@ export default function CourseDetail() {
     );
   }
 
+  const placeholderThumb = `https://placehold.co/1200x600/0e2b5c/ffffff?text=${encodeURIComponent(course.title)}`;
+  // Legacy base64 thumbnails got truncated to 500 chars — skip them.
+  const storedThumb = course.thumbnail_url || course.thumbnail;
   const thumbnail =
-    course.thumbnail_url ||
-    `https://placehold.co/1200x600/0e2b5c/ffffff?text=${encodeURIComponent(course.title)}`;
+    typeof storedThumb === 'string' && /^(https?:)?\/\//i.test(storedThumb)
+      ? storedThumb
+      : placeholderThumb;
 
   const difficultyColors = {
     beginner: 'success',
@@ -210,6 +214,11 @@ export default function CourseDetail() {
             src={thumbnail}
             alt={course.title}
             className="w-full h-full object-cover opacity-40"
+            onError={(e) => {
+              if (e.currentTarget.src !== placeholderThumb) {
+                e.currentTarget.src = placeholderThumb;
+              }
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
 

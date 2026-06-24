@@ -14,6 +14,16 @@ import { Spinner } from '../ui';
  * @param {string} folder - Cloudinary folder to upload to (optional)
  * @param {string} uploadEndpoint - Backend upload endpoint path (default: '/api/upload/course-thumbnail')
  */
+// Legacy / broken thumbnails: anything that isn't a usable http(s) URL.
+// The first-gen flow stored a base64 data-URL straight into a STRING(500)
+// column, so what came back from the DB was a truncated data: blob that
+// renders as a broken <img>. Treat those as "no preview" so the user
+// gets the upload area instead of a misleading broken tile.
+const isUsableUrl = (val) =>
+  typeof val === 'string' &&
+  val.length > 0 &&
+  /^(https?:)?\/\//i.test(val);
+
 export default function CloudinaryUpload({
   onUploadSuccess,
   onUploadError,
@@ -24,9 +34,11 @@ export default function CloudinaryUpload({
   uploadEndpoint = '/api/upload/course-thumbnail',
 }) {
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState(currentFile);
+  const [preview, setPreview] = useState(isUsableUrl(currentFile) ? currentFile : null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
+  const [justUploaded, setJustUploaded] = useState(false);
+  const [imgBroken, setImgBroken] = useState(false);
 
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -117,12 +129,12 @@ export default function CloudinaryUpload({
 
       const data = await response.json();
       const imageUrl = data.data.url;
-      
-      // Set preview
+
       setPreview(imageUrl);
       setProgress(100);
-      
-      // Call success callback
+      setJustUploaded(true);
+      setImgBroken(false);
+
       if (onUploadSuccess) {
         onUploadSuccess(imageUrl);
       }
@@ -167,18 +179,22 @@ export default function CloudinaryUpload({
     setPreview(null);
     setProgress(0);
     setError('');
+    setJustUploaded(false);
+    setImgBroken(false);
     if (onUploadSuccess) {
       onUploadSuccess(null);
     }
   };
 
-  // Determine if file is an image
-  const isImage = preview && (
-    preview.includes('.jpg') ||
-    preview.includes('.jpeg') ||
-    preview.includes('.png') ||
-    preview.includes('.gif') ||
-    preview.includes('.webp')
+  // Cloudinary delivers via /image/upload/ regardless of extension once we
+  // route PDFs through that pipeline, so treat any URL whose path looks
+  // like an image (or any /image/upload/ URL) as renderable. This way we
+  // don't fall back to the "file uploaded" card just because the URL
+  // happens to lack a recognized extension.
+  const isImage = !!preview && (
+    /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(preview) ||
+    /\/image\/upload\//i.test(preview) ||
+    acceptedTypes === 'image'
   );
 
   return (
@@ -186,12 +202,13 @@ export default function CloudinaryUpload({
       {preview ? (
         /* File Preview */
         <div className="relative">
-          {isImage ? (
+          {isImage && !imgBroken ? (
             <div className="relative group">
               <img
                 src={preview}
                 alt="Preview"
-                className="w-full h-64 object-cover rounded-lg border border-gray-300 dark:border-border-dark"
+                onError={() => setImgBroken(true)}
+                className="w-full h-64 object-cover rounded-lg border border-gray-300 dark:border-border-dark bg-gray-100 dark:bg-dark-700"
               />
               <button
                 type="button"
@@ -199,6 +216,29 @@ export default function CloudinaryUpload({
                 className="absolute top-2 right-2 p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors opacity-0 group-hover:opacity-100"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+          ) : isImage && imgBroken ? (
+            <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-300 dark:border-amber-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                    Stored image won't load
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    This thumbnail is broken — click Replace to upload a new one.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemove}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Replace
               </button>
             </div>
           ) : (
@@ -285,8 +325,8 @@ export default function CloudinaryUpload({
         </div>
       )}
 
-      {/* Success Message */}
-      {preview && !uploading && !error && (
+      {/* Success Message — only after a real upload in this session */}
+      {justUploaded && !uploading && !error && (
         <div className="mt-3 flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
           <Check className="w-4 h-4 flex-shrink-0" />
           <p>File uploaded successfully</p>
