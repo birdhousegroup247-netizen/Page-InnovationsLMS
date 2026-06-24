@@ -15,12 +15,12 @@ class KnowledgeController {
       if (category) where.category_id = category;
       if (search) {
         where[Op.or] = [
-          { title: { [Op.like]: `%${search}%` } },
-          { content: { [Op.like]: `%${search}%` } },
+          { title: { [Op.iLike]: `%${search}%` } },
+          { content: { [Op.iLike]: `%${search}%` } },
         ];
       }
       if (tags) {
-        where.tags = { [Op.like]: `%${tags}%` };
+        where.tags = { [Op.iLike]: `%${tags}%` };
       }
 
       const offset = (page - 1) * limit;

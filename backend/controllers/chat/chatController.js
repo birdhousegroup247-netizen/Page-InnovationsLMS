@@ -241,7 +241,7 @@ class ChatController {
       const role = req.user.role;
       const { q = '' } = req.query;
 
-      const nameFilter = q ? { [Op.or]: [{ full_name: { [Op.like]: `%${q}%` } }, { email: { [Op.like]: `%${q}%` } }] } : {};
+      const nameFilter = q ? { [Op.or]: [{ full_name: { [Op.iLike]: `%${q}%` } }, { email: { [Op.iLike]: `%${q}%` } }] } : {};
 
       // Admins can message any student or instructor
       if (['admin', 'super_admin'].includes(role)) {

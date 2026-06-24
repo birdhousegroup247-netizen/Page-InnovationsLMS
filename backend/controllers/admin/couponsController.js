@@ -22,8 +22,8 @@ class CouponsController {
       const where = {};
       if (search) {
         where[Op.or] = [
-          { code: { [Op.like]: `%${search.toUpperCase()}%` } },
-          { description: { [Op.like]: `%${search}%` } },
+          { code: { [Op.iLike]: `%${search.toUpperCase()}%` } },
+          { description: { [Op.iLike]: `%${search}%` } },
         ];
       }
       if (is_active !== undefined) {

@@ -13,7 +13,7 @@ class SearchController {
       }
 
       const keyword = q.trim();
-      const likePattern = { [Op.like]: `%${keyword}%` };
+      const likePattern = { [Op.iLike]: `%${keyword}%` };
 
       const searches = {};
 

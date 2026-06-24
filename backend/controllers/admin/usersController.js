@@ -25,8 +25,8 @@ class UsersController {
 
       if (search) {
         where[Op.or] = [
-          { full_name: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } },
+          { full_name: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } },
         ];
       }
 

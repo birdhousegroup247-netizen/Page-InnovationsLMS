@@ -21,9 +21,9 @@ class LeadsController {
       const where = {};
       if (search) {
         where[Op.or] = [
-          { full_name: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } },
-          { phone: { [Op.like]: `%${search}%` } },
+          { full_name: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } },
+          { phone: { [Op.iLike]: `%${search}%` } },
         ];
       }
       if (drip_status) where.drip_status = drip_status;
