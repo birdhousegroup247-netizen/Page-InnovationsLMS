@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Lock, Eye, EyeOff, Shield, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lock, Eye, EyeOff, Shield, Save, Home } from 'lucide-react';
 import { profileAPI } from '../../lib/api';
 import { Container, PageHeader } from '../../components/layout';
 import { Button, Alert } from '../../components/ui';
+import { NotificationPreferencesAdmin } from '../../components/settings/NotificationPreferences';
 
 // Admin Settings — account-level controls (password today, room to
 // grow into notification prefs / sessions / API tokens). Sits next
@@ -13,6 +14,33 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [show, setShow] = useState({ current: false, next: false, confirm: false });
   const [form, setForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
+  const [defaultLanding, setDefaultLanding] = useState('/dashboard');
+  const [landingSaving, setLandingSaving] = useState(false);
+
+  // Load admin_preferences.default_landing on mount so the selector
+  // reflects whatever this admin set previously.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await profileAPI.getProfile();
+        const u = res?.data?.data?.user || res?.data?.data;
+        const v = u?.admin_preferences?.default_landing;
+        if (v) setDefaultLanding(v);
+      } catch { /* not fatal */ }
+    })();
+  }, []);
+
+  const saveLanding = async (v) => {
+    setDefaultLanding(v);
+    setLandingSaving(true);
+    try {
+      await profileAPI.updateProfile({ admin_preferences: { default_landing: v } });
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Could not save default landing page');
+    } finally {
+      setLandingSaving(false);
+    }
+  };
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -104,12 +132,36 @@ export default function AdminSettings() {
           </div>
         </form>
 
-        {/* Placeholder card — keeps room for upcoming controls
-            (notification prefs, active sessions, API tokens) so the
-            page has presence even before those exist. */}
-        <div className="bg-gray-50 dark:bg-dark-700 rounded-xl border border-dashed border-gray-300 dark:border-border-dark p-5 text-sm text-gray-600 dark:text-text-dark-muted">
-          <p className="font-medium text-gray-700 dark:text-text-dark-secondary mb-1">More controls coming</p>
-          <p>Notification preferences, active sessions, and API tokens will land here as they ship.</p>
+        {/* Admin notification routing — which admin-only events ping you. */}
+        <NotificationPreferencesAdmin />
+
+        {/* Default landing page — admins with a daily ritual (e.g.
+            always opening the Pending Approvals queue first) save
+            it once and bypass the dashboard intermediate hop. */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-brand-purple/10 flex items-center justify-center">
+              <Home className="w-5 h-5 text-brand-purple" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Default landing page</h2>
+              <p className="text-xs text-gray-500 dark:text-text-dark-muted">Where the admin app opens by default after login.</p>
+            </div>
+          </div>
+          <select
+            value={defaultLanding}
+            onChange={(e) => saveLanding(e.target.value)}
+            disabled={landingSaving}
+            className="w-full px-3 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+          >
+            <option value="/dashboard">Dashboard</option>
+            <option value="/users">Users</option>
+            <option value="/courses">Courses</option>
+            <option value="/payments">Payments</option>
+            <option value="/analytics">Analytics</option>
+            <option value="/announcements">Announcements</option>
+            <option value="/chat-moderation">Chat Moderation</option>
+          </select>
         </div>
       </Container>
     </>

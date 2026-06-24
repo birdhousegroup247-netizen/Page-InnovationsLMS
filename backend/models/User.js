@@ -80,6 +80,37 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    // Public name shown in chat / leaderboards / forum. Falls back
+    // to full_name when blank — no migration needed for old users.
+    display_name: {
+      type: DataTypes.STRING(80),
+      allowNull: true,
+    },
+    // IANA tz string (e.g. 'Africa/Lagos'). Drives due-date displays
+    // and live-session start times across the app.
+    timezone: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+    },
+    // Per-type toggles for { email, in_app }. NotificationsController
+    // gates create() on the in_app flag — null/undefined defaults to
+    // ON so existing users keep getting everything.
+    notification_preferences: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    // Privacy toggles (leaderboard opt-out, birthday wish from
+    // classmates, profile visibility, etc.). Same default-on logic.
+    privacy_settings: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    // Admin-only knobs: default_landing path, etc. Ignored for
+    // non-admin users.
+    admin_preferences: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

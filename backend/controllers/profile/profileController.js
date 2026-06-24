@@ -40,7 +40,11 @@ class ProfileController {
   static async updateProfile(req, res, next) {
     try {
       const userId = req.user.id;
-      const { full_name, bio, phone, linkedin_url, github_url, website, location, timezone, date_of_birth } = req.body;
+      const {
+        full_name, bio, phone, linkedin_url, github_url, website, location, timezone,
+        date_of_birth, display_name,
+        notification_preferences, privacy_settings, admin_preferences,
+      } = req.body;
 
       const user = await User.findByPk(userId);
 
@@ -61,6 +65,28 @@ class ProfileController {
       // implicitly via DATEONLY — anything Sequelize can't parse will
       // throw and fall into the error handler.
       if (date_of_birth !== undefined) user.date_of_birth = date_of_birth || null;
+      if (display_name !== undefined) user.display_name = display_name || null;
+      // JSON columns — merge with existing so callers can submit
+      // partial patches (e.g. just toggling one preference) without
+      // wiping out the rest.
+      if (notification_preferences !== undefined) {
+        user.notification_preferences = {
+          ...(user.notification_preferences || {}),
+          ...notification_preferences,
+        };
+      }
+      if (privacy_settings !== undefined) {
+        user.privacy_settings = {
+          ...(user.privacy_settings || {}),
+          ...privacy_settings,
+        };
+      }
+      if (admin_preferences !== undefined && ['admin', 'super_admin'].includes(user.role)) {
+        user.admin_preferences = {
+          ...(user.admin_preferences || {}),
+          ...admin_preferences,
+        };
+      }
 
       await user.save();
 

@@ -88,6 +88,16 @@ const Badges = lazyWithReload(() => import('./pages/admin/Badges'));
 const AdminProfile = lazyWithReload(() => import('./pages/admin/AdminProfile'));
 const AdminSettings = lazyWithReload(() => import('./pages/admin/AdminSettings'));
 
+// Root redirect honors the admin's saved default_landing preference
+// (set on AdminSettings). Falls back to /dashboard for new admins.
+function RootRedirect() {
+  const { isAuthenticated, user, loading } = useAuth();
+  if (loading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const target = user?.admin_preferences?.default_landing || '/dashboard';
+  return <Navigate to={target} replace />;
+}
+
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
   const { isAuthenticated, loading, user, logout } = useAuth();
@@ -411,8 +421,8 @@ function App() {
               }
             />
 
-            {/* Redirect root to dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Redirect root — honors saved default_landing pref */}
+            <Route path="/" element={<RootRedirect />} />
 
             {/* 404 - Redirect to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

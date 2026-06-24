@@ -216,11 +216,47 @@ class NotificationsController {
   }
 
   /**
+   * Helper: should this notification type be delivered in-app for
+   * this user? Reads notification_preferences.<type>.in_app —
+   * null/undefined defaults to TRUE so existing users keep getting
+   * everything until they explicitly opt out. Critical types like
+   * 'system' / 'security' bypass the filter entirely.
+   */
+  static async _isAllowed(userId, type) {
+    if (!type) return true;
+    // Hard-required types we never let users mute (security alerts,
+    // suspension, payment receipts they paid for).
+    const NEVER_MUTE = new Set([
+      'security_alert',
+      'account_suspension',
+      'payment_receipt',
+      'refund_issued',
+    ]);
+    if (NEVER_MUTE.has(type)) return true;
+    try {
+      const u = await User.findByPk(userId, { attributes: ['notification_preferences'] });
+      const pref = u?.notification_preferences?.[type];
+      if (pref && pref.in_app === false) return false;
+      return true;
+    } catch {
+      // If the prefs lookup fails we err on the side of delivering.
+      return true;
+    }
+  }
+
+  /**
    * Create a notification (helper method for internal use)
-   * Used by other controllers to create notifications
+   * Used by other controllers to create notifications. Honors the
+   * recipient's notification_preferences[type].in_app toggle —
+   * silently drops the row if disabled.
    */
   static async createNotification(data) {
     try {
+      const allowed = await NotificationsController._isAllowed(data.user_id, data.type);
+      if (!allowed) {
+        logger.debug(`Notification suppressed (user pref) user=${data.user_id} type=${data.type}`);
+        return null;
+      }
       const notification = await Notification.create(data);
 
       // Invalidate user's notification cache
@@ -235,12 +271,25 @@ class NotificationsController {
   }
 
   /**
-   * Create bulk notifications (for announcements, etc.)
+   * Create bulk notifications (for announcements, etc.). Each row
+   * is filtered against its recipient's preferences before insert
+   * so an opt-out genuinely stops the row from being written.
    */
   static async createBulkNotifications(notifications) {
     try {
-      const created = await Notification.bulkCreate(notifications);
-      logger.info(`${created.length} notifications created in bulk`);
+      const filtered = [];
+      for (const n of notifications) {
+        // eslint-disable-next-line no-await-in-loop
+        if (await NotificationsController._isAllowed(n.user_id, n.type)) {
+          filtered.push(n);
+        }
+      }
+      if (filtered.length === 0) {
+        logger.info('All notifications suppressed by user preferences');
+        return [];
+      }
+      const created = await Notification.bulkCreate(filtered);
+      logger.info(`${created.length}/${notifications.length} notifications created in bulk (rest suppressed by prefs)`);
       return created;
     } catch (error) {
       logger.error(`Error creating bulk notifications: ${error.message}`);

@@ -21,6 +21,7 @@ import { Container } from '../components/layout';
 import { Button, Spinner, Alert, Tabs } from '../components/ui';
 import TwoFactorSettings from '../components/auth/TwoFactorSettings';
 import CloudinaryUpload from '../components/common/CloudinaryUpload';
+import NotificationPreferences from '../components/settings/NotificationPreferences';
 import { cn } from '../utils/cn';
 
 export default function ProfileSettings() {
@@ -61,7 +62,15 @@ export default function ProfileSettings() {
     linkedin_url: '',
     github_url: '',
     date_of_birth: '',
+    display_name: '',
+    timezone: '',
   });
+  const [privacy, setPrivacy] = useState({
+    show_on_leaderboard: true,
+    allow_birthday_wishes: true,
+    profile_visibility: 'public',
+  });
+  const [privacySaving, setPrivacySaving] = useState(false);
 
   // Password form state
   const [passwordForm, setPasswordForm] = useState({
@@ -144,6 +153,13 @@ export default function ProfileSettings() {
               ? userData.date_of_birth.slice(0, 10)
               : new Date(userData.date_of_birth).toISOString().slice(0, 10))
           : '',
+        display_name: userData.display_name || '',
+        timezone: userData.timezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+      });
+      setPrivacy({
+        show_on_leaderboard: userData.privacy_settings?.show_on_leaderboard !== false,
+        allow_birthday_wishes: userData.privacy_settings?.allow_birthday_wishes !== false,
+        profile_visibility: userData.privacy_settings?.profile_visibility || 'public',
       });
 
       setAvatarPreview(userData.profile_picture || userData.avatar_url || '');
@@ -361,29 +377,107 @@ export default function ProfileSettings() {
                 Password + Discord. Keeps the two URLs feeling like
                 genuinely different pages. */}
             {isSettingsView && (
-              <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-border-dark transition-colors">
-                <button
-                  onClick={() => setActiveTab('password')}
-                  className={cn(
-                    'px-4 py-3 font-medium transition-colors border-b-2',
-                    activeTab === 'password'
-                      ? 'text-brand-blue border-brand-blue'
-                      : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
-                  )}
-                >
-                  Change Password
-                </button>
-                <button
-                  onClick={() => { setActiveTab('discord'); fetchDiscordStatus(); }}
-                  className={cn(
-                    'px-4 py-3 font-medium transition-colors border-b-2',
-                    activeTab === 'discord'
-                      ? 'text-[#5865F2] border-[#5865F2]'
-                      : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
-                  )}
-                >
-                  Discord
-                </button>
+              <div className="flex flex-wrap gap-4 mb-6 border-b border-gray-200 dark:border-border-dark transition-colors">
+                {[
+                  { id: 'password',      label: 'Security' },
+                  { id: 'notifications', label: 'Notifications' },
+                  { id: 'privacy',       label: 'Privacy' },
+                  { id: 'discord',       label: 'Discord' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setActiveTab(t.id);
+                      if (t.id === 'discord') fetchDiscordStatus();
+                    }}
+                    className={cn(
+                      'px-4 py-3 font-medium transition-colors border-b-2',
+                      activeTab === t.id
+                        ? (t.id === 'discord'
+                            ? 'text-[#5865F2] border-[#5865F2]'
+                            : 'text-brand-blue border-brand-blue')
+                        : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Notifications tab */}
+            {isSettingsView && activeTab === 'notifications' && (
+              <NotificationPreferences />
+            )}
+
+            {/* Privacy tab */}
+            {isSettingsView && activeTab === 'privacy' && (
+              <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-6 space-y-5">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Privacy</h2>
+                  <p className="text-sm text-gray-500 dark:text-text-dark-muted">
+                    Control how visible you are and what others can do.
+                  </p>
+                </div>
+
+                {[
+                  { key: 'show_on_leaderboard',  label: 'Show me on leaderboards', desc: 'Hide your row from public ranking pages.' },
+                  { key: 'allow_birthday_wishes', label: 'Allow birthday wishes from classmates', desc: 'When off, only the system note from TekyPro is sent on your birthday.' },
+                ].map((row) => (
+                  <div key={row.key} className="flex items-start justify-between gap-4 py-2 border-t first:border-t-0 border-gray-100 dark:border-border-dark">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{row.label}</p>
+                      <p className="text-xs text-gray-500 dark:text-text-dark-muted">{row.desc}</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!privacy[row.key]}
+                      aria-label={row.label}
+                      disabled={privacySaving}
+                      onClick={async () => {
+                        const next = { ...privacy, [row.key]: !privacy[row.key] };
+                        setPrivacy(next);
+                        setPrivacySaving(true);
+                        try {
+                          await profileAPI.updateProfile({ privacy_settings: { [row.key]: next[row.key] } });
+                        } catch (e) {
+                          setPrivacy(privacy);
+                          setError(e?.response?.data?.message || 'Could not save');
+                        } finally {
+                          setPrivacySaving(false);
+                        }
+                      }}
+                      className={cn(
+                        'relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 mt-1',
+                        privacy[row.key] ? 'bg-brand-blue' : 'bg-gray-300 dark:bg-dark-600'
+                      )}
+                    >
+                      <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white transition-transform', privacy[row.key] ? 'translate-x-4' : 'translate-x-0.5')} />
+                    </button>
+                  </div>
+                ))}
+
+                <div className="pt-3 border-t border-gray-100 dark:border-border-dark">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Profile visibility</label>
+                  <select
+                    value={privacy.profile_visibility}
+                    onChange={async (e) => {
+                      const v = e.target.value;
+                      setPrivacy((p) => ({ ...p, profile_visibility: v }));
+                      try {
+                        await profileAPI.updateProfile({ privacy_settings: { profile_visibility: v } });
+                      } catch (err) {
+                        setError(err?.response?.data?.message || 'Could not save');
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  >
+                    <option value="public">Public — anyone can view my profile</option>
+                    <option value="members">Members only — only signed-in TekyPro users</option>
+                    <option value="private">Private — only my instructors / classmates</option>
+                  </select>
+                </div>
               </div>
             )}
 
@@ -492,6 +586,43 @@ export default function ProfileSettings() {
                       </div>
                       <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1 transition-colors">
                         Email cannot be changed. Contact support if needed.
+                      </p>
+                    </div>
+
+                    {/* Display name — what shows in chat / leaderboard. */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
+                        Display Name <span className="text-gray-400 text-xs font-normal">(optional — defaults to your full name)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={profileForm.display_name}
+                        onChange={(e) => setProfileForm({ ...profileForm, display_name: e.target.value })}
+                        placeholder={profileForm.full_name || 'How you want to appear'}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border border-gray-300 dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                      />
+                    </div>
+
+                    {/* Timezone — drives due-date displays + live sessions. */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
+                        Timezone
+                      </label>
+                      <input
+                        type="text"
+                        list="tz-list"
+                        value={profileForm.timezone}
+                        onChange={(e) => setProfileForm({ ...profileForm, timezone: e.target.value })}
+                        placeholder="e.g. Africa/Lagos"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary border border-gray-300 dark:border-border-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-all"
+                      />
+                      <datalist id="tz-list">
+                        {(typeof Intl?.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []).map((z) => (
+                          <option key={z} value={z} />
+                        ))}
+                      </datalist>
+                      <p className="text-[11px] text-gray-500 dark:text-text-dark-muted mt-1">
+                        Used for assignment due-date displays and live session times.
                       </p>
                     </div>
 
