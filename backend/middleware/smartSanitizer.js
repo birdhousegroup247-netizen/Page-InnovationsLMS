@@ -25,12 +25,17 @@ const CODE_FIELDS = [
 ];
 
 // Fields that contain URLs and should not be HTML-escaped
-// (escaping breaks URLs by converting / to &#x2F;)
+// (escaping breaks URLs by converting / to &#x2F; — turns a perfectly
+// valid Cloudinary URL into https:&#x2F;&#x2F;res.cloudinary.com&#x2F;…
+// and the saved value won't render anywhere).
 const URL_FIELDS = [
   'document_url',
   'youtube_url',
+  'thumbnail',
   'thumbnail_url',
   'profile_picture',
+  'avatar',
+  'avatar_url',
   'url',
   'image_url',
   'video_url',
