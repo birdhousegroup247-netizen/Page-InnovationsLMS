@@ -85,6 +85,8 @@ const Payments = lazyWithReload(() => import('./pages/admin/Payments'));
 const Announcements = lazyWithReload(() => import('./pages/admin/Announcements'));
 const Referrals = lazyWithReload(() => import('./pages/admin/Referrals'));
 const Badges = lazyWithReload(() => import('./pages/admin/Badges'));
+const AdminProfile = lazyWithReload(() => import('./pages/admin/AdminProfile'));
+const AdminSettings = lazyWithReload(() => import('./pages/admin/AdminSettings'));
 
 // Protected Route Component with AppLayout (Admin Only)
 function AdminRoute({ children }) {
@@ -387,6 +389,24 @@ function App() {
               element={
                 <AdminRoute>
                   <Badges />
+                </AdminRoute>
+              }
+            />
+            {/* Topbar dropdown lands here. Two distinct pages: Profile
+                = who you are, Settings = how the account works. */}
+            <Route
+              path="/profile"
+              element={
+                <AdminRoute>
+                  <AdminProfile />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <AdminRoute>
+                  <AdminSettings />
                 </AdminRoute>
               }
             />

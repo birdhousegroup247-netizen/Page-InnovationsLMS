@@ -552,13 +552,28 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Profile + Settings — same component, two distinct routes.
+              The component picks header copy + default tab from the
+              pathname. /profile/settings kept as a legacy alias. */}
           <Route
-            path="/profile/settings"
+            path="/profile"
             element={
               <ProtectedRoute>
                 <ProfileSettings />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <ProfileSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/settings"
+            element={<Navigate to="/profile" replace />}
           />
           <Route
             path="/notifications"

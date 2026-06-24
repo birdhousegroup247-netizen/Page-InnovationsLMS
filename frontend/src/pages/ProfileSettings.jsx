@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   User,
@@ -26,11 +26,25 @@ import { cn } from '../utils/cn';
 export default function ProfileSettings() {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
+  const location = useLocation();
+  // Route-driven mode. /profile → "Profile" view (personal info,
+  // avatar, bio, DOB, social links). /settings → "Settings" view
+  // (security, integrations, account preferences). Same component,
+  // two distinct experiences, so the topbar menu items each land
+  // somewhere meaningful instead of opening the same tabbed page.
+  const isSettingsView = location.pathname.startsWith('/settings');
+
+  // Keep the visible tab consistent with the route when the user
+  // navigates between /profile and /settings without remounting
+  // the page (e.g. via the topbar menu).
+  useEffect(() => {
+    setActiveTab(isSettingsView ? 'password' : 'personal');
+  }, [isSettingsView]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState('personal'); // personal, password, discord
+  const [activeTab, setActiveTab] = useState(isSettingsView ? 'password' : 'personal');
 
   // Discord state
   const [discordStatus, setDiscordStatus] = useState(null);
@@ -291,14 +305,16 @@ export default function ProfileSettings() {
           <Container>
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <User className="h-6 w-6 text-white" />
+                {isSettingsView ? <Lock className="h-6 w-6 text-white" /> : <User className="h-6 w-6 text-white" />}
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  Profile Settings
+                  {isSettingsView ? 'Settings' : 'Profile'}
                 </h1>
                 <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  Manage your account information
+                  {isSettingsView
+                    ? 'Password, integrations, and account preferences'
+                    : 'Your personal details — name, picture, bio, and how to reach you'}
                 </p>
               </div>
             </div>
@@ -339,42 +355,37 @@ export default function ProfileSettings() {
               </div>
             )}
 
-            {/* Tabs */}
-            <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-border-dark transition-colors">
-              <button
-                onClick={() => setActiveTab('personal')}
-                className={cn(
-                  'px-4 py-3 font-medium transition-colors border-b-2',
-                  activeTab === 'personal'
-                    ? 'text-brand-blue border-brand-blue'
-                    : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
-                )}
-              >
-                Personal Information
-              </button>
-              <button
-                onClick={() => setActiveTab('password')}
-                className={cn(
-                  'px-4 py-3 font-medium transition-colors border-b-2',
-                  activeTab === 'password'
-                    ? 'text-brand-blue border-brand-blue'
-                    : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
-                )}
-              >
-                Change Password
-              </button>
-              <button
-                onClick={() => { setActiveTab('discord'); fetchDiscordStatus(); }}
-                className={cn(
-                  'px-4 py-3 font-medium transition-colors border-b-2',
-                  activeTab === 'discord'
-                    ? 'text-[#5865F2] border-[#5865F2]'
-                    : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
-                )}
-              >
-                Discord
-              </button>
-            </div>
+            {/* Tabs — only show the ones that belong to the current
+                view. /profile keeps a single Personal Information tab
+                (no need for a chrome row at all); /settings shows
+                Password + Discord. Keeps the two URLs feeling like
+                genuinely different pages. */}
+            {isSettingsView && (
+              <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-border-dark transition-colors">
+                <button
+                  onClick={() => setActiveTab('password')}
+                  className={cn(
+                    'px-4 py-3 font-medium transition-colors border-b-2',
+                    activeTab === 'password'
+                      ? 'text-brand-blue border-brand-blue'
+                      : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
+                  )}
+                >
+                  Change Password
+                </button>
+                <button
+                  onClick={() => { setActiveTab('discord'); fetchDiscordStatus(); }}
+                  className={cn(
+                    'px-4 py-3 font-medium transition-colors border-b-2',
+                    activeTab === 'discord'
+                      ? 'text-[#5865F2] border-[#5865F2]'
+                      : 'text-gray-600 dark:text-text-dark-muted border-transparent hover:text-gray-900 dark:hover:text-text-dark-primary'
+                  )}
+                >
+                  Discord
+                </button>
+              </div>
+            )}
 
             {/* Personal Information Tab */}
             {activeTab === 'personal' && (

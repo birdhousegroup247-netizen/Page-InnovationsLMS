@@ -103,6 +103,16 @@ const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) 
                     {user?.email}
                   </p>
                 </div>
+                {/* Both Profile and Settings live on /profile/settings —
+                    the unauthenticated bare paths /profile and /settings
+                    aren't registered, so the old links fell through to
+                    the dashboard. Same page, different tab anchor so
+                    each menu item lands the user where they expect. */}
+                {/* Profile vs Settings are different concepts: Profile
+                    is "who you are" (name, picture, DOB, bio, social);
+                    Settings is "how the account works" (password,
+                    integrations, preferences). Two distinct routes, same
+                    underlying component switching view by pathname. */}
                 <Link
                   to="/profile"
                   className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
