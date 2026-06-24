@@ -4,14 +4,15 @@ import {
   Plus,
   Search,
   Edit,
-  Trash2,
+  Filter,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  XCircle,
 } from 'lucide-react';
 import { questionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
-import { Button, Spinner, Badge } from '../../components/ui';
+import { Button, Spinner, Badge, Tooltip } from '../../components/ui';
 import QuestionModal from '../../components/questions/QuestionModal';
 
 export default function ContributeQuestions() {
@@ -20,6 +21,7 @@ export default function ContributeQuestions() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
 
@@ -59,14 +61,22 @@ export default function ContributeQuestions() {
     }
   };
 
-  const filteredQuestions = questions.filter(q =>
-    q.question_text.toLowerCase().includes(search.toLowerCase())
-  );
+  // Normalize status: prefer the canonical approval_status enum
+  // (pending | approved | rejected). Fall back to is_approved for
+  // any older rows that didn't get the field populated.
+  const getStatus = (q) =>
+    q.approval_status || (q.is_approved ? 'approved' : 'pending');
+
+  const filteredQuestions = questions.filter((q) => {
+    if (statusFilter !== 'all' && getStatus(q) !== statusFilter) return false;
+    return q.question_text.toLowerCase().includes(search.toLowerCase());
+  });
 
   const stats = {
     total: questions.length,
-    approved: questions.filter(q => q.is_approved).length,
-    pending: questions.filter(q => !q.is_approved).length
+    approved: questions.filter((q) => getStatus(q) === 'approved').length,
+    pending: questions.filter((q) => getStatus(q) === 'pending').length,
+    rejected: questions.filter((q) => getStatus(q) === 'rejected').length,
   };
 
   return (
@@ -127,48 +137,60 @@ export default function ContributeQuestions() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-6">
+        {/* Stats — Total / Approved / Pending / Rejected */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                <HelpCircle className="w-6 h-6 text-brand-blue" />
+              <div className="w-11 h-11 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <HelpCircle className="w-5 h-5 text-brand-blue" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Contributed</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Total Contributed</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-6">
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="w-11 h-11 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.approved}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Approved</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Approved</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-6">
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-yellow-600" />
+              <div className="w-11 h-11 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Pending Review</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Pending Review</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rejected}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Rejected</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-4 mb-6">
-          <div className="relative">
+        {/* Search + Status Filter */}
+        <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-4 mb-6 flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
@@ -177,6 +199,19 @@ export default function ContributeQuestions() {
               placeholder="Search your questions..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white"
             />
+          </div>
+          <div className="md:w-56 flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400 shrink-0" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-blue dark:bg-dark-700 dark:text-white text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending Review</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
         </div>
 
@@ -207,63 +242,85 @@ export default function ContributeQuestions() {
         ) : (
           <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm overflow-hidden">
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredQuestions.map((question) => (
-                <div
-                  key={question.id}
-                  className="p-6 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        {question.course && (
-                          <Badge color="purple">
-                            📚 {question.course.title}
+              {filteredQuestions.map((question) => {
+                const status = getStatus(question);
+                const statusColor =
+                  status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'yellow';
+                const statusLabel =
+                  status === 'approved'
+                    ? 'Approved'
+                    : status === 'rejected'
+                    ? 'Rejected'
+                    : 'Pending Review';
+                const editLocked = status === 'approved';
+                return (
+                  <div
+                    key={question.id}
+                    className="p-6 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {question.course && (
+                            <Badge color="purple">{question.course.title}</Badge>
+                          )}
+                          <Badge color={statusColor}>{statusLabel}</Badge>
+                          <Badge
+                            color={
+                              question.difficulty === 'easy'
+                                ? 'green'
+                                : question.difficulty === 'medium'
+                                ? 'yellow'
+                                : 'red'
+                            }
+                          >
+                            {question.difficulty}
                           </Badge>
-                        )}
-                        <Badge
-                          color={question.is_approved ? 'green' : 'yellow'}
-                        >
-                          {question.is_approved ? 'Approved' : 'Pending Review'}
-                        </Badge>
-                        <Badge
-                          color={
-                            question.difficulty === 'easy'
-                              ? 'green'
-                              : question.difficulty === 'medium'
-                              ? 'yellow'
-                              : 'red'
-                          }
-                        >
-                          {question.difficulty}
-                        </Badge>
-                        <Badge color="blue">
-                          {question.question_type.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-900 dark:text-white font-medium mb-1">
-                        {question.question_text}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {question.marks} mark(s) • {question.time_limit_seconds}s time limit
-                      </p>
-                    </div>
+                          <Badge color="blue">
+                            {question.question_type.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-900 dark:text-white font-medium mb-1">
+                          {question.question_text}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {question.marks} mark(s)
+                          {question.time_limit_seconds ? ` · ${question.time_limit_seconds}s time limit` : ''}
+                        </p>
 
-                    <div className="flex items-center gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedQuestion(question);
-                          setShowModal(true);
-                        }}
-                        disabled={question.is_approved}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                        {/* Surface admin's rejection note so the instructor
+                            actually knows why and can fix + resubmit. */}
+                        {status === 'rejected' && question.rejection_reason && (
+                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="font-medium text-red-900 dark:text-red-300">Rejection reason</p>
+                              <p className="text-red-700 dark:text-red-400">{question.rejection_reason}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-4">
+                        <Tooltip content={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            aria-label={editLocked ? 'Approved questions can’t be edited' : 'Edit question'}
+                            onClick={() => {
+                              setSelectedQuestion(question);
+                              setShowModal(true);
+                            }}
+                            disabled={editLocked}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </Tooltip>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

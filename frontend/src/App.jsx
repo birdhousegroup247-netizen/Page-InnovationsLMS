@@ -94,7 +94,8 @@ const InstructorCourseBuilder = lazyWithReload(() => import('./pages/instructor/
 const MyStudents = lazyWithReload(() => import('./pages/instructor/MyStudents'));
 const StudentProgress = lazyWithReload(() => import('./pages/instructor/StudentProgress'));
 const TestAnalytics = lazyWithReload(() => import('./pages/instructor/TestAnalytics'));
-const MyQuestions = lazyWithReload(() => import('./pages/instructor/MyQuestions'));
+// Old MyQuestions page merged into ContributeQuestions; legacy route
+// redirects there (see <Route path="/instructor/questions" /> below).
 const CourseAnalytics = lazyWithReload(() => import('./pages/instructor/CourseAnalytics'));
 const InstructorAnnouncements = lazyWithReload(() => import('./pages/instructor/Announcements'));
 const EnrollmentManagement = lazyWithReload(() => import('./pages/instructor/EnrollmentManagement'));
@@ -473,13 +474,11 @@ function App() {
               </InstructorRoute>
             }
           />
+          {/* Legacy My Questions route now redirects to the merged
+              Contribute Questions page. Old links + bookmarks still work. */}
           <Route
             path="/instructor/questions"
-            element={
-              <InstructorRoute>
-                <MyQuestions />
-              </InstructorRoute>
-            }
+            element={<Navigate to="/instructor/contribute-questions" replace />}
           />
           <Route
             path="/instructor/courses/:courseId/analytics"

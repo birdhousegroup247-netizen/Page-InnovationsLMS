@@ -124,6 +124,9 @@ export const getNavigationItems = (role = 'student') => {
       icon: <FileText className="w-5 h-5" />,
     },
     {
+      // Single questions entry. The old /instructor/questions route
+      // (formerly "My Questions") now redirects here — search the
+      // bank, see status, edit, contribute from one page.
       label: 'Contribute Questions',
       path: '/instructor/contribute-questions',
       icon: <HelpCircle className="w-5 h-5" />,
@@ -132,11 +135,6 @@ export const getNavigationItems = (role = 'student') => {
       label: 'My Students',
       path: '/instructor/students',
       icon: <Award className="w-5 h-5" />,
-    },
-    {
-      label: 'My Questions',
-      path: '/instructor/questions',
-      icon: <HelpCircle className="w-5 h-5" />,
     },
     {
       label: 'Announcements',
