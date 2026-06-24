@@ -265,7 +265,19 @@ class StudentManagementController {
         }
       });
 
-      const progressByModule = Object.values(moduleMap);
+      // Compute per-module aggregates the frontend reads (completed
+      // count, total count, progress %). Done after grouping so it's
+      // independent of how the raw rows came back.
+      const progressByModule = Object.values(moduleMap).map((m) => {
+        const total = m.contents.length;
+        const completed = m.contents.filter((c) => c.status === 'completed').length;
+        return {
+          ...m,
+          total_contents: total,
+          completed_contents: completed,
+          progress_percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+        };
+      });
 
       // Calculate status based on progress and completion
       let enrollmentStatus = 'not_started';
@@ -275,21 +287,31 @@ class StudentManagementController {
         enrollmentStatus = 'in_progress';
       }
 
+      // Shape the response exactly the way the frontend destructures
+      // it (student, course, enrollment, module_progress) and use the
+      // field names the page actually reads (full_name, avatar_url,
+      // enrolled_at, etc.). Previous shape forced the page into the
+      // "Something went wrong" boundary on the very first render.
       return ApiResponse.success(res, {
         student: {
           id: enrollment.student.id,
-          name: enrollment.student.full_name,
+          full_name: enrollment.student.full_name,
           email: enrollment.student.email,
-          avatar: enrollment.student.profile_picture
+          avatar_url: enrollment.student.profile_picture,
+        },
+        course: {
+          id: course.id,
+          title: course.title,
+          thumbnail: course.thumbnail,
         },
         enrollment: {
-          enrollment_date: enrollment.enrollment_date,
+          enrolled_at: enrollment.enrollment_date,
           status: enrollmentStatus,
           progress_percentage: parseFloat(enrollment.progress_percentage) || 0,
           last_accessed: enrollment.last_accessed,
-          completed_at: enrollment.completed_at
+          completed_at: enrollment.completed_at,
         },
-        progress_by_module: progressByModule
+        module_progress: progressByModule,
       }, 'Student progress retrieved successfully');
     } catch (error) {
       next(error);
@@ -304,69 +326,79 @@ class StudentManagementController {
     try {
       const { studentId } = req.params;
       const instructorId = req.user.id;
-      const { courseId } = req.query;
+      // Accept either ?courseId= (legacy) or ?course_id= (what
+      // StudentProgress sends).
+      const courseId = req.query.courseId || req.query.course_id;
 
-      // Build where clause for tests
-      const testWhere = { created_by: instructorId };
-
-      // Get all tests created by instructor
+      // AssignedTest's owner column is `instructor_id`, not `created_by`
+      // — that was 500-ing the endpoint with "column does not exist".
       const tests = await AssignedTest.findAll({
-        where: testWhere,
-        attributes: ['id']
+        where: { instructor_id: instructorId },
+        attributes: ['id'],
       });
 
       const testIds = tests.map(t => t.id);
 
       if (testIds.length === 0) {
-        return ApiResponse.success(res, {
-          test_results: []
-        }, 'No test results found');
+        return ApiResponse.success(res, { attempts: [], test_results: [] }, 'No test results found');
       }
 
-      // Get all attempts by this student for instructor's tests
       const attempts = await AssignedTestAttempt.findAll({
-        where: {
-          student_id: studentId,
-          test_id: { [Op.in]: testIds }
-        },
+        where: { student_id: studentId, test_id: { [Op.in]: testIds } },
         include: [
           {
             model: AssignedTest,
             as: 'test',
-            attributes: ['id', 'title', 'total_marks', 'passing_score'],
-            include: courseId ? [{
-              model: Course,
-              as: 'course',
-              where: { id: courseId },
-              attributes: ['id', 'title']
-            }] : []
-          }
+            // Real column on AssignedTest is test_name (not title).
+            attributes: ['id', 'test_name', 'total_marks', 'passing_score', 'course_id'],
+            include: courseId
+              ? [{ model: Course, as: 'course', where: { id: courseId }, attributes: ['id', 'title'] }]
+              : [{ model: Course, as: 'course', attributes: ['id', 'title'], required: false }],
+          },
         ],
-        order: [['completed_at', 'DESC']]
+        order: [['completed_at', 'DESC']],
       });
 
-      const testResults = attempts.map(attempt => ({
-        attempt_id: attempt.id,
-        test_id: attempt.test_id,
-        test_title: attempt.test?.title,
-        course_title: attempt.test?.course?.title,
-        score: attempt.score,
-        total_marks: attempt.test?.total_marks,
-        percentage: attempt.percentage,
-        passing_score: attempt.test?.passing_score,
-        passed: attempt.percentage >= attempt.test?.passing_score,
-        time_spent: attempt.time_spent,
-        completed_at: attempt.completed_at,
-        attempt_number: attempt.attempt_number
-      }));
+      // Shape each row the way StudentProgress reads it: `attempts`
+      // array (not test_results), test_title, score_percentage,
+      // total_points, submitted_at, status ('passed' | 'failed' |
+      // 'in_progress').
+      const mapped = attempts.map((attempt) => {
+        const passingScore = attempt.test?.passing_score ?? 70;
+        const pct = parseFloat(attempt.percentage || 0);
+        let status = 'in_progress';
+        if (attempt.completed_at) status = pct >= passingScore ? 'passed' : 'failed';
+        return {
+          id: attempt.id,
+          attempt_id: attempt.id,
+          test_id: attempt.test_id,
+          test_title: attempt.test?.test_name,
+          course_title: attempt.test?.course?.title,
+          score: attempt.score,
+          total_points: attempt.test?.total_marks,
+          total_marks: attempt.test?.total_marks,
+          percentage: pct,
+          score_percentage: pct,
+          passing_score: passingScore,
+          passed: !!attempt.passed,
+          status,
+          time_spent: attempt.time_taken_seconds,
+          completed_at: attempt.completed_at,
+          submitted_at: attempt.completed_at,
+          attempt_number: attempt.attempt_number,
+        };
+      });
 
       return ApiResponse.success(res, {
         student_id: studentId,
-        test_results: testResults,
-        total_attempts: testResults.length,
-        average_score: testResults.length > 0
-          ? testResults.reduce((sum, t) => sum + t.percentage, 0) / testResults.length
-          : 0
+        // Both keys for backwards compatibility — old callers used
+        // test_results, the StudentProgress page reads attempts.
+        attempts: mapped,
+        test_results: mapped,
+        total_attempts: mapped.length,
+        average_score: mapped.length > 0
+          ? mapped.reduce((sum, t) => sum + (t.percentage || 0), 0) / mapped.length
+          : 0,
       }, 'Student test results retrieved successfully');
     } catch (error) {
       next(error);
