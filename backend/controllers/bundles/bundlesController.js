@@ -4,9 +4,12 @@ const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const ActivityController = require('../activity/activityController');
 
+// Real Course columns. thumbnail_url, difficulty, enrolled_count
+// are VIRTUAL getters and can't be selected directly — they ride
+// along on toJSON() once the underlying columns are loaded.
 const COURSE_ATTRS = [
-  'id', 'title', 'description', 'thumbnail_url',
-  'difficulty', 'duration', 'price', 'average_rating', 'enrolled_count',
+  'id', 'title', 'description', 'thumbnail',
+  'level', 'duration_hours', 'price', 'average_rating', 'enrollment_count',
 ];
 
 class BundlesController {

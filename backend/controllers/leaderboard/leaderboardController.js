@@ -22,13 +22,13 @@ class LeaderboardController {
           JOIN enrollments e ON e.student_id = u.id AND e.course_id = :courseId
           LEFT JOIN content_progress cp
             ON cp.student_id = u.id
-            AND cp.is_completed = 1
+            AND cp.completed = TRUE
             AND cp.content_id IN (
               SELECT mc.id FROM module_contents mc
               JOIN course_modules cm ON cm.id = mc.module_id
               WHERE cm.course_id = :courseId
             )
-          WHERE u.is_active = 1
+          WHERE u.is_active = TRUE
           GROUP BY u.id, u.full_name, u.profile_picture, e.created_at
           ORDER BY lessons_completed DESC, e.created_at ASC
           LIMIT :lim
@@ -47,7 +47,7 @@ class LeaderboardController {
           LEFT JOIN certificates c ON c.student_id = u.id
           LEFT JOIN user_badges ub ON ub.user_id = u.id
           LEFT JOIN enrollments e ON e.student_id = u.id
-          WHERE u.role = 'student' AND u.is_active = 1
+          WHERE u.role = 'student' AND u.is_active = TRUE
           GROUP BY u.id, u.full_name, u.profile_picture
           ORDER BY courses_completed DESC, badges_earned DESC, courses_enrolled DESC
           LIMIT :lim
@@ -83,7 +83,7 @@ class LeaderboardController {
           SELECT u.id, COUNT(DISTINCT c.id) AS cc
           FROM users u
           LEFT JOIN certificates c ON c.student_id = u.id
-          WHERE u.role = 'student' AND u.is_active = 1
+          WHERE u.role = 'student' AND u.is_active = TRUE
           GROUP BY u.id
         ) sub
         WHERE sub.cc > :cc

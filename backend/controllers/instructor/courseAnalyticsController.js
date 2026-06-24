@@ -258,20 +258,24 @@ class CourseAnalyticsController {
    * Get content engagement metrics
    */
   static async _getContentEngagement(courseId) {
+    // Schema reality: module_contents stores duration_minutes (not
+    // duration); content_progress.completed is BOOLEAN (so `= 1` is
+    // a PG type error, must use `= TRUE`). Both bugs would 500 this
+    // endpoint on Postgres.
     const engagement = await sequelize.query(`
       SELECT
         mc.id as content_id,
         mc.title,
         mc.content_type,
-        mc.duration,
+        mc.duration_minutes as duration,
         COUNT(DISTINCT cp.student_id) as views,
-        SUM(CASE WHEN cp.completed = 1 THEN 1 ELSE 0 END) as completions,
+        SUM(CASE WHEN cp.completed = TRUE THEN 1 ELSE 0 END) as completions,
         ROUND(AVG(cp.watch_time_seconds), 2) as avg_time_spent
       FROM module_contents mc
       JOIN course_modules cm ON mc.module_id = cm.id
       LEFT JOIN content_progress cp ON mc.id = cp.content_id
       WHERE cm.course_id = :courseId
-      GROUP BY mc.id, mc.title, mc.content_type, mc.duration
+      GROUP BY mc.id, mc.title, mc.content_type, mc.duration_minutes
       ORDER BY views DESC
       LIMIT 10
     `, {

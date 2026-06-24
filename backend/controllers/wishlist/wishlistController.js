@@ -14,16 +14,23 @@ class WishlistController {
           {
             model: Course,
             as: 'course',
+            // Real Course columns: duration_hours (not duration),
+            // enrollment_count (enrolled_count is a VIRTUAL getter and
+            // can't be selected); `difficulty` is the VIRTUAL alias of
+            // the `level` column. Select only persisted columns and
+            // let the model getters fill in the virtual aliases on
+            // the JSON output.
             attributes: [
               'id', 'title', 'description', 'thumbnail',
-              'difficulty', 'duration', 'price', 'average_rating',
-              'enrolled_count', 'status',
+              'level', 'duration_hours', 'price', 'average_rating',
+              'enrollment_count', 'status',
             ],
             include: [
               {
                 model: User,
                 as: 'instructor',
-                attributes: ['id', 'full_name', 'avatar_url'],
+                // User uses profile_picture, not avatar_url.
+                attributes: ['id', 'full_name', 'profile_picture'],
               },
               {
                 model: Category,
