@@ -138,6 +138,10 @@ export default function Notifications() {
           notif.id === notificationId ? { ...notif, is_read: true } : notif
         )
       );
+      // Tell AppLayout the unread count changed so the topbar bell +
+      // sidebar Notifications badge update immediately instead of
+      // waiting for the next poll.
+      window.dispatchEvent(new CustomEvent('notifications:changed'));
 
       setSuccess('Notification marked as read');
       setTimeout(() => setSuccess(''), 3000);
@@ -157,6 +161,7 @@ export default function Notifications() {
       setNotifications(prev =>
         prev.map(notif => ({ ...notif, is_read: true }))
       );
+      window.dispatchEvent(new CustomEvent('notifications:changed'));
 
       setSuccess('All notifications marked as read');
       setTimeout(() => setSuccess(''), 3000);

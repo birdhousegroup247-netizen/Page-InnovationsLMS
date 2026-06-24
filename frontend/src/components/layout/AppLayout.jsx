@@ -97,18 +97,36 @@ export default function AppLayout({ children }) {
     };
   }, [refreshUnread, location.pathname, showToast]);
 
+  // Pull the latest notification count from the API. The Notifications
+  // page dispatches 'notifications:changed' after mark-read / mark-all
+  // so the badge stays in sync without waiting for the next poll.
+  const refreshNotifCount = useCallback(() => {
+    notificationsAPI.getUnreadCount()
+      .then((r) => setNotifCount(r.data?.data?.count || 0))
+      .catch(() => {});
+  }, []);
+
   // Refresh count when the tab is re-focused or every 60s — covers
   // gaps in socket coverage (sleep, weak network, etc.)
   useEffect(() => {
     if (!user) return;
-    const onFocus = () => refreshUnread();
+    const onFocus = () => {
+      refreshUnread();
+      refreshNotifCount();
+    };
+    const onNotifChanged = () => refreshNotifCount();
     window.addEventListener('focus', onFocus);
-    const id = setInterval(refreshUnread, 60_000);
+    window.addEventListener('notifications:changed', onNotifChanged);
+    const id = setInterval(() => {
+      refreshUnread();
+      refreshNotifCount();
+    }, 60_000);
     return () => {
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('notifications:changed', onNotifChanged);
       clearInterval(id);
     };
-  }, [user, refreshUnread]);
+  }, [user, refreshUnread, refreshNotifCount]);
 
   // Expose setter so Messages page can clear the badge
   const decrementUnread = useCallback((amount) => {
@@ -116,11 +134,18 @@ export default function AppLayout({ children }) {
   }, []);
 
   const rawItems = getNavigationItems(selectedRole);
-  const navigationItems = rawItems.map((item) =>
-    item.path === '/messages' && unreadCount > 0
-      ? { ...item, badge: unreadCount > 99 ? '99+' : String(unreadCount) }
-      : item
-  );
+  // Mirror the Messages badge pattern for Notifications — same shape
+  // (count or "99+") so the Sidebar component renders both
+  // identically. Bell icon in the topbar is already wired separately.
+  const navigationItems = rawItems.map((item) => {
+    if (item.path === '/messages' && unreadCount > 0) {
+      return { ...item, badge: unreadCount > 99 ? '99+' : String(unreadCount) };
+    }
+    if (item.path === '/notifications' && notifCount > 0) {
+      return { ...item, badge: notifCount > 99 ? '99+' : String(notifCount) };
+    }
+    return item;
+  });
 
   const handleLogout = () => setShowLogoutConfirm(true);
 
