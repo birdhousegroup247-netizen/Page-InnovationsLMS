@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   assignedTestsAPI,
@@ -102,13 +102,16 @@ export default function CreateTest() {
   const fetchQuestions = async () => {
     setLoadingQuestions(true);
     try {
-      // Default the question fetch to the test's selected category +
-      // course so the instructor sees only the relevant pool. The user
-      // can still narrow further with the filters on this step.
+      // Filter by category only by default. course_id on QuestionBank is
+      // nullable — most questions are tagged to a category and live in
+      // the bank for the whole category. Strict AND on (category AND
+      // course) was returning zero results any time a course didn't have
+      // its own dedicated bank, even when plenty of relevant questions
+      // existed under the same category. The instructor can still
+      // narrow via the search/difficulty/type filters on this step.
       const params = {
         is_approved: true,
         category: questionFilters.category || testData.category_id || undefined,
-        course_id: testData.course_id || undefined,
         search: questionFilters.search || undefined,
         difficulty: questionFilters.difficulty || undefined,
         type: questionFilters.type || undefined,
@@ -142,7 +145,7 @@ export default function CreateTest() {
     if (currentStep === 1) {
       fetchQuestions();
     }
-  }, [currentStep, questionFilters, testData.category_id, testData.course_id]);
+  }, [currentStep, questionFilters, testData.category_id]);
 
   useEffect(() => {
     if (currentStep === 2 && testData.course_id) {
@@ -538,8 +541,36 @@ export default function CreateTest() {
           <Spinner size="lg" />
         </div>
       ) : availableQuestions.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          No questions found. Try adjusting your filters.
+        <div className="text-center py-12 px-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-dark-700 mb-3">
+            <HelpCircle className="w-6 h-6 text-gray-400" />
+          </div>
+          <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+            No questions in the bank yet for this category
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {questionFilters.search || questionFilters.difficulty || questionFilters.type
+              ? 'Clear the filters above to widen the search, or add new questions.'
+              : 'Add some questions to the bank first — then come back to build the test.'}
+          </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            {(questionFilters.search || questionFilters.difficulty || questionFilters.type) && (
+              <button
+                type="button"
+                onClick={() => setQuestionFilters({ search: '', category: '', difficulty: '', type: '' })}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600 transition-colors"
+              >
+                Clear filters
+              </button>
+            )}
+            <Link
+              to="/instructor/contribute-questions"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add questions
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">
