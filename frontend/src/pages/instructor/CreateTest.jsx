@@ -147,11 +147,67 @@ export default function CreateTest() {
   // out N parallel /enrollments calls — slow, and the per-course
   // endpoint silently swallowed permissions errors which is why the
   // picker came up empty.
+  const [studentsError, setStudentsError] = useState('');
   const fetchStudents = async () => {
     setLoadingStudents(true);
+    setStudentsError('');
     try {
-      const response = await coursesAPI.getInstructorStudents();
-      const rows = response?.data?.data?.students || [];
+      // Primary path: single backend call that returns enrollments
+      // across every instructor course. If that returns nothing, fall
+      // back to the per-course endpoint so we still surface students
+      // even if /my/students has a permissions edge case.
+      let rows = [];
+      try {
+        const response = await coursesAPI.getInstructorStudents();
+        rows = response?.data?.data?.students || [];
+        console.log('[CreateTest] /my/students rows:', rows.length, rows);
+      } catch (err) {
+        console.warn('[CreateTest] /my/students failed, falling back', err);
+        rows = [];
+      }
+
+      if (rows.length === 0 && courses && courses.length > 0) {
+        // Fallback: fan out per-course to /api/instructor/courses/:id/enrollments
+        const responses = await Promise.all(
+          courses.map((c) =>
+            coursesAPI
+              .getCourseEnrollments(c.id)
+              .then((r) => ({
+                courseId: c.id,
+                courseTitle: c.title,
+                categoryId: c.category_id,
+                ok: true,
+                enrollments: r?.data?.data?.enrollments || [],
+              }))
+              .catch((err) => {
+                console.warn(`[CreateTest] getCourseEnrollments(${c.id}) failed`, err?.response?.status, err?.message);
+                return {
+                  courseId: c.id,
+                  courseTitle: c.title,
+                  categoryId: c.category_id,
+                  ok: false,
+                  enrollments: [],
+                };
+              })
+          )
+        );
+        // Reshape the per-course responses to look like /my/students rows.
+        rows = [];
+        for (const { courseId, courseTitle, categoryId, enrollments } of responses) {
+          for (const e of enrollments) {
+            rows.push({
+              student_id: e.student_id,
+              student_name: e.student_name,
+              student_email: e.student_email,
+              student: { avatar_url: e.student_avatar },
+              course_id: courseId,
+              course: { id: courseId, title: courseTitle, category_id: categoryId },
+            });
+          }
+        }
+        console.log('[CreateTest] fallback rows:', rows.length);
+      }
+
       const courseCategoryById = new Map(
         (courses || []).map((c) => [c.id, c.category_id])
       );
@@ -159,13 +215,11 @@ export default function CreateTest() {
       for (const r of rows) {
         const studentId = r.student_id ?? r.student?.id;
         if (!studentId) continue;
+        const cid = r.course_id ?? r.course?.id;
         const courseInfo = {
-          id: r.course_id ?? r.course?.id,
-          title: r.course?.title || `Course #${r.course_id}`,
-          category_id:
-            r.course?.category_id ??
-            courseCategoryById.get(r.course_id ?? r.course?.id) ??
-            null,
+          id: cid,
+          title: r.course?.title || `Course #${cid}`,
+          category_id: r.course?.category_id ?? courseCategoryById.get(cid) ?? null,
         };
         const existing = dedup.get(studentId);
         if (existing) {
@@ -177,7 +231,7 @@ export default function CreateTest() {
             student_id: studentId,
             student_name: r.student?.full_name || r.student_name,
             student_email: r.student?.email || r.student_email,
-            student_avatar: r.student?.avatar_url || r.student?.profile_picture,
+            student_avatar: r.student?.avatar_url || r.student_avatar || r.student?.profile_picture,
             courses: [courseInfo],
           });
         }
@@ -185,6 +239,7 @@ export default function CreateTest() {
       setStudents(Array.from(dedup.values()));
     } catch (error) {
       console.error('Failed to load students:', error);
+      setStudentsError(error?.response?.data?.message || error?.message || 'Could not load students');
       setStudents([]);
     } finally {
       setLoadingStudents(false);
@@ -953,9 +1008,34 @@ export default function CreateTest() {
           <div className="flex justify-center py-12">
             <Spinner size="lg" />
           </div>
+        ) : studentsError ? (
+          <div className="text-center py-10 px-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+            <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
+              Couldn't load students
+            </p>
+            <p className="text-xs text-red-700 dark:text-red-400 mb-3">
+              {studentsError}
+            </p>
+            <button
+              type="button"
+              onClick={fetchStudents}
+              className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         ) : students.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            No students are enrolled in any of your courses yet.
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400 space-y-1">
+            <p className="font-medium text-gray-700 dark:text-gray-300">
+              {courses.length === 0
+                ? "You don't have any courses yet."
+                : 'None of your courses has enrolled students yet.'}
+            </p>
+            <p className="text-xs">
+              {courses.length === 0
+                ? 'Create a course first, then come back to assign students.'
+                : 'Once a student enrolls, they will show up here.'}
+            </p>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="text-center py-10 px-4">
