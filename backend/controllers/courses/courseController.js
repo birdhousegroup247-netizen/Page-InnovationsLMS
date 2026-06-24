@@ -471,6 +471,40 @@ class CourseController {
         priority: 'normal',
       });
 
+      // Notify the lead instructor + every co-instructor on the
+      // course_instructors join (lead/co/ta) that a new student joined.
+      // Fire-and-forget — don't block the enrollment response if one
+      // of the notif inserts fails.
+      try {
+        const recipients = new Set();
+        if (course.instructor_id) recipients.add(course.instructor_id);
+        const coInstructors = await CourseInstructor.findAll({
+          where: { course_id: course.id },
+          attributes: ['instructor_id'],
+        });
+        for (const ci of coInstructors) {
+          if (ci.instructor_id) recipients.add(ci.instructor_id);
+        }
+        // Skip self-enrollment edge case (instructor enrolling in
+        // their own course shouldn't ping themselves).
+        recipients.delete(req.user.id);
+        if (recipients.size > 0) {
+          const studentName = req.user.full_name || 'A new student';
+          await NotificationsController.createBulkNotifications(
+            Array.from(recipients).map((user_id) => ({
+              user_id,
+              type: 'new_enrollment',
+              title: 'New student enrolled',
+              message: `${studentName} just enrolled in "${course.title}".`,
+              link: `/instructor/courses/${course.id}/students`,
+              priority: 'low',
+            }))
+          );
+        }
+      } catch (notifErr) {
+        logger.warn(`Enrollment notif to instructor(s) failed: ${notifErr.message}`);
+      }
+
       // Auto-assign any published tests for this course
       try {
         const { AssignedTest, TestAssignment } = require('../../models');

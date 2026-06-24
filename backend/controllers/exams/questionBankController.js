@@ -2,6 +2,7 @@ const { QuestionBank, Category, User, Course } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
 const { Op, literal } = require('sequelize');
+const NotificationsController = require('../notifications/notificationsController');
 
 class QuestionBankController {
   // Get all questions (with filters)
@@ -248,6 +249,20 @@ class QuestionBankController {
 
       await question.update({ is_approved: true, approval_status: 'approved', reviewed_by: req.user.id, reviewed_at: new Date() });
 
+      // Ping the submitter so they don't have to refresh the bank
+      // to learn the verdict. Fire-and-forget; never block the admin
+      // action on a notification insert.
+      if (question.created_by) {
+        NotificationsController.createNotification({
+          user_id: question.created_by,
+          type: 'question_approved',
+          title: 'Your question was approved',
+          message: `An admin approved your question. It's now available for tests.`,
+          link: '/instructor/contribute-questions',
+          priority: 'normal',
+        }).catch(() => {});
+      }
+
       return ApiResponse.success(res, { question }, 'Question approved successfully');
     } catch (error) {
       next(error);
@@ -270,6 +285,19 @@ class QuestionBankController {
         reviewed_by: req.user.id,
         reviewed_at: new Date(),
       });
+
+      if (question.created_by) {
+        NotificationsController.createNotification({
+          user_id: question.created_by,
+          type: 'question_rejected',
+          title: 'Your question needs changes',
+          message: reason
+            ? `An admin rejected your question. Reason: ${reason}`
+            : `An admin rejected your question. Open it to see the note and resubmit.`,
+          link: '/instructor/contribute-questions',
+          priority: 'normal',
+        }).catch(() => {});
+      }
 
       return ApiResponse.success(res, { question }, 'Question rejected');
     } catch (error) {
