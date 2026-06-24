@@ -82,6 +82,12 @@ export default function CreateTest() {
   // Defaults to whatever the instructor picked in Step 1 (or 'all' if none).
   const [courseFilter, setCourseFilter] = useState('all');
 
+  // Step-3 student picker state. 'all-mine' pools every instructor
+  // course (broadest), 'category' is just courses in the test's
+  // category, or a specific course id. Plus a search term over name/email.
+  const [studentCourseFilter, setStudentCourseFilter] = useState('category');
+  const [studentSearch, setStudentSearch] = useState('');
+
   useEffect(() => {
     // Note: Role check is handled by InstructorRoute wrapper in App.jsx
     fetchInitialData();
@@ -133,34 +139,39 @@ export default function CreateTest() {
     }
   };
 
-  const fetchStudents = async ({ courseId, categoryId }) => {
+  // Pulls enrollments for every instructor course in one shot and
+  // unifies them — each student is deduped by student_id and gets a
+  // `courses` array of every course they're enrolled in (with the
+  // instructor). This is the source of truth; the picker filters on
+  // top of it client-side so toggling between "this course only" and
+  // "all my students" is instant.
+  const fetchStudents = async () => {
+    if (!courses || courses.length === 0) {
+      setStudents([]);
+      return;
+    }
     setLoadingStudents(true);
     try {
-      if (courseId) {
-        // Course-scoped test → just that course's enrollees.
-        const response = await coursesAPI.getCourseEnrollments(courseId);
-        setStudents(response.data.data.enrollments || []);
-        return;
-      }
-      // Category-wide test → pool every student enrolled in any
-      // course the instructor owns in this category, deduplicated by
-      // student_id so the same person doesn't show up twice.
-      const myCourses = (courses || []).filter(
-        (c) => String(c.category_id) === String(categoryId)
-      );
-      if (myCourses.length === 0) {
-        setStudents([]);
-        return;
-      }
-      const all = await Promise.all(
-        myCourses.map((c) =>
-          coursesAPI.getCourseEnrollments(c.id).catch(() => ({ data: { data: { enrollments: [] } } }))
+      const responses = await Promise.all(
+        courses.map((c) =>
+          coursesAPI
+            .getCourseEnrollments(c.id)
+            .then((r) => ({ courseId: c.id, courseTitle: c.title, categoryId: c.category_id, enrollments: r?.data?.data?.enrollments || [] }))
+            .catch(() => ({ courseId: c.id, courseTitle: c.title, categoryId: c.category_id, enrollments: [] }))
         )
       );
       const dedup = new Map();
-      for (const r of all) {
-        for (const e of r?.data?.data?.enrollments || []) {
-          if (!dedup.has(e.student_id)) dedup.set(e.student_id, e);
+      for (const { courseId, courseTitle, categoryId, enrollments } of responses) {
+        for (const e of enrollments) {
+          const existing = dedup.get(e.student_id);
+          if (existing) {
+            existing.courses.push({ id: courseId, title: courseTitle, category_id: categoryId });
+          } else {
+            dedup.set(e.student_id, {
+              ...e,
+              courses: [{ id: courseId, title: courseTitle, category_id: categoryId }],
+            });
+          }
         }
       }
       setStudents(Array.from(dedup.values()));
@@ -186,10 +197,23 @@ export default function CreateTest() {
   }, [testData.course_id]);
 
   useEffect(() => {
-    if (currentStep === 2 && (testData.course_id || testData.category_id)) {
-      fetchStudents({ courseId: testData.course_id, categoryId: testData.category_id });
+    if (currentStep === 2 && courses.length > 0) {
+      fetchStudents();
     }
-  }, [currentStep, testData.course_id, testData.category_id, courses]);
+  }, [currentStep, courses]);
+
+  // Default the student filter to the test's chosen scope on first
+  // arrival at Step 3: a course-scoped test → that course;
+  // category-scoped → "category"; nothing → "all-mine".
+  useEffect(() => {
+    if (testData.course_id) {
+      setStudentCourseFilter(String(testData.course_id));
+    } else if (testData.category_id) {
+      setStudentCourseFilter('category');
+    } else {
+      setStudentCourseFilter('all-mine');
+    }
+  }, [testData.course_id, testData.category_id]);
 
   const handleInputChange = (field, value) => {
     setTestData((prev) => ({
@@ -217,10 +241,6 @@ export default function CreateTest() {
         return [...prev, studentId];
       }
     });
-  };
-
-  const selectAllStudents = () => {
-    setSelectedStudents(students.map((s) => s.student_id));
   };
 
   const deselectAllStudents = () => {
@@ -752,6 +772,59 @@ export default function CreateTest() {
     }
 
     if (currentStep === 2) {
+      // Per-course counts so the dropdown shows "Course (12)".
+      const studentCourseCounts = (() => {
+        const counts = new Map();
+        for (const s of students) {
+          for (const c of s.courses || []) {
+            counts.set(c.id, (counts.get(c.id) || 0) + 1);
+          }
+        }
+        return counts;
+      })();
+
+      // Filter students by the picked source.
+      const filteredStudents = students.filter((s) => {
+        // Source filter
+        if (studentCourseFilter === 'all-mine') {
+          // nothing to do
+        } else if (studentCourseFilter === 'category') {
+          const inCategory = (s.courses || []).some(
+            (c) => String(c.category_id) === String(testData.category_id)
+          );
+          if (!inCategory) return false;
+        } else {
+          // specific course id
+          const inCourse = (s.courses || []).some(
+            (c) => String(c.id) === String(studentCourseFilter)
+          );
+          if (!inCourse) return false;
+        }
+        // Search filter (name OR email)
+        if (studentSearch.trim()) {
+          const q = studentSearch.trim().toLowerCase();
+          const name = (s.student_name || '').toLowerCase();
+          const email = (s.student_email || '').toLowerCase();
+          if (!name.includes(q) && !email.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const categoryStudentCount = students.filter((s) =>
+        (s.courses || []).some(
+          (c) => String(c.category_id) === String(testData.category_id)
+        )
+      ).length;
+
+      const selectAllVisible = () => {
+        const ids = filteredStudents.map((s) => s.student_id);
+        setSelectedStudents((prev) => Array.from(new Set([...prev, ...ids])));
+      };
+      const deselectAllVisible = () => {
+        const visible = new Set(filteredStudents.map((s) => s.student_id));
+        setSelectedStudents((prev) => prev.filter((id) => !visible.has(id)));
+      };
+
       return (
     <div className="space-y-6">
       {/* Date Selection */}
@@ -789,18 +862,71 @@ export default function CreateTest() {
           </label>
           <div className="flex gap-2">
             <button
-              onClick={selectAllStudents}
+              type="button"
+              onClick={selectAllVisible}
               className="text-sm text-brand-blue hover:text-brand-blue-600 font-medium"
             >
-              Select All
+              Select All Visible
             </button>
             <span className="text-gray-300 dark:text-gray-600">|</span>
             <button
+              type="button"
+              onClick={deselectAllVisible}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium"
+            >
+              Deselect Visible
+            </button>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <button
+              type="button"
               onClick={deselectAllStudents}
               className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium"
             >
-              Deselect All
+              Clear All
             </button>
+          </div>
+        </div>
+
+        {/* Filters: source + search */}
+        <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-4 mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Show students from
+            </label>
+            <select
+              value={studentCourseFilter}
+              onChange={(e) => setStudentCourseFilter(e.target.value)}
+              className="w-full px-3 py-2 bg-white dark:bg-dark-600 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors text-sm"
+            >
+              <option value="all-mine">All my courses ({students.length})</option>
+              {testData.category_id && categoryStudentCount > 0 && (
+                <option value="category">
+                  Courses in this category ({categoryStudentCount})
+                </option>
+              )}
+              {courses
+                .filter((c) => studentCourseCounts.has(c.id))
+                .map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.title} ({studentCourseCounts.get(c.id)})
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Search by name or email
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="e.g. anna or anna@..."
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-dark-600 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors text-sm"
+              />
+            </div>
           </div>
         </div>
 
@@ -808,6 +934,9 @@ export default function CreateTest() {
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4 mb-4">
           <p className="text-sm font-medium text-blue-800 dark:text-blue-400">
             {selectedStudents.length} student(s) selected
+            <span className="text-blue-600 dark:text-blue-300 font-normal">
+              {' '}· showing {filteredStudents.length} of {students.length}
+            </span>
           </p>
         </div>
 
@@ -818,13 +947,27 @@ export default function CreateTest() {
           </div>
         ) : students.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            {testData.course_id
-              ? 'No students enrolled in this course yet.'
-              : 'No students enrolled in any of your courses in this category yet.'}
+            No students are enrolled in any of your courses yet.
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div className="text-center py-10 px-4">
+            <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+              No students match these filters
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Switch the source dropdown or clear the search.
+            </p>
+            <button
+              type="button"
+              onClick={() => { setStudentCourseFilter('all-mine'); setStudentSearch(''); }}
+              className="px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-blue/90 transition-colors"
+            >
+              Show all my students
+            </button>
           </div>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto border border-gray-200 dark:border-border-dark rounded-lg p-4">
-            {students.map((enrollment) => {
+            {filteredStudents.map((enrollment) => {
               const isSelected = selectedStudents.includes(enrollment.student_id);
               return (
                 <label
@@ -842,13 +985,25 @@ export default function CreateTest() {
                     onChange={() => toggleStudentSelection(enrollment.student_id)}
                     className="w-4 h-4 text-brand-blue border-gray-300 rounded focus:ring-brand-blue"
                   />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-text-dark-primary truncate">
                       {enrollment.student_name || `Student ${enrollment.student_id}`}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {enrollment.student_email}
                     </p>
+                    {enrollment.courses && enrollment.courses.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {enrollment.courses.map((c) => (
+                          <span
+                            key={c.id}
+                            className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-gray-100 dark:bg-dark-600 text-gray-700 dark:text-gray-300"
+                          >
+                            {c.title}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </label>
               );
