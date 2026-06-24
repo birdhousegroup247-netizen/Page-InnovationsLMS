@@ -87,28 +87,30 @@ class TestAnalyticsController {
         completed_at: attempt.completed_at
       }));
 
+      // Frontend reads a single test_overview object plus a 5-bucket
+      // score_distribution (0-59, 60-69, 70-79, 80-89, 90-100). Keep
+      // the shape it consumes to avoid the silent "everything renders
+      // 0%" bug we hit on the first analytics pass.
       return ApiResponse.success(res, {
-        test: {
-          id: test.id,
-          title: test.test_name,
-          code: test.test_code,
-          course: test.course?.title,
+        test_overview: {
+          test_id: test.id,
+          test_title: test.test_name,
+          test_code: test.test_code,
+          course_title: test.course?.title || null,
           total_questions: test.total_questions,
           total_marks: test.total_marks,
           passing_score: test.passing_score,
-          time_limit: test.time_limit_minutes
-        },
-        overview: {
+          time_limit: test.time_limit_minutes,
           total_assignments: totalAssignments,
           total_attempts: completedAttempts,
-          completion_rate: totalAssignments > 0 ? (completedAttempts / totalAssignments * 100).toFixed(2) : 0,
-          pass_rate: completedAttempts > 0 ? (passedAttempts / completedAttempts * 100).toFixed(2) : 0,
-          average_score: averageScore.toFixed(2),
-          average_time_spent_seconds: Math.round(averageTimeSpent)
+          completion_rate: totalAssignments > 0 ? Number((completedAttempts / totalAssignments * 100).toFixed(2)) : 0,
+          pass_rate: completedAttempts > 0 ? Number((passedAttempts / completedAttempts * 100).toFixed(2)) : 0,
+          average_score: Number(averageScore.toFixed(2)),
+          average_time_spent_seconds: Math.round(averageTimeSpent),
         },
         score_distribution: scoreDistribution,
         question_analytics: questionAnalytics,
-        student_performance: studentPerformance
+        student_performance: studentPerformance,
       }, 'Test analytics retrieved successfully');
     } catch (error) {
       next(error);
@@ -293,11 +295,18 @@ class TestAnalyticsController {
    * Private helper: Calculate question-level analytics
    */
   static async _getQuestionAnalytics(testId) {
+    // PG strict mode: every non-aggregated column in the ORDER BY or
+    // SELECT has to also appear in GROUP BY (or be wrapped in an
+    // aggregate). atq.order_index isn't in GROUP BY, so we MIN() it —
+    // a question shows up once per test row, so MIN is the same value
+    // and lets us still sort by display order without expanding the
+    // grouping.
     const analytics = await sequelize.query(`
       SELECT
         q.id as question_id,
         q.question_text,
         q.question_type,
+        MIN(atq.order_index) as order_index,
         COUNT(ata.id) as total_attempts,
         SUM(CASE WHEN ata.is_correct = TRUE THEN 1 ELSE 0 END) as correct_count,
         ROUND(AVG(CASE WHEN ata.is_correct = TRUE THEN 100 ELSE 0 END), 2) as success_rate
@@ -307,42 +316,52 @@ class TestAnalyticsController {
       LEFT JOIN assigned_test_attempts att ON ata.attempt_id = att.id AND att.test_id = :testId
       WHERE atq.test_id = :testId
       GROUP BY q.id, q.question_text, q.question_type
-      ORDER BY atq.order_index
+      ORDER BY MIN(atq.order_index) NULLS LAST, q.id
     `, {
       replacements: { testId },
       type: sequelize.QueryTypes.SELECT
     });
 
-    return analytics.map(q => ({
-      question_id: q.question_id,
-      question_text: q.question_text.substring(0, 100) + '...',
-      question_type: q.question_type,
-      total_attempts: q.total_attempts || 0,
-      correct_count: q.correct_count || 0,
-      success_rate: parseFloat(q.success_rate || 0),
-      difficulty: this._calculateDifficulty(parseFloat(q.success_rate || 0))
-    }));
+    return analytics.map(q => {
+      const totalAttempts = parseInt(q.total_attempts || 0, 10);
+      const correct = parseInt(q.correct_count || 0, 10);
+      // Truncate display text in the frontend, not the API — full text
+      // is small and lets the UI choose how to render.
+      return {
+        question_id: q.question_id,
+        question_text: q.question_text || '',
+        question_type: q.question_type,
+        total_attempts: totalAttempts,
+        correct_count: correct,
+        incorrect_count: Math.max(0, totalAttempts - correct),
+        success_rate: parseFloat(q.success_rate || 0),
+        difficulty: TestAnalyticsController._calculateDifficulty(parseFloat(q.success_rate || 0)),
+      };
+    });
   }
 
   /**
    * Private helper: Calculate score distribution
    */
   static _calculateScoreDistribution(attempts) {
+    // 5-bucket grade-style distribution that matches what the
+    // frontend Score Distribution chart reads.
     const distribution = {
-      '0-20': 0,
-      '21-40': 0,
-      '41-60': 0,
-      '61-80': 0,
-      '81-100': 0
+      '0-59': 0,
+      '60-69': 0,
+      '70-79': 0,
+      '80-89': 0,
+      '90-100': 0,
     };
 
     attempts.forEach(attempt => {
       const percentage = parseFloat(attempt.percentage || 0);
-      if (percentage <= 20) distribution['0-20']++;
-      else if (percentage <= 40) distribution['21-40']++;
-      else if (percentage <= 60) distribution['41-60']++;
-      else if (percentage <= 80) distribution['61-80']++;
-      else distribution['81-100']++;
+      if (!attempt.completed_at) return; // ignore in-progress attempts
+      if (percentage < 60) distribution['0-59']++;
+      else if (percentage < 70) distribution['60-69']++;
+      else if (percentage < 80) distribution['70-79']++;
+      else if (percentage < 90) distribution['80-89']++;
+      else distribution['90-100']++;
     });
 
     return distribution;
