@@ -183,16 +183,15 @@ export default function LiveSessionsPage() {
   useEffect(() => { fetchSessions(); /* eslint-disable-next-line */ }, [scopedCourseId]);
 
   const visible = useMemo(() => {
-    const now = Date.now();
     return sessions.filter((s) => {
-      // Status chip
+      // Status drives the chip filter. Clock time is purely a display
+      // hint ("Overdue" pill on the row) — scheduled-but-late sessions
+      // still count as "Upcoming" because the instructor can still
+      // run them.
       if (filter === 'upcoming') {
         if (s.status === 'ended') return false;
-        if (s.status !== 'live' && new Date(s.scheduled_at).getTime() < now) return false;
       } else if (filter === 'past') {
-        const past = new Date(s.scheduled_at).getTime() < now;
-        if (s.status !== 'ended' && !past) return false;
-        if (s.status === 'live') return false;
+        if (s.status !== 'ended') return false;
       }
       // Course chip (only when unscoped)
       if (!isScoped && courseFilter !== 'all' && String(s.course_id) !== String(courseFilter)) {
@@ -257,15 +256,12 @@ export default function LiveSessionsPage() {
 
   // Count helpers for chips (work on all rows pre-status filter).
   const counts = useMemo(() => {
-    const now = Date.now();
     const visibleAcrossCourse = sessions.filter((s) =>
       isScoped || courseFilter === 'all' || String(s.course_id) === String(courseFilter)
     );
     return {
-      upcoming: visibleAcrossCourse.filter((s) =>
-        s.status === 'live' || (s.status !== 'ended' && new Date(s.scheduled_at).getTime() >= now)
-      ).length,
-      past: visibleAcrossCourse.filter((s) => s.status === 'ended' || new Date(s.scheduled_at).getTime() < now && s.status !== 'live').length,
+      upcoming: visibleAcrossCourse.filter((s) => s.status !== 'ended').length,
+      past: visibleAcrossCourse.filter((s) => s.status === 'ended').length,
       all: visibleAcrossCourse.length,
     };
   }, [sessions, courseFilter, isScoped]);
@@ -357,7 +353,13 @@ export default function LiveSessionsPage() {
         ) : (
           <div className="flex flex-col gap-2">
             {visible.map((s) => {
+              // Past = scheduled start time has elapsed. It is a HINT
+              // (we surface an "Overdue" chip) — NOT a gate. Buttons
+              // are driven by status (scheduled/live/ended) alone, so
+              // an instructor who's running 30 min late can still hit
+              // Start / Go Live without the row going dead.
               const past = new Date(s.scheduled_at).getTime() < Date.now();
+              const overdue = s.status === 'scheduled' && past;
               const joinUrl = s.zoom_start_url || s.meeting_url;
               return (
                 <div
@@ -372,9 +374,16 @@ export default function LiveSessionsPage() {
 
                   {/* Title + one-line meta */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {s.title || 'Untitled session'}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {s.title || 'Untitled session'}
+                      </h3>
+                      {overdue && (
+                        <span className="text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 shrink-0">
+                          Overdue
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">
                       {fmtWhen(s.scheduled_at)}
                       {s.duration_minutes ? ` · ${s.duration_minutes} min` : ''}
@@ -383,7 +392,8 @@ export default function LiveSessionsPage() {
                     </p>
                   </div>
 
-                  {/* Primary action — state-aware */}
+                  {/* Primary action — driven by status only. Past time
+                      no longer hides Start / Go Live. */}
                   <div className="flex items-center gap-1 shrink-0">
                     {s.status === 'live' && joinUrl && (
                       <a
@@ -393,15 +403,18 @@ export default function LiveSessionsPage() {
                         <Play className="w-3.5 h-3.5" /> Open
                       </a>
                     )}
-                    {s.status === 'scheduled' && !past && joinUrl && (
+                    {s.status === 'scheduled' && joinUrl && (
                       <a
                         href={absUrl(joinUrl)} target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors"
+                        className={cn(
+                          'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors',
+                          overdue ? 'bg-amber-500 hover:bg-amber-600' : 'bg-brand-blue hover:bg-brand-blue/90'
+                        )}
                       >
                         <Play className="w-3.5 h-3.5" /> Start
                       </a>
                     )}
-                    {s.status === 'scheduled' && !past && (
+                    {s.status === 'scheduled' && (
                       <Tooltip content="Mark this session as live now">
                         <button
                           onClick={() => handleStatus(s.id, 'live')}
@@ -420,6 +433,17 @@ export default function LiveSessionsPage() {
                           className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors text-xs text-gray-600 dark:text-gray-300 px-2"
                         >
                           End
+                        </button>
+                      </Tooltip>
+                    )}
+                    {s.status === 'ended' && (
+                      <Tooltip content="Reopen — mark as scheduled again">
+                        <button
+                          onClick={() => handleStatus(s.id, 'scheduled')}
+                          aria-label="Reopen session"
+                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-xs text-brand-blue px-2"
+                        >
+                          Reopen
                         </button>
                       </Tooltip>
                     )}

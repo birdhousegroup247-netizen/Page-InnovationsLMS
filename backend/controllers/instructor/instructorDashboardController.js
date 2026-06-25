@@ -363,19 +363,15 @@ class InstructorDashboardController {
 
       const where = { course_id: { [Op.in]: courseIds } };
       const now = new Date();
-      // Treat "upcoming" as scheduled rows whose start is in the
-      // future OR rows currently flagged 'live'. Past = ended or
-      // start_time already passed (but not live).
+      // Status is the source of truth for actionability — past clock
+      // time is just a HINT (the UI shows an "Overdue" chip). So
+      // "upcoming" = anything not ended (covers scheduled-but-late
+      // and live). "Past" = anything explicitly ended. Time of day
+      // no longer hides a session the instructor can still open.
       if (status === 'upcoming') {
-        where[Op.or] = [
-          { scheduled_at: { [Op.gte]: now } },
-          { status: 'live' },
-        ];
+        where.status = { [Op.in]: ['scheduled', 'live'] };
       } else if (status === 'past') {
-        where[Op.and] = [
-          { scheduled_at: { [Op.lt]: now } },
-          { status: { [Op.ne]: 'live' } },
-        ];
+        where.status = 'ended';
       }
 
       const sessions = await LiveSession.findAll({

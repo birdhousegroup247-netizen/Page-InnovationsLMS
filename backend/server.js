@@ -1114,6 +1114,50 @@ const startServer = async () => {
       }
     }, 5 * 60 * 1000); // Run every 5 minutes
 
+    // Zombie session sweep — runs hourly. Status drives UI behaviour
+    // now, so a session that the instructor forgot to End would sit
+    // in 'scheduled' or 'live' forever. We auto-end it in two cases:
+    //   1. status === 'live' for > 12 h (instructor closed the tab)
+    //   2. status === 'scheduled' AND scheduled_at + duration is more
+    //      than 24 h in the past (instructor never went live)
+    // This keeps lists tidy without taking action on anything still
+    // plausibly in-flight. Anyone who needs an old session back can
+    // hit Reopen.
+    setInterval(async () => {
+      try {
+        const { LiveSession } = require('./models');
+        const { Op: ZOp } = require('sequelize');
+
+        const now = new Date();
+        const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+        // 1) Stuck "live" — instructor likely closed the tab. We use
+        //    updated_at as a proxy for "time of last status change".
+        const [liveStuck] = await LiveSession.update(
+          { status: 'ended' },
+          { where: { status: 'live', updated_at: { [ZOp.lt]: twelveHoursAgo } } }
+        );
+        if (liveStuck > 0) {
+          logger.info(`[session-zombie-sweep] auto-ended ${liveStuck} stuck live session(s)`);
+        }
+
+        // 2) Scheduled and >24h past the start time — never went live.
+        //    Cheaper than computing (scheduled_at + duration); a 24h
+        //    buffer absorbs typical session lengths anyway.
+        const [schedStale] = await LiveSession.update(
+          { status: 'ended' },
+          { where: { status: 'scheduled', scheduled_at: { [ZOp.lt]: twentyFourHoursAgo } } }
+        );
+        if (schedStale > 0) {
+          logger.info(`[session-zombie-sweep] auto-ended ${schedStale} stale scheduled session(s)`);
+        }
+      } catch (sweepErr) {
+        logger.error(`[session-zombie-sweep] failed: ${sweepErr.message}\n${sweepErr.stack || ''}`);
+      }
+    }, 60 * 60 * 1000); // Hourly
+    logger.info('[session-zombie-sweep] Started — hourly auto-end of stuck/stale sessions');
+
     // server.listen() now fires earlier in startServer (right after model
     // load) so Railway's healthcheck can pass while migrations run in the
     // background. Removed the duplicate listen() that used to live here —
