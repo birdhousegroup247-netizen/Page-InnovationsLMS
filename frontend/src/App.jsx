@@ -102,11 +102,11 @@ const EnrollmentManagement = lazyWithReload(() => import('./pages/instructor/Enr
 const ManageTests = lazyWithReload(() => import('./pages/instructor/ManageTests'));
 const CreateTest = lazyWithReload(() => import('./pages/instructor/CreateTest'));
 const ContributeQuestions = lazyWithReload(() => import('./pages/instructor/ContributeQuestions'));
-const LiveSessions = lazyWithReload(() => import('./pages/instructor/LiveSessions'));
 const GradeAssignments = lazyWithReload(() => import('./pages/instructor/GradeAssignments'));
-const CourseAssignments = lazyWithReload(() => import('./pages/instructor/CourseAssignments'));
-const AllLiveSessions = lazyWithReload(() => import('./pages/instructor/AllLiveSessions'));
-const AllAssignments = lazyWithReload(() => import('./pages/instructor/AllAssignments'));
+// One unified page per feature, mounted at multiple routes so the
+// course-context preselection comes from URL (path param or ?course=).
+const LiveSessionsPage = lazyWithReload(() => import('./pages/instructor/LiveSessionsPage'));
+const AssignmentsPage = lazyWithReload(() => import('./pages/instructor/AssignmentsPage'));
 const SearchResults = lazyWithReload(() => import('./pages/SearchResults'));
 const Checkout = lazyWithReload(() => import('./pages/Checkout'));
 const PaymentSuccess = lazyWithReload(() => import('./pages/PaymentSuccess'));
@@ -522,46 +522,35 @@ function App() {
               </InstructorRoute>
             }
           />
-          {/* Global aggregator pages — every session / assignment
-              across every course the instructor teaches. The
-              per-course pages stay live underneath for editing. */}
+          {/* Live Sessions — one component, three URLs.
+              No scope  → pick a course in the Create modal.
+              ?course=N → preselected via query.
+              /courses/:courseId/sessions → preselected via path (course card). */}
           <Route
             path="/instructor/live-sessions"
-            element={
-              <InstructorRoute>
-                <AllLiveSessions />
-              </InstructorRoute>
-            }
-          />
-          <Route
-            path="/instructor/assignments"
-            element={
-              <InstructorRoute>
-                <AllAssignments />
-              </InstructorRoute>
-            }
+            element={<InstructorRoute><LiveSessionsPage /></InstructorRoute>}
           />
           <Route
             path="/instructor/courses/:courseId/sessions"
-            element={
-              <InstructorRoute>
-                <LiveSessions />
-              </InstructorRoute>
-            }
+            element={<InstructorRoute><LiveSessionsPage /></InstructorRoute>}
           />
+
+          {/* Assignments — same pattern. */}
+          <Route
+            path="/instructor/assignments"
+            element={<InstructorRoute><AssignmentsPage /></InstructorRoute>}
+          />
+          <Route
+            path="/instructor/courses/:courseId/assignments-grading"
+            element={<InstructorRoute><AssignmentsPage /></InstructorRoute>}
+          />
+
+          {/* Per-assignment grading page (drill-down) stays separate. */}
           <Route
             path="/instructor/assignments/:assignmentId/grade"
             element={
               <InstructorRoute>
                 <GradeAssignments />
-              </InstructorRoute>
-            }
-          />
-          <Route
-            path="/instructor/courses/:courseId/assignments-grading"
-            element={
-              <InstructorRoute>
-                <CourseAssignments />
               </InstructorRoute>
             }
           />
