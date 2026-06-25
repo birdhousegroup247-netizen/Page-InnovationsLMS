@@ -555,14 +555,24 @@ class AnnouncementsController {
         if (!a) throw new NotFoundError('Announcement not found');
       }
 
-      const existing = await AnnouncementReaction.findOne({
+      // 1-emoji-per-user-per-announcement rule:
+      //   - clicking the same emoji again removes it (toggle off)
+      //   - clicking a different emoji REPLACES the previous one
+      //
+      // Means a user can react with at most one emoji on any given
+      // announcement at a time. Matches the explicit product call.
+      const existingSame = await AnnouncementReaction.findOne({
         where: { source, announcement_id: announcementId, user_id: userId, emoji },
       });
-
-      if (existing) {
-        await existing.destroy();
+      if (existingSame) {
+        await existingSame.destroy();
         return ApiResponse.success(res, { action: 'removed', emoji });
       }
+      // Different emoji (or first ever) — wipe any other reaction this
+      // user has on this row, then add the new one.
+      await AnnouncementReaction.destroy({
+        where: { source, announcement_id: announcementId, user_id: userId },
+      });
       await AnnouncementReaction.create({
         source, announcement_id: announcementId, user_id: userId, emoji,
       });

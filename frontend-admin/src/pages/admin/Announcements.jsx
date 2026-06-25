@@ -43,6 +43,10 @@ export default function Announcements() {
     attachment_url: '',
     attachment_type: '',
     attachment_name: '',
+    is_important: false,
+    is_pinned: false,
+    // ISO datetime-local string ('' = send immediately)
+    scheduled_at: '',
   });
   const [recipientCount, setRecipientCount] = useState(null);
   const [countLoading, setCountLoading] = useState(false);
@@ -171,6 +175,7 @@ export default function Announcements() {
       setForm({
         title: '', message: '', target: 'all_students', course_id: '', link: '',
         attachment_url: '', attachment_type: '', attachment_name: '',
+        is_important: false, is_pinned: false, scheduled_at: '',
       });
       setConfirmOpen(false);
       setRecipientCount(null);
@@ -351,6 +356,50 @@ export default function Announcements() {
                       className="w-full pl-9 pr-3 py-2 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
                     />
                   </div>
+                </div>
+
+                {/* Schedule */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Publish at <span className="text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.scheduled_at}
+                    onChange={(e) => setForm((prev) => ({ ...prev, scheduled_at: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Leave empty to send immediately. Future dates defer notifications until then.
+                  </p>
+                </div>
+
+                {/* Important + Pinned toggles */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-start gap-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={!!form.is_important}
+                      onChange={(e) => setForm((prev) => ({ ...prev, is_important: e.target.checked }))}
+                      className="mt-0.5 w-4 h-4 text-blue-600 rounded"
+                    />
+                    <div>
+                      <p className="text-xs font-medium text-gray-900 dark:text-white">Important</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">Amber badge so it gets noticed.</p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={!!form.is_pinned}
+                      onChange={(e) => setForm((prev) => ({ ...prev, is_pinned: e.target.checked }))}
+                      className="mt-0.5 w-4 h-4 text-blue-600 rounded"
+                    />
+                    <div>
+                      <p className="text-xs font-medium text-gray-900 dark:text-white">Pin to top</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">Stays at the top of every feed.</p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Recipient preview */}

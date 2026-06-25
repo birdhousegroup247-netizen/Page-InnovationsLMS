@@ -17,11 +17,29 @@ export default function ReactionsBar({ source, announcementId, initialTally = {}
 
   const onToggle = async (emoji) => {
     if (busy) return;
+    // Rule: 1 emoji per user per announcement.
+    //  - same emoji clicked again → remove it
+    //  - different emoji clicked  → remove whatever the user had + add this one
     const hadIt = mine.has(emoji);
-    const nextTally = { ...tally, [emoji]: Math.max(0, (tally[emoji] || 0) + (hadIt ? -1 : 1)) };
-    if (nextTally[emoji] === 0) delete nextTally[emoji];
+    const nextTally = { ...tally };
     const nextMine = new Set(mine);
-    if (hadIt) nextMine.delete(emoji); else nextMine.add(emoji);
+
+    if (hadIt) {
+      // remove
+      nextTally[emoji] = Math.max(0, (nextTally[emoji] || 0) - 1);
+      if (nextTally[emoji] === 0) delete nextTally[emoji];
+      nextMine.delete(emoji);
+    } else {
+      // swap out any previous emoji this user had on this row
+      for (const prev of mine) {
+        nextTally[prev] = Math.max(0, (nextTally[prev] || 0) - 1);
+        if (nextTally[prev] === 0) delete nextTally[prev];
+        nextMine.delete(prev);
+      }
+      // add the new one
+      nextTally[emoji] = (nextTally[emoji] || 0) + 1;
+      nextMine.add(emoji);
+    }
 
     setTally(nextTally);
     setMine(nextMine);
