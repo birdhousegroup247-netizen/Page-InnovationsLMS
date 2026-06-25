@@ -363,15 +363,24 @@ class InstructorDashboardController {
 
       const where = { course_id: { [Op.in]: courseIds } };
       const now = new Date();
-      // Status is the source of truth for actionability — past clock
-      // time is just a HINT (the UI shows an "Overdue" chip). So
-      // "upcoming" = anything not ended (covers scheduled-but-late
-      // and live). "Past" = anything explicitly ended. Time of day
-      // no longer hides a session the instructor can still open.
+      // Six-hour grace covers "running late" without letting a session
+      // scheduled days ago clutter the Upcoming list forever.
+      //
+      //   upcoming = currently live, OR scheduled AND scheduled_at + 6h
+      //              hasn't elapsed yet
+      //   past     = ended, OR scheduled AND scheduled_at + 6h has
+      //              already elapsed (overdue → effectively past)
+      const graceCutoff = new Date(now.getTime() - 6 * 60 * 60 * 1000);
       if (status === 'upcoming') {
-        where.status = { [Op.in]: ['scheduled', 'live'] };
+        where[Op.or] = [
+          { status: 'live' },
+          { status: 'scheduled', scheduled_at: { [Op.gte]: graceCutoff } },
+        ];
       } else if (status === 'past') {
-        where.status = 'ended';
+        where[Op.or] = [
+          { status: 'ended' },
+          { status: 'scheduled', scheduled_at: { [Op.lt]: graceCutoff } },
+        ];
       }
 
       const sessions = await LiveSession.findAll({

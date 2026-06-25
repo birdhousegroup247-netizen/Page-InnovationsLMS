@@ -183,16 +183,17 @@ export default function LiveSessionsPage() {
   useEffect(() => { fetchSessions(); /* eslint-disable-next-line */ }, [scopedCourseId]);
 
   const visible = useMemo(() => {
+    const graceCutoff = Date.now() - 6 * 60 * 60 * 1000; // 6h
+    const isUpcoming = (s) => {
+      if (s.status === 'ended') return false;
+      if (s.status === 'live') return true;
+      // scheduled — only counts as upcoming if scheduled_at + 6h
+      // hasn't elapsed (gives a running-late instructor a window)
+      return new Date(s.scheduled_at).getTime() >= graceCutoff;
+    };
     return sessions.filter((s) => {
-      // Status drives the chip filter. Clock time is purely a display
-      // hint ("Overdue" pill on the row) — scheduled-but-late sessions
-      // still count as "Upcoming" because the instructor can still
-      // run them.
-      if (filter === 'upcoming') {
-        if (s.status === 'ended') return false;
-      } else if (filter === 'past') {
-        if (s.status !== 'ended') return false;
-      }
+      if (filter === 'upcoming' && !isUpcoming(s)) return false;
+      if (filter === 'past'     &&  isUpcoming(s)) return false;
       // Course chip (only when unscoped)
       if (!isScoped && courseFilter !== 'all' && String(s.course_id) !== String(courseFilter)) {
         return false;
@@ -256,12 +257,18 @@ export default function LiveSessionsPage() {
 
   // Count helpers for chips (work on all rows pre-status filter).
   const counts = useMemo(() => {
+    const graceCutoff = Date.now() - 6 * 60 * 60 * 1000;
+    const isUpcoming = (s) => {
+      if (s.status === 'ended') return false;
+      if (s.status === 'live') return true;
+      return new Date(s.scheduled_at).getTime() >= graceCutoff;
+    };
     const visibleAcrossCourse = sessions.filter((s) =>
       isScoped || courseFilter === 'all' || String(s.course_id) === String(courseFilter)
     );
     return {
-      upcoming: visibleAcrossCourse.filter((s) => s.status !== 'ended').length,
-      past: visibleAcrossCourse.filter((s) => s.status === 'ended').length,
+      upcoming: visibleAcrossCourse.filter(isUpcoming).length,
+      past: visibleAcrossCourse.filter((s) => !isUpcoming(s)).length,
       all: visibleAcrossCourse.length,
     };
   }, [sessions, courseFilter, isScoped]);
