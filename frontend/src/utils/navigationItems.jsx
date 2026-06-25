@@ -1,4 +1,4 @@
-import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package, CreditCard, Megaphone, Library, Bell, Video, ClipboardCheck } from 'lucide-react';
+import { Home, Search, BookOpen, FileCheck, Bookmark, Award, FileText, HelpCircle, Zap, ClipboardList, MessageSquare, Trophy, StickyNote, Heart, Gift, Package, CreditCard, Megaphone, Library, Bell, Video, ClipboardCheck, UserCheck } from 'lucide-react';
 
 // Shared navigation items for all authenticated pages
 export const getNavigationItems = (role = 'student') => {
@@ -64,6 +64,11 @@ export const getNavigationItems = (role = 'student') => {
       label: 'My Assignments',
       path: '/my-assignments',
       icon: <ClipboardList className="w-5 h-5" />,
+    },
+    {
+      label: 'Attendance',
+      path: '/attendance',
+      icon: <UserCheck className="w-5 h-5" />,
     },
     {
       label: 'My Notes',
@@ -142,6 +147,11 @@ export const getNavigationItems = (role = 'student') => {
       label: 'Assignments',
       path: '/instructor/assignments',
       icon: <ClipboardCheck className="w-5 h-5" />,
+    },
+    {
+      label: 'Attendance',
+      path: '/instructor/attendance',
+      icon: <UserCheck className="w-5 h-5" />,
     },
     {
       // Single questions entry. The old /instructor/questions route

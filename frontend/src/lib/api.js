@@ -479,6 +479,18 @@ export const liveSessionsAPI = {
   updateStatus: (id, status) => api.patch(`/api/sessions/${id}/status`, { status }),
 };
 
+// Live-session attendance — code generation, check-in, roster, override
+export const attendanceAPI = {
+  // Instructor
+  generateCode: (sessionId) => api.post(`/api/sessions/${sessionId}/attendance/code`),
+  getActiveCode: (sessionId) => api.get(`/api/sessions/${sessionId}/attendance/code/active`),
+  getRoster: (sessionId) => api.get(`/api/sessions/${sessionId}/attendance`),
+  setStatus: (sessionId, studentId, data) => api.patch(`/api/sessions/${sessionId}/attendance/${studentId}`, data),
+  // Student
+  checkIn: (sessionId, code) => api.post(`/api/sessions/${sessionId}/attendance/check-in`, { code }),
+  getMyAttendance: () => api.get('/api/attendance/student'),
+};
+
 export const forumAPI = {
   getPosts: (courseId, params) => api.get(`/api/courses/${courseId}/forum`, { params }),
   createPost: (courseId, data) => api.post(`/api/courses/${courseId}/forum`, data),

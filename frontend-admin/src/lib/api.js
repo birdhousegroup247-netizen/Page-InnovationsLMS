@@ -218,6 +218,8 @@ export const adminUsersAPI = {
   getTeachingCourses: (userId) => api.get(`/api/admin/users/${userId}/teaching-courses`),
   // Per-student assignment performance — totals + recent submissions
   getAssignmentPerformance: (userId) => api.get(`/api/admin/users/${userId}/assignment-performance`),
+  // Per-student live-session attendance — totals + per-course + recent sessions
+  getAttendance: (userId) => api.get(`/api/admin/users/${userId}/attendance`),
 };
 
 // Admin: Course Management

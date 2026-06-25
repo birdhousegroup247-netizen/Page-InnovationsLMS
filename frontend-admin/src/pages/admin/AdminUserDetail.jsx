@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Mail, Phone, MapPin, Globe, Linkedin, Github, Calendar, Cake,
   Shield, BookOpen, Award, CreditCard, GraduationCap, Send, RefreshCw, Trash2,
-  CheckCircle, XCircle, Save, Edit3, ClipboardCheck, Zap,
+  CheckCircle, XCircle, Save, Edit3, ClipboardCheck, Zap, UserCheck, Video,
 } from 'lucide-react';
 import { adminUsersAPI } from '../../lib/api';
 import { Container, PageHeader } from '../../components/layout';
@@ -39,6 +39,8 @@ export default function AdminUserDetail() {
   // the main user load so a slow rollup doesn't block the rest of the
   // page. Null = still loading; { totals: {...} } = loaded.
   const [perf, setPerf] = useState(null);
+  // Attendance rollup — same lazy pattern as perf.
+  const [att, setAtt] = useState(null);
 
   const load = async () => {
     try {
@@ -71,6 +73,16 @@ export default function AdminUserDetail() {
     adminUsersAPI.getAssignmentPerformance(userId)
       .then((r) => { if (alive) setPerf(r.data?.data || null); })
       .catch(() => { if (alive) setPerf(null); });
+    return () => { alive = false; };
+  }, [userId]);
+
+  // Attendance rollup — same lazy pattern.
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    adminUsersAPI.getAttendance(userId)
+      .then((r) => { if (alive) setAtt(r.data?.data || null); })
+      .catch(() => { if (alive) setAtt(null); });
     return () => { alive = false; };
   }, [userId]);
 
@@ -457,6 +469,103 @@ export default function AdminUserDetail() {
                               {r.status}
                               {r.auto_graded && ' · auto'}
                             </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Attendance — only when there's at least one session in scope */}
+        {att && att.totals && att.totals.total_sessions > 0 && (
+          <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-6 sm:p-7">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-green-600" />
+              Live-session attendance
+            </h3>
+
+            {/* Top stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+              {[
+                { label: 'Sessions', value: att.totals.total_sessions, tint: 'bg-gray-50 dark:bg-dark-700 text-gray-700 dark:text-gray-300' },
+                { label: 'Present',  value: att.totals.present,        tint: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' },
+                { label: 'Late',     value: att.totals.late,           tint: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' },
+                { label: 'Absent',   value: att.totals.absent,         tint: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' },
+                { label: 'Rate',     value: att.attendance_rate !== null ? `${att.attendance_rate}%` : '—', tint: 'bg-brand-blue/10 text-brand-blue' },
+              ].map((s) => (
+                <div key={s.label} className={`rounded-lg p-3 ${s.tint}`}>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs font-medium opacity-80">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* By course */}
+            {att.by_course && att.by_course.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-text-dark-muted mb-2">By course</p>
+                <div className="space-y-2">
+                  {att.by_course.map((c) => (
+                    <div key={c.course_id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-dark-700">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.course_title}</p>
+                        <p className="text-xs text-gray-500 dark:text-text-dark-muted">
+                          {c.attended} of {c.sessions} attended
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {c.attendance_rate !== null ? `${c.attendance_rate}%` : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent sessions */}
+            {att.recent && att.recent.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-text-dark-muted mb-2">
+                  Recent sessions
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-text-dark-muted border-b border-gray-200 dark:border-border-dark">
+                        <th className="py-2 pr-3">When</th>
+                        <th className="py-2 pr-3">Session</th>
+                        <th className="py-2 pr-3">Course</th>
+                        <th className="py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {att.recent.map((r) => (
+                        <tr key={r.session_id} className="border-b border-gray-100 dark:border-border-dark last:border-0">
+                          <td className="py-2 pr-3 text-gray-700 dark:text-text-dark-secondary">{fmtDate(r.scheduled_at)}</td>
+                          <td className="py-2 pr-3 text-gray-900 dark:text-white truncate max-w-[14rem]">{r.title}</td>
+                          <td className="py-2 pr-3 text-gray-700 dark:text-text-dark-secondary truncate max-w-[12rem]">{r.course_title || '—'}</td>
+                          <td className="py-2">
+                            {r.status ? (
+                              <Badge
+                                variant={
+                                  r.status === 'present' || r.status === 'excused' ? 'success'
+                                    : r.status === 'late' ? 'warning'
+                                    : r.status === 'absent' ? 'danger'
+                                    : 'secondary'
+                                }
+                              >
+                                {r.status}
+                                {r.source === 'auto' && ' · auto'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">unmarked</Badge>
+                            )}
                           </td>
                         </tr>
                       ))}

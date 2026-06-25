@@ -77,6 +77,8 @@ const MyAssignedTests = lazyWithReload(() => import('./pages/MyAssignedTests'));
 const Messages = lazyWithReload(() => import('./pages/Messages'));
 const Leaderboard = lazyWithReload(() => import('./pages/Leaderboard'));
 const MyAssignments = lazyWithReload(() => import('./pages/MyAssignments'));
+const Attendance = lazyWithReload(() => import('./pages/Attendance'));
+const InstructorAttendance = lazyWithReload(() => import('./pages/instructor/AttendancePage'));
 const MyNotes = lazyWithReload(() => import('./pages/MyNotes'));
 const Wishlist = lazyWithReload(() => import('./pages/Wishlist'));
 const Bundles = lazyWithReload(() => import('./pages/Bundles'));
@@ -681,6 +683,30 @@ function App() {
               <ProtectedRoute>
                 <MyAssignments />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute>
+                <Attendance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/attendance"
+            element={
+              <InstructorRoute>
+                <InstructorAttendance />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/sessions/:sessionId/attendance"
+            element={
+              <InstructorRoute>
+                <InstructorAttendance />
+              </InstructorRoute>
             }
           />
           <Route

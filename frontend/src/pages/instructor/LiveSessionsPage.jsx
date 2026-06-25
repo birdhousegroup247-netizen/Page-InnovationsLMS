@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
-  Video, Plus, Edit2, Trash2, Radio, ArrowLeft, Play,
+  Video, Plus, Edit2, Trash2, Radio, ArrowLeft, Play, UserCheck,
 } from 'lucide-react';
 import { liveSessionsAPI, coursesAPI, instructorAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
@@ -454,6 +454,15 @@ export default function LiveSessionsPage() {
                         </button>
                       </Tooltip>
                     )}
+                    <Tooltip content="Take attendance">
+                      <Link
+                        to={`/instructor/sessions/${s.id}/attendance`}
+                        aria-label="Take attendance"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                      >
+                        <UserCheck className="w-4 h-4 text-gray-500 dark:text-text-dark-muted" />
+                      </Link>
+                    </Tooltip>
                     <Tooltip content="Edit session">
                       <button
                         onClick={() => setEditSession(s)}
