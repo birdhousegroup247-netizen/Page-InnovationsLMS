@@ -377,7 +377,7 @@ export default function Announcements() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-4">
                 {filteredAnnouncements.map((a) => {
                   const isAdminSrc = a.source === 'admin';
                   const sourceBg =
@@ -451,8 +451,8 @@ export default function Announcements() {
                         {a.title}
                       </h3>
 
-                      {/* Body preview */}
-                      <p className="text-sm text-gray-600 dark:text-text-dark-secondary line-clamp-3 whitespace-pre-wrap mb-3">
+                      {/* Body — clamp generously since we now have room */}
+                      <p className="text-sm text-gray-700 dark:text-text-dark-secondary whitespace-pre-wrap leading-relaxed mb-4">
                         {body}
                       </p>
 
@@ -462,26 +462,19 @@ export default function Announcements() {
                           href={a.attachment_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-2 px-3 py-1.5 mb-3 rounded-lg border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 text-xs text-gray-700 dark:text-text-dark-secondary hover:border-brand-blue/40 transition-colors max-w-full"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 rounded-lg border border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-700 text-xs text-gray-700 dark:text-text-dark-secondary hover:border-brand-blue/40 transition-colors max-w-full"
                         >
                           <Paperclip className="w-3.5 h-3.5 text-brand-blue shrink-0" />
                           <span className="truncate">{a.attachment_name || 'Attachment'}</span>
                         </a>
                       )}
 
-                      {/* Reactions */}
-                      <div className="mb-3">
-                        <ReactionsBar
-                          source={a.source === 'admin' ? 'admin' : 'course'}
-                          announcementId={a.id}
-                          initialTally={a.reactions || {}}
-                          initialMine={a.my_reactions || []}
-                        />
-                      </div>
-
-                      {/* Footer: author + course + view count */}
-                      <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-text-dark-muted pt-3 border-t border-gray-100 dark:border-border-dark">
-                        <div className="flex items-center gap-2 min-w-0">
+                      {/* Footer row: author + course + view count on the left,
+                          quiet reactions bar on the right. Single horizontal
+                          line separates the body from the meta strip so the
+                          card reads like a message, not a stack of widgets. */}
+                      <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-border-dark">
+                        <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-text-dark-muted min-w-0 flex-1">
                           {a.author_avatar ? (
                             <img src={a.author_avatar} alt={a.author_name} className="w-5 h-5 rounded-full object-cover shrink-0" />
                           ) : (
@@ -490,21 +483,25 @@ export default function Announcements() {
                             </div>
                           )}
                           <span className="truncate">{a.author_name}</span>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
                           {a.course?.title && (
-                            <span className="inline-flex items-center gap-1">
+                            <span className="hidden sm:inline-flex items-center gap-1 ml-2 pl-2 border-l border-gray-200 dark:border-border-dark">
                               <BookOpen className="w-3 h-3" />
                               <span className="truncate max-w-[10rem]">{a.course.title}</span>
                             </span>
                           )}
                           {typeof a.view_count === 'number' && (
-                            <span className="inline-flex items-center gap-1">
+                            <span className="hidden sm:inline-flex items-center gap-1 ml-2">
                               <Eye className="w-3 h-3" />
                               {a.view_count}
                             </span>
                           )}
                         </div>
+                        <ReactionsBar
+                          source={a.source === 'admin' ? 'admin' : 'course'}
+                          announcementId={a.id}
+                          initialTally={a.reactions || {}}
+                          initialMine={a.my_reactions || []}
+                        />
                       </div>
                     </div>
                   );

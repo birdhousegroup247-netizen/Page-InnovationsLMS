@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { SmilePlus } from 'lucide-react';
 import { announcementsAPI } from '../../lib/api';
 import { cn } from '../../utils/cn';
 
@@ -55,9 +56,31 @@ export default function ReactionsBar({ source, announcementId, initialTally = {}
     }
   };
 
+  // Quiet pattern (Slack/LinkedIn style):
+  //   - by default show only emojis that already have a count > 0
+  //     or that this user has reacted with
+  //   - a small "+" button reveals the full picker (a popover that
+  //     closes on outside-click)
+  // Keeps the card content the prominent thing; reactions are
+  // engagement signal, not content.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef(null);
+  useEffect(() => {
+    if (!pickerOpen) return undefined;
+    const onDoc = (e) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [pickerOpen]);
+
+  const visible = EMOJIS.filter((e) => (tally[e] || 0) > 0 || mine.has(e));
+
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {EMOJIS.map((e) => {
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {visible.map((e) => {
         const count = tally[e] || 0;
         const active = mine.has(e);
         return (
@@ -69,17 +92,58 @@ export default function ReactionsBar({ source, announcementId, initialTally = {}
             disabled={busy}
             onClick={() => onToggle(e)}
             className={cn(
-              'inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs transition-colors',
+              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] transition-colors',
               active
-                ? 'bg-brand-blue/10 border-brand-blue/30 text-brand-blue'
-                : 'bg-gray-50 dark:bg-dark-700 border-gray-200 dark:border-dark-700 text-gray-600 dark:text-text-dark-secondary hover:border-brand-blue/30 hover:text-brand-blue'
+                ? 'bg-brand-blue/10 ring-1 ring-brand-blue/30 text-brand-blue'
+                : 'bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-text-dark-secondary hover:bg-gray-200 dark:hover:bg-dark-600'
             )}
           >
             <span className="text-sm leading-none">{e}</span>
-            {count > 0 && <span className="font-medium">{count}</span>}
+            {count > 0 && <span className="font-medium tabular-nums">{count}</span>}
           </button>
         );
       })}
+
+      {/* Add-reaction button + popover picker */}
+      <div className="relative" ref={pickerRef}>
+        <button
+          type="button"
+          aria-label="Add reaction"
+          aria-expanded={pickerOpen}
+          onClick={() => setPickerOpen((o) => !o)}
+          className={cn(
+            'inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors',
+            visible.length === 0
+              ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-dark-700'
+              : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-dark-700'
+          )}
+        >
+          <SmilePlus className="w-3.5 h-3.5" />
+        </button>
+        {pickerOpen && (
+          <div className="absolute z-10 bottom-full left-0 mb-1 flex items-center gap-1 p-1 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 shadow-lg">
+            {EMOJIS.map((e) => {
+              const active = mine.has(e);
+              return (
+                <button
+                  key={e}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => { onToggle(e); setPickerOpen(false); }}
+                  className={cn(
+                    'w-7 h-7 rounded-full inline-flex items-center justify-center text-base transition-transform hover:scale-110',
+                    active && 'bg-brand-blue/10 ring-1 ring-brand-blue/30'
+                  )}
+                  aria-label={`React with ${e}`}
+                  aria-pressed={active}
+                >
+                  {e}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
