@@ -139,48 +139,93 @@ class ProgressController {
     }
   }
 
-  // Helper to update course progress percentage
+  // Helper to update course progress percentage.
+  //
+  // Two LMS-correctness rules this enforces:
+  //
+  //  1) Drip-locked content shouldn't be in the denominator. A student
+  //     on day 3 of a drip schedule who has watched everything they
+  //     can reach should see ~100%, not "3/10 = 30%". Otherwise the
+  //     bar effectively penalises them for keeping up with the
+  //     instructor's drip plan.
+  //
+  //  2) completed_at is one-way. Once a student finishes a course we
+  //     never un-finish it, even if the instructor later adds new
+  //     content and their % drops back below 100. Their certificate
+  //     was already issued; flipping completed_at to null would
+  //     wrongly move the course out of "Completed" filters and
+  //     reset the celebration UI.
   static async updateCourseProgress(studentId, moduleId) {
     const module = await CourseModule.findByPk(moduleId);
     if (!module) return;
 
-    // Get all content IDs for this course
+    // Pull every content in the course with the fields we need to
+    // tell whether it's currently accessible to this student.
     const allModules = await CourseModule.findAll({
       where: { course_id: module.course_id },
-      include: [{ model: ModuleContent, as: 'contents', attributes: ['id'] }],
+      include: [{
+        model: ModuleContent,
+        as: 'contents',
+        attributes: ['id', 'unlock_date', 'unlock_after_days'],
+      }],
     });
+    const allContents = allModules.flatMap(m => m.contents || []);
+    if (allContents.length === 0) return;
 
-    const allContentIds = allModules.flatMap(m => m.contents.map(c => c.id));
-    const totalContent = allContentIds.length;
+    // Enrollment row — also gives us the enrolled-at timestamp for
+    // unlock_after_days math.
+    const enrollment = await Enrollment.findOne({
+      where: { student_id: studentId, course_id: module.course_id },
+    });
+    if (!enrollment) return;
 
-    if (totalContent === 0) return;
+    const now = new Date();
+    const enrolledAt = enrollment.enrollment_date ? new Date(enrollment.enrollment_date) : null;
+    const isAccessible = (c) => {
+      if (c.unlock_date) {
+        return new Date(c.unlock_date) <= now;
+      }
+      if (c.unlock_after_days && enrolledAt) {
+        const unlockAt = new Date(enrolledAt);
+        unlockAt.setDate(unlockAt.getDate() + c.unlock_after_days);
+        return unlockAt <= now;
+      }
+      return true;
+    };
 
-    // Count completed content
+    // Pool of content the student can actually reach right now. If
+    // every lesson is drip-locked we fall back to the full set so we
+    // don't end up dividing by zero on day-1 of a heavy drip course.
+    const accessible = allContents.filter(isAccessible);
+    const denomIds = (accessible.length > 0 ? accessible : allContents).map(c => c.id);
+    const totalContent = denomIds.length;
+
     const completedCount = await ContentProgress.count({
       where: {
         student_id: studentId,
-        content_id: allContentIds,
+        content_id: denomIds,
         completed: true,
       },
     });
 
     const progressPercentage = (completedCount / totalContent) * 100;
+    // Defensive — strict === 100 on a float can drift; treat
+    // anything within rounding tolerance as fully complete.
+    const isComplete = progressPercentage >= 99.999;
 
-    // Update enrollment
-    const enrollment = await Enrollment.findOne({
-      where: { student_id: studentId, course_id: module.course_id },
+    const wasCompleted = !!enrollment.completed_at;
+    await enrollment.update({
+      progress_percentage: progressPercentage.toFixed(2),
+      last_accessed: now,
+      // Set once, never unset. If the student was ever 100% complete
+      // we keep that timestamp so their certificate + the Completed
+      // filter on My Courses stay truthful even if the instructor
+      // later adds new lessons.
+      completed_at: isComplete ? (enrollment.completed_at || now) : enrollment.completed_at,
     });
 
-    if (enrollment) {
-      const wasCompleted = !!enrollment.completed_at;
-      await enrollment.update({
-        progress_percentage: progressPercentage.toFixed(2),
-        last_accessed: new Date(),
-        completed_at: progressPercentage === 100 ? (enrollment.completed_at || new Date()) : null,
-      });
-
-      // Auto-issue certificate when course first reaches 100%
-      if (progressPercentage === 100 && !wasCompleted) {
+    // Auto-issue certificate when course first reaches 100%
+    if (isComplete && !wasCompleted) {
         try {
           const existing = await Certificate.findOne({ where: { student_id: studentId, course_id: module.course_id } });
           if (!existing) {
@@ -226,7 +271,6 @@ class ProgressController {
           console.error('Auto-certificate failed (non-critical):', certErr.message);
         }
       }
-    }
   }
 }
 

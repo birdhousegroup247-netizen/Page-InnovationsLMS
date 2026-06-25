@@ -3,6 +3,7 @@ const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
 const { Op } = require('sequelize');
+const { sequelize } = require('../../config/database');
 const NotificationsController = require('../notifications/notificationsController');
 const ActivityController = require('../activity/activityController');
 const cache = require('../../utils/cache');
@@ -597,7 +598,59 @@ class CourseController {
         order: [['enrollment_date', 'DESC']],
       });
 
-      return ApiResponse.success(res, { courses: enrollments });
+      // Attach total_contents + completed_contents per row so the
+      // Dashboard "X of Y lessons" line shows real numbers instead
+      // of always 0/0. We do this server-side to avoid the Dashboard
+      // doing N round trips. Failures are silent — the % bar still
+      // renders from progress_percentage.
+      const courseIds = enrollments.map((e) => e.course_id).filter(Boolean);
+      let totalByCourse = new Map();
+      let completedByPair = new Map(); // key = `${courseId}:${studentId}`
+      if (courseIds.length > 0) {
+        try {
+          // Count lessons per course in one query.
+          const counts = await ModuleContent.findAll({
+            attributes: [
+              [sequelize.col('module.course_id'), 'course_id'],
+              [sequelize.fn('COUNT', sequelize.col('ModuleContent.id')), 'total'],
+            ],
+            include: [{ model: CourseModule, as: 'module', attributes: [], where: { course_id: { [Op.in]: courseIds } } }],
+            group: ['module.course_id'],
+            raw: true,
+          });
+          for (const r of counts) totalByCourse.set(parseInt(r.course_id, 10), parseInt(r.total, 10));
+
+          // Count completed lessons per (student, course) in one query.
+          const done = await ContentProgress.findAll({
+            attributes: [
+              [sequelize.col('content.module.course_id'), 'course_id'],
+              [sequelize.fn('COUNT', sequelize.col('ContentProgress.id')), 'done'],
+            ],
+            where: { student_id: req.user.id, completed: true },
+            include: [{
+              model: ModuleContent,
+              as: 'content',
+              attributes: [],
+              required: true,
+              include: [{ model: CourseModule, as: 'module', attributes: [], where: { course_id: { [Op.in]: courseIds } } }],
+            }],
+            group: ['content.module.course_id'],
+            raw: true,
+          });
+          for (const r of done) completedByPair.set(`${req.user.id}:${parseInt(r.course_id, 10)}`, parseInt(r.done, 10));
+        } catch (e) {
+          logger.warn(`[getMyCourses] lesson-count enrichment failed: ${e.message}`);
+        }
+      }
+
+      const shaped = enrollments.map((e) => {
+        const plain = e.toJSON();
+        plain.total_contents = totalByCourse.get(plain.course_id) || 0;
+        plain.completed_contents = completedByPair.get(`${req.user.id}:${plain.course_id}`) || 0;
+        return plain;
+      });
+
+      return ApiResponse.success(res, { courses: shaped });
     } catch (error) {
       next(error);
     }
