@@ -22,6 +22,7 @@ import {
   Radio,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
+import RecordingPlayer from '../../components/live-sessions/RecordingPlayer';
 import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
@@ -246,6 +247,12 @@ export default function CourseBuilder() {
   };
 
   const handleSaveContent = async () => {
+    // Belt-and-suspenders against double-click duplicates. The save
+    // button itself gets disabled via loading=saving below, but a
+    // race (fast double-click that fires before the rerender) can
+    // still slip past. This guard returns early if a save is already
+    // in flight.
+    if (saving) return;
     if (!contentForm.title.trim()) {
       showToast('Lesson title is required', 'error');
       return;
@@ -789,7 +796,7 @@ export default function CourseBuilder() {
             <Button variant="outline" onClick={() => setIsAddModuleOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddModule} isLoading={saving}>
+            <Button onClick={handleAddModule} loading={saving}>
               <Plus className="w-4 h-4 mr-2" />
               Add Module
             </Button>
@@ -835,7 +842,7 @@ export default function CourseBuilder() {
             >
               Cancel
             </Button>
-            <Button onClick={handleUpdateModule} isLoading={saving}>
+            <Button onClick={handleUpdateModule} loading={saving}>
               <Save className="w-4 h-4 mr-2" />
               Save Changes
             </Button>
@@ -1027,7 +1034,7 @@ export default function CourseBuilder() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveContent} isLoading={saving}>
+            <Button onClick={handleSaveContent} loading={saving}>
               <Save className="w-4 h-4 mr-2" />
               {selectedContent ? 'Save Changes' : 'Add Lesson'}
             </Button>
@@ -1062,7 +1069,7 @@ export default function CourseBuilder() {
           <Button
             variant="danger"
             onClick={confirmDelete}
-            isLoading={saving}
+            loading={saving}
           >
             Delete {deleteTarget?.type === 'module' ? 'Module' : 'Lesson'}
           </Button>
@@ -1219,6 +1226,22 @@ export default function CourseBuilder() {
                 />
               ) : (
                 <p className="text-sm text-gray-500">No article content set for this lesson.</p>
+              )
+            )}
+
+            {/* Recorded class — let the instructor watch what they
+                just uploaded before students see it. Uses the same
+                RecordingPlayer the student CoursePlayer uses, so
+                what they see is what students will see. */}
+            {previewContent.content_type === 'recorded_class' && (
+              previewContent.recording_url ? (
+                <RecordingPlayer url={previewContent.recording_url} title={previewContent.title} />
+              ) : (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                  <p className="text-sm text-amber-800 dark:text-amber-300">
+                    No recording link added to this lesson yet. Edit it to paste a Drive / YouTube / Vimeo / Loom or direct video URL.
+                  </p>
+                </div>
               )
             )}
 

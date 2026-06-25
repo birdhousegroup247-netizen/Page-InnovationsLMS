@@ -25,6 +25,7 @@ import { Container, PageHeader } from '../../components/layout';
 import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
+import RecordingPlayer from '../../components/live-sessions/RecordingPlayer';
 
 export default function CourseBuilder() {
   const { courseId } = useParams();
@@ -251,6 +252,9 @@ export default function CourseBuilder() {
   };
 
   const handleSaveContent = async () => {
+    // Prevent double-click duplicates if the button-disable
+    // re-render hasn't caught up to a fast double-tap.
+    if (saving) return;
     if (!contentForm.title.trim()) {
       showToast('Lesson title is required', 'error');
       return;
@@ -732,7 +736,7 @@ export default function CourseBuilder() {
             <Button variant="outline" onClick={() => setIsAddModuleOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddModule} isLoading={saving}>
+            <Button onClick={handleAddModule} loading={saving}>
               <Plus className="w-4 h-4 mr-2" />
               Add Module
             </Button>
@@ -778,7 +782,7 @@ export default function CourseBuilder() {
             >
               Cancel
             </Button>
-            <Button onClick={handleUpdateModule} isLoading={saving}>
+            <Button onClick={handleUpdateModule} loading={saving}>
               <Save className="w-4 h-4 mr-2" />
               Save Changes
             </Button>
@@ -999,7 +1003,7 @@ export default function CourseBuilder() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveContent} isLoading={saving}>
+            <Button onClick={handleSaveContent} loading={saving}>
               <Save className="w-4 h-4 mr-2" />
               {selectedContent ? 'Save Changes' : 'Add Lesson'}
             </Button>
@@ -1034,7 +1038,7 @@ export default function CourseBuilder() {
           <Button
             variant="danger"
             onClick={confirmDelete}
-            isLoading={saving}
+            loading={saving}
           >
             Delete {deleteTarget?.type === 'module' ? 'Module' : 'Lesson'}
           </Button>
@@ -1179,6 +1183,20 @@ export default function CourseBuilder() {
                 />
               ) : (
                 <p className="text-sm text-gray-500">This article is empty.</p>
+              )
+            )}
+
+            {/* Recorded class — same RecordingPlayer the student uses,
+                so admin sees exactly what students will see. */}
+            {lessonPreview.content_type === 'recorded_class' && (
+              lessonPreview.recording_url ? (
+                <RecordingPlayer url={lessonPreview.recording_url} title={lessonPreview.title} />
+              ) : (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                  <p className="text-sm text-amber-800 dark:text-amber-300">
+                    No recording link added to this lesson yet.
+                  </p>
+                </div>
               )
             )}
 
