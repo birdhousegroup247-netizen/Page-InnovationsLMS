@@ -26,9 +26,26 @@ const VIMEO_RE      = /vimeo\.com\/(\d+)/i;
 const LOOM_RE       = /loom\.com\/share\/([a-z0-9]+)/i;
 const VIDEO_EXT_RE  = /\.(mp4|webm|ogg|m4v|mov)(\?|$)/i;
 
+/**
+ * Make sure a user-pasted URL is absolute. Without a protocol the
+ * browser treats `meet.google.com/abc` as a RELATIVE path, so an
+ * <a href> inside an SPA ends up navigating the React Router to a
+ * route like /admin/courses/123/meet.google.com/abc → which falls
+ * back to the dashboard. Prefixing https:// fixes that.
+ */
+export function ensureAbsoluteUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const u = rawUrl.trim();
+  if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  if (/^\/\//.test(u)) return 'https:' + u;
+  return 'https://' + u.replace(/^\/+/, '');
+}
+
 export function describeRecording(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
-  const url = rawUrl.trim();
+  const url = ensureAbsoluteUrl(rawUrl);
+  if (!url) return null;
 
   const driveFile = url.match(DRIVE_FILE_RE);
   if (driveFile) return { kind: 'iframe', provider: 'drive', src: `https://drive.google.com/file/d/${driveFile[1]}/preview` };

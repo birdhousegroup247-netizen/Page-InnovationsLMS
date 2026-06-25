@@ -1162,11 +1162,17 @@ export default function CourseBuilder() {
                   </a>
                   {/* Try to embed PDFs inline */}
                   {(lessonPreview.document_type === 'pdf' || lessonPreview.document_url.toLowerCase().endsWith('.pdf')) && (
-                    <iframe
-                      src={lessonPreview.document_url}
-                      title={lessonPreview.title}
-                      className="w-full h-[60vh] border border-gray-200 dark:border-border-dark rounded-lg"
-                    />
+                    <>
+                      <iframe
+                        src={lessonPreview.document_url}
+                        title={lessonPreview.title}
+                        className="w-full h-[60vh] border border-gray-200 dark:border-border-dark rounded-lg"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Blank? Cloudinary may be blocking PDF delivery. In the Cloudinary console go to
+                        Settings → Security → uncheck "Restricted media types" for PDF.
+                      </p>
+                    </>
                   )}
                 </div>
               ) : (

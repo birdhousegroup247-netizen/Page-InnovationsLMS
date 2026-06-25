@@ -188,12 +188,12 @@ export default function CloudinaryUpload({
     }
   };
 
-  // Cloudinary delivers via /image/upload/ regardless of extension once we
-  // route PDFs through that pipeline, so treat any URL whose path looks
-  // like an image (or any /image/upload/ URL) as renderable. This way we
-  // don't fall back to the "file uploaded" card just because the URL
-  // happens to lack a recognized extension.
-  const isImage = !!preview && (
+  // PDFs are uploaded through Cloudinary's image pipeline (so their URLs
+  // contain /image/upload/) but they are NOT renderable as <img>. Treat
+  // any *.pdf URL as a document so we render the file-card instead of
+  // a broken thumbnail.
+  const isPdfUrl = !!preview && /\.pdf(\?|$)/i.test(preview);
+  const isImage = !isPdfUrl && !!preview && (
     /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(preview) ||
     /\/image\/upload\//i.test(preview) ||
     acceptedTypes === 'image'

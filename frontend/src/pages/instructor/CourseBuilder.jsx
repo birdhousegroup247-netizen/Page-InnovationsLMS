@@ -1195,6 +1195,9 @@ export default function CourseBuilder() {
               // 'image' so this works for fresh uploads. For older URLs
               // we fall through to the Google Docs Viewer which can also
               // render most public documents in an iframe.
+              // PDFs hit the raw URL directly (most browsers preview PDFs
+              // inline). Other docs go through Google Docs Viewer which
+              // can render most public URLs.
               const viewerSrc = isPdf
                 ? url
                 : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
@@ -1205,14 +1208,21 @@ export default function CourseBuilder() {
                     title={previewContent.title}
                     className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-border-dark bg-white"
                   />
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-xs gap-3">
                     <a href={url} target="_blank" rel="noreferrer"
                       className="text-brand-blue underline">
                       Open document in new tab
                     </a>
-                    <span className="text-gray-500">
-                      If the preview is blank, the file may need to be re-uploaded.
-                    </span>
+                    {isPdf ? (
+                      <span className="text-gray-500 text-right">
+                        Blank? Cloudinary may be blocking PDF delivery. In the Cloudinary console go to
+                        Settings → Security → uncheck "Restricted media types" for PDF.
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">
+                        If the preview is blank, the file may need to be re-uploaded.
+                      </span>
+                    )}
                   </div>
                 </div>
               );

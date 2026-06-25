@@ -26,6 +26,7 @@ import {
 import { Container } from '../components/layout';
 import { Card, Badge, Button, Spinner, Avatar } from '../components/ui';
 import { cn } from '../utils/cn';
+import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import CourseReviews from '../components/course/CourseReviews';
 import PaymentModal from '../components/payment/PaymentModal';
 
@@ -408,7 +409,7 @@ export default function CourseDetail() {
                             {new Date(session.scheduled_at).toLocaleString()} · {session.duration_minutes} min
                           </p>
                         </div>
-                        <a href={session.meeting_url} target="_blank" rel="noreferrer"
+                        <a href={absUrl(session.meeting_url)} target="_blank" rel="noreferrer"
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 ${
                             session.status === 'live'
                               ? 'bg-red-500 hover:bg-red-600 text-white'

@@ -7,6 +7,7 @@ import { liveSessionsAPI, coursesAPI, instructorAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
 import { Button, Spinner, Alert, Modal, Badge } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import { ensureAbsoluteUrl as absUrl } from '../../utils/videoEmbed';
 
 // One unified page for live sessions, served at three URLs:
 //
@@ -378,13 +379,13 @@ export default function LiveSessionsPage() {
                   <div className="flex items-center gap-2 shrink-0 flex-wrap">
                     {/* Zoom: instructor Start URL takes precedence. Otherwise meeting URL. */}
                     {s.zoom_start_url && (
-                      <a href={s.zoom_start_url} target="_blank" rel="noreferrer"
+                      <a href={absUrl(s.zoom_start_url)} target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors">
                         <Play className="w-3.5 h-3.5" /> Start Meeting
                       </a>
                     )}
                     {!s.zoom_start_url && s.meeting_url && (
-                      <a href={s.meeting_url} target="_blank" rel="noreferrer"
+                      <a href={absUrl(s.meeting_url)} target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors">
                         <ExternalLink className="w-3.5 h-3.5" /> Open
                       </a>

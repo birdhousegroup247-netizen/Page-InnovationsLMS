@@ -27,6 +27,7 @@ import {
   Play,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import { Container } from '../components/layout';
 import { Button, Spinner } from '../components/ui';
 import EmptyState from '../components/common/EmptyState';
@@ -505,7 +506,7 @@ function UpcomingSessionsSnapshot() {
                 {(s.zoom_start_url || s.meeting_url) && (
                   <button
                     type="button"
-                    onClick={() => window.open(s.zoom_start_url || s.meeting_url, '_blank')}
+                    onClick={() => window.open(absUrl(s.zoom_start_url || s.meeting_url), '_blank', 'noopener,noreferrer')}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors"
                   >
                     <Play className="w-3 h-3" />

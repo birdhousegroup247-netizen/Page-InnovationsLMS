@@ -35,6 +35,7 @@ import QuestionDiscussion from '../components/course/QuestionDiscussion';
 import LessonNotes from '../components/course/LessonNotes';
 import LockOverlay from '../components/ui/LockOverlay';
 import RecordingPlayer from '../components/live-sessions/RecordingPlayer';
+import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import SuspensionModal from '../components/ui/SuspensionModal';
 import logo from '../assets/logo.png';
 
@@ -1230,7 +1231,7 @@ export default function CoursePlayer() {
                               </div>
                               {session.status !== 'ended' && (
                                 <a
-                                  href={session.meeting_url}
+                                  href={absUrl(session.meeting_url)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className={cn(
