@@ -504,14 +504,18 @@ function UpcomingSessionsSnapshot() {
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 {(s.zoom_start_url || s.meeting_url) && (
-                  <button
-                    type="button"
-                    onClick={() => window.open(absUrl(s.zoom_start_url || s.meeting_url), '_blank', 'noopener,noreferrer')}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors"
+                  <a
+                    href={absUrl(s.zoom_start_url || s.meeting_url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      'inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white rounded-lg transition-colors',
+                      isLive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'
+                    )}
                   >
                     <Play className="w-3 h-3" />
                     {isLive ? 'Open' : 'Start'}
-                  </button>
+                  </a>
                 )}
                 <Link
                   to={`/instructor/courses/${s.course_id}/sessions`}

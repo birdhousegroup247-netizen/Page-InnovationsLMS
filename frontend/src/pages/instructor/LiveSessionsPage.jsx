@@ -408,7 +408,7 @@ export default function LiveSessionsPage() {
                         href={absUrl(joinUrl)} target="_blank" rel="noreferrer"
                         className={cn(
                           'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors',
-                          overdue ? 'bg-amber-500 hover:bg-amber-600' : 'bg-brand-blue hover:bg-brand-blue/90'
+                          overdue ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-600 hover:bg-green-700'
                         )}
                       >
                         <Play className="w-3.5 h-3.5" /> Start
