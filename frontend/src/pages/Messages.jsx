@@ -8,7 +8,7 @@ import RoomSettingsPanel from '../components/chat/RoomSettingsPanel';
 import {
   MessageSquare, Send, BookOpen, User, Clock, Users, ChevronRight,
   AlertCircle, Reply, X, AtSign, Paperclip, FileText, Search,
-  SmilePlus, Pin, Forward, BellOff, Bell, CheckCheck, Settings,
+  SmilePlus, Smile, Pin, Forward, BellOff, Bell, CheckCheck, Settings,
 } from 'lucide-react';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -65,6 +65,42 @@ function EmojiPicker({ onSelect, onClose }) {
           {emoji}
         </button>
       ))}
+    </div>
+  );
+}
+
+// Wraps the picker with an anchor button + outside-click handler so
+// it behaves like the announcement reaction tray. Keeps the compose
+// row simple.
+function ComposerEmojiButton({ open, setOpen, onSelect }) {
+  const wrapRef = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open, setOpen]);
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <button type="button"
+        onMouseDown={(e) => { e.preventDefault(); setOpen((v) => !v); }}
+        title="Add emoji"
+        aria-label="Add emoji"
+        aria-expanded={open}
+        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-brand-blue hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+        <Smile className="w-4 h-4" />
+      </button>
+      {open && (
+        <EmojiPicker
+          onSelect={(emoji) => onSelect(emoji)}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -361,6 +397,22 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
   const [forwardMsg, setForwardMsg]     = useState(null);
   const [seenAt, setSeenAt]             = useState(null); // timestamp when other person read
   const [roomDisabled, setRoomDisabled] = useState(false);
+  const [composerEmojiOpen, setComposerEmojiOpen] = useState(false);
+
+  // Insert an emoji at the textarea's caret. Restores focus +
+  // caret position right after so the user can keep typing.
+  const insertEmojiAtCaret = (emoji) => {
+    const el = inputRef.current;
+    const pos = el?.selectionStart ?? input.length;
+    const next = input.slice(0, pos) + emoji + input.slice(pos);
+    setInput(next);
+    setTimeout(() => {
+      if (!el) return;
+      el.focus();
+      const newPos = pos + emoji.length;
+      el.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
 
   const bottomRef    = useRef(null);
   const topRef       = useRef(null);
@@ -755,6 +807,17 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
           className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-brand-blue hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors" title="Attach file">
           <Paperclip className="w-4 h-4" />
         </button>
+
+        {/* Compose-emoji button — opens the same QUICK_EMOJIS tray
+            used for message reactions and inserts the selected one
+            at the textarea's caret. onMouseDown is preventDefault'd
+            so the textarea doesn't lose focus before insertEmojiAtCaret
+            reads selectionStart. */}
+        <ComposerEmojiButton
+          open={composerEmojiOpen}
+          setOpen={setComposerEmojiOpen}
+          onSelect={insertEmojiAtCaret}
+        />
         {type === 'room' && (
           <button type="button"
             onClick={() => { const pos = inputRef.current?.selectionStart ?? input.length; setInput(input.slice(0, pos) + '@' + input.slice(pos)); setMentionQuery(''); setTimeout(() => inputRef.current?.focus(), 0); }}
