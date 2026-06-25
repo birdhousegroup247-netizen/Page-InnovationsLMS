@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
-  Video, Plus, Calendar, Clock, Link as LinkIcon, Edit2, Trash2, Radio, BookOpen, ArrowLeft, Play, ExternalLink,
+  Video, Plus, Edit2, Trash2, Radio, ArrowLeft, Play,
 } from 'lucide-react';
 import { liveSessionsAPI, coursesAPI, instructorAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
-import { Button, Spinner, Alert, Modal, Badge } from '../../components/ui';
+import { Button, Spinner, Alert, Modal, Tooltip } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import { ensureAbsoluteUrl as absUrl } from '../../utils/videoEmbed';
 
@@ -25,7 +25,12 @@ import { ensureAbsoluteUrl as absUrl } from '../../utils/videoEmbed';
 // from the menu, you select the course".
 
 const PLATFORMS = ['zoom', 'google_meet', 'other'];
-const STATUS_VARIANT = { scheduled: 'info', live: 'danger', ended: 'secondary' };
+const STATUS_DOT = {
+  scheduled: 'bg-blue-500',
+  live: 'bg-red-500 animate-pulse',
+  ended: 'bg-gray-400 dark:bg-gray-600',
+};
+const PLATFORM_LABEL = { zoom: 'Zoom', google_meet: 'Google Meet', custom: 'Custom' };
 
 function SessionForm({ initial, onSubmit, onCancel, loading, courses, lockedCourseId }) {
   const [form, setForm] = useState(initial || {
@@ -350,68 +355,92 @@ export default function LiveSessionsPage() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {visible.map((s) => {
               const past = new Date(s.scheduled_at).getTime() < Date.now();
+              const joinUrl = s.zoom_start_url || s.meeting_url;
               return (
-                <div key={s.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4">
+                <div
+                  key={s.id}
+                  className="group bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl px-4 py-3 flex items-center gap-3 hover:border-brand-blue/40 transition-colors"
+                >
+                  {/* Status dot — color-coded, no text badge */}
+                  <span
+                    className={cn('w-2.5 h-2.5 rounded-full shrink-0', STATUS_DOT[s.status] || STATUS_DOT.ended)}
+                    aria-label={s.status}
+                  />
+
+                  {/* Title + one-line meta */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <Badge variant={STATUS_VARIANT[s.status] || 'secondary'}>{s.status}</Badge>
-                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">{s.title || 'Untitled session'}</h3>
-                      {s.platform && (
-                        <span className="text-[11px] text-gray-500 dark:text-text-dark-muted capitalize">
-                          {s.platform.replace('_', ' ')}
-                        </span>
-                      )}
-                    </div>
-                    {s.description && (
-                      <p className="text-xs text-gray-500 dark:text-text-dark-muted mb-2 line-clamp-2">{s.description}</p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                      <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{fmtWhen(s.scheduled_at)}</span>
-                      {s.duration_minutes && <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{s.duration_minutes} min</span>}
-                      {!isScoped && s.course?.title && (
-                        <span className="inline-flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />{s.course.title}</span>
-                      )}
-                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {s.title || 'Untitled session'}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-text-dark-muted truncate">
+                      {fmtWhen(s.scheduled_at)}
+                      {s.duration_minutes ? ` · ${s.duration_minutes} min` : ''}
+                      {s.platform ? ` · ${PLATFORM_LABEL[s.platform] || s.platform}` : ''}
+                      {!isScoped && s.course?.title ? ` · ${s.course.title}` : ''}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                    {/* Zoom: instructor Start URL takes precedence. Otherwise meeting URL. */}
-                    {s.zoom_start_url && (
-                      <a href={absUrl(s.zoom_start_url)} target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors">
-                        <Play className="w-3.5 h-3.5" /> Start Meeting
+
+                  {/* Primary action — state-aware */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {s.status === 'live' && joinUrl && (
+                      <a
+                        href={absUrl(joinUrl)} target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                      >
+                        <Play className="w-3.5 h-3.5" /> Open
                       </a>
                     )}
-                    {!s.zoom_start_url && s.meeting_url && (
-                      <a href={absUrl(s.meeting_url)} target="_blank" rel="noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors">
-                        <ExternalLink className="w-3.5 h-3.5" /> Open
+                    {s.status === 'scheduled' && !past && joinUrl && (
+                      <a
+                        href={absUrl(joinUrl)} target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors"
+                      >
+                        <Play className="w-3.5 h-3.5" /> Start
                       </a>
                     )}
                     {s.status === 'scheduled' && !past && (
-                      <button onClick={() => handleStatus(s.id, 'live')}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 rounded-lg transition-colors">
-                        <Radio className="w-3.5 h-3.5" /> Go Live
-                      </button>
+                      <Tooltip content="Mark this session as live now">
+                        <button
+                          onClick={() => handleStatus(s.id, 'live')}
+                          aria-label="Go live"
+                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          <Radio className="w-4 h-4 text-red-500" />
+                        </button>
+                      </Tooltip>
                     )}
                     {s.status === 'live' && (
-                      <button onClick={() => handleStatus(s.id, 'ended')}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 rounded-lg transition-colors">
-                        End
-                      </button>
+                      <Tooltip content="End session">
+                        <button
+                          onClick={() => handleStatus(s.id, 'ended')}
+                          aria-label="End session"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors text-xs text-gray-600 dark:text-gray-300 px-2"
+                        >
+                          End
+                        </button>
+                      </Tooltip>
                     )}
-                    <button onClick={() => setEditSession(s)}
-                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
-                      aria-label="Edit session">
-                      <Edit2 className="w-4 h-4 text-gray-500 dark:text-text-dark-muted" />
-                    </button>
-                    <button onClick={() => setDeleteSession(s)}
-                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      aria-label="Delete session">
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
+                    <Tooltip content="Edit session">
+                      <button
+                        onClick={() => setEditSession(s)}
+                        aria-label="Edit session"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4 text-gray-500 dark:text-text-dark-muted" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Delete session">
+                      <button
+                        onClick={() => setDeleteSession(s)}
+                        aria-label="Delete session"
+                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               );
