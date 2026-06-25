@@ -120,8 +120,12 @@ export default function ReactionsBar({ source, announcementId, initialTally = {}
         >
           <SmilePlus className="w-3.5 h-3.5" />
         </button>
+        {/* Anchor the tray to the right edge — the bar sits in the
+            card footer's right side, so left:0 would overflow into
+            the next card / off-screen. right-0 opens it leftward
+            inside the card. */}
         {pickerOpen && (
-          <div className="absolute z-10 bottom-full left-0 mb-1 flex items-center gap-1 p-1 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 shadow-lg">
+          <div className="absolute z-20 bottom-full right-0 mb-2 flex items-center gap-1 p-1 rounded-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 shadow-lg">
             {EMOJIS.map((e) => {
               const active = mine.has(e);
               return (
