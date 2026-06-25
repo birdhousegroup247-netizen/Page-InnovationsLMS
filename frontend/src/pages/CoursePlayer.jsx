@@ -854,7 +854,7 @@ export default function CoursePlayer() {
                               rel="noopener noreferrer"
                               className="text-sm text-brand-blue hover:underline"
                             >
-                              Having trouble viewing? Open in new tab
+                              Open in new tab
                             </a>
                           </div>
                         </>

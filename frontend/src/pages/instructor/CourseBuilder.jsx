@@ -1213,16 +1213,9 @@ export default function CourseBuilder() {
                       className="text-brand-blue underline">
                       Open document in new tab
                     </a>
-                    {isPdf ? (
-                      <span className="text-gray-500 text-right">
-                        Blank? Cloudinary may be blocking PDF delivery. In the Cloudinary console go to
-                        Settings → Security → uncheck "Restricted media types" for PDF.
-                      </span>
-                    ) : (
-                      <span className="text-gray-500">
-                        If the preview is blank, the file may need to be re-uploaded.
-                      </span>
-                    )}
+                    <span className="text-gray-500">
+                      If the preview is blank, open the document in a new tab.
+                    </span>
                   </div>
                 </div>
               );
