@@ -55,9 +55,18 @@ function renderBody(body) {
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'];
 
-function EmojiPicker({ onSelect, onClose }) {
+function EmojiPicker({ onSelect, onClose, align = 'right' }) {
+  // align='right' → picker extends LEFT from the button's right edge
+  //                  (good when the button sits at the right side of
+  //                  a container — message bubble action row).
+  // align='left'  → picker extends RIGHT from the button's left edge
+  //                  (good when the button sits at the left side of
+  //                  a container — the compose row's Smile button).
   return (
-    <div className="absolute bottom-full right-0 mb-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl shadow-xl p-2 z-30 flex gap-1">
+    <div className={cn(
+      'absolute bottom-full mb-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl shadow-xl p-2 z-30 flex gap-1',
+      align === 'left' ? 'left-0' : 'right-0'
+    )}>
       {QUICK_EMOJIS.map((emoji) => (
         <button key={emoji} type="button"
           onMouseDown={(e) => { e.preventDefault(); onSelect(emoji); onClose(); }}
@@ -97,6 +106,7 @@ function ComposerEmojiButton({ open, setOpen, onSelect }) {
       </button>
       {open && (
         <EmojiPicker
+          align="left"
           onSelect={(emoji) => onSelect(emoji)}
           onClose={() => setOpen(false)}
         />
