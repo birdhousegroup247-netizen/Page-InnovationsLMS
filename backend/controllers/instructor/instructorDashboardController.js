@@ -1,4 +1,4 @@
-const { Course, Enrollment, User, AssignedTest, QuestionBank, sequelize } = require('../../models');
+const { Course, Enrollment, User, AssignedTest, QuestionBank, LiveSession, Assignment, AssignmentSubmission, sequelize } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const { Op } = require('sequelize');
 
@@ -333,6 +333,141 @@ class InstructorDashboardController {
         questions_contributed: questionsContributed,
         questions_approved: questionsApproved
       }, 'Instructor statistics retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/instructor/live-sessions
+   *
+   * All sessions across every course this instructor teaches.
+   * Optional ?status=upcoming|past|all (default upcoming).
+   * Returns rows already enriched with course title + thumbnail so
+   * the global Live Sessions page doesn't need a second hop per row.
+   */
+  static async getMyLiveSessions(req, res, next) {
+    try {
+      const { status = 'upcoming', limit = 100 } = req.query;
+      const instructorId = req.user.id;
+
+      const courses = await Course.findAll({
+        where: { instructor_id: instructorId },
+        attributes: ['id'],
+        raw: true,
+      });
+      const courseIds = courses.map((c) => c.id);
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, { sessions: [] });
+      }
+
+      const where = { course_id: { [Op.in]: courseIds } };
+      const now = new Date();
+      // Treat "upcoming" as scheduled rows whose start is in the
+      // future OR rows currently flagged 'live'. Past = ended or
+      // start_time already passed (but not live).
+      if (status === 'upcoming') {
+        where[Op.or] = [
+          { scheduled_at: { [Op.gte]: now } },
+          { status: 'live' },
+        ];
+      } else if (status === 'past') {
+        where[Op.and] = [
+          { scheduled_at: { [Op.lt]: now } },
+          { status: { [Op.ne]: 'live' } },
+        ];
+      }
+
+      const sessions = await LiveSession.findAll({
+        where,
+        include: [
+          { model: Course, as: 'course', attributes: ['id', 'title', 'thumbnail'] },
+        ],
+        order: status === 'past'
+          ? [['scheduled_at', 'DESC']]
+          : [['scheduled_at', 'ASC']],
+        limit: parseInt(limit, 10) || 100,
+      });
+
+      return ApiResponse.success(res, { sessions });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/instructor/assignments
+   *
+   * All assignments across every course this instructor teaches,
+   * each row carrying total_submissions + pending_grading counts so
+   * the global Assignments page can show a queue at a glance without
+   * fanning out further.
+   */
+  static async getMyAssignments(req, res, next) {
+    try {
+      const instructorId = req.user.id;
+
+      const courses = await Course.findAll({
+        where: { instructor_id: instructorId },
+        attributes: ['id', 'title', 'thumbnail'],
+        raw: true,
+      });
+      const courseIds = courses.map((c) => c.id);
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, { assignments: [] });
+      }
+      const courseById = new Map(courses.map((c) => [c.id, c]));
+
+      const assignments = await Assignment.findAll({
+        where: { course_id: { [Op.in]: courseIds } },
+        order: [['created_at', 'DESC']],
+        raw: true,
+      });
+      if (assignments.length === 0) {
+        return ApiResponse.success(res, { assignments: [] });
+      }
+
+      const assignmentIds = assignments.map((a) => a.id);
+      // Two grouped counts: total submissions per assignment, +
+      // pending grading (status !== 'graded') per assignment.
+      let totals = [];
+      let pending = [];
+      try {
+        totals = await AssignmentSubmission.findAll({
+          where: { assignment_id: { [Op.in]: assignmentIds } },
+          attributes: [
+            'assignment_id',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+          ],
+          group: ['assignment_id'],
+          raw: true,
+        });
+        pending = await AssignmentSubmission.findAll({
+          where: {
+            assignment_id: { [Op.in]: assignmentIds },
+            status: { [Op.ne]: 'graded' },
+          },
+          attributes: [
+            'assignment_id',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+          ],
+          group: ['assignment_id'],
+          raw: true,
+        });
+      } catch (e) {
+        // Sub-count failures don't block the assignment list.
+      }
+      const totalById = new Map(totals.map((r) => [parseInt(r.assignment_id, 10), parseInt(r.count, 10)]));
+      const pendingById = new Map(pending.map((r) => [parseInt(r.assignment_id, 10), parseInt(r.count, 10)]));
+
+      const enriched = assignments.map((a) => ({
+        ...a,
+        course: courseById.get(a.course_id) || null,
+        total_submissions: totalById.get(a.id) || 0,
+        pending_grading:   pendingById.get(a.id) || 0,
+      }));
+
+      return ApiResponse.success(res, { assignments: enriched });
     } catch (error) {
       next(error);
     }

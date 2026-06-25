@@ -23,6 +23,8 @@ import {
   AlertCircle,
   Video,
   ClipboardCheck,
+  Calendar,
+  Play,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Container } from '../components/layout';
@@ -108,18 +110,29 @@ export default function InstructorDashboard() {
     </button>
   );
 
-  // Course Card Component
-  const CourseCard = ({ course, onEdit, onView, onManageContent }) => (
-    <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-gray-300 dark:hover:border-dark-600 transition-colors">
+  // Course Card — minimal by request. Title + thumbnail + students,
+  // plus only two row-actions (Sessions + Grade). Clicking the card
+  // body opens the public course detail page so the instructor sees
+  // exactly what students see. The "View all" link in the section
+  // header still goes to the full My Courses index.
+  const CourseCard = ({ course }) => (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate(`/courses/${course.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/courses/${course.id}`);
+        }
+      }}
+      className="group relative bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl overflow-hidden hover:border-brand-blue/40 hover:shadow-md transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
+    >
       <div className="flex flex-col sm:flex-row">
         {/* Thumbnail */}
-        <div className="sm:w-48 aspect-video sm:aspect-auto sm:h-full flex-shrink-0 bg-gradient-to-br from-brand-blue to-brand-purple">
+        <div className="sm:w-48 aspect-video sm:aspect-auto sm:h-auto flex-shrink-0 bg-gradient-to-br from-brand-blue to-brand-purple">
           {course.thumbnail_url ? (
-            <img
-              src={course.thumbnail_url}
-              alt={course.title}
-              className="w-full h-full object-cover"
-            />
+            <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full min-h-[120px] flex items-center justify-center">
               <BookOpen className="w-10 h-10 text-white/50" />
@@ -127,77 +140,34 @@ export default function InstructorDashboard() {
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 p-5">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">
+        {/* Content — intentionally sparse */}
+        <div className="flex-1 p-5 flex flex-col gap-3 justify-between">
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-brand-blue transition-colors">
               {course.title}
             </h3>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {course.difficulty && (
-                <span className={cn('px-2 py-1 rounded-full text-xs font-medium', {
-                  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': course.difficulty === 'beginner',
-                  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': course.difficulty === 'intermediate',
-                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': course.difficulty === 'advanced',
-                })}>
-                  {course.difficulty}
-                </span>
-              )}
-              <span className={cn('px-2 py-1 rounded-full text-xs font-medium', {
-                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': course.status === 'draft',
-                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': course.status === 'published',
-                'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': course.status === 'pending',
-                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': course.status === 'archived',
-              })}>
-                {course.status === 'pending' ? 'Pending Review' : (course.status || 'draft')}
-              </span>
+            <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <Users className="w-3.5 h-3.5" />
+              {course.enrolled_count || 0} student{(course.enrolled_count || 0) === 1 ? '' : 's'}
             </div>
           </div>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4">
-            {course.description || 'No description available'}
-          </p>
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {course.enrolled_count || 0}
-            </span>
-            {course.average_rating > 0 && (
-              <span className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                {Number(course.average_rating).toFixed(1)}
-              </span>
-            )}
-            <span className="flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
-              {course.price > 0 ? `$${course.price}` : 'Free'}
-            </span>
-          </div>
-
-          {/* Actions */}
+          {/* Only two row-level actions, by request. Sessions and
+              Grade. Stop the bubble so they don't fire the card click. */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="primary" size="sm" onClick={onManageContent} leftIcon={<Hammer className="h-4 w-4" />}>
-              Build
-            </Button>
-            <Button variant="secondary" size="sm" onClick={onEdit} leftIcon={<Edit className="h-4 w-4" />}>
-              Edit
-            </Button>
-            <Button variant="outline" size="sm" onClick={onView} leftIcon={<Eye className="h-4 w-4" />}>
-              View
-            </Button>
             <Link
               to={`/instructor/courses/${course.id}/sessions`}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 rounded-lg transition-colors"
             >
-              <Video className="h-3.5 w-3.5" /> Sessions
+              <Video className="w-3.5 h-3.5" /> Sessions
             </Link>
             <Link
               to={`/instructor/courses/${course.id}/assignments-grading`}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-brand-purple hover:bg-brand-purple/10 rounded-lg transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-purple bg-brand-purple/10 hover:bg-brand-purple/20 rounded-lg transition-colors"
             >
-              <ClipboardCheck className="h-3.5 w-3.5" /> Grade
+              <ClipboardCheck className="w-3.5 h-3.5" /> Grade
             </Link>
           </div>
         </div>
@@ -402,6 +372,11 @@ export default function InstructorDashboard() {
           </div>
         )}
 
+        {/* Upcoming Sessions snapshot — fed by the global aggregator
+            endpoint. Compact, max 3 rows, with View all → the new
+            sidebar entry. */}
+        <UpcomingSessionsSnapshot />
+
         {/* Recent Courses */}
         <div>
           <div className="flex items-center justify-between mb-6">
@@ -433,13 +408,7 @@ export default function InstructorDashboard() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {courses.slice(0, 4).map((course) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  onEdit={() => navigate(`/instructor/courses/${course.id}/edit`)}
-                  onView={() => navigate(`/courses/${course.id}`)}
-                  onManageContent={() => navigate(`/instructor/courses/${course.id}/builder`)}
-                />
+                <CourseCard key={course.id} course={course} />
               ))}
             </div>
           )}
@@ -458,5 +427,102 @@ export default function InstructorDashboard() {
         </div>
       </Container>
     </>
+  );
+}
+
+// Compact snapshot card — pulls the next 3 upcoming sessions across
+// every course the instructor teaches. Light failure mode: silently
+// renders nothing if the call fails or there are zero rows, so the
+// dashboard doesn't grow a sad empty card.
+function UpcomingSessionsSnapshot() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    instructorAPI
+      .getMyLiveSessions({ status: 'upcoming', limit: 3 })
+      .then((res) => { if (alive) setItems(res?.data?.data?.sessions || []); })
+      .catch(() => { if (alive) setItems([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) return null;
+  if (items.length === 0) return null;
+
+  const fmtWhen = (d) => {
+    if (!d) return '—';
+    const date = new Date(d);
+    return date.toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <Video className="h-5 w-5 text-brand-blue" />
+          Upcoming sessions
+        </h3>
+        <Link
+          to="/instructor/live-sessions"
+          className="inline-flex items-center gap-1 text-sm font-medium text-brand-blue hover:text-brand-blue-600 transition-colors"
+        >
+          View all
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      <ul className="divide-y divide-gray-100 dark:divide-border-dark">
+        {items.map((s) => {
+          const isLive = s.status === 'live';
+          return (
+            <li key={s.id} className="py-3 flex items-center gap-3">
+              <div className={cn(
+                'w-2 h-2 rounded-full shrink-0',
+                isLive ? 'bg-red-500 animate-pulse' : 'bg-brand-blue'
+              )} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {s.title || 'Untitled session'}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {fmtWhen(s.scheduled_at)}
+                  </span>
+                  {s.course?.title && (
+                    <span className="inline-flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" />
+                      <span className="truncate max-w-[10rem]">{s.course.title}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {(s.zoom_start_url || s.meeting_url) && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(s.zoom_start_url || s.meeting_url, '_blank')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors"
+                  >
+                    <Play className="w-3 h-3" />
+                    {isLive ? 'Open' : 'Start'}
+                  </button>
+                )}
+                <Link
+                  to={`/instructor/courses/${s.course_id}/sessions`}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 rounded-lg transition-colors"
+                >
+                  Edit
+                </Link>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

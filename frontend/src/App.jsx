@@ -105,6 +105,8 @@ const ContributeQuestions = lazyWithReload(() => import('./pages/instructor/Cont
 const LiveSessions = lazyWithReload(() => import('./pages/instructor/LiveSessions'));
 const GradeAssignments = lazyWithReload(() => import('./pages/instructor/GradeAssignments'));
 const CourseAssignments = lazyWithReload(() => import('./pages/instructor/CourseAssignments'));
+const AllLiveSessions = lazyWithReload(() => import('./pages/instructor/AllLiveSessions'));
+const AllAssignments = lazyWithReload(() => import('./pages/instructor/AllAssignments'));
 const SearchResults = lazyWithReload(() => import('./pages/SearchResults'));
 const Checkout = lazyWithReload(() => import('./pages/Checkout'));
 const PaymentSuccess = lazyWithReload(() => import('./pages/PaymentSuccess'));
@@ -517,6 +519,25 @@ function App() {
             element={
               <InstructorRoute>
                 <ContributeQuestions />
+              </InstructorRoute>
+            }
+          />
+          {/* Global aggregator pages — every session / assignment
+              across every course the instructor teaches. The
+              per-course pages stay live underneath for editing. */}
+          <Route
+            path="/instructor/live-sessions"
+            element={
+              <InstructorRoute>
+                <AllLiveSessions />
+              </InstructorRoute>
+            }
+          />
+          <Route
+            path="/instructor/assignments"
+            element={
+              <InstructorRoute>
+                <AllAssignments />
               </InstructorRoute>
             }
           />

@@ -144,6 +144,10 @@ export const instructorAPI = {
   getDashboard: () => api.get('/api/instructor/dashboard'),
   getStats: () => api.get('/api/instructor/stats'),
 
+  // Global aggregators across all the instructor's courses.
+  getMyLiveSessions: (params) => api.get('/api/instructor/live-sessions', { params }),
+  getMyAssignments: () => api.get('/api/instructor/assignments'),
+
   // Student Management
   getCourseStudents: (courseId, params) => api.get(`/api/instructor/courses/${courseId}/students`, { params }),
   getStudentProgress: (studentId, courseId) => api.get(`/api/instructor/students/${studentId}/progress/${courseId}`),

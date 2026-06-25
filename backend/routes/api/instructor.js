@@ -37,6 +37,24 @@ router.get(
   (req, res, next) => InstructorDashboardController.getStats(req, res, next)
 );
 
+// Global live sessions list — every session across every course this
+// instructor teaches. ?status=upcoming|past|all (default upcoming).
+router.get(
+  '/live-sessions',
+  authenticate,
+  authorize('instructor', 'admin', 'super_admin'),
+  (req, res, next) => InstructorDashboardController.getMyLiveSessions(req, res, next)
+);
+
+// Global assignments list — every assignment across every course this
+// instructor teaches, enriched with submission counts.
+router.get(
+  '/assignments',
+  authenticate,
+  authorize('instructor', 'admin', 'super_admin'),
+  (req, res, next) => InstructorDashboardController.getMyAssignments(req, res, next)
+);
+
 // ============================================
 // STUDENT MANAGEMENT ROUTES
 // ============================================
