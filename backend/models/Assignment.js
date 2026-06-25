@@ -18,6 +18,18 @@ const Assignment = sequelize.define('Assignment', {
   // automatically via the test-completion hook (see test attempt
   // controller). file/text/link inputs are hidden in that mode.
   linked_test_id:        { type: DataTypes.INTEGER, allowNull: true },
+  // Drafts are invisible to students. New rows default to draft so
+  // an instructor can prep without pinging anyone. DB-level default
+  // is true so legacy rows that pre-date this column stay visible.
+  is_published:          { type: DataTypes.BOOLEAN, defaultValue: true },
+  // Lets a graded student update + resubmit. When true, the
+  // updateSubmission endpoint clears the score and flips status
+  // back to 'submitted' so the instructor knows to re-grade.
+  allow_resubmit:        { type: DataTypes.BOOLEAN, defaultValue: false },
+  // Due-date reminder ladder — one row per tier, stamped when the
+  // cron has broadcast that tier so a re-run can't double-fire.
+  reminder_24h_sent_at:  { type: DataTypes.DATE, allowNull: true },
+  reminder_1h_sent_at:   { type: DataTypes.DATE, allowNull: true },
 }, {
   tableName: 'assignments',
   timestamps: true,

@@ -47,6 +47,9 @@ function AssignmentCard({ assignment, onSubmit }) {
   const sub = assignment.submissions?.[0];
   const canSubmit = status === 'pending' || status === 'late';
   const canUpdate = status === 'submitted';
+  // Resubmission: graded + assignment allows it + not test-linked
+  // (test scores can't be hand-overwritten).
+  const canResubmit = status === 'graded' && assignment.allow_resubmit && !sub?.auto_graded;
   // A test-linked assignment doesn't take file/text/link — the
   // student "submits" by taking the linked test; the score lands
   // back in this assignment automatically via the backend hook.
@@ -69,7 +72,10 @@ function AssignmentCard({ assignment, onSubmit }) {
       if (hasLink) payload.link_url = linkUrl.trim();
       if (canSubmit) {
         await assignmentsAPI.submitAssignment(assignment.id, payload);
-      } else if (canUpdate) {
+      } else if (canUpdate || canResubmit) {
+        // updateSubmission is what powers both "edit before grade"
+        // and "resubmit after grade" — the backend decides what's
+        // allowed based on assignment.allow_resubmit + status.
         await assignmentsAPI.updateSubmission(assignment.id, payload);
       }
       setSuccess('Submitted successfully!');
@@ -152,20 +158,20 @@ function AssignmentCard({ assignment, onSubmit }) {
               <Play className="w-4 h-4" /> Take Test
             </Link>
           )}
-          {!isLinkedTest && (canSubmit || canUpdate) && (
+          {!isLinkedTest && (canSubmit || canUpdate || canResubmit) && (
             <button
               onClick={() => setExpanded(!expanded)}
               className="flex items-center gap-1.5 text-sm font-medium text-brand-blue hover:text-brand-blue/80 transition-colors"
             >
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              {canSubmit ? 'Submit Assignment' : 'Update Submission'}
+              {canSubmit ? 'Submit Assignment' : canResubmit ? 'Resubmit' : 'Update Submission'}
             </button>
           )}
         </div>
       </div>
 
       {/* Submit form — only for non-test-linked assignments */}
-      {!isLinkedTest && expanded && (canSubmit || canUpdate) && (
+      {!isLinkedTest && expanded && (canSubmit || canUpdate || canResubmit) && (
         <div className="border-t border-gray-200 dark:border-dark-700 p-5 bg-gray-50 dark:bg-dark-700/50">
           {assignment.description && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{assignment.description}</p>
@@ -232,7 +238,7 @@ function AssignmentCard({ assignment, onSubmit }) {
                 loading={submitting}
                 leftIcon={!submitting && <Send className="w-4 h-4" />}
               >
-                {canSubmit ? 'Submit' : 'Update'}
+                {canSubmit ? 'Submit' : canResubmit ? 'Resubmit' : 'Update'}
               </Button>
             </div>
           )}

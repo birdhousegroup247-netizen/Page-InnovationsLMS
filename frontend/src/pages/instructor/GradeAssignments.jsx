@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { assignmentsAPI } from '../../lib/api';
-import { ClipboardCheck, CheckCircle, Clock, User, FileText, ArrowLeft } from 'lucide-react';
+import {
+  ClipboardCheck, CheckCircle, Clock, User, FileText, ArrowLeft,
+  Edit3, Eye, EyeOff, Trash2, Calendar, BookOpen, UserX,
+} from 'lucide-react';
 import { Container } from '../../components/layout';
-import { Button, Spinner, Alert } from '../../components/ui';
+import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
+import { cn } from '../../utils/cn';
 
 const STATUS_BADGE = {
   pending: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400',
@@ -12,6 +16,7 @@ const STATUS_BADGE = {
 
 export default function GradeAssignments() {
   const { assignmentId } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -20,6 +25,9 @@ export default function GradeAssignments() {
   const [feedbacks, setFeedbacks] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [acting, setActing] = useState(false);
 
   useEffect(() => {
     fetchSubmissions();
@@ -72,21 +80,107 @@ export default function GradeAssignments() {
     return true;
   });
 
+  const a = data?.assignment || null;
+  const isDraft = a && a.is_published === false;
+
+  const fmtDue = (d) =>
+    d ? new Date(d).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+
+  // Toggle publish / draft — uses the same updateAssignment endpoint
+  // we already wired. On draft → published the backend fires the
+  // new-assignment notification to enrolled students.
+  const handleTogglePublish = async () => {
+    if (!a || acting) return;
+    setActing(true);
+    setError('');
+    try {
+      await assignmentsAPI.updateAssignment(a.id, { is_published: !a.is_published });
+      setSuccess(a.is_published ? 'Assignment moved to draft' : 'Published — students notified');
+      setTimeout(() => setSuccess(''), 3000);
+      fetchSubmissions();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update assignment');
+    } finally {
+      setActing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!a || acting) return;
+    setActing(true);
+    try {
+      await assignmentsAPI.deleteAssignment(a.id);
+      navigate('/instructor/assignments');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete');
+      setActing(false);
+    }
+  };
+
   return (
     <>
       <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red py-10">
         <Container>
-          <Link to="/instructor/dashboard" className="inline-flex items-center gap-1 text-white/70 hover:text-white text-sm mb-3 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          <Link to="/instructor/assignments" className="inline-flex items-center gap-1 text-white/70 hover:text-white text-sm mb-3 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Assignments
           </Link>
-          <div className="flex items-center gap-3">
-            <ClipboardCheck className="w-8 h-8 text-white" />
-            <div>
-              <h1 className="text-3xl font-bold text-white">Grade Submissions</h1>
-              {data?.assignment && (
-                <p className="text-white/80 text-sm">{data.assignment.title} — Max score: {data.assignment.max_score}</p>
-              )}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <ClipboardCheck className="w-8 h-8 text-white shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">
+                    {a?.title || 'Assignment'}
+                  </h1>
+                  {isDraft && <Badge variant="secondary">Draft</Badge>}
+                  {a?.allow_resubmit && <Badge variant="info">Resubmit allowed</Badge>}
+                  {a?.linked_test_id && <Badge variant="info">Linked test (auto-graded)</Badge>}
+                </div>
+                {a?.description && (
+                  <p className="text-white/85 text-sm mt-1 max-w-2xl">{a.description}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-white/80">
+                  {a?.course?.title && (
+                    <span className="inline-flex items-center gap-1">
+                      <BookOpen className="w-3.5 h-3.5" /> {a.course.title}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" /> Due {fmtDue(a?.due_date)}
+                  </span>
+                  <span>Max score: {a?.max_score || 100}</span>
+                  {typeof data?.enrolled_count === 'number' && (
+                    <span>{data.enrolled_count} enrolled</span>
+                  )}
+                </div>
+              </div>
             </div>
+            {a && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="text-white border-white/30 hover:bg-white/10">
+                  <Edit3 className="w-4 h-4 mr-1.5" /> Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTogglePublish}
+                  loading={acting}
+                  className="text-white border-white/30 hover:bg-white/10"
+                >
+                  {isDraft
+                    ? <><Eye className="w-4 h-4 mr-1.5" /> Publish</>
+                    : <><EyeOff className="w-4 h-4 mr-1.5" /> Unpublish</>}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-white border-red-300/50 hover:bg-red-500/20"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </Container>
       </div>
@@ -227,7 +321,152 @@ export default function GradeAssignments() {
             ))}
           </div>
         )}
+
+        {/* Missing students — enrolled in the course but no submission */}
+        {data?.missing_students && data.missing_students.length > 0 && (
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <UserX className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Hasn't submitted ({data.missing_students.length})
+              </h3>
+            </div>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {data.missing_students.map((s) => (
+                <li key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-dark-700">
+                  <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-dark-600 flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-200 shrink-0">
+                    {(s.full_name || '?').slice(0, 1).toUpperCase()}
+                  </div>
+                  <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{s.full_name || 'Student'}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Container>
+
+      {/* Edit modal — reuses backend updateAssignment. We hand the
+          existing assignment in as `initial`. */}
+      {editOpen && a && (
+        <EditAssignmentModal
+          assignment={a}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => {
+            setEditOpen(false);
+            setSuccess('Assignment updated');
+            setTimeout(() => setSuccess(''), 2000);
+            fetchSubmissions();
+          }}
+          onError={(msg) => setError(msg)}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      <Modal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Delete this assignment?"
+        size="sm"
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            This permanently removes the assignment and every submission. This can't be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)} disabled={acting}>Cancel</Button>
+            <Button onClick={handleDelete} loading={acting} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
+  );
+}
+
+// Inline edit modal — minimal subset of the create form, just the
+// fields a grader is likely to need to change after the fact.
+function EditAssignmentModal({ assignment, onClose, onSaved, onError }) {
+  const [form, setForm] = useState({
+    title: assignment.title || '',
+    description: assignment.description || '',
+    due_date: assignment.due_date ? new Date(assignment.due_date).toISOString().slice(0, 16) : '',
+    max_score: assignment.max_score ?? 100,
+    allow_file_upload: !!assignment.allow_file_upload,
+    allow_text_submission: !!assignment.allow_text_submission,
+    allow_link_submission: !!assignment.allow_link_submission,
+    allow_resubmit: !!assignment.allow_resubmit,
+  });
+  const [saving, setSaving] = useState(false);
+  const isLinkedTest = !!assignment.linked_test_id;
+
+  const handle = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await assignmentsAPI.updateAssignment(assignment.id, form);
+      onSaved();
+    } catch (err) {
+      onError(err.response?.data?.message || 'Failed to update assignment');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title="Edit assignment" size="lg">
+      <form onSubmit={(e) => { e.preventDefault(); save(); }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Title *</label>
+          <input name="title" value={form.title} onChange={handle} required
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Description</label>
+          <textarea name="description" value={form.description} onChange={handle} rows={3}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Due date</label>
+            <input name="due_date" type="datetime-local" value={form.due_date} onChange={handle}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Max score</label>
+            <input name="max_score" type="number" min={1} value={form.max_score} onChange={handle}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue" />
+          </div>
+        </div>
+        {!isLinkedTest && (
+          <div>
+            <p className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2">Accept submissions as</p>
+            <div className="flex flex-wrap gap-3">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary">
+                <input type="checkbox" name="allow_file_upload" checked={form.allow_file_upload} onChange={handle} /> File
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary">
+                <input type="checkbox" name="allow_text_submission" checked={form.allow_text_submission} onChange={handle} /> Text
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary">
+                <input type="checkbox" name="allow_link_submission" checked={form.allow_link_submission} onChange={handle} /> Link
+              </label>
+            </div>
+          </div>
+        )}
+        <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary">
+          <input type="checkbox" name="allow_resubmit" checked={form.allow_resubmit} onChange={handle} />
+          Allow resubmission after grading
+        </label>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button type="submit" loading={saving}>Save changes</Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

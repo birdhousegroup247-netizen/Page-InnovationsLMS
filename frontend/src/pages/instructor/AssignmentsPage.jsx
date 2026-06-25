@@ -192,19 +192,24 @@ export default function AssignmentsPage() {
             {visible.map((a) => {
               const pending = a.pending_grading || 0;
               const total   = a.total_submissions || 0;
+              const isDraft = a.is_published === false;
               return (
                 <Link
                   key={a.id}
-                  to={`/instructor/courses/${a.course_id}/assignments-grading`}
-                  className="group bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 transition-colors hover:border-brand-blue/40"
+                  to={`/instructor/assignments/${a.id}/grade`}
+                  className={cn(
+                    'group bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 transition-colors hover:border-brand-blue/40',
+                    isDraft && 'opacity-75 border-dashed'
+                  )}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                         {a.title || 'Untitled assignment'}
                       </h3>
-                      {pending > 0 && <Badge variant="warning">{pending} pending</Badge>}
-                      {pending === 0 && total > 0 && <Badge variant="success">All graded</Badge>}
+                      {isDraft && <Badge variant="secondary">Draft</Badge>}
+                      {!isDraft && pending > 0 && <Badge variant="warning">{pending} pending</Badge>}
+                      {!isDraft && pending === 0 && total > 0 && <Badge variant="success">All graded</Badge>}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                       {!isScoped && (
@@ -268,6 +273,8 @@ function AssignmentForm({ courses, tests, lockedCourseId, onCancel, onCreated, o
     allow_file_upload: true,
     allow_text_submission: true,
     allow_link_submission: false,
+    allow_resubmit: false,
+    is_published: false, // default to Draft so the instructor can prep
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -292,13 +299,13 @@ function AssignmentForm({ courses, tests, lockedCourseId, onCancel, onCreated, o
     // Otherwise at least one of file/text/link must be allowed.
     (isLinkedTest || form.allow_file_upload || form.allow_text_submission || form.allow_link_submission);
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submitWith = async (publish) => {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
     try {
-      const { course_id, ...payload } = form;
+      const { course_id, is_published: _ignored, ...payload } = form;
       payload.linked_test_id = form.linked_test_id || null;
+      payload.is_published = publish;
       await assignmentsAPI.createAssignment(course_id, payload);
       onCreated();
     } catch (err) {
@@ -309,7 +316,7 @@ function AssignmentForm({ courses, tests, lockedCourseId, onCancel, onCreated, o
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); submitWith(true); }} className="space-y-4">
       {!lockedCourseId && (
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Course *</label>
@@ -423,10 +430,24 @@ function AssignmentForm({ courses, tests, lockedCourseId, onCancel, onCreated, o
         </div>
       )}
 
+      {/* Resubmission policy */}
+      <label className="inline-flex items-start gap-2 text-sm text-gray-700 dark:text-text-dark-secondary cursor-pointer">
+        <input type="checkbox" name="allow_resubmit" checked={form.allow_resubmit} onChange={handle} className="mt-0.5" />
+        <span>
+          Allow students to resubmit after grading
+          <span className="block text-xs text-gray-500 dark:text-text-dark-muted">
+            Resubmitting clears the grade and re-queues for grading.
+          </span>
+        </span>
+      </label>
+
       <div className="flex items-center justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Cancel</Button>
-        <Button type="submit" loading={submitting} disabled={!canSubmit}>
-          Create assignment
+        <Button type="button" variant="outline" onClick={() => submitWith(false)} disabled={!canSubmit || submitting}>
+          Save as draft
+        </Button>
+        <Button type="button" onClick={() => submitWith(true)} loading={submitting} disabled={!canSubmit}>
+          Publish now
         </Button>
       </div>
     </form>

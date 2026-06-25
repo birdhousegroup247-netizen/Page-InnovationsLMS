@@ -1209,6 +1209,107 @@ const startServer = async () => {
     }, 60 * 60 * 1000); // Hourly
     logger.info('[session-zombie-sweep] Started — hourly auto-end of stuck/stale sessions');
 
+    // Assignment due-date reminder ladder.
+    // Two tiers: 24h before due_date, and 1h before due_date.
+    // Each tier is idempotent via reminder_24h_sent_at / reminder_1h_sent_at
+    // on the assignment row. The cron picks rows whose due_date is inside
+    // the upcoming tier window AND whose tier flag is still null, then
+    // notifies enrolled students who haven't submitted yet and stamps
+    // the flag so a re-run can't double-fire. Editing due_date clears
+    // both flags (see updateAssignment), so a pushed due date re-arms
+    // the ladder.
+    setInterval(async () => {
+      try {
+        const { Assignment, AssignmentSubmission, Enrollment, Course } = require('./models');
+        const { Op: ROp } = require('sequelize');
+        const NotificationsController = require('./controllers/notifications/notificationsController');
+
+        const tiers = [
+          {
+            key: 'reminder_24h_sent_at',
+            // Catch assignments whose due_date is between 23h and 24h
+            // from now — they cross the 24h boundary in this sweep
+            // (with margin for tick jitter).
+            minOffset: 23 * 60 * 60 * 1000,
+            maxOffset: 24 * 60 * 60 * 1000 + 5 * 60 * 1000,
+            text: 'is due in 24 hours',
+            priority: 'normal',
+          },
+          {
+            key: 'reminder_1h_sent_at',
+            minOffset: 0,
+            maxOffset: 60 * 60 * 1000 + 5 * 60 * 1000,
+            text: 'is due in less than an hour',
+            priority: 'high',
+          },
+        ];
+
+        for (const tier of tiers) {
+          const now = new Date();
+          const windowStart = new Date(now.getTime() + tier.minOffset);
+          const windowEnd   = new Date(now.getTime() + tier.maxOffset);
+
+          const assignments = await Assignment.findAll({
+            where: {
+              is_published: true,
+              due_date: { [ROp.between]: [windowStart, windowEnd] },
+              [tier.key]: null,
+            },
+            include: [{ model: Course, as: 'course', attributes: ['id', 'title'] }],
+          });
+
+          for (const assignment of assignments) {
+            // Recipients = enrolled in the course AND no submission row.
+            // We resolve both, then diff so we don't ping students who
+            // already turned it in.
+            const [enrollments, submissions] = await Promise.all([
+              Enrollment.findAll({
+                where: { course_id: assignment.course_id },
+                attributes: ['student_id'],
+                raw: true,
+              }),
+              AssignmentSubmission.findAll({
+                where: { assignment_id: assignment.id },
+                attributes: ['student_id'],
+                raw: true,
+              }),
+            ]);
+            const submittedIds = new Set(submissions.map((s) => s.student_id));
+            const recipientIds = enrollments
+              .map((e) => e.student_id)
+              .filter((id) => !submittedIds.has(id));
+
+            if (recipientIds.length === 0) {
+              // No one to ping — still stamp the row so the sweep
+              // doesn't keep finding it forever.
+              await assignment.update({ [tier.key]: new Date() });
+              continue;
+            }
+
+            const courseLabel = assignment.course?.title ? ` (${assignment.course.title})` : '';
+            const notifications = recipientIds.map((user_id) => ({
+              user_id,
+              type: 'assignment_reminder',
+              title: 'Assignment Due Soon',
+              message: `"${assignment.title}"${courseLabel} ${tier.text}.`,
+              link: '/my-assignments',
+              priority: tier.priority,
+            }));
+            try {
+              await NotificationsController.createBulkNotifications(notifications);
+            } catch (notifErr) {
+              logger.warn(`[assignment-reminder] notify failed for assignment ${assignment.id}: ${notifErr.message}`);
+            }
+            await assignment.update({ [tier.key]: new Date() });
+            logger.info(`[assignment-reminder] ${tier.key.replace('_sent_at','')} sent for assignment ${assignment.id} to ${recipientIds.length} student(s)`);
+          }
+        }
+      } catch (cronErr) {
+        logger.error(`[assignment-reminder] cron error: ${cronErr.message}\n${cronErr.stack || ''}`);
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes — matches the live-session ladder cadence
+    logger.info('[assignment-reminder] Started — 24h + 1h due-date ladder, every 5 minutes');
+
     // server.listen() now fires earlier in startServer (right after model
     // load) so Railway's healthcheck can pass while migrations run in the
     // background. Removed the duplicate listen() that used to live here —
