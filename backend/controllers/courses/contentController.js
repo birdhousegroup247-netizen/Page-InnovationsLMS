@@ -75,6 +75,7 @@ class ContentController {
         document_url,
         document_file_size,
         article_content,
+        recording_url,
         order_index,
         is_preview,
       } = req.body;
@@ -102,6 +103,7 @@ class ContentController {
         document_url,
         document_file_size,
         article_content,
+        recording_url,
         order_index,
         is_preview: is_preview || false,
       });

@@ -696,12 +696,28 @@ const startServer = async () => {
           file_size_mb: { type: Sequelize.DECIMAL(10, 2), allowNull: true, defaultValue: null },
           article_content: { type: Sequelize.TEXT, allowNull: true, defaultValue: null },
           is_preview: { type: Sequelize.BOOLEAN, allowNull: true, defaultValue: false },
+          recording_url: { type: Sequelize.STRING(500), allowNull: true, defaultValue: null },
         };
         for (const [colName, colDef] of Object.entries(mcMissing)) {
           if (!moduleContentsDesc[colName]) {
             await qi.addColumn('module_contents', colName, colDef);
             logger.info(`  ✓ Added ${colName} column to module_contents`);
           }
+        }
+
+        // Extend the content_type ENUM with 'recorded_class' if it's
+        // not already there. Sequelize sync({alter:true}) does not
+        // ALTER ENUM values on Postgres, so we issue the raw command.
+        // The exact ENUM type name follows Sequelize's convention:
+        // enum_<table>_<column>.
+        try {
+          await sequelize.query(
+            `ALTER TYPE "enum_module_contents_content_type" ADD VALUE IF NOT EXISTS 'recorded_class'`
+          );
+          logger.info(`  ✓ ENUM content_type guaranteed to include 'recorded_class'`);
+        } catch (enumErr) {
+          // Old PG versions or already-extended types throw harmlessly here.
+          logger.debug(`content_type enum extend skipped: ${enumErr.message}`);
         }
       } // end if(moduleContentsDesc)
 

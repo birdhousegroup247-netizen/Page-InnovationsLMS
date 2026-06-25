@@ -34,6 +34,7 @@ import { useToast } from '../components/ui/Toast';
 import QuestionDiscussion from '../components/course/QuestionDiscussion';
 import LessonNotes from '../components/course/LessonNotes';
 import LockOverlay from '../components/ui/LockOverlay';
+import RecordingPlayer from '../components/live-sessions/RecordingPlayer';
 import SuspensionModal from '../components/ui/SuspensionModal';
 import logo from '../assets/logo.png';
 
@@ -902,8 +903,23 @@ export default function CoursePlayer() {
                 </>
               )}
 
+              {/* Recorded class — instructor-uploaded recording of a
+                  past live session. Drive / YouTube / Vimeo / Loom /
+                  direct mp4 all detected by the player. */}
+              {currentContent.content_type === 'recorded_class' && (
+                <div className="bg-white dark:bg-dark-800 rounded-xl overflow-hidden mb-4 p-4 sm:p-6 shadow-lg dark:shadow-card">
+                  {currentContent.recording_url ? (
+                    <RecordingPlayer url={currentContent.recording_url} title={currentContent.title} />
+                  ) : (
+                    <div className="aspect-video bg-gray-900 dark:bg-dark-700 rounded-xl flex items-center justify-center">
+                      <p className="text-sm text-gray-300">No recording link added yet.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Fallback if content_type is missing */}
-              {!['video', 'document', 'article'].includes(currentContent.content_type) && (
+              {!['video', 'document', 'article', 'recorded_class'].includes(currentContent.content_type) && (
                 <div className="aspect-video bg-gray-900 dark:bg-dark-800 rounded-xl overflow-hidden mb-4 shadow-lg dark:shadow-card flex items-center justify-center transition-colors">
                   <div className="text-center">
                     <FileText className="h-16 w-16 text-gray-400 dark:text-text-dark-muted mx-auto mb-4 transition-colors" />

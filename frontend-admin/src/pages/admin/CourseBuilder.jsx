@@ -18,7 +18,8 @@ import {
   GripVertical,
   ArrowUp,
   ArrowDown,
-  Play
+  Play,
+  Radio,
 } from 'lucide-react';
 import { Container, PageHeader } from '../../components/layout';
 import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
@@ -65,6 +66,7 @@ export default function CourseBuilder() {
     document_url: '',
     document_type: '',
     article_content: '',
+    recording_url: '',
     duration_minutes: '',
     is_preview: false,
     unlock_date: '',
@@ -218,6 +220,7 @@ export default function CourseBuilder() {
       document_url: '',
       document_type: '',
       article_content: '',
+      recording_url: '',
       duration_minutes: '',
       is_preview: false,
       unlock_date: '',
@@ -238,6 +241,7 @@ export default function CourseBuilder() {
       document_url: content.document_url || '',
       document_type: content.document_type || '',
       article_content: content.article_content || '',
+      recording_url: content.recording_url || '',
       duration_minutes: content.duration_minutes || '',
       is_preview: content.is_preview || false,
       unlock_date: content.unlock_date || '',
@@ -268,6 +272,11 @@ export default function CourseBuilder() {
       return;
     }
 
+    if (contentForm.content_type === 'recorded_class' && !(contentForm.recording_url || '').trim()) {
+      showToast('Recording link is required for recorded classes', 'error');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -295,6 +304,11 @@ export default function CourseBuilder() {
         contentData.document_type = contentForm.document_type || 'pdf';
       } else if (contentForm.content_type === 'article') {
         contentData.article_content = contentForm.article_content;
+      } else if (contentForm.content_type === 'recorded_class') {
+        contentData.recording_url = (contentForm.recording_url || '').trim();
+        if (contentForm.duration_minutes) {
+          contentData.duration_minutes = parseInt(contentForm.duration_minutes);
+        }
       }
 
       if (selectedContent) {
@@ -319,6 +333,7 @@ export default function CourseBuilder() {
         document_url: '',
         document_type: '',
         article_content: '',
+        recording_url: '',
         duration_minutes: '',
         is_preview: false
       });
@@ -602,6 +617,7 @@ export default function CourseBuilder() {
                             {content.content_type === 'video' && <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />}
                             {content.content_type === 'document' && <File className="w-4 h-4 text-green-500 flex-shrink-0" />}
                             {content.content_type === 'article' && <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />}
+                            {content.content_type === 'recorded_class' && <Radio className="w-4 h-4 text-red-500 flex-shrink-0" />}
 
                             {/* Title block is clickable — opens the preview modal.
                                 Edit / Delete buttons stay separate so they don't
@@ -808,22 +824,25 @@ export default function CourseBuilder() {
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
               Lesson Type
             </label>
-            <div className="grid grid-cols-3 gap-3">
-              {['video', 'document', 'article'].map((type) => (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { id: 'video',           label: 'Video',          icon: Video },
+                { id: 'document',        label: 'Document',       icon: File },
+                { id: 'article',         label: 'Article',        icon: FileText },
+                { id: 'recorded_class',  label: 'Recorded Class', icon: Radio },
+              ].map(({ id, label, icon: Icon }) => (
                 <button
-                  key={type}
-                  onClick={() => setContentForm({ ...contentForm, content_type: type })}
+                  key={id}
+                  onClick={() => setContentForm({ ...contentForm, content_type: id })}
                   className={cn(
                     'p-3 rounded-lg border-2 transition-all text-center',
-                    contentForm.content_type === type
+                    contentForm.content_type === id
                       ? 'border-brand-blue bg-brand-blue/10'
                       : 'border-gray-200 dark:border-border-dark hover:border-brand-blue/50'
                   )}
                 >
-                  {type === 'video' && <Video className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />}
-                  {type === 'document' && <File className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />}
-                  {type === 'article' && <FileText className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />}
-                  <span className="text-sm capitalize text-gray-700 dark:text-white">{type}</span>
+                  <Icon className="w-6 h-6 mx-auto mb-1 text-gray-700 dark:text-white" />
+                  <span className="text-sm text-gray-700 dark:text-white">{label}</span>
                 </button>
               ))}
             </div>
@@ -893,6 +912,35 @@ export default function CourseBuilder() {
                 required
               />
             </div>
+          )}
+
+          {/* Recorded Class Fields — admin can paste a recording link
+              on behalf of an instructor. Same provider detection on
+              the student side. */}
+          {contentForm.content_type === 'recorded_class' && (
+            <>
+              <Input
+                label="Recording link"
+                value={contentForm.recording_url || ''}
+                onChange={(e) => setContentForm({ ...contentForm, recording_url: e.target.value })}
+                placeholder="Drive, YouTube, Vimeo, Loom or direct video URL"
+                required
+              />
+              <Input
+                label="Duration (minutes)"
+                type="number"
+                value={contentForm.duration_minutes}
+                onChange={(e) => setContentForm({ ...contentForm, duration_minutes: e.target.value })}
+                placeholder="60"
+              />
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-300">
+                <p className="font-medium mb-1">If using Google Drive:</p>
+                <ul className="list-disc pl-5 space-y-0.5">
+                  <li>Set sharing to <strong>Anyone with the link → Viewer</strong>.</li>
+                  <li>In Drive share settings, enable <strong>"Disable options to download, print, and copy"</strong>.</li>
+                </ul>
+              </div>
+            </>
           )}
 
           {/* Preview Option */}

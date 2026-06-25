@@ -15,7 +15,13 @@ const ModuleContent = sequelize.define(
       references: { model: 'course_modules', key: 'id' },
     },
     content_type: {
-      type: DataTypes.ENUM('video', 'document', 'article'),
+      // 'recorded_class' is for instructor-uploaded recordings of
+      // a past live session (Drive / YouTube / Vimeo / Loom / direct
+      // mp4). Plays via the RecordingPlayer component on the student
+      // side with anti-download affordances. ENUM extended in the
+      // server.js safety-net for prod since Sequelize sync doesn't
+      // ALTER ENUM values on Postgres.
+      type: DataTypes.ENUM('video', 'document', 'article', 'recorded_class'),
       allowNull: false,
     },
     title: {
@@ -48,6 +54,13 @@ const ModuleContent = sequelize.define(
     },
     article_content: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    // Set when content_type === 'recorded_class'. Accepts Drive,
+    // YouTube, Vimeo, Loom or a direct video URL — the player on the
+    // student side detects the provider and renders the right embed.
+    recording_url: {
+      type: DataTypes.STRING(500),
       allowNull: true,
     },
     order_index: {
