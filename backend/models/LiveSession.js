@@ -60,6 +60,13 @@ const LiveSession = sequelize.define(
       type: DataTypes.STRING(1000),
       allowNull: true,
     },
+    // Reminder ladder. Each column is null until its tier fires.
+    // Cron checks `<column> IS NULL` to stay idempotent across the
+    // every-5-min tick — without these, the same session got a
+    // 15-min reminder multiple times.
+    reminder_24h_sent_at:   { type: DataTypes.DATE, allowNull: true },
+    reminder_1h_sent_at:    { type: DataTypes.DATE, allowNull: true },
+    reminder_15min_sent_at: { type: DataTypes.DATE, allowNull: true },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,

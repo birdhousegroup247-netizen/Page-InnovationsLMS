@@ -1004,35 +1004,93 @@ const startServer = async () => {
       logger.error('Failed to start announcement scheduler:', annErr.message);
     }
 
-    // Session reminder cron: notify students 15 min before scheduled live sessions
+    // Session reminder cron: tiered + idempotent.
+    // Three windows fire one notification each per session:
+    //   24h before, 1h before, 15 min before.
+    // Idempotency comes from reminder_*_sent_at columns on LiveSession
+    // — each tier is only sent when its column is still null, then
+    // we stamp it on send so the every-5-min sweep can't double-fire.
+    // Recipients = enrolled students + the course's lead instructor.
     setInterval(async () => {
       try {
-        const { LiveSession, Enrollment } = require('./models');
+        const { LiveSession, Enrollment, Course } = require('./models');
         const { Op: SessOp } = require('sequelize');
         const NotificationsController = require('./controllers/notifications/notificationsController');
-        const now = new Date();
-        const soon = new Date(now.getTime() + 15 * 60 * 1000);
-        const sessions = await LiveSession.findAll({
-          where: {
-            status: 'scheduled',
-            scheduled_at: { [SessOp.between]: [now, soon] },
+
+        const tiers = [
+          {
+            key: 'reminder_24h_sent_at',
+            // Catch sessions whose scheduled_at is between 23h and
+            // 24h from now — i.e. they cross the 24h boundary in
+            // this sweep (with margin for tick jitter).
+            minOffset: 23 * 60 * 60 * 1000,
+            maxOffset: 24 * 60 * 60 * 1000 + 5 * 60 * 1000,
+            text: 'starts tomorrow',
+            priority: 'normal',
           },
-        });
-        for (const session of sessions) {
-          const enrollments = await Enrollment.findAll({
-            where: { course_id: session.course_id },
-            attributes: ['student_id'],
+          {
+            key: 'reminder_1h_sent_at',
+            minOffset: 50 * 60 * 1000,
+            maxOffset: 60 * 60 * 1000 + 5 * 60 * 1000,
+            text: 'starts in about an hour',
+            priority: 'normal',
+          },
+          {
+            key: 'reminder_15min_sent_at',
+            minOffset: 0,
+            maxOffset: 15 * 60 * 1000 + 5 * 60 * 1000,
+            text: 'starts in 15 minutes — get ready',
+            priority: 'high',
+          },
+        ];
+
+        for (const tier of tiers) {
+          const now = new Date();
+          const windowStart = new Date(now.getTime() + tier.minOffset);
+          const windowEnd   = new Date(now.getTime() + tier.maxOffset);
+
+          const sessions = await LiveSession.findAll({
+            where: {
+              status: 'scheduled',
+              scheduled_at: { [SessOp.between]: [windowStart, windowEnd] },
+              [tier.key]: null,
+            },
+            include: [{ model: Course, as: 'course', attributes: ['id', 'title', 'instructor_id'], required: false }],
           });
-          if (enrollments.length > 0) {
-            const notifications = enrollments.map((e) => ({
-              user_id: e.student_id,
+
+          for (const session of sessions) {
+            // Resolve recipients: enrolled students + the instructor.
+            const enrollments = await Enrollment.findAll({
+              where: { course_id: session.course_id },
+              attributes: ['student_id'],
+              raw: true,
+            });
+            const recipientIds = new Set(enrollments.map((e) => e.student_id));
+            const instructorId = session.course?.instructor_id;
+            if (instructorId) recipientIds.add(instructorId);
+            if (recipientIds.size === 0) {
+              // Still stamp the row so a follow-up sweep doesn't keep
+              // querying it forever.
+              await session.update({ [tier.key]: new Date() });
+              continue;
+            }
+
+            const courseLabel = session.course?.title ? ` (${session.course.title})` : '';
+            const notifications = Array.from(recipientIds).map((user_id) => ({
+              user_id,
               type: 'live_session',
-              title: 'Live Session Starting Soon',
-              message: `"${session.title}" starts in 15 minutes. Get ready!`,
+              title: 'Live Session Reminder',
+              message: `"${session.title}"${courseLabel} ${tier.text}.`,
               link: `/courses/${session.course_id}/learn`,
-              priority: 'high',
+              priority: tier.priority,
             }));
-            await NotificationsController.createBulkNotifications(notifications);
+            try {
+              await NotificationsController.createBulkNotifications(notifications);
+            } catch (notifErr) {
+              logger.warn(`[session-reminder] notify failed for session ${session.id}: ${notifErr.message}`);
+            }
+            await session.update({ [tier.key]: new Date() });
+            logger.info(`[session-reminder] ${tier.key.replace('_sent_at','')} sent for session ${session.id} to ${recipientIds.size} user(s)`);
           }
         }
       } catch (cronErr) {
