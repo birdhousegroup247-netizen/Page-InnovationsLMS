@@ -27,20 +27,25 @@ const CODE_FIELDS = [
 // Fields that contain URLs and should not be HTML-escaped
 // (escaping breaks URLs by converting / to &#x2F; — turns a perfectly
 // valid Cloudinary URL into https:&#x2F;&#x2F;res.cloudinary.com&#x2F;…
-// and the saved value won't render anywhere).
+// and the saved value won't render anywhere). The exact list catches
+// non-suffixed columns; the *_url suffix check in isUrlField() catches
+// everything that follows the convention (meeting_url, recording_url,
+// zoom_start_url, …).
 const URL_FIELDS = [
-  'document_url',
-  'youtube_url',
   'thumbnail',
-  'thumbnail_url',
   'profile_picture',
   'avatar',
-  'avatar_url',
   'url',
-  'image_url',
-  'video_url',
-  'callback_url',
+  'link',
+  'href',
 ];
+
+function isUrlField(key) {
+  const k = (key || '').toLowerCase();
+  if (URL_FIELDS.includes(k)) return true;
+  // Anything ending in _url, _uri, or _link is treated as a URL too.
+  return /(?:_url|_uri|_link)$/.test(k);
+}
 
 // Fields that should be escaped (user-generated plain text)
 // Note: 'title' and 'name' removed — React already escapes text in JSX,
@@ -108,7 +113,7 @@ function getSanitizationStrategy(key) {
     return 'rich_text';
   }
 
-  if (URL_FIELDS.some(field => lowerKey === field)) {
+  if (isUrlField(lowerKey)) {
     return 'none';
   }
 

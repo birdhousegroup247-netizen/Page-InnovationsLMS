@@ -27,15 +27,23 @@ const LOOM_RE       = /loom\.com\/share\/([a-z0-9]+)/i;
 const VIDEO_EXT_RE  = /\.(mp4|webm|ogg|m4v|mov)(\?|$)/i;
 
 /**
- * Make sure a user-pasted URL is absolute. Without a protocol the
- * browser treats `meet.google.com/abc` as a RELATIVE path, so an
- * <a href> inside an SPA ends up navigating the React Router to a
- * route like /admin/courses/123/meet.google.com/abc → which falls
- * back to the dashboard. Prefixing https:// fixes that.
+ * Make sure a user-pasted URL is absolute and decode any HTML entities
+ * left in by the backend sanitizer (e.g. `https:&#x2F;&#x2F;…`) — those
+ * would otherwise produce about:blank#blocked when clicked.
  */
+function decodeUrlEntities(s) {
+  return s
+    .replace(/&#x2F;/gi, '/')
+    .replace(/&#47;/g, '/')
+    .replace(/&amp;/g, '&')
+    .replace(/&#x3A;/gi, ':')
+    .replace(/&#x3D;/gi, '=')
+    .replace(/&#x3F;/gi, '?');
+}
+
 export function ensureAbsoluteUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
-  const u = rawUrl.trim();
+  const u = decodeUrlEntities(rawUrl).trim();
   if (!u) return '';
   if (/^https?:\/\//i.test(u)) return u;
   if (/^\/\//.test(u)) return 'https:' + u;

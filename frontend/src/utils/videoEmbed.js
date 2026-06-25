@@ -27,15 +27,34 @@ const LOOM_RE       = /loom\.com\/share\/([a-z0-9]+)/i;
 const VIDEO_EXT_RE  = /\.(mp4|webm|ogg|m4v|mov)(\?|$)/i;
 
 /**
- * Make sure a user-pasted URL is absolute. Without a protocol the
- * browser treats `meet.google.com/abc` as a RELATIVE path, so an
- * <a href> inside an SPA ends up navigating the React Router to a
- * route like /instructor/courses/123/meet.google.com/abc → which
- * falls back to the dashboard. Prefixing https:// fixes that.
+ * Make sure a user-pasted URL is absolute and safe to navigate.
+ *
+ * Two problems we defend against:
+ *
+ *   1. Missing protocol — `meet.google.com/abc` is treated as a
+ *      RELATIVE path by the browser, so an <a href> inside an SPA
+ *      ends up at /instructor/courses/123/meet.google.com/abc and
+ *      bounces to the dashboard. Prefix https:// to fix.
+ *
+ *   2. HTML-entity-escaped URLs — the backend sanitizer used to run
+ *      escapeHtml() on meeting_url and friends, turning `/` into
+ *      `&#x2F;`. The result `https:&#x2F;&#x2F;meet.google.com&#x2F;abc`
+ *      is unparseable as a URL and Chrome opens about:blank#blocked.
+ *      Decode common entities before we touch the rest.
  */
+function decodeUrlEntities(s) {
+  return s
+    .replace(/&#x2F;/gi, '/')
+    .replace(/&#47;/g, '/')
+    .replace(/&amp;/g, '&')
+    .replace(/&#x3A;/gi, ':')
+    .replace(/&#x3D;/gi, '=')
+    .replace(/&#x3F;/gi, '?');
+}
+
 export function ensureAbsoluteUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
-  const u = rawUrl.trim();
+  const u = decodeUrlEntities(rawUrl).trim();
   if (!u) return '';
   if (/^https?:\/\//i.test(u)) return u;
   // Allow protocol-relative URLs (//host/...) to stay as https

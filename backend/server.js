@@ -721,6 +721,57 @@ const startServer = async () => {
         }
       } // end if(moduleContentsDesc)
 
+      // One-time cleanup of URLs corrupted by the old sanitizer.
+      // meeting_url / recording_url / zoom_*_url were missing from the
+      // sanitizer's URL whitelist, so saved values had / replaced with
+      // &#x2F; etc. — those URLs open about:blank#blocked when clicked.
+      // We decode HTML entities back to their literal characters on any
+      // row that still carries them. Safe to run repeatedly: rows that
+      // don't contain &# stay untouched.
+      try {
+        const ENTITY_REPLACERS = `
+          replace(
+            replace(
+              replace(
+                replace(
+                  replace(
+                    replace({{COL}}, '&#x2F;', '/'),
+                    '&#47;', '/'
+                  ),
+                  '&amp;', '&'
+                ),
+                '&#x3A;', ':'
+              ),
+              '&#x3D;', '='
+            ),
+            '&#x3F;', '?'
+          )
+        `;
+        const liveSessionCols = ['meeting_url', 'recording_url', 'zoom_start_url', 'zoom_join_url'];
+        for (const col of liveSessionCols) {
+          await sequelize
+            .query(
+              `UPDATE live_sessions SET ${col} = ${ENTITY_REPLACERS.replaceAll('{{COL}}', col)}
+               WHERE ${col} IS NOT NULL AND ${col} LIKE '%&#%'`
+            )
+            .catch((urlErr) => {
+              // Column may not exist on older deployments; ignore.
+              logger.debug(`URL cleanup skipped for live_sessions.${col}: ${urlErr.message}`);
+            });
+        }
+        // module_contents.recording_url too, since recorded class
+        // lessons go through the same sanitizer path.
+        await sequelize
+          .query(
+            `UPDATE module_contents SET recording_url = ${ENTITY_REPLACERS.replaceAll('{{COL}}', 'recording_url')}
+             WHERE recording_url IS NOT NULL AND recording_url LIKE '%&#%'`
+          )
+          .catch(() => {});
+        logger.info('  ✓ URL entity cleanup pass complete');
+      } catch (urlCleanupErr) {
+        logger.warn(`URL cleanup pass failed: ${urlCleanupErr.message}`);
+      }
+
       // Add updated_at to course_modules if missing
       const courseModulesDesc = await qi.describeTable('course_modules').catch(() => null);
       if (courseModulesDesc && !courseModulesDesc.updated_at) {
