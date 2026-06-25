@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  ClipboardCheck, BookOpen, Calendar, Inbox, ChevronRight, ArrowLeft, Users, Clock,
+  ClipboardCheck, BookOpen, Calendar, Inbox, ChevronRight, ArrowLeft, Users, Clock, Plus,
 } from 'lucide-react';
-import { instructorAPI, coursesAPI, assignmentsAPI } from '../../lib/api';
+import { instructorAPI, coursesAPI, assignmentsAPI, assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
-import { Spinner, Alert, Badge } from '../../components/ui';
+import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 
 // Same component, three URLs:
@@ -34,6 +34,11 @@ export default function AssignmentsPage() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [courseFilter, setCourseFilter] = useState('all');
+
+  // Create modal state
+  const [showCreate, setShowCreate] = useState(false);
+  const [tests, setTests] = useState([]); // instructor's tests, for the linked-test dropdown
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Resolve scoped course title for the header subtitle.
   useEffect(() => {
@@ -73,7 +78,16 @@ export default function AssignmentsPage() {
       .catch((e) => { if (alive) setError(e?.response?.data?.message || 'Failed to load assignments'); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [scopedCourseId, isScoped]);
+  }, [scopedCourseId, isScoped, reloadKey]);
+
+  // Pre-load the instructor's assigned tests once so the Create modal's
+  // "Link to a test" dropdown is instant. Filtered by course_id at
+  // render time.
+  useEffect(() => {
+    assignedTestsAPI.getInstructorTests()
+      .then((r) => setTests(r.data?.data?.tests || r.data?.tests || []))
+      .catch(() => setTests([]));
+  }, []);
 
   const counts = useMemo(() => ({
     all: items.length,
@@ -120,7 +134,7 @@ export default function AssignmentsPage() {
       <Container className="py-8 space-y-4">
         {error && <Alert variant="danger" onClose={() => setError('')}>{error}</Alert>}
 
-        {/* Filters */}
+        {/* Filters + Create */}
         <div className="flex flex-wrap items-center gap-2">
           {[
             { id: 'all',     label: `All · ${counts.all}` },
@@ -151,6 +165,11 @@ export default function AssignmentsPage() {
               {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           )}
+          <div className="ml-auto">
+            <Button onClick={() => setShowCreate(true)} className="text-sm">
+              <Plus className="w-4 h-4 mr-1.5" /> New Assignment
+            </Button>
+          </div>
         </div>
 
         {/* List */}
@@ -212,6 +231,204 @@ export default function AssignmentsPage() {
           </div>
         )}
       </Container>
+
+      {/* Create Assignment modal */}
+      <Modal
+        isOpen={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="New Assignment"
+        size="lg"
+      >
+        <AssignmentForm
+          courses={courses}
+          tests={tests}
+          lockedCourseId={isScoped ? scopedCourseId : null}
+          onCancel={() => setShowCreate(false)}
+          onCreated={() => {
+            setShowCreate(false);
+            setReloadKey((k) => k + 1);
+          }}
+          onError={(msg) => setError(msg)}
+        />
+      </Modal>
     </>
+  );
+}
+
+// ─── Create form ─────────────────────────────────────────────────────────────
+
+function AssignmentForm({ courses, tests, lockedCourseId, onCancel, onCreated, onError }) {
+  const [form, setForm] = useState({
+    course_id: lockedCourseId || '',
+    title: '',
+    description: '',
+    due_date: '',
+    max_score: 100,
+    linked_test_id: '',
+    allow_file_upload: true,
+    allow_text_submission: true,
+    allow_link_submission: false,
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const isLinkedTest = !!form.linked_test_id;
+
+  // Tests in the picked course only — keeps the dropdown short and
+  // stops cross-course linking.
+  const courseTests = useMemo(
+    () => tests.filter((t) => String(t.course_id) === String(form.course_id)),
+    [tests, form.course_id]
+  );
+
+  const handle = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const canSubmit =
+    !!form.course_id &&
+    !!form.title.trim() &&
+    // When linked to a test, no submission-type checkboxes are needed.
+    // Otherwise at least one of file/text/link must be allowed.
+    (isLinkedTest || form.allow_file_upload || form.allow_text_submission || form.allow_link_submission);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    try {
+      const { course_id, ...payload } = form;
+      payload.linked_test_id = form.linked_test_id || null;
+      await assignmentsAPI.createAssignment(course_id, payload);
+      onCreated();
+    } catch (err) {
+      onError(err?.response?.data?.message || 'Failed to create assignment');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      {!lockedCourseId && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Course *</label>
+          <select
+            name="course_id"
+            value={form.course_id}
+            onChange={handle}
+            required
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+          >
+            <option value="">Pick a course…</option>
+            {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Title *</label>
+        <input
+          name="title"
+          type="text"
+          value={form.title}
+          onChange={handle}
+          required
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Description</label>
+        <textarea
+          name="description"
+          value={form.description}
+          onChange={handle}
+          rows={3}
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Due date</label>
+          <input
+            name="due_date"
+            type="datetime-local"
+            value={form.due_date}
+            onChange={handle}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">Max score</label>
+          <input
+            name="max_score"
+            type="number"
+            min={1}
+            value={form.max_score}
+            onChange={handle}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+          />
+        </div>
+      </div>
+
+      {/* Linked test — when set, this assignment IS the test. Hides
+          the submission-type checkboxes since the student "submits"
+          by taking the test. */}
+      {form.course_id && courseTests.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-1">
+            Link to an existing test (optional)
+          </label>
+          <select
+            name="linked_test_id"
+            value={form.linked_test_id}
+            onChange={handle}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+          >
+            <option value="">— No linked test —</option>
+            {courseTests.map((t) => (
+              <option key={t.id} value={t.id}>{t.test_name}</option>
+            ))}
+          </select>
+          {isLinkedTest && (
+            <p className="text-xs text-gray-500 dark:text-text-dark-muted mt-1">
+              Students take the test; the score lands in the gradebook automatically.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Submission types — only when NOT a linked test */}
+      {!isLinkedTest && (
+        <div>
+          <p className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2">
+            Accept submissions as
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary cursor-pointer">
+              <input type="checkbox" name="allow_file_upload" checked={form.allow_file_upload} onChange={handle} />
+              File upload
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary cursor-pointer">
+              <input type="checkbox" name="allow_text_submission" checked={form.allow_text_submission} onChange={handle} />
+              Typed text
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-text-dark-secondary cursor-pointer">
+              <input type="checkbox" name="allow_link_submission" checked={form.allow_link_submission} onChange={handle} />
+              Link (GitHub, Drive, URL)
+            </label>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-2 pt-2">
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Cancel</Button>
+        <Button type="submit" loading={submitting} disabled={!canSubmit}>
+          Create assignment
+        </Button>
+      </div>
+    </form>
   );
 }

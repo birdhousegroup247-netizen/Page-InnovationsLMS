@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { assignmentsAPI } from '../lib/api';
 import {
   ClipboardList, CheckCircle, Clock, AlertCircle, BookOpen,
-  Send, ChevronDown, ChevronUp, Star,
+  Send, ChevronDown, ChevronUp, Star, Link2, Play,
 } from 'lucide-react';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Alert } from '../components/ui';
@@ -38,6 +38,7 @@ function AssignmentCard({ assignment, onSubmit }) {
   const [textContent, setTextContent] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -46,16 +47,17 @@ function AssignmentCard({ assignment, onSubmit }) {
   const sub = assignment.submissions?.[0];
   const canSubmit = status === 'pending' || status === 'late';
   const canUpdate = status === 'submitted';
+  // A test-linked assignment doesn't take file/text/link — the
+  // student "submits" by taking the linked test; the score lands
+  // back in this assignment automatically via the backend hook.
+  const isLinkedTest = !!assignment.linked_test_id;
 
   const handleSubmit = async () => {
     const hasText = textContent.trim();
-    const hasFile = fileUrl;
-    if (assignment.allow_text_submission && !hasText && !hasFile) {
-      setError('Please provide your submission.');
-      return;
-    }
-    if (assignment.allow_file_upload && !hasFile && !hasText) {
-      setError('Please attach a file or write your answer.');
+    const hasFile = !!fileUrl;
+    const hasLink = !!linkUrl.trim();
+    if (!hasText && !hasFile && !hasLink) {
+      setError('Please attach a file, paste a link, or write your answer.');
       return;
     }
     setSubmitting(true);
@@ -64,6 +66,7 @@ function AssignmentCard({ assignment, onSubmit }) {
       const payload = {};
       if (hasText) payload.text_content = textContent;
       if (hasFile) { payload.file_url = fileUrl; payload.file_name = fileName; }
+      if (hasLink) payload.link_url = linkUrl.trim();
       if (canSubmit) {
         await assignmentsAPI.submitAssignment(assignment.id, payload);
       } else if (canUpdate) {
@@ -138,7 +141,18 @@ function AssignmentCard({ assignment, onSubmit }) {
 
         {/* Actions */}
         <div className="mt-4 flex items-center gap-2">
-          {(canSubmit || canUpdate) && (
+          {/* Test-linked assignments use a "Take Test" CTA instead of
+              the expand-and-submit flow. The student takes the test;
+              the score lands here automatically (no form to fill). */}
+          {isLinkedTest && (canSubmit || canUpdate) && (
+            <Link
+              to={`/tests/${assignment.linked_test_id}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-brand-blue hover:bg-brand-blue/90 rounded-lg transition-colors"
+            >
+              <Play className="w-4 h-4" /> Take Test
+            </Link>
+          )}
+          {!isLinkedTest && (canSubmit || canUpdate) && (
             <button
               onClick={() => setExpanded(!expanded)}
               className="flex items-center gap-1.5 text-sm font-medium text-brand-blue hover:text-brand-blue/80 transition-colors"
@@ -150,8 +164,8 @@ function AssignmentCard({ assignment, onSubmit }) {
         </div>
       </div>
 
-      {/* Submit form */}
-      {expanded && (canSubmit || canUpdate) && (
+      {/* Submit form — only for non-test-linked assignments */}
+      {!isLinkedTest && expanded && (canSubmit || canUpdate) && (
         <div className="border-t border-gray-200 dark:border-dark-700 p-5 bg-gray-50 dark:bg-dark-700/50">
           {assignment.description && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{assignment.description}</p>
@@ -185,11 +199,31 @@ function AssignmentCard({ assignment, onSubmit }) {
                 />
               </div>
             )}
-            {!assignment.allow_text_submission && !assignment.allow_file_upload && (
+            {assignment.allow_link_submission && (
+              <div>
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Paste a link</p>
+                {sub?.link_url && !linkUrl && (
+                  <p className="text-xs text-brand-blue mb-2 truncate">
+                    Current link: <a href={sub.link_url} target="_blank" rel="noopener noreferrer" className="underline">{sub.link_url}</a>
+                  </p>
+                )}
+                <div className="relative">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="url"
+                    placeholder="https://github.com/your-username/project"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  />
+                </div>
+              </div>
+            )}
+            {!assignment.allow_text_submission && !assignment.allow_file_upload && !assignment.allow_link_submission && (
               <p className="text-sm text-gray-500 dark:text-gray-400">No submission method enabled for this assignment.</p>
             )}
           </div>
-          {(assignment.allow_text_submission || assignment.allow_file_upload) && (
+          {(assignment.allow_text_submission || assignment.allow_file_upload || assignment.allow_link_submission) && (
             <div className="flex justify-end mt-3">
               <Button
                 variant="primary"

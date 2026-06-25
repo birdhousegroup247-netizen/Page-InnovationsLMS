@@ -216,6 +216,8 @@ export const adminUsersAPI = {
   setRegistrationStatus: (userId, data) => api.patch(`/api/admin/users/${userId}/registration-status`, data),
   // Courses this user teaches
   getTeachingCourses: (userId) => api.get(`/api/admin/users/${userId}/teaching-courses`),
+  // Per-student assignment performance — totals + recent submissions
+  getAssignmentPerformance: (userId) => api.get(`/api/admin/users/${userId}/assignment-performance`),
 };
 
 // Admin: Course Management

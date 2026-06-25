@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Mail, Phone, MapPin, Globe, Linkedin, Github, Calendar, Cake,
   Shield, BookOpen, Award, CreditCard, GraduationCap, Send, RefreshCw, Trash2,
-  CheckCircle, XCircle, Save, Edit3,
+  CheckCircle, XCircle, Save, Edit3, ClipboardCheck, Zap,
 } from 'lucide-react';
 import { adminUsersAPI } from '../../lib/api';
 import { Container, PageHeader } from '../../components/layout';
@@ -35,6 +35,10 @@ export default function AdminUserDetail() {
     phone: '',
     bio: '',
   });
+  // Assignment performance — separate endpoint, fetched in parallel with
+  // the main user load so a slow rollup doesn't block the rest of the
+  // page. Null = still loading; { totals: {...} } = loaded.
+  const [perf, setPerf] = useState(null);
 
   const load = async () => {
     try {
@@ -58,6 +62,17 @@ export default function AdminUserDetail() {
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [userId]);
+
+  // Pull assignment performance in parallel. Failure here doesn't
+  // block the page — the section just hides itself.
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    adminUsersAPI.getAssignmentPerformance(userId)
+      .then((r) => { if (alive) setPerf(r.data?.data || null); })
+      .catch(() => { if (alive) setPerf(null); });
+    return () => { alive = false; };
+  }, [userId]);
 
   const u = data?.user;
   const stats = data?.stats || {};
@@ -348,6 +363,107 @@ export default function AdminUserDetail() {
                   </li>
                 ))}
               </ul>
+            )}
+          </div>
+        )}
+
+        {/* Assignment Performance — only for students/dual-role users
+            with enrollments. Hides if perf failed to load. */}
+        {perf && perf.totals && perf.totals.assigned > 0 && (
+          <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-border-dark p-6 sm:p-7">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <ClipboardCheck className="w-5 h-5 text-brand-blue" />
+              Assignment performance
+              {perf.totals.auto_graded > 0 && (
+                <Badge variant="info" className="ml-1">
+                  <Zap className="w-3 h-3 mr-0.5" /> {perf.totals.auto_graded} auto-graded
+                </Badge>
+              )}
+            </h3>
+
+            {/* Top stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              {[
+                { label: 'Assigned',  value: perf.totals.assigned,  tint: 'bg-gray-50  dark:bg-dark-700 text-gray-700  dark:text-gray-300' },
+                { label: 'Graded',    value: perf.totals.graded,    tint: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' },
+                { label: 'Missing',   value: perf.totals.missing,   tint: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' },
+                { label: 'Average %', value: perf.average_percentage !== null ? `${perf.average_percentage}%` : '—', tint: 'bg-brand-blue/10 text-brand-blue' },
+              ].map((s) => (
+                <div key={s.label} className={`rounded-lg p-3 ${s.tint}`}>
+                  <p className="text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs font-medium opacity-80">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Per-course breakdown */}
+            {perf.by_course && perf.by_course.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-text-dark-muted mb-2">By course</p>
+                <div className="space-y-2">
+                  {perf.by_course.map((c) => (
+                    <div key={c.course_id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-dark-700">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.course_title}</p>
+                        <p className="text-xs text-gray-500 dark:text-text-dark-muted">
+                          {c.graded} of {c.assigned} graded
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {c.average_percentage !== null ? `${c.average_percentage}%` : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent submissions */}
+            {perf.recent && perf.recent.length > 0 && (
+              <div>
+                <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-text-dark-muted mb-2">
+                  Recent submissions
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-text-dark-muted border-b border-gray-200 dark:border-border-dark">
+                        <th className="py-2 pr-3">Submitted</th>
+                        <th className="py-2 pr-3">Assignment</th>
+                        <th className="py-2 pr-3">Course</th>
+                        <th className="py-2 pr-3">Score</th>
+                        <th className="py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {perf.recent.map((r) => (
+                        <tr key={r.submission_id} className="border-b border-gray-100 dark:border-border-dark last:border-0">
+                          <td className="py-2 pr-3 text-gray-700 dark:text-text-dark-secondary">{fmtDate(r.submitted_at)}</td>
+                          <td className="py-2 pr-3 text-gray-900 dark:text-white truncate max-w-[14rem]">
+                            {r.assignment_title}
+                          </td>
+                          <td className="py-2 pr-3 text-gray-700 dark:text-text-dark-secondary truncate max-w-[12rem]">
+                            {r.course_title || '—'}
+                          </td>
+                          <td className="py-2 pr-3 font-medium text-gray-900 dark:text-white">
+                            {r.score !== null && r.score !== undefined
+                              ? `${r.score} / ${r.max_score}`
+                              : '—'}
+                          </td>
+                          <td className="py-2">
+                            <Badge variant={r.status === 'graded' ? 'success' : (r.status === 'late' ? 'warning' : 'info')}>
+                              {r.status}
+                              {r.auto_graded && ' · auto'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
           </div>
         )}

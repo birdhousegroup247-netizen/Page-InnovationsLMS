@@ -53,4 +53,8 @@ router.patch('/:userId/registration-status', UsersController.setRegistrationStat
 // Courses this user teaches (lead + co + TA)
 router.get('/:userId/teaching-courses', AdminCoursesController.listInstructorCourses);
 
+// Per-student assignment performance — totals, average, recent submissions.
+// Surfaces on the admin User profile page.
+router.get('/:userId/assignment-performance', UsersController.getAssignmentPerformance);
+
 module.exports = router;

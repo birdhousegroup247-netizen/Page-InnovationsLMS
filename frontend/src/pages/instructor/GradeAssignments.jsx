@@ -144,12 +144,12 @@ export default function GradeAssignments() {
                 </div>
 
                 {/* Submission Content */}
-                {submission.text_response && (
+                {(submission.text_content || submission.text_response) && (
                   <div className="mb-4 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
                     <p className="text-xs font-medium text-gray-500 dark:text-text-dark-muted mb-1 flex items-center gap-1">
                       <FileText className="w-3.5 h-3.5" /> Text Response
                     </p>
-                    <p className="text-sm text-gray-700 dark:text-text-dark-secondary whitespace-pre-wrap">{submission.text_response}</p>
+                    <p className="text-sm text-gray-700 dark:text-text-dark-secondary whitespace-pre-wrap">{submission.text_content || submission.text_response}</p>
                   </div>
                 )}
                 {submission.file_url && (
@@ -160,46 +160,69 @@ export default function GradeAssignments() {
                     </a>
                   </div>
                 )}
+                {submission.link_url && (
+                  <div className="mb-4 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                    <p className="text-xs font-medium text-gray-500 dark:text-text-dark-muted mb-1">Submitted Link</p>
+                    <a href={submission.link_url} target="_blank" rel="noreferrer"
+                      className="text-sm text-brand-blue hover:underline break-all">
+                      {submission.link_url}
+                    </a>
+                  </div>
+                )}
 
-                {/* Grade Form */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-gray-100 dark:border-border-dark">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-text-dark-muted mb-1">
-                      Score (out of {data?.assignment?.max_score || 100})
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max={data?.assignment?.max_score || 100}
-                      value={scores[submission.id] ?? ''}
-                      onChange={(e) => setScores({ ...scores, [submission.id]: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
-                      placeholder="Score"
-                    />
+                {/* Auto-graded: lock the form and tell the grader why. */}
+                {submission.auto_graded ? (
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-border-dark p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      Auto-graded from linked test — {submission.score} / {data?.assignment?.max_score || 100}
+                    </p>
+                    {submission.feedback && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{submission.feedback}</p>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-text-dark-muted mb-1">Feedback</label>
-                    <input
-                      type="text"
-                      value={feedbacks[submission.id] ?? ''}
-                      onChange={(e) => setFeedbacks({ ...feedbacks, [submission.id]: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
-                      placeholder="Optional feedback"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end mt-3">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleGrade(submission.id)}
-                    loading={grading[submission.id]}
-                    disabled={grading[submission.id] || scores[submission.id] === ''}
-                    leftIcon={<CheckCircle className="w-4 h-4" />}
-                  >
-                    {submission.status === 'graded' ? 'Update Grade' : 'Submit Grade'}
-                  </Button>
-                </div>
+                ) : (
+                  <>
+                    {/* Grade Form */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-gray-100 dark:border-border-dark">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-text-dark-muted mb-1">
+                          Score (out of {data?.assignment?.max_score || 100})
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max={data?.assignment?.max_score || 100}
+                          value={scores[submission.id] ?? ''}
+                          onChange={(e) => setScores({ ...scores, [submission.id]: e.target.value })}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+                          placeholder="Score"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-text-dark-muted mb-1">Feedback</label>
+                        <input
+                          type="text"
+                          value={feedbacks[submission.id] ?? ''}
+                          onChange={(e) => setFeedbacks({ ...feedbacks, [submission.id]: e.target.value })}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors"
+                          placeholder="Optional feedback"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-3">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleGrade(submission.id)}
+                        loading={grading[submission.id]}
+                        disabled={grading[submission.id] || scores[submission.id] === ''}
+                        leftIcon={<CheckCircle className="w-4 h-4" />}
+                      >
+                        {submission.status === 'graded' ? 'Update Grade' : 'Submit Grade'}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>

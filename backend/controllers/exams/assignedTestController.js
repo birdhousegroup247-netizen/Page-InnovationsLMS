@@ -9,6 +9,8 @@ const {
   Course,
   Category,
   Enrollment,
+  Assignment,
+  AssignmentSubmission,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
@@ -689,6 +691,52 @@ class AssignedTestController {
         percentage: parseFloat(percentage.toFixed(1)),
         passed,
       }).catch(() => {});
+
+      // Auto-grade hook: if any Assignment is linked to this test
+      // (Assignment.linked_test_id = test.id), upsert an
+      // AssignmentSubmission for this student with the scaled score.
+      // The assignment is graded out of its own max_score regardless
+      // of test.total_marks, so we scale by percentage.
+      //
+      // Fire-and-forget: a failure here must NOT break test submission,
+      // since the test result is what the student actually cares about.
+      (async () => {
+        try {
+          const linked = await Assignment.findAll({ where: { linked_test_id: test.id } });
+          for (const assignment of linked) {
+            const scaledScore = Math.round((percentage / 100) * (assignment.max_score || 100));
+            const [submission, wasCreated] = await AssignmentSubmission.findOrCreate({
+              where: { assignment_id: assignment.id, student_id: req.user.id },
+              defaults: {
+                assignment_id: assignment.id,
+                student_id: req.user.id,
+                score: scaledScore,
+                status: 'graded',
+                auto_graded: true,
+                submitted_at: new Date(),
+                graded_at: new Date(),
+                feedback: `Auto-graded from "${test.test_name}" — ${parseFloat(percentage.toFixed(1))}%.`,
+              },
+            });
+            if (!wasCreated) {
+              // Re-attempt: only update if the new score is higher than
+              // what's already recorded. Lets students improve, never
+              // get worse. (Tests already enforce attempt limits.)
+              if ((submission.score ?? -1) < scaledScore) {
+                await submission.update({
+                  score: scaledScore,
+                  status: 'graded',
+                  auto_graded: true,
+                  graded_at: new Date(),
+                  feedback: `Auto-graded from "${test.test_name}" — ${parseFloat(percentage.toFixed(1))}%.`,
+                });
+              }
+            }
+          }
+        } catch (hookErr) {
+          logger.warn(`[assignment-autograde] hook failed for test ${test.id} student ${req.user.id}: ${hookErr.message}`);
+        }
+      })();
 
       return ApiResponse.success(res, {
         results: {

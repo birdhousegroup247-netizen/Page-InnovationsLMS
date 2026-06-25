@@ -1,4 +1,4 @@
-const { User, Course, Enrollment, Certificate, Payment, EmailVerification, PasswordReset } = require('../../models');
+const { User, Course, Enrollment, Certificate, Payment, EmailVerification, PasswordReset, Assignment, AssignmentSubmission } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
@@ -350,6 +350,150 @@ class UsersController {
         throw new BadRequestError('Could not send the password reset email. Please check the email service configuration.');
       }
       return ApiResponse.success(res, null, 'Password reset email sent.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/admin/users/:userId/assignment-performance
+   *
+   * Rolls up everything the admin needs to see how a single student
+   * is doing on assignments across every course they're enrolled in:
+   *  - totals (assigned / submitted / graded / missing / late)
+   *  - average percentage across graded submissions
+   *  - per-course breakdown
+   *  - recent submissions (latest 20) with score + course context
+   *
+   * "Missing" = assignments where the student is enrolled in the course
+   * but no submission row exists.
+   */
+  static async getAssignmentPerformance(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const user = await User.findByPk(userId, { attributes: ['id', 'full_name', 'email'] });
+      if (!user) throw new NotFoundError('User not found');
+
+      // Every course this student is enrolled in.
+      const enrollments = await Enrollment.findAll({
+        where: { student_id: userId },
+        attributes: ['course_id'],
+        raw: true,
+      });
+      const courseIds = enrollments.map((e) => e.course_id);
+
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, {
+          user,
+          totals: { assigned: 0, submitted: 0, graded: 0, missing: 0, late: 0, auto_graded: 0 },
+          average_percentage: null,
+          by_course: [],
+          recent: [],
+        });
+      }
+
+      // All assignments in those courses, plus the student's submission
+      // (left-join so missing rows still show up).
+      const assignments = await Assignment.findAll({
+        where: { course_id: { [Op.in]: courseIds } },
+        include: [
+          { model: Course, as: 'course', attributes: ['id', 'title'] },
+          {
+            model: AssignmentSubmission,
+            as: 'submissions',
+            where: { student_id: userId },
+            required: false,
+          },
+        ],
+        order: [['created_at', 'DESC']],
+      });
+
+      // Roll-ups.
+      let submittedCount = 0;
+      let gradedCount   = 0;
+      let missingCount  = 0;
+      let lateCount     = 0;
+      let autoGradedCount = 0;
+
+      // Running average across graded submissions only — every assignment
+      // is graded out of its own max_score, so we average the % per row.
+      let pctSum = 0;
+      let pctCount = 0;
+
+      // Per-course breakdown {courseId, title, assigned, graded, avg_pct}.
+      const byCourse = new Map();
+      const recent = [];
+
+      for (const a of assignments) {
+        const sub = a.submissions?.[0] || null;
+        const courseKey = a.course_id;
+        if (!byCourse.has(courseKey)) {
+          byCourse.set(courseKey, {
+            course_id: a.course_id,
+            course_title: a.course?.title || 'Unknown course',
+            assigned: 0,
+            graded: 0,
+            pct_sum: 0,
+          });
+        }
+        const cb = byCourse.get(courseKey);
+        cb.assigned += 1;
+
+        if (!sub) {
+          missingCount += 1;
+        } else {
+          submittedCount += 1;
+          if (sub.status === 'late') lateCount += 1;
+          if (sub.status === 'graded' && sub.score !== null && sub.score !== undefined) {
+            gradedCount += 1;
+            if (sub.auto_graded) autoGradedCount += 1;
+            const pct = a.max_score > 0 ? (Number(sub.score) / Number(a.max_score)) * 100 : 0;
+            pctSum += pct;
+            pctCount += 1;
+            cb.graded += 1;
+            cb.pct_sum += pct;
+          }
+          recent.push({
+            submission_id: sub.id,
+            assignment_id: a.id,
+            assignment_title: a.title,
+            course_id: a.course_id,
+            course_title: a.course?.title || null,
+            score: sub.score,
+            max_score: a.max_score,
+            status: sub.status,
+            auto_graded: !!sub.auto_graded,
+            submitted_at: sub.submitted_at,
+            graded_at: sub.graded_at,
+          });
+        }
+      }
+
+      const by_course = Array.from(byCourse.values()).map((c) => ({
+        course_id: c.course_id,
+        course_title: c.course_title,
+        assigned: c.assigned,
+        graded: c.graded,
+        average_percentage: c.graded > 0 ? Number((c.pct_sum / c.graded).toFixed(1)) : null,
+      }));
+
+      // Recent — newest 20 by submitted_at desc.
+      recent.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+      return ApiResponse.success(res, {
+        user,
+        totals: {
+          assigned: assignments.length,
+          submitted: submittedCount,
+          graded: gradedCount,
+          missing: missingCount,
+          late: lateCount,
+          auto_graded: autoGradedCount,
+        },
+        average_percentage: pctCount > 0 ? Number((pctSum / pctCount).toFixed(1)) : null,
+        by_course,
+        recent: recent.slice(0, 20),
+      });
     } catch (error) {
       next(error);
     }
