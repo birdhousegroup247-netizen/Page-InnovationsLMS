@@ -486,6 +486,7 @@ export const attendanceAPI = {
   getActiveCode: (sessionId) => api.get(`/api/sessions/${sessionId}/attendance/code/active`),
   getRoster: (sessionId) => api.get(`/api/sessions/${sessionId}/attendance`),
   setStatus: (sessionId, studentId, data) => api.patch(`/api/sessions/${sessionId}/attendance/${studentId}`, data),
+  bulkSet: (sessionId, data) => api.post(`/api/sessions/${sessionId}/attendance/bulk`, data),
   // Student
   checkIn: (sessionId, code) => api.post(`/api/sessions/${sessionId}/attendance/check-in`, { code }),
   getMyAttendance: () => api.get('/api/attendance/student'),

@@ -394,7 +394,50 @@ class InstructorDashboardController {
         limit: parseInt(limit, 10) || 100,
       });
 
-      return ApiResponse.success(res, { sessions });
+      // Per-session attendance totals — lets the live-sessions list
+      // render "12/25 attended" inline without a fan-out fetch per row.
+      const sessionIds  = sessions.map((s) => s.id);
+      const sessionCourseIds = [...new Set(sessions.map((s) => s.course_id))];
+
+      let attendanceMap = new Map();
+      let enrolledMap = new Map();
+      if (sessionIds.length > 0) {
+        const { LiveSessionAttendance, Enrollment } = require('../../models');
+        const { fn, col, literal } = require('sequelize');
+
+        const rows = await LiveSessionAttendance.findAll({
+          where: { live_session_id: { [Op.in]: sessionIds } },
+          attributes: [
+            'live_session_id',
+            [fn('COUNT', col('id')), 'total'],
+            [fn('SUM', literal(`CASE WHEN status IN ('present','late','excused') THEN 1 ELSE 0 END`)), 'attended'],
+          ],
+          group: ['live_session_id'],
+          raw: true,
+        });
+        attendanceMap = new Map(rows.map((r) => [r.live_session_id, {
+          total: parseInt(r.total, 10) || 0,
+          attended: parseInt(r.attended, 10) || 0,
+        }]));
+
+        const enrollRows = await Enrollment.findAll({
+          where: { course_id: { [Op.in]: sessionCourseIds } },
+          attributes: ['course_id', [fn('COUNT', col('id')), 'count']],
+          group: ['course_id'],
+          raw: true,
+        });
+        enrolledMap = new Map(enrollRows.map((r) => [r.course_id, parseInt(r.count, 10) || 0]));
+      }
+
+      const enriched = sessions.map((s) => {
+        const plain = s.toJSON();
+        const a = attendanceMap.get(s.id) || { total: 0, attended: 0 };
+        plain.attendance_attended = a.attended;
+        plain.attendance_total = enrolledMap.get(s.course_id) || a.total;
+        return plain;
+      });
+
+      return ApiResponse.success(res, { sessions: enriched });
     } catch (error) {
       next(error);
     }

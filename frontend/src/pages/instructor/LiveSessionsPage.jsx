@@ -396,6 +396,11 @@ export default function LiveSessionsPage() {
                       {s.duration_minutes ? ` · ${s.duration_minutes} min` : ''}
                       {s.platform ? ` · ${PLATFORM_LABEL[s.platform] || s.platform}` : ''}
                       {!isScoped && s.course?.title ? ` · ${s.course.title}` : ''}
+                      {/* Attendance summary — only show once the session
+                          has wrapped, since pre-end the number is unstable. */}
+                      {s.status === 'ended' && typeof s.attendance_total === 'number' && s.attendance_total > 0
+                        ? ` · ${s.attendance_attended || 0}/${s.attendance_total} attended`
+                        : ''}
                     </p>
                   </div>
 

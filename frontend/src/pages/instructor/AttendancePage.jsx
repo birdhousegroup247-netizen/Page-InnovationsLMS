@@ -226,6 +226,27 @@ function SessionDetail({ sessionId }) {
     }
   };
 
+  // Bulk actions. "Mark all unmarked as absent" is the common end-of-
+  // class cleanup; "Mark all present" is the verbal-roll-call path.
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const runBulk = async (status, scope) => {
+    if (bulkSaving) return;
+    const label = scope === 'all' ? 'every student' : 'unmarked students';
+    if (!window.confirm(`Mark ${label} as ${status}?`)) return;
+    setBulkSaving(true);
+    setError('');
+    try {
+      const res = await attendanceAPI.bulkSet(sessionId, { status, scope });
+      setSuccess(`Updated ${res.data?.data?.updated ?? 0} student(s).`);
+      setTimeout(() => setSuccess(''), 3000);
+      fetchRoster();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Bulk update failed');
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const session = data?.session;
   const totals = data?.totals;
   const roster = data?.roster || [];
@@ -356,6 +377,31 @@ function SessionDetail({ sessionId }) {
               <Users className="w-3.5 h-3.5" /> {filtered.length} of {roster.length}
             </div>
           </div>
+
+          {/* Bulk actions — saves grinding through the per-row dropdown
+              at the end of class. Confirm dialog before each, so a fat
+              finger doesn't nuke a manually-curated roster. */}
+          {roster.length > 0 && (
+            <div className="px-5 py-3 border-b border-gray-200 dark:border-border-dark flex items-center gap-2 flex-wrap text-xs text-gray-600 dark:text-text-dark-secondary">
+              <span className="font-medium">Bulk:</span>
+              <button
+                type="button"
+                disabled={bulkSaving || (totals && totals.unmarked === 0)}
+                onClick={() => runBulk('absent', 'unmarked')}
+                className="px-3 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Mark unmarked as absent
+              </button>
+              <button
+                type="button"
+                disabled={bulkSaving}
+                onClick={() => runBulk('present', 'all')}
+                className="px-3 py-1 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Mark everyone present
+              </button>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-12"><Spinner /></div>

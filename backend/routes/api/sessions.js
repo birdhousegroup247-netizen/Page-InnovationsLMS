@@ -14,6 +14,7 @@ router.post('/:id/attendance/code', authenticate, authorize('instructor', 'admin
 router.get('/:id/attendance/code/active', authenticate, authorize('instructor', 'admin', 'super_admin'), AttendanceController.getActiveCode);
 router.get('/:id/attendance', authenticate, authorize('instructor', 'admin', 'super_admin'), AttendanceController.getRoster);
 router.patch('/:id/attendance/:studentId', authenticate, authorize('instructor', 'admin', 'super_admin'), AttendanceController.setAttendance);
+router.post('/:id/attendance/bulk', authenticate, authorize('instructor', 'admin', 'super_admin'), AttendanceController.bulkSet);
 
 // Attendance — student check-in (any authenticated user; enrollment
 // is verified inside the handler).
