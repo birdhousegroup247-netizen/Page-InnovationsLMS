@@ -80,6 +80,45 @@ class AssignmentsController {
       await ActivityController.logFromRequest(req, 'assignment_create', 'assignment', assignment.id, {
         title: assignment.title, course_id: parseInt(courseId),
       }).catch(() => {});
+
+      // Broadcast to every enrolled student. Fire-and-forget — a
+      // notification failure can't block assignment creation. We
+      // resolve the course title once so the message reads naturally
+      // ("New assignment in <Course>: <Title>"); fall back to ID if
+      // the lookup fails. The link is intentionally the same page
+      // the student already uses for their assignment list so the
+      // CTA always lands somewhere coherent.
+      (async () => {
+        try {
+          const [course, enrollments] = await Promise.all([
+            Course.findByPk(courseId, { attributes: ['title'] }),
+            Enrollment.findAll({
+              where: { course_id: courseId },
+              attributes: ['student_id'],
+              raw: true,
+            }),
+          ]);
+          if (enrollments.length === 0) return;
+          const courseLabel = course?.title ? `"${course.title}"` : `course #${courseId}`;
+          const dueLine = assignment.due_date
+            ? ` Due ${new Date(assignment.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.`
+            : '';
+          const notifications = enrollments.map((e) => ({
+            user_id: e.student_id,
+            type: 'assignment_new',
+            title: 'New Assignment',
+            message: `New assignment in ${courseLabel}: "${assignment.title}".${dueLine}`,
+            link: '/my-assignments',
+            priority: 'normal',
+          }));
+          await NotificationsController.createBulkNotifications(notifications);
+        } catch (notifErr) {
+          // Quiet failure — log only, never throw.
+          // eslint-disable-next-line no-console
+          console.warn(`[assignment-create-notify] failed: ${notifErr.message}`);
+        }
+      })();
+
       return ApiResponse.success(res, { assignment }, 'Assignment created', 201);
     } catch (err) { next(err); }
   }
