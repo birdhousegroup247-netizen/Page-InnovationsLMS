@@ -208,7 +208,20 @@ class LiveSessionController {
         throw new ForbiddenError('Only the session instructor can update status');
       }
 
+      const prevStatus = session.status;
       await session.update({ status });
+
+      // Session just ended → auto-mark every unmarked enrolled student
+      // as 'absent'. Fire-and-forget so a roster crawl can't block the
+      // response. Hourly zombie sweep also calls this as a safety net.
+      if (status === 'ended' && prevStatus !== 'ended') {
+        const { autoMarkAbsentees } = require('./attendanceController');
+        autoMarkAbsentees(session)
+          .then((n) => {
+            if (n > 0) logger.info(`[attendance] auto-marked ${n} absentee(s) for session ${session.id}`);
+          })
+          .catch((err) => logger.warn(`[attendance] auto-mark failed for session ${session.id}: ${err.message}`));
+      }
 
       // If going live, send in-app notification
       if (status === 'live') {

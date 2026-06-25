@@ -51,6 +51,8 @@ const Assignment = require('./Assignment');
 const AssignmentSubmission = require('./AssignmentSubmission');
 const InstructorReview = require('./InstructorReview');
 const LiveSession = require('./LiveSession');
+const LiveSessionAttendance = require('./LiveSessionAttendance');
+const LiveSessionAttendanceCode = require('./LiveSessionAttendanceCode');
 const ForumPost = require('./ForumPost');
 const ForumReply = require('./ForumReply');
 const Wishlist = require('./Wishlist');
@@ -316,6 +318,15 @@ LiveSession.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
 User.hasMany(LiveSession, { foreignKey: 'instructor_id', as: 'live_sessions' });
 LiveSession.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor' });
 
+// Live Session Attendance
+LiveSession.hasMany(LiveSessionAttendance, { foreignKey: 'live_session_id', as: 'attendance', onDelete: 'CASCADE' });
+LiveSessionAttendance.belongsTo(LiveSession, { foreignKey: 'live_session_id', as: 'session' });
+User.hasMany(LiveSessionAttendance, { foreignKey: 'student_id', as: 'attendance_records' });
+LiveSessionAttendance.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
+LiveSession.hasMany(LiveSessionAttendanceCode, { foreignKey: 'live_session_id', as: 'attendance_codes', onDelete: 'CASCADE' });
+LiveSessionAttendanceCode.belongsTo(LiveSession, { foreignKey: 'live_session_id', as: 'session' });
+
 // Instructor Review relationships
 User.hasMany(InstructorReview, { foreignKey: 'instructor_id', as: 'instructor_reviews' });
 InstructorReview.belongsTo(User, { foreignKey: 'instructor_id', as: 'instructor' });
@@ -433,6 +444,8 @@ module.exports = {
   AssignmentSubmission,
   InstructorReview,
   LiveSession,
+  LiveSessionAttendance,
+  LiveSessionAttendanceCode,
   ForumPost,
   ForumReply,
   Wishlist,

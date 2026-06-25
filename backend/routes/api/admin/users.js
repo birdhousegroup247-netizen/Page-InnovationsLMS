@@ -57,4 +57,7 @@ router.get('/:userId/teaching-courses', AdminCoursesController.listInstructorCou
 // Surfaces on the admin User profile page.
 router.get('/:userId/assignment-performance', UsersController.getAssignmentPerformance);
 
+// Per-student live-session attendance rollup.
+router.get('/:userId/attendance', UsersController.getAttendance);
+
 module.exports = router;

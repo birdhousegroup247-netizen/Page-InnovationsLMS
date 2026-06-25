@@ -330,6 +330,7 @@ app.use('/api',             require('./routes/api/assignments'));
 app.use('/api/search',      require('./routes/api/search'));
 app.use('/api/instructors', require('./routes/api/instructor-reviews'));
 app.use('/api/sessions',   require('./routes/api/sessions'));
+app.use('/api/attendance', require('./routes/api/attendance'));
 app.use('/api/forum',      require('./routes/api/forum-posts'));
 app.use('/api/wishlist',   require('./routes/api/wishlist'));
 app.use('/api/bundles',    require('./routes/api/bundles'));
@@ -810,7 +811,8 @@ const startServer = async () => {
       const {
         ChatRoom, ChatRoomMember, Conversation, Message, MessageReaction, MutedChat,
         LessonNote, LessonQuestion, QuestionReply, CourseAnnouncement,
-        InstructorReview, LiveSession, ForumPost, ForumReply,
+        InstructorReview, LiveSession, LiveSessionAttendance, LiveSessionAttendanceCode,
+        ForumPost, ForumReply,
         Assignment, AssignmentSubmission, AdminAnnouncement, AnnouncementReaction,
         CouponCode, CouponCodeCourse, CouponRedemption, Lead,
         EmailVerification, InstructorApplication, CourseInstructor,
@@ -868,6 +870,8 @@ const startServer = async () => {
         [CourseAnnouncement, 'course_announcements'],
         [InstructorReview, 'instructor_reviews'],
         [LiveSession, 'live_sessions'],
+        [LiveSessionAttendance, 'live_session_attendance'],
+        [LiveSessionAttendanceCode, 'live_session_attendance_codes'],
         [ForumPost, 'forum_posts'],
         [ForumReply, 'forum_replies'],
         [Assignment, 'assignments'],
@@ -950,6 +954,8 @@ const startServer = async () => {
         require('./models/MessageReaction'),
         require('./models/MutedChat'),
         require('./models/LiveSession'),
+        require('./models/LiveSessionAttendance'),
+        require('./models/LiveSessionAttendanceCode'),
         require('./models/ForumPost'),
         require('./models/ForumReply'),
         require('./models/InstructorReview'),
@@ -1178,13 +1184,24 @@ const startServer = async () => {
       try {
         const { LiveSession } = require('./models');
         const { Op: ZOp } = require('sequelize');
+        const { autoMarkAbsentees } = require('./controllers/live-sessions/attendanceController');
 
         const now = new Date();
         const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
         const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // 1) Stuck "live" — instructor likely closed the tab. We use
-        //    updated_at as a proxy for "time of last status change".
+        // Snapshot the rows we're about to flip to 'ended' so we can
+        // call autoMarkAbsentees for each one. We could do this as a
+        // single subquery but the row count here is tiny (sessions
+        // sticking past their windows are rare).
+        const toEndLive = await LiveSession.findAll({
+          where: { status: 'live', updated_at: { [ZOp.lt]: twelveHoursAgo } },
+        });
+        const toEndScheduled = await LiveSession.findAll({
+          where: { status: 'scheduled', scheduled_at: { [ZOp.lt]: twentyFourHoursAgo } },
+        });
+
+        // 1) Stuck "live" — instructor likely closed the tab.
         const [liveStuck] = await LiveSession.update(
           { status: 'ended' },
           { where: { status: 'live', updated_at: { [ZOp.lt]: twelveHoursAgo } } }
@@ -1194,14 +1211,22 @@ const startServer = async () => {
         }
 
         // 2) Scheduled and >24h past the start time — never went live.
-        //    Cheaper than computing (scheduled_at + duration); a 24h
-        //    buffer absorbs typical session lengths anyway.
         const [schedStale] = await LiveSession.update(
           { status: 'ended' },
           { where: { status: 'scheduled', scheduled_at: { [ZOp.lt]: twentyFourHoursAgo } } }
         );
         if (schedStale > 0) {
           logger.info(`[session-zombie-sweep] auto-ended ${schedStale} stale scheduled session(s)`);
+        }
+
+        // Auto-mark absentees for everyone we just flipped.
+        for (const session of [...toEndLive, ...toEndScheduled]) {
+          try {
+            const n = await autoMarkAbsentees(session);
+            if (n > 0) logger.info(`[attendance] auto-marked ${n} absentee(s) for session ${session.id}`);
+          } catch (attErr) {
+            logger.warn(`[attendance] auto-mark failed for session ${session.id}: ${attErr.message}`);
+          }
         }
       } catch (sweepErr) {
         logger.error(`[session-zombie-sweep] failed: ${sweepErr.message}\n${sweepErr.stack || ''}`);

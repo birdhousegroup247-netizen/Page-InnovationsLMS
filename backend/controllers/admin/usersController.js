@@ -1,4 +1,4 @@
-const { User, Course, Enrollment, Certificate, Payment, EmailVerification, PasswordReset, Assignment, AssignmentSubmission } = require('../../models');
+const { User, Course, Enrollment, Certificate, Payment, EmailVerification, PasswordReset, Assignment, AssignmentSubmission, LiveSession, LiveSessionAttendance } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
@@ -491,6 +491,129 @@ class UsersController {
           auto_graded: autoGradedCount,
         },
         average_percentage: pctCount > 0 ? Number((pctSum / pctCount).toFixed(1)) : null,
+        by_course,
+        recent: recent.slice(0, 20),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/admin/users/:userId/attendance
+   *
+   * Per-student attendance rollup. Mirrors the assignment-performance
+   * endpoint's shape so the admin UI can render both sections with
+   * the same component pattern.
+   *
+   *   totals: { present, late, absent, excused, total_sessions }
+   *   attendance_rate: % present-or-late across sessions the student
+   *                    has a row for (excluding sessions still
+   *                    in-flight)
+   *   by_course: per-course breakdown
+   *   recent:    last 20 sessions with status
+   */
+  static async getAttendance(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const user = await User.findByPk(userId, { attributes: ['id', 'full_name', 'email'] });
+      if (!user) throw new NotFoundError('User not found');
+
+      const enrollments = await Enrollment.findAll({
+        where: { student_id: userId },
+        attributes: ['course_id'],
+        raw: true,
+      });
+      const courseIds = enrollments.map((e) => e.course_id);
+
+      if (courseIds.length === 0) {
+        return ApiResponse.success(res, {
+          user,
+          totals: { present: 0, late: 0, absent: 0, excused: 0, total_sessions: 0 },
+          attendance_rate: null,
+          by_course: [],
+          recent: [],
+        });
+      }
+
+      // Past + currently-running sessions for those courses. We
+      // include 'live' so the admin can see a student's status during
+      // an active class, but exclude 'scheduled' (nothing's happened
+      // yet, so missing rows don't count against the student).
+      const sessions = await LiveSession.findAll({
+        where: {
+          course_id: { [Op.in]: courseIds },
+          status: { [Op.in]: ['live', 'ended'] },
+        },
+        include: [{ model: Course, as: 'course', attributes: ['id', 'title'] }],
+        order: [['scheduled_at', 'DESC']],
+      });
+
+      const records = await LiveSessionAttendance.findAll({
+        where: { student_id: userId, live_session_id: { [Op.in]: sessions.map((s) => s.id) } },
+        raw: true,
+      });
+      const recByS = new Map(records.map((r) => [r.live_session_id, r]));
+
+      const totals = { present: 0, late: 0, absent: 0, excused: 0, total_sessions: sessions.length };
+      const byCourse = new Map();
+      const recent = [];
+
+      for (const s of sessions) {
+        const r = recByS.get(s.id);
+        const courseKey = s.course_id;
+        if (!byCourse.has(courseKey)) {
+          byCourse.set(courseKey, {
+            course_id: s.course_id,
+            course_title: s.course?.title || 'Unknown course',
+            sessions: 0,
+            attended: 0,
+          });
+        }
+        const cb = byCourse.get(courseKey);
+        cb.sessions += 1;
+
+        if (r) {
+          totals[r.status] = (totals[r.status] || 0) + 1;
+          if (r.status === 'present' || r.status === 'late') cb.attended += 1;
+        }
+        // No row + ended session: count toward absent in the rollup
+        // (the auto-mark cron should have filled this, but the rollup
+        // shouldn't depend on that having run).
+        if (!r && s.status === 'ended') {
+          totals.absent += 1;
+        }
+
+        recent.push({
+          session_id: s.id,
+          title: s.title,
+          scheduled_at: s.scheduled_at,
+          course_id: s.course_id,
+          course_title: s.course?.title || null,
+          status: r ? r.status : (s.status === 'ended' ? 'absent' : null),
+          source: r ? r.source : null,
+        });
+      }
+
+      // Attendance rate over sessions that have any final outcome
+      // (present + late counted as attended; absent counted against).
+      const denominator = totals.present + totals.late + totals.absent;
+      const attendance_rate = denominator > 0
+        ? Number(((totals.present + totals.late) / denominator * 100).toFixed(1))
+        : null;
+
+      const by_course = Array.from(byCourse.values()).map((c) => ({
+        course_id: c.course_id,
+        course_title: c.course_title,
+        sessions: c.sessions,
+        attended: c.attended,
+        attendance_rate: c.sessions > 0 ? Number((c.attended / c.sessions * 100).toFixed(1)) : null,
+      }));
+
+      return ApiResponse.success(res, {
+        user,
+        totals,
+        attendance_rate,
         by_course,
         recent: recent.slice(0, 20),
       });
