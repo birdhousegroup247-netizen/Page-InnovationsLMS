@@ -26,6 +26,7 @@ import RecordingPlayer from '../../components/live-sessions/RecordingPlayer';
 import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
+import { describeDocument } from '../../utils/videoEmbed';
 
 export default function CourseBuilder() {
   const { courseId } = useParams();
@@ -67,6 +68,7 @@ export default function CourseBuilder() {
     youtube_video_id: '',
     document_url: '',
     document_type: '',
+    document_source: 'upload', // 'upload' | 'link' — UI only, not persisted
     article_content: '',
     recording_url: '',
     duration_minutes: '',
@@ -219,6 +221,7 @@ export default function CourseBuilder() {
       youtube_video_id: '',
       document_url: '',
       document_type: '',
+      document_source: 'upload',
       article_content: '',
       recording_url: '',
       duration_minutes: '',
@@ -230,14 +233,18 @@ export default function CourseBuilder() {
   const handleEditContent = (module, content) => {
     setSelectedModule(module);
     setSelectedContent(content);
+    // Infer source: Cloudinary URLs = upload, anything else = link.
+    const url = content.document_url || '';
+    const inferredSource = url && !/res\.cloudinary\.com/i.test(url) ? 'link' : 'upload';
     setContentForm({
       title: content.title || '',
       description: content.description || '',
       content_type: content.content_type || 'video',
       youtube_url: content.youtube_url || '',
       youtube_video_id: content.youtube_video_id || '',
-      document_url: content.document_url || '',
+      document_url: url,
       document_type: content.document_type || '',
+      document_source: inferredSource,
       article_content: content.article_content || '',
       recording_url: content.recording_url || '',
       duration_minutes: content.duration_minutes || '',
@@ -332,6 +339,7 @@ export default function CourseBuilder() {
         youtube_video_id: '',
         document_url: '',
         document_type: '',
+        document_source: 'upload',
         article_content: '',
         recording_url: '',
         duration_minutes: '',
@@ -943,22 +951,65 @@ export default function CourseBuilder() {
 
           {/* Document Fields */}
           {contentForm.content_type === 'document' && (
-            <>
-              <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary mb-2 transition-colors">
-                Upload Document *
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-dark-secondary transition-colors">
+                Document *
               </label>
-              <CloudinaryUpload
-                acceptedTypes="document"
-                maxSizeMB={10}
-                currentFile={contentForm.document_url || null}
-                uploadEndpoint="/api/upload/course-document"
-                onUploadSuccess={(url) => {
-                  const ext = url ? url.split('.').pop().split('?')[0].toLowerCase() : '';
-                  setContentForm({ ...contentForm, document_url: url || '', document_type: ext });
-                }}
-                onUploadError={(err) => showToast(err, 'error')}
-              />
-            </>
+
+              {/* Source toggle — Upload vs Paste link. Defaults to
+                  upload but auto-flips to "link" on edit when the saved
+                  URL isn't a Cloudinary upload. */}
+              <div className="inline-flex rounded-lg border border-gray-200 dark:border-border-dark p-0.5 bg-gray-50 dark:bg-dark-700">
+                {[
+                  { id: 'upload', label: 'Upload file' },
+                  { id: 'link',   label: 'Paste link' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setContentForm({ ...contentForm, document_source: opt.id })}
+                    className={cn(
+                      'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                      (contentForm.document_source || 'upload') === opt.id
+                        ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-text-dark-muted hover:text-gray-700 dark:hover:text-gray-200'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {(contentForm.document_source || 'upload') === 'upload' ? (
+                <CloudinaryUpload
+                  acceptedTypes="document"
+                  maxSizeMB={10}
+                  currentFile={contentForm.document_url || null}
+                  uploadEndpoint="/api/upload/course-document"
+                  onUploadSuccess={(url) => {
+                    const ext = url ? url.split('.').pop().split('?')[0].toLowerCase() : '';
+                    setContentForm({ ...contentForm, document_url: url || '', document_type: ext });
+                  }}
+                  onUploadError={(err) => showToast(err, 'error')}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/file/d/…/view"
+                    value={contentForm.document_url}
+                    onChange={(e) => setContentForm({ ...contentForm, document_url: e.target.value, document_type: 'link' })}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  />
+                  <div className="text-xs text-gray-500 dark:text-text-dark-muted space-y-1 px-1">
+                    <p className="font-medium text-gray-700 dark:text-gray-300">For Google Drive links, set sharing to:</p>
+                    <p>1. <strong>Anyone with the link</strong> → Viewer</p>
+                    <p>2. Tap the gear icon → check <strong>"Disable options to download, print, and copy"</strong></p>
+                    <p className="pt-1">Works with PDFs, Docs, Slides and Sheets.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Article Fields */}
@@ -1187,26 +1238,20 @@ export default function CourseBuilder() {
             {previewContent.content_type === 'document' && (() => {
               const url = previewContent.document_url;
               if (!url) {
-                return <p className="text-sm text-gray-500">No document uploaded for this lesson.</p>;
+                return <p className="text-sm text-gray-500">No document attached to this lesson.</p>;
               }
-              const isPdf = url.toLowerCase().split('?')[0].endsWith('.pdf');
-              // Cloudinary raw PDFs on free plans return HTTP 401 — the
-              // backend upload pipeline now stores PDFs via resource_type
-              // 'image' so this works for fresh uploads. For older URLs
-              // we fall through to the Google Docs Viewer which can also
-              // render most public documents in an iframe.
-              // PDFs hit the raw URL directly (most browsers preview PDFs
-              // inline). Other docs go through Google Docs Viewer which
-              // can render most public URLs.
-              const viewerSrc = isPdf
-                ? url
-                : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+              // describeDocument picks the right embed: Drive /preview
+              // iframe for shared Drive files, the raw URL for PDFs,
+              // Google Docs Viewer for everything else public.
+              const doc = describeDocument(url);
+              const allowFullScreen = doc?.provider !== 'drive';
               return (
                 <div className="space-y-2">
                   <iframe
-                    src={viewerSrc}
+                    src={doc?.src || url}
                     title={previewContent.title}
                     className="w-full h-[60vh] rounded-lg border border-gray-200 dark:border-border-dark bg-white"
+                    allowFullScreen={allowFullScreen}
                   />
                   <div className="flex items-center justify-between text-xs gap-3">
                     <a href={url} target="_blank" rel="noreferrer"

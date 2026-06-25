@@ -35,7 +35,7 @@ import QuestionDiscussion from '../components/course/QuestionDiscussion';
 import LessonNotes from '../components/course/LessonNotes';
 import LockOverlay from '../components/ui/LockOverlay';
 import RecordingPlayer from '../components/live-sessions/RecordingPlayer';
-import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
+import { ensureAbsoluteUrl as absUrl, describeDocument } from '../utils/videoEmbed';
 import SuspensionModal from '../components/ui/SuspensionModal';
 import logo from '../assets/logo.png';
 
@@ -836,15 +836,23 @@ export default function CoursePlayer() {
                     </div>
                     {(() => {
                       const url = decodeEntities(currentContent.document_url);
-                      // Google Docs viewer renders PDFs/docs inline without download buttons
-                      const viewerSrc = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+                      // describeDocument: Drive /preview for shared
+                      // Drive files (no DL chip when sharing is set
+                      // right), raw URL for PDFs, GDoc Viewer for
+                      // anything else public.
+                      const doc = describeDocument(url);
+                      const isDrive = doc?.provider === 'drive';
                       return (
                         <>
                           <iframe
-                            src={viewerSrc}
+                            src={doc?.src || url}
                             title={decodeEntities(currentContent.title)}
                             className="w-full border-0"
                             style={{ height: '80vh' }}
+                            // Drive's /preview has its own fullscreen
+                            // control; leaving allowFullScreen off
+                            // keeps the embed locked to its viewer.
+                            allowFullScreen={!isDrive}
                             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                           ></iframe>
                           <div className="px-4 py-2 bg-gray-800 dark:bg-dark-700 text-center">

@@ -72,3 +72,29 @@ export function describeRecording(rawUrl) {
 
   return { kind: 'link', src: url };
 }
+
+/**
+ * Pick the best inline embed for a document URL.
+ *   - Drive share        → iframe at /preview (any file type)
+ *   - direct *.pdf       → iframe at the raw URL
+ *   - any other doc URL  → Google Docs Viewer iframe
+ */
+const DOC_DRIVE_FILE_RE = /drive\.google\.com\/file\/d\/([^/]+)/i;
+const DOC_DRIVE_OPEN_RE = /drive\.google\.com\/open\?id=([^&]+)/i;
+const PDF_EXT_RE = /\.pdf(\?|$)/i;
+
+export function describeDocument(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const url = ensureAbsoluteUrl(rawUrl);
+  if (!url) return null;
+
+  const driveFile = url.match(DOC_DRIVE_FILE_RE);
+  if (driveFile) return { kind: 'iframe', provider: 'drive', src: `https://drive.google.com/file/d/${driveFile[1]}/preview` };
+
+  const driveOpen = url.match(DOC_DRIVE_OPEN_RE);
+  if (driveOpen) return { kind: 'iframe', provider: 'drive', src: `https://drive.google.com/file/d/${driveOpen[1]}/preview` };
+
+  if (PDF_EXT_RE.test(url)) return { kind: 'pdf', src: url };
+
+  return { kind: 'gdoc', src: `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true` };
+}

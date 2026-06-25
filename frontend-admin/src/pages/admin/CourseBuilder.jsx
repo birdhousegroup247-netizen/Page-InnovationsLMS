@@ -26,6 +26,7 @@ import { Button, Input, Spinner, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 import RecordingPlayer from '../../components/live-sessions/RecordingPlayer';
+import { describeDocument } from '../../utils/videoEmbed';
 
 export default function CourseBuilder() {
   const { courseId } = useParams();
@@ -66,6 +67,7 @@ export default function CourseBuilder() {
     youtube_video_id: '',
     document_url: '',
     document_type: '',
+    document_source: 'upload',
     article_content: '',
     recording_url: '',
     duration_minutes: '',
@@ -220,6 +222,7 @@ export default function CourseBuilder() {
       youtube_video_id: '',
       document_url: '',
       document_type: '',
+      document_source: 'upload',
       article_content: '',
       recording_url: '',
       duration_minutes: '',
@@ -233,14 +236,17 @@ export default function CourseBuilder() {
   const handleEditContent = (module, content) => {
     setSelectedModule(module);
     setSelectedContent(content);
+    const url = content.document_url || '';
+    const inferredSource = url && !/res\.cloudinary\.com/i.test(url) ? 'link' : 'upload';
     setContentForm({
       title: content.title || '',
       description: content.description || '',
       content_type: content.content_type || 'video',
       youtube_url: content.youtube_url || '',
       youtube_video_id: content.youtube_video_id || '',
-      document_url: content.document_url || '',
+      document_url: url,
       document_type: content.document_type || '',
+      document_source: inferredSource,
       article_content: content.article_content || '',
       recording_url: content.recording_url || '',
       duration_minutes: content.duration_minutes || '',
@@ -336,6 +342,7 @@ export default function CourseBuilder() {
         youtube_video_id: '',
         document_url: '',
         document_type: '',
+        document_source: 'upload',
         article_content: '',
         recording_url: '',
         duration_minutes: '',
@@ -883,22 +890,60 @@ export default function CourseBuilder() {
 
           {/* Document Fields */}
           {contentForm.content_type === 'document' && (
-            <>
-              <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
-                Upload Document *
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-white">
+                Document *
               </label>
-              <CloudinaryUpload
-                acceptedTypes="document"
-                maxSizeMB={10}
-                currentFile={contentForm.document_url || null}
-                uploadEndpoint="/api/upload/course-document"
-                onUploadSuccess={(url) => {
-                  const ext = url ? url.split('.').pop().split('?')[0].toLowerCase() : '';
-                  setContentForm({ ...contentForm, document_url: url || '', document_type: ext });
-                }}
-                onUploadError={(err) => showToast(err, 'error')}
-              />
-            </>
+              <div className="inline-flex rounded-lg border border-gray-200 dark:border-border-dark p-0.5 bg-gray-50 dark:bg-dark-700">
+                {[
+                  { id: 'upload', label: 'Upload file' },
+                  { id: 'link',   label: 'Paste link' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setContentForm({ ...contentForm, document_source: opt.id })}
+                    className={cn(
+                      'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                      (contentForm.document_source || 'upload') === opt.id
+                        ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-text-dark-muted hover:text-gray-700 dark:hover:text-gray-200'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {(contentForm.document_source || 'upload') === 'upload' ? (
+                <CloudinaryUpload
+                  acceptedTypes="document"
+                  maxSizeMB={10}
+                  currentFile={contentForm.document_url || null}
+                  uploadEndpoint="/api/upload/course-document"
+                  onUploadSuccess={(url) => {
+                    const ext = url ? url.split('.').pop().split('?')[0].toLowerCase() : '';
+                    setContentForm({ ...contentForm, document_url: url || '', document_type: ext });
+                  }}
+                  onUploadError={(err) => showToast(err, 'error')}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/file/d/…/view"
+                    value={contentForm.document_url}
+                    onChange={(e) => setContentForm({ ...contentForm, document_url: e.target.value, document_type: 'link' })}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-text-dark-primary focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  />
+                  <div className="text-xs text-gray-500 dark:text-text-dark-muted space-y-1 px-1">
+                    <p className="font-medium text-gray-700 dark:text-gray-300">For Google Drive links, set sharing to:</p>
+                    <p>1. <strong>Anyone with the link</strong> → Viewer</p>
+                    <p>2. Gear icon → check <strong>"Disable options to download, print, and copy"</strong></p>
+                    <p className="pt-1">Works with PDFs, Docs, Slides and Sheets.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Article Fields */}
@@ -1154,22 +1199,24 @@ export default function CourseBuilder() {
 
             {/* Document */}
             {lessonPreview.content_type === 'document' && (
-              lessonPreview.document_url ? (
-                <div className="space-y-3">
-                  <a href={lessonPreview.document_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg">
-                    <File className="w-4 h-4" /> Open document ({lessonPreview.document_type || 'file'})
-                  </a>
-                  {/* Try to embed PDFs inline */}
-                  {(lessonPreview.document_type === 'pdf' || lessonPreview.document_url.toLowerCase().endsWith('.pdf')) && (
+              lessonPreview.document_url ? (() => {
+                const doc = describeDocument(lessonPreview.document_url);
+                const allowFullScreen = doc?.provider !== 'drive';
+                return (
+                  <div className="space-y-3">
+                    <a href={lessonPreview.document_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg">
+                      <File className="w-4 h-4" /> Open document ({lessonPreview.document_type || 'file'})
+                    </a>
                     <iframe
-                      src={lessonPreview.document_url}
+                      src={doc?.src || lessonPreview.document_url}
                       title={lessonPreview.title}
                       className="w-full h-[60vh] border border-gray-200 dark:border-border-dark rounded-lg"
+                      allowFullScreen={allowFullScreen}
                     />
-                  )}
-                </div>
-              ) : (
+                  </div>
+                );
+              })() : (
                 <p className="text-sm text-gray-500">No document has been uploaded to this lesson yet.</p>
               )
             )}
