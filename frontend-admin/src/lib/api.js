@@ -396,6 +396,7 @@ export const chatAPI = {
   getConversations: () => api.get('/api/chat/conversations'),
   getConversationMessages: (convId) => api.get(`/api/chat/conversations/${convId}/messages`),
   sendMessage: (convId, body) => api.post(`/api/chat/conversations/${convId}/messages`, { body }),
+  markConversationRead: (convId) => api.patch(`/api/chat/conversations/${convId}/read`),
 };
 
 // Admin: Enrollment Management

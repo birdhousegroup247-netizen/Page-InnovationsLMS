@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AppLayout from './components/layout/AppLayout';
+import FeatureGate from './components/auth/FeatureGate';
 
 /**
  * lazyWithReload — wraps React.lazy so that if a code-split chunk fails to
@@ -85,6 +86,7 @@ const Payments = lazyWithReload(() => import('./pages/admin/Payments'));
 const Announcements = lazyWithReload(() => import('./pages/admin/Announcements'));
 const Referrals = lazyWithReload(() => import('./pages/admin/Referrals'));
 const Badges = lazyWithReload(() => import('./pages/admin/Badges'));
+const Inbox = lazyWithReload(() => import('./pages/admin/Inbox'));
 const AdminProfile = lazyWithReload(() => import('./pages/admin/AdminProfile'));
 const AdminSettings = lazyWithReload(() => import('./pages/admin/AdminSettings'));
 const AdminUserDetail = lazyWithReload(() => import('./pages/admin/AdminUserDetail'));
@@ -237,180 +239,235 @@ function App() {
             <Route
               path="/categories"
               element={
-                <AdminRoute>
-                  <Categories />
-                </AdminRoute>
+                <FeatureGate flag="categories">
+                  <AdminRoute>
+                    <Categories />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/analytics"
               element={
-                <AdminRoute>
-                  <AdminAnalytics />
-                </AdminRoute>
+                <FeatureGate flag="analytics">
+                  <AdminRoute>
+                    <AdminAnalytics />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/activity"
               element={
-                <AdminRoute>
-                  <AdminActivity />
-                </AdminRoute>
+                <FeatureGate flag="activityLogs">
+                  <AdminRoute>
+                    <AdminActivity />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/instructor-applications"
               element={
-                <AdminRoute>
-                  <InstructorApplications />
-                </AdminRoute>
+                <FeatureGate flag="instructorApplications">
+                  <AdminRoute>
+                    <InstructorApplications />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/questions"
               element={
-                <AdminRoute>
-                  <QuestionBank />
-                </AdminRoute>
+                <FeatureGate flag="questionBank">
+                  <AdminRoute>
+                    <QuestionBank />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/questions/new"
               element={
-                <AdminRoute>
-                  <QuestionEditor />
-                </AdminRoute>
+                <FeatureGate flag="questionBank">
+                  <AdminRoute>
+                    <QuestionEditor />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/questions/category/:categoryId"
               element={
-                <AdminRoute>
-                  <QuestionsByCategory />
-                </AdminRoute>
+                <FeatureGate flag="questionBank">
+                  <AdminRoute>
+                    <QuestionsByCategory />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/questions/:questionId/edit"
               element={
-                <AdminRoute>
-                  <QuestionEditor />
-                </AdminRoute>
+                <FeatureGate flag="questionBank">
+                  <AdminRoute>
+                    <QuestionEditor />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/questions/:questionId"
               element={
-                <AdminRoute>
-                  <QuestionDetail />
-                </AdminRoute>
+                <FeatureGate flag="questionBank">
+                  <AdminRoute>
+                    <QuestionDetail />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/tests"
               element={
-                <AdminRoute>
-                  <Tests />
-                </AdminRoute>
+                <FeatureGate flag="tests">
+                  <AdminRoute>
+                    <Tests />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/test-builder"
               element={
-                <AdminRoute>
-                  <TestBuilder />
-                </AdminRoute>
+                <FeatureGate flag="tests">
+                  <AdminRoute>
+                    <TestBuilder />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/test-builder/:testId"
               element={
-                <AdminRoute>
-                  <TestBuilder />
-                </AdminRoute>
+                <FeatureGate flag="tests">
+                  <AdminRoute>
+                    <TestBuilder />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/test-results/:testId"
               element={
-                <AdminRoute>
-                  <TestResults />
-                </AdminRoute>
+                <FeatureGate flag="tests">
+                  <AdminRoute>
+                    <TestResults />
+                  </AdminRoute>
+                </FeatureGate>
+              }
+            />
+
+            <Route
+              path="/inbox"
+              element={
+                <FeatureGate flag="inbox">
+                  <AdminRoute>
+                    <Inbox />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
 
             <Route
               path="/chat"
               element={
-                <AdminRoute>
-                  <ChatModeration />
-                </AdminRoute>
+                <FeatureGate flag="chatModeration">
+                  <AdminRoute>
+                    <ChatModeration />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
 
             <Route
               path="/coupons"
               element={
-                <AdminRoute>
-                  <Coupons />
-                </AdminRoute>
+                <FeatureGate flag="coupons">
+                  <AdminRoute>
+                    <Coupons />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/leads"
               element={
-                <AdminRoute>
-                  <Leads />
-                </AdminRoute>
+                <FeatureGate flag="leads">
+                  <AdminRoute>
+                    <Leads />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
 
             <Route
               path="/bundles"
               element={
-                <AdminRoute>
-                  <Bundles />
-                </AdminRoute>
+                <FeatureGate flag="bundles">
+                  <AdminRoute>
+                    <Bundles />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/enrollments"
               element={
-                <AdminRoute>
-                  <Enrollments />
-                </AdminRoute>
+                <FeatureGate flag="enrollments">
+                  <AdminRoute>
+                    <Enrollments />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/payments"
               element={
-                <AdminRoute>
-                  <Payments />
-                </AdminRoute>
+                <FeatureGate flag="payments">
+                  <AdminRoute>
+                    <Payments />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/announcements"
               element={
-                <AdminRoute>
-                  <Announcements />
-                </AdminRoute>
+                <FeatureGate flag="announcements">
+                  <AdminRoute>
+                    <Announcements />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/referrals"
               element={
-                <AdminRoute>
-                  <Referrals />
-                </AdminRoute>
+                <FeatureGate flag="referrals">
+                  <AdminRoute>
+                    <Referrals />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route
               path="/badges"
               element={
-                <AdminRoute>
-                  <Badges />
-                </AdminRoute>
+                <FeatureGate flag="badges">
+                  <AdminRoute>
+                    <Badges />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             {/* Topbar dropdown lands here. Two distinct pages: Profile
