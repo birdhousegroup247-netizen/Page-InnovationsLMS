@@ -6,6 +6,10 @@ backend. Covers checkout, payment providers, installments, refunds,
 enrollments, coupons, bundles, and admin visibility.
 
 ---
+@. check all email Services too, reminder emails, payment confirmation emails, refund emails,  welcome emails, promotional emails, happy birthday emails, emails for people taht regitser and idn't buy a course, follow up emails  etc and  many more i didn't think of 
+
+
+Note that the one we are uing for our payment gateway for now is paypal
 
 ## TL;DR — what's working, what's broken
 
