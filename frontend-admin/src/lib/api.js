@@ -4,12 +4,18 @@ import { tokenStorage } from '../utils/tokenStorage';
 // Base API URL - will use environment variable or fallback to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Create axios instance with default config
+// Create axios instance with default config.
+//
+// NOTE: do NOT set a default `Content-Type: application/json` here. axios
+// already sets that automatically for object payloads (see its default
+// transformRequest), so the default is redundant — and it actively breaks
+// FormData uploads. When Content-Type contains 'application/json' and the
+// body is FormData, axios runs `JSON.stringify(formDataToJSON(data))` and
+// silently turns the file into `{}`. That's what caused the admin
+// announcement upload to fail with "No file uploaded" (the request arrived
+// as application/json with body `{"file":{}}`).
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
   timeout: 30000, // 30 seconds
   withCredentials: true, // Send cookies with requests
 });
