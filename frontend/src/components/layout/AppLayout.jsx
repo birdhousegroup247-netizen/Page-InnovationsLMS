@@ -173,7 +173,7 @@ export default function AppLayout({ children }) {
       />
 
       {/* Main Content with responsive margin */}
-      <main className="lg:ml-[220px] pt-16">
+      <main className="lg:ml-[240px] pt-16">
         {/* Payment Banner (preview mode + installment warnings) */}
         <PaymentBanner />
         {children}

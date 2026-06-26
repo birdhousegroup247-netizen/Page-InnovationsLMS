@@ -19,7 +19,7 @@ const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) 
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 lg:left-[220px] left-0 h-16 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-border-dark z-40 transition-colors',
+        'fixed top-0 right-0 lg:left-[240px] left-0 h-16 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-border-dark z-40 transition-colors',
         className
       )}
     >

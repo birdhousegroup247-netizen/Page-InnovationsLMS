@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui';
 import AppLayout from './components/layout/AppLayout';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import FeatureGate from './components/auth/FeatureGate';
 
 /**
  * lazyWithReload — auto-recover from stale code-split chunks after a deploy.
@@ -385,9 +386,11 @@ function App() {
           <Route
             path="/instructor/courses/create"
             element={
-              <InstructorRoute>
-                <CreateCourse />
-              </InstructorRoute>
+              <FeatureGate flag="createCourse">
+                <InstructorRoute>
+                  <CreateCourse />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
@@ -425,57 +428,71 @@ function App() {
           <Route
             path="/instructor/students"
             element={
-              <InstructorRoute>
-                <MyStudents />
-              </InstructorRoute>
+              <FeatureGate flag="myStudents">
+                <InstructorRoute>
+                  <MyStudents />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/students/:studentId/progress/:courseId"
             element={
-              <InstructorRoute>
-                <StudentProgress />
-              </InstructorRoute>
+              <FeatureGate flag="myStudents">
+                <InstructorRoute>
+                  <StudentProgress />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/tests"
             element={
-              <InstructorRoute>
-                <ManageTests />
-              </InstructorRoute>
+              <FeatureGate flag="tests">
+                <InstructorRoute>
+                  <ManageTests />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/tests/create"
             element={
-              <InstructorRoute>
-                <CreateTest />
-              </InstructorRoute>
+              <FeatureGate flag="tests">
+                <InstructorRoute>
+                  <CreateTest />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/tests/:testId/edit"
             element={
-              <InstructorRoute>
-                <EditTest />
-              </InstructorRoute>
+              <FeatureGate flag="tests">
+                <InstructorRoute>
+                  <EditTest />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/tests/:testId/results"
             element={
-              <InstructorRoute>
-                <TestAnalytics />
-              </InstructorRoute>
+              <FeatureGate flag="tests">
+                <InstructorRoute>
+                  <TestAnalytics />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/attempts/:attemptId/details"
             element={
-              <InstructorRoute>
-                <TestResults />
-              </InstructorRoute>
+              <FeatureGate flag="tests">
+                <InstructorRoute>
+                  <TestResults />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           {/* Legacy My Questions route now redirects to the merged
@@ -495,17 +512,21 @@ function App() {
           <Route
             path="/instructor/courses/:courseId/students"
             element={
-              <InstructorRoute>
-                <MyStudents />
-              </InstructorRoute>
+              <FeatureGate flag="myStudents">
+                <InstructorRoute>
+                  <MyStudents />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/announcements"
             element={
-              <InstructorRoute>
-                <InstructorAnnouncements />
-              </InstructorRoute>
+              <FeatureGate flag="announcements">
+                <InstructorRoute>
+                  <InstructorAnnouncements />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
@@ -519,9 +540,11 @@ function App() {
           <Route
             path="/instructor/contribute-questions"
             element={
-              <InstructorRoute>
-                <ContributeQuestions />
-              </InstructorRoute>
+              <FeatureGate flag="contributeQuestions">
+                <InstructorRoute>
+                  <ContributeQuestions />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           {/* Live Sessions — one component, three URLs.
@@ -530,30 +553,32 @@ function App() {
               /courses/:courseId/sessions → preselected via path (course card). */}
           <Route
             path="/instructor/live-sessions"
-            element={<InstructorRoute><LiveSessionsPage /></InstructorRoute>}
+            element={<FeatureGate flag="liveSessions"><InstructorRoute><LiveSessionsPage /></InstructorRoute></FeatureGate>}
           />
           <Route
             path="/instructor/courses/:courseId/sessions"
-            element={<InstructorRoute><LiveSessionsPage /></InstructorRoute>}
+            element={<FeatureGate flag="liveSessions"><InstructorRoute><LiveSessionsPage /></InstructorRoute></FeatureGate>}
           />
 
           {/* Assignments — same pattern. */}
           <Route
             path="/instructor/assignments"
-            element={<InstructorRoute><AssignmentsPage /></InstructorRoute>}
+            element={<FeatureGate flag="assignments"><InstructorRoute><AssignmentsPage /></InstructorRoute></FeatureGate>}
           />
           <Route
             path="/instructor/courses/:courseId/assignments-grading"
-            element={<InstructorRoute><AssignmentsPage /></InstructorRoute>}
+            element={<FeatureGate flag="assignments"><InstructorRoute><AssignmentsPage /></InstructorRoute></FeatureGate>}
           />
 
           {/* Per-assignment grading page (drill-down) stays separate. */}
           <Route
             path="/instructor/assignments/:assignmentId/grade"
             element={
-              <InstructorRoute>
-                <GradeAssignments />
-              </InstructorRoute>
+              <FeatureGate flag="assignments">
+                <InstructorRoute>
+                  <GradeAssignments />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
@@ -598,49 +623,61 @@ function App() {
           <Route
             path="/bookmarks"
             element={
-              <ProtectedRoute>
-                <Bookmarks />
-              </ProtectedRoute>
+              <FeatureGate flag="bookmarks">
+                <ProtectedRoute>
+                  <Bookmarks />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/practice-tests"
             element={
-              <ProtectedRoute>
-                <PracticeTests />
-              </ProtectedRoute>
+              <FeatureGate flag="practiceTests">
+                <ProtectedRoute>
+                  <PracticeTests />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/certificates"
             element={
-              <ProtectedRoute>
-                <Certificates />
-              </ProtectedRoute>
+              <FeatureGate flag="certificates">
+                <ProtectedRoute>
+                  <Certificates />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/my-assigned-tests"
             element={
-              <ProtectedRoute>
-                <MyAssignedTests />
-              </ProtectedRoute>
+              <FeatureGate flag="tests">
+                <ProtectedRoute>
+                  <MyAssignedTests />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/generate-practice-test"
             element={
-              <ProtectedRoute>
-                <GeneratePracticeTest />
-              </ProtectedRoute>
+              <FeatureGate flag="generateTest">
+                <ProtectedRoute>
+                  <GeneratePracticeTest />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/practice-tests/:attemptId/take"
             element={
-              <ProtectedRoute>
-                <TakeTest />
-              </ProtectedRoute>
+              <FeatureGate flag="practiceTests">
+                <ProtectedRoute>
+                  <TakeTest />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
@@ -654,9 +691,11 @@ function App() {
           <Route
             path="/assigned-tests/:testId/take"
             element={
-              <ProtectedRoute>
-                <TakeTest />
-              </ProtectedRoute>
+              <FeatureGate flag="tests">
+                <ProtectedRoute>
+                  <TakeTest />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
 
@@ -672,81 +711,101 @@ function App() {
           <Route
             path="/leaderboard"
             element={
-              <ProtectedRoute>
-                <Leaderboard />
-              </ProtectedRoute>
+              <FeatureGate flag="leaderboard">
+                <ProtectedRoute>
+                  <Leaderboard />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/my-assignments"
             element={
-              <ProtectedRoute>
-                <MyAssignments />
-              </ProtectedRoute>
+              <FeatureGate flag="assignments">
+                <ProtectedRoute>
+                  <MyAssignments />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/attendance"
             element={
-              <ProtectedRoute>
-                <Attendance />
-              </ProtectedRoute>
+              <FeatureGate flag="attendance">
+                <ProtectedRoute>
+                  <Attendance />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/attendance"
             element={
-              <InstructorRoute>
-                <InstructorAttendance />
-              </InstructorRoute>
+              <FeatureGate flag="attendance">
+                <InstructorRoute>
+                  <InstructorAttendance />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/instructor/sessions/:sessionId/attendance"
             element={
-              <InstructorRoute>
-                <InstructorAttendance />
-              </InstructorRoute>
+              <FeatureGate flag="attendance">
+                <InstructorRoute>
+                  <InstructorAttendance />
+                </InstructorRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/my-notes"
             element={
-              <ProtectedRoute>
-                <MyNotes />
-              </ProtectedRoute>
+              <FeatureGate flag="myNotes">
+                <ProtectedRoute>
+                  <MyNotes />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/wishlist"
             element={
-              <ProtectedRoute>
-                <Wishlist />
-              </ProtectedRoute>
+              <FeatureGate flag="wishlist">
+                <ProtectedRoute>
+                  <Wishlist />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/bundles"
             element={
-              <ProtectedRoute>
-                <Bundles />
-              </ProtectedRoute>
+              <FeatureGate flag="bundles">
+                <ProtectedRoute>
+                  <Bundles />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/bundles/:id"
             element={
-              <ProtectedRoute>
-                <BundleDetail />
-              </ProtectedRoute>
+              <FeatureGate flag="bundles">
+                <ProtectedRoute>
+                  <BundleDetail />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/referrals"
             element={
-              <ProtectedRoute>
-                <Referrals />
-              </ProtectedRoute>
+              <FeatureGate flag="referrals">
+                <ProtectedRoute>
+                  <Referrals />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
 
@@ -754,25 +813,31 @@ function App() {
           <Route
             path="/billing"
             element={
-              <ProtectedRoute>
-                <Billing />
-              </ProtectedRoute>
+              <FeatureGate flag="billing">
+                <ProtectedRoute>
+                  <Billing />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/announcements"
             element={
-              <ProtectedRoute>
-                <Announcements />
-              </ProtectedRoute>
+              <FeatureGate flag="announcements">
+                <ProtectedRoute>
+                  <Announcements />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
           <Route
             path="/knowledge"
             element={
-              <ProtectedRoute>
-                <KnowledgeBase />
-              </ProtectedRoute>
+              <FeatureGate flag="knowledgeBase">
+                <ProtectedRoute>
+                  <KnowledgeBase />
+                </ProtectedRoute>
+              </FeatureGate>
             }
           />
 
