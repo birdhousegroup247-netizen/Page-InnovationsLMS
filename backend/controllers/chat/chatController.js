@@ -233,7 +233,8 @@ class ChatController {
 
   // Search users for DMs — scoped by role:
   //   admin      → any active student or instructor
-  //   instructor → their enrolled students + other instructors
+  //   instructor → their coursemates (enrolled students + other instructors in
+  //                shared rooms) + every admin (so tutors can reach support)
   //   student    → instructors of enrolled courses + classmates from same courses
   static async searchCoursemates(req, res, next) {
     try {
@@ -261,14 +262,24 @@ class ChatController {
       });
       const roomIds = myMemberships.map((m) => m.room_id);
 
-      if (roomIds.length === 0) return ApiResponse.success(res, { users: [] });
-
       // Find all other approved members in those same rooms
-      const roommates = await ChatRoomMember.findAll({
-        where: { room_id: { [Op.in]: roomIds }, user_id: { [Op.ne]: userId }, status: 'approved' },
-        attributes: ['user_id'],
-      });
+      const roommates = roomIds.length > 0
+        ? await ChatRoomMember.findAll({
+            where: { room_id: { [Op.in]: roomIds }, user_id: { [Op.ne]: userId }, status: 'approved' },
+            attributes: ['user_id'],
+          })
+        : [];
       const reachableIds = new Set(roommates.map((m) => m.user_id));
+
+      // Instructors can also DM admins/super_admins for support, even though
+      // admins don't sit in course chat rooms. Pull their ids in and merge.
+      if (role === 'instructor') {
+        const admins = await User.findAll({
+          where: { is_active: true, role: { [Op.in]: ['admin', 'super_admin'] } },
+          attributes: ['id'],
+        });
+        admins.forEach((a) => reachableIds.add(a.id));
+      }
 
       if (reachableIds.size === 0) return ApiResponse.success(res, { users: [] });
 
