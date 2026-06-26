@@ -154,6 +154,11 @@ class UploadController {
   static async uploadAnnouncementAttachment(req, res, next) {
     try {
       if (!req.file) {
+        logger.warn('[announcement upload] no file on request', {
+          contentType: req.headers['content-type'],
+          contentLength: req.headers['content-length'],
+          bodyKeys: Object.keys(req.body || {}),
+        });
         throw new BadRequestError('No file uploaded');
       }
 
