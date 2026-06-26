@@ -191,9 +191,14 @@ export default function Notifications() {
     }
   };
 
-  // Format date
+  // Format date — defensive against missing/invalid timestamps so a single
+  // bad notification row can't render the whole list as "Invalid Date".
+  // Sequelize returns `created_at` (underscored), but some socket-pushed
+  // shapes carry `createdAt` instead; tolerate both.
   const formatDate = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '';
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
@@ -425,7 +430,7 @@ export default function Notifications() {
                                 {notification.message}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-text-dark-muted transition-colors">
-                                {formatDate(notification.created_at)}
+                                {formatDate(notification.created_at || notification.createdAt)}
                               </p>
                             </div>
 
