@@ -295,7 +295,7 @@ export default function Enrollments() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => navigate(`/users?id=${enrollment.student_id}`)}
+                              onClick={() => navigate(`/users/${enrollment.student_id}`)}
                               title="View Student"
                             >
                               <UserCheck className="w-4 h-4" />
