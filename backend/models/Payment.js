@@ -19,6 +19,15 @@ const Payment = sequelize.define(
       allowNull: false,
       references: { model: 'courses', key: 'id' },
     },
+    // Bundle purchases: single Payment row with bundle_id set. course_id
+    // points at the bundle's primary (first) course as an anchor for
+    // per-course analytics. The webhook enrolls into every course in the
+    // bundle via runTransactionalSideEffects.
+    bundle_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'bundles', key: 'id' },
+    },
     enrollment_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -27,13 +36,19 @@ const Payment = sequelize.define(
     amount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
+      comment: 'Actual settled amount from the provider (what we counted as revenue)',
+    },
+    intended_amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      comment: 'What we told the provider to charge — kept separate from amount so any provider drift is visible for reconciliation',
     },
     currency: {
       type: DataTypes.STRING(3),
       defaultValue: 'USD',
     },
     payment_method: {
-      type: DataTypes.ENUM('card', 'paypal', 'bank_transfer'),
+      type: DataTypes.ENUM('card', 'paypal', 'bank_transfer', 'comp'),
       defaultValue: 'card',
     },
     payment_status: {
@@ -167,6 +182,7 @@ const Payment = sequelize.define(
       { fields: ['payment_gateway'] },
       { fields: ['paystack_reference'] },
       { fields: ['paypal_order_id'] },
+      { fields: ['bundle_id'] },
     ],
   }
 );

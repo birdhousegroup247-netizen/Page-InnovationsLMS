@@ -5,16 +5,17 @@
  */
 
 const {
-  User, Course, Payment, Enrollment, CouponCode, CouponRedemption,
-  CouponCodeCourse, ChatRoom, ChatRoomMember, AssignedTest, TestAssignment,
+  User, Course, Payment, Enrollment, CouponCode,
+  CouponCodeCourse, Bundle,
 } = require('../../models');
+const { sequelize } = require('../../config/database');
 const paystackService = require('../../services/payment/paystackService');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
-const emailSvc = require('../../services/email/emailService');
 const crypto = require('crypto');
 
 const INSTALLMENT_PERCENTAGE = 60;
@@ -340,113 +341,42 @@ class PaystackController {
   }
 
   static async _enrollFromPayment(payment, amountPaid) {
-    const { student_id, course_id, payment_plan, coupon_code_id } = payment;
+    const { student_id, course_id, payment_plan, bundle_id } = payment;
 
     const installmentDueDate =
       payment_plan === 'installment'
         ? new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
         : null;
 
-    await payment.update({
-      payment_status: 'completed',
-      payment_date: new Date(),
-      amount: amountPaid || payment.amount,
-      transaction_id: payment.paystack_reference,
-      installment_due_date: installmentDueDate,
+    let courseIds = [course_id];
+    if (bundle_id) {
+      const resolved = await enrollmentSvc.resolveBundleCourseIds(bundle_id);
+      if (resolved && resolved.length) courseIds = resolved;
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      await payment.update({
+        payment_status: 'completed',
+        payment_date: new Date(),
+        amount: amountPaid || payment.amount,
+        transaction_id: payment.paystack_reference,
+        installment_due_date: installmentDueDate,
+      }, { transaction });
+
+      await enrollmentSvc.runTransactionalSideEffects({
+        payment,
+        studentId: student_id,
+        courseIds,
+        transaction,
+      });
     });
 
-    const enrollment = await Enrollment.create({ student_id, course_id });
-    await payment.update({ enrollment_id: enrollment.id });
-
-    await User.update({ registration_status: 'active' }, { where: { id: student_id } });
-
-    if (coupon_code_id) {
-      await CouponCode.increment('uses_count', { where: { id: coupon_code_id } });
-      await CouponRedemption.create({
-        coupon_code_id,
-        user_id: student_id,
-        payment_id: payment.id,
-        original_price: payment.original_amount,
-        discount_amount: payment.discount_amount,
-        final_price: payment.amount,
-      });
-    }
-
-    // Auto-join course chat room
-    const chatRoom = await ChatRoom.findOne({ where: { course_id, is_active: true } });
-    if (chatRoom) {
-      await ChatRoomMember.findOrCreate({
-        where: { room_id: chatRoom.id, user_id: student_id },
-        defaults: { role: 'student', status: 'approved' },
-      });
-    }
-
-    // Auto-assign published tests
-    try {
-      const publishedTests = await AssignedTest.findAll({
-        where: { course_id, status: 'published' },
-        attributes: ['id', 'end_date'],
-      });
-      for (const test of publishedTests) {
-        if (test.end_date && new Date() > new Date(test.end_date)) continue;
-        await TestAssignment.findOrCreate({
-          where: { test_id: test.id, student_id },
-          defaults: { due_date: test.end_date || null, status: 'pending' },
-        });
-      }
-    } catch (testErr) {
-      logger.warn(`Paystack: failed to auto-assign tests: ${testErr.message}`);
-    }
-
-    await NotificationsController.createNotification({
-      user_id: student_id,
-      type: 'course_enrollment',
-      title: 'Enrollment Confirmed!',
-      message: 'Your payment was successful. You now have full access to your course.',
-      link: `/courses/${course_id}`,
-      priority: 'high',
+    await enrollmentSvc.runPostCommitSideEffects({
+      studentId: student_id,
+      courseIds,
+      payment,
+      gateway: 'paystack',
     });
-
-    // Send emails (non-critical)
-    try {
-      const student = await User.findByPk(student_id, { attributes: ['full_name', 'email'] });
-      const course = await Course.findByPk(course_id, { attributes: ['title'] });
-      if (student && course) {
-        await emailSvc.sendPaymentReceipt(student.email, student.full_name, {
-          courseTitle: course.title,
-          amountPaid: payment.amount,
-          paymentPlan: payment_plan,
-          remainingAmount: payment.installment_remaining_amount,
-          invoiceDate: new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
-          paymentId: payment.id,
-        });
-        await emailSvc.sendPaymentCongrats(student.email, student.full_name, {
-          courseTitle: course.title,
-          courseId: course_id,
-        });
-      }
-    } catch (emailErr) {
-      logger.warn(`Paystack enrollment emails failed: ${emailErr.message}`);
-    }
-
-    // Reward referrer if this student was referred (fire-and-forget)
-    try {
-      const { Referral } = require('../../models');
-      const ref = await Referral.findOne({ where: { referred_id: student_id, status: 'pending' } });
-      if (ref) {
-        await ref.update({ status: 'rewarded', rewarded_at: new Date() });
-        await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
-        logger.info(`Referral rewarded: referrer ${ref.referrer_id} credited for user ${student_id}`);
-      }
-    } catch (refErr) {
-      logger.warn(`Referral reward failed (non-critical): ${refErr.message}`);
-    }
-
-    // Badge check for enrollment milestone
-    const BadgesController = require('../badges/badgesController');
-    BadgesController.checkAndAward(student_id, 'enrollment_count').catch(() => {});
-
-    logger.info(`Paystack payment ${payment.id} completed — user ${student_id} enrolled in course ${course_id}`);
   }
 }
 

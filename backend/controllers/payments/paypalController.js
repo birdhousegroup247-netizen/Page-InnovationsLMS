@@ -6,16 +6,17 @@
  */
 
 const {
-  User, Course, Payment, Enrollment, CouponCode, CouponRedemption,
-  CouponCodeCourse, ChatRoom, ChatRoomMember, AssignedTest, TestAssignment,
+  User, Course, Payment, Enrollment, CouponCode,
+  CouponCodeCourse, Bundle,
 } = require('../../models');
+const { sequelize } = require('../../config/database');
 const paypalService = require('../../services/payment/paypalService');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
-const emailSvc = require('../../services/email/emailService');
 const crypto = require('crypto');
 
 const INSTALLMENT_PERCENTAGE = 60;
@@ -33,28 +34,60 @@ class PayPalController {
    */
   static async initializeCheckout(req, res, next) {
     try {
-      const { course_id, payment_plan = 'full', coupon_code } = req.body;
+      const { course_id, bundle_id, payment_plan = 'full', coupon_code } = req.body;
       const userId = req.user.id;
 
-      if (!course_id) return ApiResponse.badRequest(res, 'course_id is required');
+      if (!course_id && !bundle_id) return ApiResponse.badRequest(res, 'course_id or bundle_id is required');
       if (!['full', 'installment'].includes(payment_plan)) {
         return ApiResponse.badRequest(res, 'payment_plan must be "full" or "installment"');
       }
 
-      const course = await Course.findByPk(course_id, { attributes: ['id', 'title', 'price', 'status'] });
-      if (!course) throw new NotFoundError('Course not found');
-      if (course.status !== 'published') return ApiResponse.badRequest(res, 'Course is not available for purchase');
-      if (!course.price || parseFloat(course.price) === 0) {
-        return ApiResponse.badRequest(res, 'This course is free. Use the enroll endpoint directly.');
+      // ── Bundle branch ─────────────────────────────────────────────
+      let bundle = null;
+      let bundleCourseIds = null;
+      let course;
+      if (bundle_id) {
+        bundle = await Bundle.findOne({
+          where: { id: bundle_id, is_active: true },
+          include: [{ model: Course, as: 'courses', attributes: ['id', 'title', 'price'] }],
+        });
+        if (!bundle) throw new NotFoundError('Bundle not found');
+        if (!bundle.courses.length) return ApiResponse.badRequest(res, 'Bundle has no courses');
+        if (!bundle.price || parseFloat(bundle.price) === 0) {
+          return ApiResponse.badRequest(res, 'Bundle price not set');
+        }
+        bundleCourseIds = bundle.courses.map((c) => c.id);
+        course = { id: bundle.courses[0].id, title: bundle.title, price: bundle.price };
+
+        const alreadyEnrolled = await Enrollment.count({
+          where: { student_id: userId, course_id: { [Op.in]: bundleCourseIds } },
+        });
+        if (alreadyEnrolled === bundleCourseIds.length) {
+          return ApiResponse.badRequest(res, 'You are already enrolled in every course in this bundle');
+        }
+
+        const dupBundlePayment = await Payment.findOne({
+          where: { student_id: userId, bundle_id, payment_status: 'completed' },
+        });
+        if (dupBundlePayment) {
+          return ApiResponse.badRequest(res, 'You have already purchased this bundle');
+        }
+      } else {
+        course = await Course.findByPk(course_id, { attributes: ['id', 'title', 'price', 'status'] });
+        if (!course) throw new NotFoundError('Course not found');
+        if (course.status !== 'published') return ApiResponse.badRequest(res, 'Course is not available for purchase');
+        if (!course.price || parseFloat(course.price) === 0) {
+          return ApiResponse.badRequest(res, 'This course is free. Use the enroll endpoint directly.');
+        }
+
+        const existingEnrollment = await Enrollment.findOne({ where: { student_id: userId, course_id } });
+        if (existingEnrollment) return ApiResponse.badRequest(res, 'You are already enrolled in this course');
+
+        const existingPayment = await Payment.findOne({
+          where: { student_id: userId, course_id, payment_status: 'completed' },
+        });
+        if (existingPayment) return ApiResponse.badRequest(res, 'You have already paid for this course');
       }
-
-      const existingEnrollment = await Enrollment.findOne({ where: { student_id: userId, course_id } });
-      if (existingEnrollment) return ApiResponse.badRequest(res, 'You are already enrolled in this course');
-
-      const existingPayment = await Payment.findOne({
-        where: { student_id: userId, course_id, payment_status: 'completed' },
-      });
-      if (existingPayment) return ApiResponse.badRequest(res, 'You have already paid for this course');
 
       let originalPrice = parseFloat(course.price);
       let discountAmount = 0;
@@ -67,9 +100,10 @@ class PayPalController {
         });
         if (coupon && (!coupon.expires_at || new Date() < new Date(coupon.expires_at))) {
           if (coupon.max_uses === null || coupon.uses_count < coupon.max_uses) {
+            const targetCourseIds = bundleCourseIds || [parseInt(course_id)];
             const validForCourse =
               coupon.applies_to === 'all' ||
-              coupon.applicable_courses.some((c) => c.course_id === parseInt(course_id));
+              coupon.applicable_courses.some((c) => targetCourseIds.includes(c.course_id));
             if (validForCourse) {
               discountAmount =
                 coupon.discount_type === 'percentage'
@@ -91,18 +125,21 @@ class PayPalController {
       }
 
       const reference = generateRef();
+      const anchorCourseId = bundle ? bundleCourseIds[0] : parseInt(course_id);
 
       const order = await paypalService.createOrder({
         amount: chargeAmount,
         currency: 'USD',
         reference,
-        description: `TekyPro — ${course.title}`,
+        description: bundle ? `TekyPro Bundle — ${bundle.title}` : `TekyPro — ${course.title}`,
       });
 
       await Payment.create({
         student_id: userId,
-        course_id,
+        course_id: anchorCourseId,
+        bundle_id: bundle ? bundle.id : null,
         amount: chargeAmount,
+        intended_amount: chargeAmount,
         original_amount: originalPrice,
         discount_amount: discountAmount,
         currency: 'USD',
@@ -115,10 +152,12 @@ class PayPalController {
         installment_remaining_amount: payment_plan === 'installment' ? remainingAmount : null,
         installment_status: payment_plan === 'installment' ? 'pending' : 'not_applicable',
         coupon_code_id: couponId,
-        metadata: { course_title: course.title, paypal_reference: reference },
+        metadata: bundle
+          ? { bundle_title: bundle.title, bundle_course_ids: bundleCourseIds, paypal_reference: reference }
+          : { course_title: course.title, paypal_reference: reference },
       });
 
-      logger.info(`PayPal order initialized: ${order.id} user=${userId} course=${course_id}`);
+      logger.info(`PayPal order initialized: ${order.id} user=${userId} ${bundle ? `bundle=${bundle.id}` : `course=${course_id}`}`);
 
       return ApiResponse.success(res, {
         order_id: order.id,
@@ -423,108 +462,43 @@ class PayPalController {
   }
 
   static async _enrollFromPayment(payment, amountPaid) {
-    const { student_id, course_id, payment_plan, coupon_code_id } = payment;
+    const { student_id, course_id, payment_plan, bundle_id } = payment;
 
     const installmentDueDate =
       payment_plan === 'installment'
         ? new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
         : null;
 
-    await payment.update({
-      payment_status: 'completed',
-      payment_date: new Date(),
-      amount: amountPaid || payment.amount,
-      transaction_id: payment.paypal_capture_id || payment.paypal_order_id,
-      installment_due_date: installmentDueDate,
+    // Resolve target courses (single or bundle-wide)
+    let courseIds = [course_id];
+    if (bundle_id) {
+      const resolved = await enrollmentSvc.resolveBundleCourseIds(bundle_id);
+      if (resolved && resolved.length) courseIds = resolved;
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      await payment.update({
+        payment_status: 'completed',
+        payment_date: new Date(),
+        amount: amountPaid || payment.amount,
+        transaction_id: payment.paypal_capture_id || payment.paypal_order_id,
+        installment_due_date: installmentDueDate,
+      }, { transaction });
+
+      await enrollmentSvc.runTransactionalSideEffects({
+        payment,
+        studentId: student_id,
+        courseIds,
+        transaction,
+      });
     });
 
-    const enrollment = await Enrollment.create({ student_id, course_id });
-    await payment.update({ enrollment_id: enrollment.id });
-
-    await User.update({ registration_status: 'active' }, { where: { id: student_id } });
-
-    if (coupon_code_id) {
-      await CouponCode.increment('uses_count', { where: { id: coupon_code_id } });
-      await CouponRedemption.create({
-        coupon_code_id,
-        user_id: student_id,
-        payment_id: payment.id,
-        original_price: payment.original_amount,
-        discount_amount: payment.discount_amount,
-        final_price: payment.amount,
-      });
-    }
-
-    const chatRoom = await ChatRoom.findOne({ where: { course_id, is_active: true } });
-    if (chatRoom) {
-      await ChatRoomMember.findOrCreate({
-        where: { room_id: chatRoom.id, user_id: student_id },
-        defaults: { role: 'student', status: 'approved' },
-      });
-    }
-
-    try {
-      const publishedTests = await AssignedTest.findAll({
-        where: { course_id, status: 'published' },
-        attributes: ['id', 'end_date'],
-      });
-      for (const test of publishedTests) {
-        if (test.end_date && new Date() > new Date(test.end_date)) continue;
-        await TestAssignment.findOrCreate({
-          where: { test_id: test.id, student_id },
-          defaults: { due_date: test.end_date || null, status: 'pending' },
-        });
-      }
-    } catch (testErr) {
-      logger.warn(`PayPal: failed to auto-assign tests: ${testErr.message}`);
-    }
-
-    await NotificationsController.createNotification({
-      user_id: student_id,
-      type: 'course_enrollment',
-      title: 'Enrollment Confirmed!',
-      message: 'Your payment was successful. You now have full access to your course.',
-      link: `/courses/${course_id}`,
-      priority: 'high',
+    await enrollmentSvc.runPostCommitSideEffects({
+      studentId: student_id,
+      courseIds,
+      payment,
+      gateway: 'paypal',
     });
-
-    try {
-      const student = await User.findByPk(student_id, { attributes: ['full_name', 'email'] });
-      const course = await Course.findByPk(course_id, { attributes: ['title'] });
-      if (student && course) {
-        await emailSvc.sendPaymentReceipt(student.email, student.full_name, {
-          courseTitle: course.title,
-          amountPaid: payment.amount,
-          paymentPlan: payment_plan,
-          remainingAmount: payment.installment_remaining_amount,
-          invoiceDate: new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
-          paymentId: payment.id,
-        });
-        await emailSvc.sendPaymentCongrats(student.email, student.full_name, {
-          courseTitle: course.title,
-          courseId: course_id,
-        });
-      }
-    } catch (emailErr) {
-      logger.warn(`PayPal enrollment emails failed: ${emailErr.message}`);
-    }
-
-    try {
-      const { Referral } = require('../../models');
-      const ref = await Referral.findOne({ where: { referred_id: student_id, status: 'pending' } });
-      if (ref) {
-        await ref.update({ status: 'rewarded', rewarded_at: new Date() });
-        await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
-        logger.info(`Referral rewarded: referrer ${ref.referrer_id} credited for user ${student_id}`);
-      }
-    } catch (refErr) {
-      logger.warn(`Referral reward failed (non-critical): ${refErr.message}`);
-    }
-
-    const BadgesController = require('../badges/badgesController');
-    BadgesController.checkAndAward(student_id, 'enrollment_count').catch(() => {});
-
-    logger.info(`PayPal payment ${payment.id} completed — user ${student_id} enrolled in course ${course_id}`);
   }
 }
 

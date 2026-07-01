@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../../components/ui/Toast';
 import { adminPaymentsAPI } from '../../lib/api';
+import { formatCurrency as fmtCurrency } from '../../utils/currency';
 import {
   DollarSign,
   TrendingUp,
@@ -112,7 +113,10 @@ export default function Payments() {
     return map[status] || 'default';
   };
 
-  const formatCurrency = (val) => `$${parseFloat(val || 0).toFixed(2)}`;
+  // Aggregate stats (total revenue, month revenue etc.) sum across
+  // multiple payments so they have no single currency — render as USD.
+  // Per-row values pass p.currency for accuracy.
+  const formatCurrency = (val, currency = 'USD') => fmtCurrency(val, currency);
 
   const formatMonth = (month) => {
     if (!month) return '';
@@ -285,7 +289,7 @@ export default function Payments() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{payment.student?.full_name || '—'}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {/* On phones (Amount + Course hidden) surface the amount inline */}
-                              <span className="sm:hidden font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(payment.amount)}</span>
+                              <span className="sm:hidden font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(payment.amount, payment.currency)}</span>
                               <span className="sm:hidden"> · </span>
                               {payment.student?.email}
                             </p>
@@ -295,9 +299,9 @@ export default function Payments() {
                           <span className="line-clamp-1">{payment.course?.title || '—'}</span>
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white hidden sm:table-cell">
-                          {formatCurrency(payment.amount)}
+                          {formatCurrency(payment.amount, payment.currency)}
                           {payment.discount_amount > 0 && (
-                            <span className="ml-1 text-xs text-gray-400 line-through">{formatCurrency(payment.original_amount)}</span>
+                            <span className="ml-1 text-xs text-gray-400 line-through">{formatCurrency(payment.original_amount, payment.currency)}</span>
                           )}
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
@@ -308,7 +312,7 @@ export default function Payments() {
                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                 : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                             }`}>
-                              {payment.payment_gateway === 'paystack' ? 'Paystack' : 'Stripe'}
+                              {payment.payment_gateway === 'paystack' ? 'Paystack' : payment.payment_gateway === 'paypal' ? 'PayPal' : 'Stripe'}
                             </span>
                           </div>
                         </td>
@@ -358,8 +362,8 @@ export default function Payments() {
           <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-700 dark:text-red-300">
-              Refund <strong>{formatCurrency(refundTarget?.amount)}</strong> to <strong>{refundTarget?.student?.full_name}</strong> for <strong>{refundTarget?.course?.title}</strong>?
-              This will trigger a {refundTarget?.payment_gateway === 'paystack' ? 'Paystack' : 'Stripe'} refund and cannot be undone.
+              Refund <strong>{formatCurrency(refundTarget?.amount, refundTarget?.currency)}</strong> to <strong>{refundTarget?.student?.full_name}</strong> for <strong>{refundTarget?.course?.title}</strong>?
+              This will trigger a {refundTarget?.payment_gateway === 'paystack' ? 'Paystack' : refundTarget?.payment_gateway === 'paypal' ? 'PayPal' : 'Stripe'} refund and cannot be undone.
             </p>
           </div>
           <div>

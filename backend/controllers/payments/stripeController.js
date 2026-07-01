@@ -5,13 +5,15 @@
  */
 
 const {
-  User, Course, Payment, Enrollment, CouponCode, CouponRedemption,
-  CouponCodeCourse, ChatRoom, ChatRoomMember, AssignedTest, TestAssignment,
+  User, Course, Payment, Enrollment, CouponCode,
+  CouponCodeCourse, Bundle,
 } = require('../../models');
+const { sequelize } = require('../../config/database');
 const stripeService = require('../../services/payment/stripeService');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
-const { BadRequestError, NotFoundError } = require('../../utils/errors');
+const { NotFoundError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
 const emailSvc = require('../../services/email/emailService');
@@ -27,11 +29,11 @@ class StripeController {
    */
   static async createCheckoutSession(req, res, next) {
     try {
-      const { course_id, payment_plan = 'full', coupon_code } = req.body;
+      const { course_id, bundle_id, payment_plan = 'full', coupon_code } = req.body;
       const userId = req.user.id;
 
-      if (!course_id) {
-        return ApiResponse.badRequest(res, 'course_id is required');
+      if (!course_id && !bundle_id) {
+        return ApiResponse.badRequest(res, 'course_id or bundle_id is required');
       }
 
       // Validate payment plan
@@ -39,34 +41,69 @@ class StripeController {
         return ApiResponse.badRequest(res, 'payment_plan must be "full" or "installment"');
       }
 
-      const course = await Course.findByPk(course_id, {
-        attributes: ['id', 'title', 'price', 'status'],
-      });
+      // ── Bundle branch ─────────────────────────────────────────────
+      // For bundles, we charge the bundle price and store one Payment
+      // row with bundle_id set. course_id is the bundle's first course
+      // as an anchor so per-course analytics still light up.
+      let bundle = null;
+      let bundleCourseIds = null;
+      let course;
+      if (bundle_id) {
+        bundle = await Bundle.findOne({
+          where: { id: bundle_id, is_active: true },
+          include: [{ model: Course, as: 'courses', attributes: ['id', 'title', 'price'] }],
+        });
+        if (!bundle) throw new NotFoundError('Bundle not found');
+        if (!bundle.courses.length) return ApiResponse.badRequest(res, 'Bundle has no courses');
+        if (!bundle.price || parseFloat(bundle.price) === 0) {
+          return ApiResponse.badRequest(res, 'Bundle price not set');
+        }
+        bundleCourseIds = bundle.courses.map((c) => c.id);
+        course = { id: bundle.courses[0].id, title: bundle.title, price: bundle.price };
 
-      if (!course) throw new NotFoundError('Course not found');
-      if (course.status !== 'published') {
-        return ApiResponse.badRequest(res, 'Course is not available for purchase');
-      }
+        const alreadyEnrolled = await Enrollment.count({
+          where: { student_id: userId, course_id: { [Op.in]: bundleCourseIds } },
+        });
+        if (alreadyEnrolled === bundleCourseIds.length) {
+          return ApiResponse.badRequest(res, 'You are already enrolled in every course in this bundle');
+        }
 
-      // Free course — enroll directly, no payment needed
-      if (!course.price || parseFloat(course.price) === 0) {
-        return ApiResponse.badRequest(res, 'This course is free. Use the enroll endpoint directly.');
-      }
+        const dupBundlePayment = await Payment.findOne({
+          where: { student_id: userId, bundle_id, payment_status: 'completed' },
+        });
+        if (dupBundlePayment) {
+          return ApiResponse.badRequest(res, 'You have already purchased this bundle');
+        }
+      } else {
+        course = await Course.findByPk(course_id, {
+          attributes: ['id', 'title', 'price', 'status'],
+        });
 
-      // Block if already has an active enrollment
-      const existingEnrollment = await Enrollment.findOne({
-        where: { student_id: userId, course_id },
-      });
-      if (existingEnrollment) {
-        return ApiResponse.badRequest(res, 'You are already enrolled in this course');
-      }
+        if (!course) throw new NotFoundError('Course not found');
+        if (course.status !== 'published') {
+          return ApiResponse.badRequest(res, 'Course is not available for purchase');
+        }
 
-      // Block if already has a completed payment for this course
-      const existingPayment = await Payment.findOne({
-        where: { student_id: userId, course_id, payment_status: 'completed' },
-      });
-      if (existingPayment) {
-        return ApiResponse.badRequest(res, 'You have already paid for this course');
+        // Free course — enroll directly, no payment needed
+        if (!course.price || parseFloat(course.price) === 0) {
+          return ApiResponse.badRequest(res, 'This course is free. Use the enroll endpoint directly.');
+        }
+
+        // Block if already has an active enrollment
+        const existingEnrollment = await Enrollment.findOne({
+          where: { student_id: userId, course_id },
+        });
+        if (existingEnrollment) {
+          return ApiResponse.badRequest(res, 'You are already enrolled in this course');
+        }
+
+        // Block if already has a completed payment for this course
+        const existingPayment = await Payment.findOne({
+          where: { student_id: userId, course_id, payment_status: 'completed' },
+        });
+        if (existingPayment) {
+          return ApiResponse.badRequest(res, 'You have already paid for this course');
+        }
       }
 
       let originalPrice = parseFloat(course.price);
@@ -74,7 +111,9 @@ class StripeController {
       let couponId = null;
       let stripeCouponId = null;
 
-      // Apply coupon if provided
+      // Apply coupon if provided. For bundles, coupon is considered
+      // "valid for course" if any bundle course is in the applicable set
+      // (or applies_to === 'all').
       if (coupon_code) {
         const coupon = await CouponCode.findOne({
           where: { code: coupon_code.toUpperCase().trim(), is_active: true },
@@ -83,10 +122,10 @@ class StripeController {
 
         if (coupon && (!coupon.expires_at || new Date() < new Date(coupon.expires_at))) {
           if (coupon.max_uses === null || coupon.uses_count < coupon.max_uses) {
-            // Check course applicability
+            const targetCourseIds = bundleCourseIds || [parseInt(course_id)];
             const validForCourse =
               coupon.applies_to === 'all' ||
-              coupon.applicable_courses.some((c) => c.course_id === parseInt(course_id));
+              coupon.applicable_courses.some((c) => targetCourseIds.includes(c.course_id));
 
             if (validForCourse) {
               if (coupon.discount_type === 'percentage') {
@@ -121,22 +160,28 @@ class StripeController {
 
       const unitAmountCents = Math.round(chargeAmount * 100);
 
+      const anchorCourseId = bundle ? bundleCourseIds[0] : parseInt(course_id);
       const session = await stripeService.createCheckoutSession({
         userId,
-        courseId: course_id,
-        courseTitle: course.title,
+        courseId: anchorCourseId,
+        courseTitle: bundle ? `${bundle.title} (Bundle)` : course.title,
         unitAmount: unitAmountCents,
         paymentPlan: payment_plan,
         successUrl: `${FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${FRONTEND_URL}/payment-cancelled?course_id=${course_id}`,
+        cancelUrl: bundle
+          ? `${FRONTEND_URL}/bundles/${bundle.id}`
+          : `${FRONTEND_URL}/payment-cancelled?course_id=${course_id}`,
         couponStripeId: stripeCouponId,
+        extraMetadata: bundle ? { bundle_id: String(bundle.id) } : {},
       });
 
       // Store a pending payment record so we can match the webhook later
       await Payment.create({
         student_id: userId,
-        course_id,
+        course_id: anchorCourseId,
+        bundle_id: bundle ? bundle.id : null,
         amount: chargeAmount,
+        intended_amount: chargeAmount,
         original_amount: originalPrice,
         discount_amount: discountAmount,
         currency: 'USD',
@@ -148,10 +193,12 @@ class StripeController {
         installment_status: payment_plan === 'installment' ? 'pending' : 'not_applicable',
         coupon_code_id: couponId,
         stripe_checkout_session_id: session.id,
-        metadata: { course_title: course.title },
+        metadata: bundle
+          ? { bundle_title: bundle.title, bundle_course_ids: bundleCourseIds }
+          : { course_title: course.title },
       });
 
-      logger.info(`Checkout session ${session.id} created for user ${userId}, course ${course_id}`);
+      logger.info(`Checkout session ${session.id} created for user ${userId}, ${bundle ? `bundle ${bundle.id}` : `course ${course_id}`}`);
 
       return ApiResponse.success(res, {
         checkout_url: session.url,
@@ -347,7 +394,7 @@ class StripeController {
   // ─── Private webhook handlers ───────────────────────────────────────────────
 
   static async _handleCheckoutCompleted(session) {
-    const { user_id, course_id, payment_plan, payment_type, original_payment_id } = session.metadata;
+    const { user_id, course_id, payment_plan, payment_type, original_payment_id, bundle_id } = session.metadata;
 
     // ── Handle installment second payment ─────────────────────────────────────
     if (payment_type === 'installment_second' && original_payment_id) {
@@ -395,7 +442,6 @@ class StripeController {
       return;
     }
 
-    // Find the pending payment record
     const payment = await Payment.findOne({
       where: { stripe_checkout_session_id: session.id },
     });
@@ -412,130 +458,50 @@ class StripeController {
 
     const amountPaid = session.amount_total / 100; // Stripe sends cents
 
-    // Mark payment as completed
+    // Resolve bundle courses if applicable. bundle_id from metadata
+    // overrides — payment.bundle_id may not be persisted for legacy rows.
+    const effectiveBundleId = bundle_id ? parseInt(bundle_id) : payment.bundle_id;
+    let courseIds = [parseInt(course_id)];
+    if (effectiveBundleId) {
+      const resolved = await enrollmentSvc.resolveBundleCourseIds(effectiveBundleId);
+      if (resolved && resolved.length) courseIds = resolved;
+    }
+
     const installmentDueDate =
       payment_plan === 'installment'
         ? new Date(Date.now() + 21 * 24 * 60 * 60 * 1000)
         : null;
 
-    await payment.update({
-      payment_status: 'completed',
-      payment_date: new Date(),
-      amount: amountPaid,
-      stripe_payment_intent_id: session.payment_intent,
-      transaction_id: session.payment_intent,
-      installment_due_date: installmentDueDate,
-    });
+    // Everything that MUST land together runs inside one transaction.
+    // A mid-flow failure now rolls back to a clean state instead of
+    // leaving a completed Payment tied to a half-built enrollment.
+    await sequelize.transaction(async (transaction) => {
+      await payment.update({
+        payment_status: 'completed',
+        payment_date: new Date(),
+        amount: amountPaid,
+        stripe_payment_intent_id: session.payment_intent,
+        transaction_id: session.payment_intent,
+        installment_due_date: installmentDueDate,
+      }, { transaction });
 
-    // Create enrollment
-    const enrollment = await Enrollment.create({
-      student_id: parseInt(user_id),
-      course_id: parseInt(course_id),
-    });
-
-    // Link payment to enrollment
-    await payment.update({ enrollment_id: enrollment.id });
-
-    // Activate user account
-    await User.update(
-      { registration_status: 'active' },
-      { where: { id: parseInt(user_id) } }
-    );
-
-    // Increment coupon uses_count if coupon was used
-    if (payment.coupon_code_id) {
-      await CouponCode.increment('uses_count', { where: { id: payment.coupon_code_id } });
-
-      await CouponRedemption.create({
-        coupon_code_id: payment.coupon_code_id,
-        user_id: parseInt(user_id),
-        payment_id: payment.id,
-        original_price: payment.original_amount,
-        discount_amount: payment.discount_amount,
-        final_price: payment.amount,
+      await enrollmentSvc.runTransactionalSideEffects({
+        payment,
+        studentId: parseInt(user_id),
+        courseIds,
+        transaction,
       });
-    }
-
-    // Auto-join course chat room
-    const chatRoom = await ChatRoom.findOne({
-      where: { course_id: parseInt(course_id), is_active: true },
-    });
-    if (chatRoom) {
-      await ChatRoomMember.findOrCreate({
-        where: { room_id: chatRoom.id, user_id: parseInt(user_id) },
-        defaults: { role: 'student', status: 'approved' },
-      });
-    }
-
-    // Auto-assign published tests
-    try {
-      const publishedTests = await AssignedTest.findAll({
-        where: { course_id: parseInt(course_id), status: 'published' },
-        attributes: ['id', 'end_date'],
-      });
-      for (const test of publishedTests) {
-        if (test.end_date && new Date() > new Date(test.end_date)) continue;
-        await TestAssignment.findOrCreate({
-          where: { test_id: test.id, student_id: parseInt(user_id) },
-          defaults: { due_date: test.end_date || null, status: 'pending' },
-        });
-      }
-    } catch (testErr) {
-      logger.warn(`Failed to auto-assign tests after payment: ${testErr.message}`);
-    }
-
-    // Send enrollment notification
-    await NotificationsController.createNotification({
-      user_id: parseInt(user_id),
-      type: 'course_enrollment',
-      title: 'Enrollment Confirmed!',
-      message: `Your payment was successful. You now have full access to your course.`,
-      link: `/courses/${course_id}`,
-      priority: 'high',
     });
 
-    // Send payment receipt + enrollment congratulations email (non-critical)
-    try {
-      const student = await User.findByPk(parseInt(user_id), { attributes: ['full_name', 'email'] });
-      const course = await Course.findByPk(parseInt(course_id), { attributes: ['title'] });
-      if (student && course) {
-        await emailSvc.sendPaymentReceipt(student.email, student.full_name, {
-          courseTitle: course.title,
-          amountPaid: payment.amount,
-          paymentPlan: payment_plan,
-          remainingAmount: payment.installment_remaining_amount,
-          invoiceDate: new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
-          paymentId: payment.id,
-        });
-        await emailSvc.sendPaymentCongrats(student.email, student.full_name, {
-          courseTitle: course.title,
-          courseId: course_id,
-        });
-      }
-    } catch (emailErr) {
-      logger.warn(`Enrollment emails failed (non-critical): ${emailErr.message}`);
-    }
-
-    // Reward referrer if this student was referred (fire-and-forget)
-    try {
-      const { Referral } = require('../../models');
-      const ref = await Referral.findOne({ where: { referred_id: parseInt(user_id), status: 'pending' } });
-      if (ref) {
-        await ref.update({ status: 'rewarded', rewarded_at: new Date() });
-        await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
-        logger.info(`Referral rewarded: referrer ${ref.referrer_id} credited for user ${user_id}`);
-      }
-    } catch (refErr) {
-      logger.warn(`Referral reward failed (non-critical): ${refErr.message}`);
-    }
-
-    // Badge check for enrollment milestone
-    const BadgesController = require('../badges/badgesController');
-    BadgesController.checkAndAward(parseInt(user_id), 'enrollment_count').catch(() => {});
-
-    logger.info(
-      `Payment ${payment.id} completed — user ${user_id} enrolled in course ${course_id}`
-    );
+    // Post-commit side-effects (notification, emails, referral, badge).
+    // These are fire-and-forget so a temporary SMTP outage can't undo
+    // the enrollment we just committed.
+    await enrollmentSvc.runPostCommitSideEffects({
+      studentId: parseInt(user_id),
+      courseIds,
+      payment,
+      gateway: 'stripe',
+    });
   }
 
   static async _handlePaymentFailed(paymentIntent) {

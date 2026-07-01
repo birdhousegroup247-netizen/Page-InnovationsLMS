@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paymentsAPI, referralsAPI } from '../lib/api';
+import { formatCurrency as fmtCurrency } from '../utils/currency';
 import {
   CreditCard, CheckCircle, Clock, AlertTriangle, XCircle, RefreshCw,
   Receipt, Wallet, Users, Copy, Check, TrendingUp, ChevronRight,
@@ -42,8 +43,11 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function formatCurrency(v) {
-  return `$${parseFloat(v || 0).toFixed(2)}`;
+// Historically hardcoded to '$'. Now respects the payment's currency
+// column so a non-USD payment renders with the right symbol. When only
+// a scalar is passed (e.g. sum of amounts), we still fall back to USD.
+function formatCurrency(v, currency = 'USD') {
+  return fmtCurrency(v, currency);
 }
 
 export default function Billing() {
@@ -382,7 +386,7 @@ function PaymentRow({ p, compact, navigate }) {
               {p.course?.title || 'Course (no longer available)'}
             </p>
             <span className="text-sm font-semibold text-gray-900 dark:text-white flex-shrink-0">
-              {formatCurrency(p.amount)}
+              {formatCurrency(p.amount, p.currency)}
             </span>
           </div>
 
@@ -407,12 +411,12 @@ function PaymentRow({ p, compact, navigate }) {
             <div className="mt-2 p-2.5 bg-gray-50 dark:bg-dark-700 rounded-lg text-xs space-y-1">
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Paid upfront</span>
-                <span className="text-gray-700 dark:text-gray-300">{formatCurrency(p.amount)}</span>
+                <span className="text-gray-700 dark:text-gray-300">{formatCurrency(p.amount, p.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Remaining balance</span>
                 <span className={`font-medium ${installmentCfg?.color || 'text-gray-700 dark:text-gray-300'}`}>
-                  {formatCurrency(p.installment_remaining_amount)}
+                  {formatCurrency(p.installment_remaining_amount, p.currency)}
                   {installmentCfg && ` — ${installmentCfg.label}`}
                 </span>
               </div>
@@ -437,7 +441,7 @@ function PaymentRow({ p, compact, navigate }) {
 
           {p.payment_status === 'refunded' && p.refund_amount && (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
-              Refunded {formatCurrency(p.refund_amount)}{p.refund_date ? ` on ${formatDate(p.refund_date)}` : ''}
+              Refunded {formatCurrency(p.refund_amount, p.currency)}{p.refund_date ? ` on ${formatDate(p.refund_date)}` : ''}
             </p>
           )}
         </div>
@@ -450,7 +454,7 @@ function PaymentRow({ p, compact, navigate }) {
             className="flex items-center gap-1.5 px-4 py-2 bg-brand-blue hover:bg-brand-blue-600 text-white text-xs font-medium rounded-lg transition-colors"
           >
             <CreditCard className="w-3.5 h-3.5" />
-            Pay Remaining {formatCurrency(p.installment_remaining_amount)}
+            Pay Remaining {formatCurrency(p.installment_remaining_amount, p.currency)}
           </button>
         </div>
       )}

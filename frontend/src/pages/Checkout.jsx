@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
-import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
+import api, { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
+import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle, Package } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 // Load Paystack Inline.js from CDN
@@ -33,10 +33,13 @@ function loadPayPalScript(clientId) {
 export default function Checkout() {
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get('course_id');
+  const bundleId = searchParams.get('bundle_id');
+  const isBundle = !!bundleId;
   const isInstallmentPayment = searchParams.get('installment_payment') === '1';
   const navigate = useNavigate();
 
   const [course, setCourse] = useState(null);
+  const [bundle, setBundle] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [paymentPlan, setPaymentPlan] = useState('full');
   const [couponCode, setCouponCode] = useState('');
@@ -98,7 +101,7 @@ export default function Checkout() {
             return r.data.data.order_id;
           }
           const r = await paymentsAPI.initializePayPalCheckout({
-            course_id: courseId,
+            ...(isBundle ? { bundle_id: bundleId } : { course_id: courseId }),
             payment_plan: paymentPlanRef.current,
             coupon_code: appliedCouponRef.current
               ? couponCodeRef.current.trim().toUpperCase()
@@ -126,7 +129,7 @@ export default function Checkout() {
     });
     buttons.render(containerEl).catch(() => {});
     paypalButtonsRef.current = buttons;
-  }, [paypalReady, courseId, isInstallmentPayment, navigate]);
+  }, [paypalReady, courseId, bundleId, isBundle, isInstallmentPayment, navigate]);
 
   useEffect(() => () => {
     if (paypalButtonsRef.current) {
@@ -160,6 +163,25 @@ export default function Checkout() {
       return;
     }
 
+    if (isBundle) {
+      api
+        .get(`/api/bundles/${bundleId}`)
+        .then((res) => {
+          const b = res.data.data.bundle;
+          setBundle(b);
+          // Present the bundle as the "course" so the summary UI still lights up
+          setCourse({
+            id: b.id,
+            title: b.title,
+            price: b.price,
+            thumbnail: b.thumbnail_url,
+          });
+        })
+        .catch(() => setError('Bundle not found'))
+        .finally(() => setPageLoading(false));
+      return;
+    }
+
     if (!courseId) {
       navigate('/courses');
       return;
@@ -169,7 +191,7 @@ export default function Checkout() {
       .then((res) => setCourse(res.data.data.course))
       .catch(() => setError('Course not found'))
       .finally(() => setPageLoading(false));
-  }, [courseId, isInstallmentPayment, navigate]);
+  }, [courseId, bundleId, isBundle, isInstallmentPayment, navigate]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -177,9 +199,12 @@ export default function Checkout() {
     setCouponError('');
     setAppliedCoupon(null);
     try {
+      // For bundles, validate against the anchor course (first course in the
+      // bundle) — backend also accepts any-course-in-bundle for coupon eligibility.
+      const anchorCourseId = isBundle && bundle?.courses?.length ? bundle.courses[0].id : courseId;
       const res = await couponsAPI.validate({
         code: couponCode.trim().toUpperCase(),
-        course_id: courseId,
+        course_id: anchorCourseId,
         amount: course.price,
       });
       setAppliedCoupon(res.data.data);
@@ -220,7 +245,7 @@ export default function Checkout() {
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
         email,
         amount: Math.round(amount * 100),
-        currency: 'USD',
+        currency: import.meta.env.VITE_PAYMENT_CURRENCY || 'USD',
         ref: reference,
         onClose: () => setError('Payment was cancelled.'),
         callback: (response) => {
@@ -239,7 +264,7 @@ export default function Checkout() {
     setError('');
     try {
       const res = await paymentsAPI.createCheckoutSession({
-        course_id: courseId,
+        ...(isBundle ? { bundle_id: bundleId } : { course_id: courseId }),
         payment_plan: paymentPlan,
         coupon_code: appliedCoupon ? couponCode.trim().toUpperCase() : undefined,
       });
@@ -255,7 +280,7 @@ export default function Checkout() {
     setError('');
     try {
       const res = await paymentsAPI.initializePaystackCheckout({
-        course_id: courseId,
+        ...(isBundle ? { bundle_id: bundleId } : { course_id: courseId }),
         payment_plan: paymentPlan,
         coupon_code: appliedCoupon ? couponCode.trim().toUpperCase() : undefined,
       });
@@ -266,7 +291,7 @@ export default function Checkout() {
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
         email,
         amount: Math.round(amount * 100),
-        currency: 'USD',
+        currency: import.meta.env.VITE_PAYMENT_CURRENCY || 'USD',
         ref: reference,
         onClose: () => setError('Payment was cancelled.'),
         callback: (response) => {
@@ -477,7 +502,7 @@ export default function Checkout() {
             </p>
           </div>
 
-          {/* Course Card */}
+          {/* Course / Bundle Card */}
           <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-border-dark">
             <div className="flex gap-4">
               {course?.thumbnail && (
@@ -488,6 +513,11 @@ export default function Checkout() {
                 />
               )}
               <div className="flex-1 min-w-0">
+                {isBundle && (
+                  <span className="inline-flex items-center gap-1 text-xs bg-brand-blue/10 text-brand-blue px-2 py-0.5 rounded-full mb-1.5">
+                    <Package className="w-3 h-3" /> Bundle · {bundle?.courses?.length || 0} courses
+                  </span>
+                )}
                 <h2 className="font-semibold text-gray-900 dark:text-white text-lg leading-tight">
                   {course?.title}
                 </h2>
@@ -510,6 +540,22 @@ export default function Checkout() {
                 </div>
               </div>
             </div>
+
+            {isBundle && bundle?.courses?.length > 0 && (
+              <div className="mt-5 pt-5 border-t border-gray-100 dark:border-dark-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  Courses included
+                </p>
+                <ul className="space-y-1.5">
+                  {bundle.courses.map((c) => (
+                    <li key={c.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                      <span className="truncate">{c.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* What You Get */}

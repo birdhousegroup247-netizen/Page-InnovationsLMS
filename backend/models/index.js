@@ -222,9 +222,11 @@ Payment.belongsTo(User, { foreignKey: 'student_id', as: 'student', onDelete: 'CA
 Payment.belongsTo(Course, { foreignKey: 'course_id', as: 'course', onDelete: 'CASCADE' });
 Payment.belongsTo(Enrollment, { foreignKey: 'enrollment_id', as: 'enrollment', onDelete: 'CASCADE' });
 Payment.belongsTo(CouponCode, { foreignKey: 'coupon_code_id', as: 'coupon', onDelete: 'SET NULL' });
+Payment.belongsTo(Bundle, { foreignKey: 'bundle_id', as: 'bundle', onDelete: 'SET NULL' });
 
 User.hasMany(Payment, { foreignKey: 'student_id', as: 'payments', onDelete: 'CASCADE' });
 Course.hasMany(Payment, { foreignKey: 'course_id', as: 'payments', onDelete: 'CASCADE' });
+Bundle.hasMany(Payment, { foreignKey: 'bundle_id', as: 'payments', onDelete: 'SET NULL' });
 Enrollment.hasOne(Payment, { foreignKey: 'enrollment_id', as: 'payment', onDelete: 'CASCADE' });
 
 // Lead relationships

@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 
 const express = require('express');
@@ -598,6 +599,11 @@ const startServer = async () => {
         await sequelize
           .query('ALTER TYPE "enum_payments_payment_gateway" ADD VALUE IF NOT EXISTS \'paypal\'')
           .catch(() => {});
+        // Add 'comp' to the method enum so admin manual-enroll can drop a
+        // zero-amount Payment marker for reconciliation.
+        await sequelize
+          .query('ALTER TYPE "enum_payments_payment_method" ADD VALUE IF NOT EXISTS \'comp\'')
+          .catch(() => {});
         if (!paymentsDesc.paypal_order_id) {
           await qi.addColumn('payments', 'paypal_order_id', { type: Sequelize.STRING, allowNull: true, unique: true });
           logger.info('  ✓ Added paypal_order_id column to payments');
@@ -624,6 +630,8 @@ const startServer = async () => {
           ['installment_due_date',           'TIMESTAMP'],
           ['installment_paid_at',            'TIMESTAMP'],
           ['metadata',                       'JSON'],
+          ['bundle_id',                      'INTEGER'],
+          ['intended_amount',                'DECIMAL(10,2)'],
         ];
         for (const [colName, colType] of paymentsExtras) {
           if (!paymentsDesc[colName]) {

@@ -19,10 +19,8 @@ export default function BundleDetail() {
   }, [id]);
 
   const handleBuyBundle = () => {
-    // Bundle purchase routes each course through checkout individually.
-    // Navigate to the first unpaid course in the bundle as the entry point.
-    if (!bundle?.courses?.length) return;
-    navigate(`/checkout?course_id=${bundle.courses[0].id}&bundle_id=${bundle.id}`);
+    if (!bundle?.id) return;
+    navigate(`/checkout?bundle_id=${bundle.id}`);
   };
 
   if (loading) {

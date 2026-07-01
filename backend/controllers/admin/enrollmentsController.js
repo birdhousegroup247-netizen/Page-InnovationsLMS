@@ -1,9 +1,11 @@
-const { Enrollment, User, Course, ContentProgress } = require('../../models');
+const { Enrollment, User, Course, ContentProgress, Payment, ChatRoom, ChatRoomMember } = require('../../models');
+const { sequelize } = require('../../config/database');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ConflictError } = require('../../utils/errors');
 const { Op, fn, col, literal } = require('sequelize');
 const emailService = require('../../services/email/emailService');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 const ActivityController = require('../activity/activityController');
 
 class AdminEnrollmentsController {
@@ -91,7 +93,11 @@ class AdminEnrollmentsController {
     }
   }
 
-  // POST /api/admin/enrollments — manually enroll a student
+  // POST /api/admin/enrollments — manually (comp) enroll a student.
+  // Runs the exact same side-effects as a paid enrollment (chat, tests,
+  // activation, notification, badge) so a comped student is
+  // indistinguishable from a paid one at the platform level. Drops a
+  // zero-amount Payment marker so admin Payments still has a record.
   static async createEnrollment(req, res, next) {
     try {
       const { student_id, course_id } = req.body;
@@ -100,52 +106,88 @@ class AdminEnrollmentsController {
         throw new BadRequestError('student_id and course_id are required');
       }
 
-      // Verify student exists
       const student = await User.findByPk(student_id);
       if (!student) throw new NotFoundError('Student not found');
 
-      // Verify course exists
       const course = await Course.findByPk(course_id);
       if (!course) throw new NotFoundError('Course not found');
 
-      // Check if already enrolled
       const existing = await Enrollment.findOne({ where: { student_id, course_id } });
       if (existing) {
         throw new BadRequestError('Student is already enrolled in this course');
       }
 
-      const enrollment = await Enrollment.create({
-        student_id,
-        course_id,
-        enrollment_date: new Date(),
-        progress_percentage: 0,
+      let compPayment;
+      let enrollment;
+      await sequelize.transaction(async (transaction) => {
+        compPayment = await Payment.create({
+          student_id,
+          course_id,
+          amount: 0,
+          intended_amount: 0,
+          original_amount: course.price || 0,
+          discount_amount: course.price || 0,
+          currency: 'USD',
+          payment_method: 'comp',
+          payment_status: 'completed',
+          payment_plan: 'full',
+          payment_gateway: 'stripe', // enum requires a value; not actually used
+          payment_date: new Date(),
+          installment_status: 'not_applicable',
+          transaction_id: `COMP-${student_id}-${course_id}-${Date.now()}`,
+          metadata: {
+            comped_by_admin_id: req.user.id,
+            comped_by_admin_email: req.user.email,
+            comp_reason: req.body.reason || null,
+          },
+        }, { transaction });
+
+        const { enrollments } = await enrollmentSvc.runTransactionalSideEffects({
+          payment: compPayment,
+          studentId: student_id,
+          courseIds: [parseInt(course_id)],
+          transaction,
+        });
+        enrollment = enrollments[0];
       });
 
-      // Bump enrollment_count on course
-      await course.increment('enrollment_count');
+      // Post-commit side-effects. Comped enrollments skip receipt email
+      // (there's no receipt to send) but still fire the enrollment
+      // notification, congrats email, referral reward, badge check.
+      enrollmentSvc.runPostCommitSideEffects({
+        studentId: student_id,
+        courseIds: [parseInt(course_id)],
+        payment: compPayment,
+        gateway: 'comp',
+        sendEmails: false,
+      }).catch((e) => logger.warn(`comp post-commit failed (non-critical): ${e.message}`));
 
-      // Send enrollment confirmation email (fire-and-forget)
+      // Legacy enrollment-confirmation email — kept because it has
+      // course-specific wording, and it's the same email students see
+      // when they self-enroll in a free course.
       emailService.sendEnrollmentConfirmation(student.email, student.full_name, course).catch((e) =>
         logger.warn(`Admin enroll email failed for ${student.email}: ${e.message}`)
       );
 
-      // Badge check for enrollment milestone
-      const BadgesController = require('../badges/badgesController');
-      BadgesController.checkAndAward(student_id, 'enrollment_count').catch(() => {});
-
-      logger.info(`Admin ${req.user.email} manually enrolled student ${student_id} in course ${course_id}`);
+      logger.info(`Admin ${req.user.email} comped student ${student_id} into course ${course_id} (payment ${compPayment.id})`);
       await ActivityController.logFromRequest(req, 'enrollment_create', 'enrollment', enrollment.id, {
         student_name: student.full_name, student_email: student.email,
         course_title: course.title, course_id,
+        comp_payment_id: compPayment.id,
       }).catch(() => {});
 
-      return ApiResponse.created(res, { enrollment }, 'Student enrolled successfully');
+      return ApiResponse.created(res, { enrollment, payment_id: compPayment.id }, 'Student enrolled successfully');
     } catch (error) {
       next(error);
     }
   }
 
-  // DELETE /api/admin/enrollments/:id — remove enrollment
+  // DELETE /api/admin/enrollments/:id — revoke access.
+  //
+  // Removes enrollment + chat membership. If there's a Payment row for
+  // this enrollment, flag it as revoked in metadata (do NOT auto-refund
+  // — refunds go through the Payments page so the admin picks the
+  // provider action explicitly).
   static async deleteEnrollment(req, res, next) {
     try {
       const { id } = req.params;
@@ -161,7 +203,53 @@ class AdminEnrollmentsController {
       const courseId = enrollment.course_id;
       const studentId = enrollment.student_id;
 
-      await enrollment.destroy();
+      await sequelize.transaction(async (transaction) => {
+        // Remove chat room membership
+        const chatRoom = await ChatRoom.findOne({
+          where: { course_id: courseId },
+          transaction,
+        });
+        if (chatRoom) {
+          await ChatRoomMember.destroy({
+            where: { room_id: chatRoom.id, user_id: studentId },
+            transaction,
+          });
+        }
+
+        await enrollment.destroy({ transaction });
+
+        // Decrement enrollment_count (guard against going below 0)
+        await Course.update(
+          { enrollment_count: literal('GREATEST(enrollment_count - 1, 0)') },
+          { where: { id: courseId }, transaction }
+        );
+
+        // Flag the Payment row(s) tied to this enrollment/course/student.
+        // Comp payments get comped_revoked; paid rows get revoked_by_admin
+        // so the accounting picture still tells the truth. Actual refund
+        // (money movement) stays on the Payments page flow.
+        const relatedPayments = await Payment.findAll({
+          where: {
+            student_id: studentId,
+            course_id: courseId,
+            payment_status: 'completed',
+          },
+          transaction,
+        });
+        for (const p of relatedPayments) {
+          const meta = p.metadata || {};
+          const flag = p.payment_method === 'comp' ? 'comped_revoked' : 'access_revoked';
+          await p.update({
+            metadata: {
+              ...meta,
+              [flag]: true,
+              revoked_by_admin_id: req.user.id,
+              revoked_at: new Date().toISOString(),
+              revoke_reason: req.body?.reason || null,
+            },
+          }, { transaction });
+        }
+      });
 
       // Discord: remove course access (non-blocking)
       try {
@@ -170,12 +258,6 @@ class AdminEnrollmentsController {
       } catch (discordErr) {
         logger.warn(`Discord unenroll hook skipped: ${discordErr.message}`);
       }
-
-      // Decrement enrollment_count (guard against going below 0)
-      await Course.update(
-        { enrollment_count: literal('GREATEST(enrollment_count - 1, 0)') },
-        { where: { id: courseId } }
-      );
 
       logger.info(`Admin ${req.user.email} removed enrollment ${id}`);
       await ActivityController.logFromRequest(req, 'enrollment_delete', 'enrollment', id, {
