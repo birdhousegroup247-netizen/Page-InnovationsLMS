@@ -9,6 +9,7 @@ const {
   authRateLimiter,
   passwordResetLimiter,
   registrationLimiter,
+  refreshRateLimiter,
 } = require('../../middleware/rateLimiter');
 
 /**
@@ -59,7 +60,7 @@ router.get('/me', authenticate, (req, res, next) => AuthController.getMe(req, re
 // @route   POST /api/auth/refresh
 // @desc    Refresh access token
 // @access  Public
-router.post('/refresh', (req, res, next) => AuthController.refreshToken(req, res, next));
+router.post('/refresh', refreshRateLimiter, (req, res, next) => AuthController.refreshToken(req, res, next));
 
 // @route   POST /api/auth/forgot-password
 // @desc    Request password reset

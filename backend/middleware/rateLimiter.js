@@ -181,12 +181,39 @@ const globalApiLimiter = createUserRateLimiter({
   message: 'Too many requests, please try again later.',
 });
 
+/**
+ * Rate limiter for /api/auth/refresh.
+ *
+ * Refresh tokens are stored on the client and CSRF-exempt, so a
+ * stolen refresh token could otherwise be replayed forever to mint
+ * new access tokens. Cap at 30 per hour per IP — normal usage is
+ * ~1 refresh every 15 min, so anyone hitting this cap is either
+ * misbehaving or under attack.
+ */
+const refreshRateLimiter = rateLimit({
+  store: getRedisStore('rate_limit:refresh:'),
+  validate: { ip: false },
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => `ip_${ipKeyGenerator(req, res)}`,
+  handler: (req, res) => {
+    logger.warn(`Refresh rate limit exceeded from ${req.ip}`);
+    res.status(429).json({
+      success: false,
+      message: 'Too many token refresh attempts. Try again in an hour.',
+    });
+  },
+});
+
 module.exports = {
   createUserRateLimiter,
   authRateLimiter,
   passwordResetLimiter,
   registrationLimiter,
   uploadRateLimiter,
+  refreshRateLimiter,
   testSubmissionLimiter,
   globalApiLimiter,
 };

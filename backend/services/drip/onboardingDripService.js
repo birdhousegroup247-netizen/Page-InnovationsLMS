@@ -80,11 +80,15 @@ const STEPS = [
 async function processOnboarding() {
   let totalProcessed = 0;
 
-  // Get all completed payments that haven't finished the onboarding sequence
+  // Narrow to payments still eligible for a step. The last onboarding
+  // step fires at +14d; anything older cannot possibly have a pending
+  // step, so pulling those in every hourly tick just wastes queries.
+  // 15d buffer to cover the tail of the D14 window across a full day.
+  const eligibleFrom = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
   const payments = await Payment.findAll({
     where: {
       payment_status: 'completed',
-      payment_date: { [Op.ne]: null },
+      payment_date: { [Op.ne]: null, [Op.gte]: eligibleFrom },
     },
     include: [
       { model: User, as: 'student', attributes: ['id', 'email', 'full_name'] },

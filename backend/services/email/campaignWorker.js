@@ -140,16 +140,27 @@ async function processCampaigns() {
       let failed = 0;
       let skipped = 0;
 
+      // Batch-fetch recipient names before the loop — kills the N+1
+      // where a 100-row batch was doing 100 findByPk calls just to
+      // resolve full_name for the greeting.
+      const userIds = pending.filter((d) => d.user_id).map((d) => d.user_id);
+      const leadIds = pending.filter((d) => d.lead_id).map((d) => d.lead_id);
+      const [userRows, leadRows] = await Promise.all([
+        userIds.length
+          ? User.findAll({ where: { id: userIds }, attributes: ['id', 'full_name'] })
+          : [],
+        leadIds.length
+          ? Lead.findAll({ where: { id: leadIds }, attributes: ['id', 'full_name'] })
+          : [],
+      ]);
+      const userNameById = new Map(userRows.map((u) => [u.id, u.full_name]));
+      const leadNameById = new Map(leadRows.map((l) => [l.id, l.full_name]));
+
       for (const d of pending) {
-        // Resolve name for the greeting
-        let name = 'there';
-        if (d.user_id) {
-          const u = await User.findByPk(d.user_id, { attributes: ['full_name'] });
-          name = u?.full_name || name;
-        } else if (d.lead_id) {
-          const l = await Lead.findByPk(d.lead_id, { attributes: ['full_name'] });
-          name = l?.full_name || name;
-        }
+        const name =
+          (d.user_id && userNameById.get(d.user_id)) ||
+          (d.lead_id && leadNameById.get(d.lead_id)) ||
+          'there';
         try {
           const res = await emailService.sendPromotionalEmail(d.email, name, {
             subject: campaign.subject,

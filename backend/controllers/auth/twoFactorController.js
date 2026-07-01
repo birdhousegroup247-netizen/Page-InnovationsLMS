@@ -2,6 +2,11 @@ const { authenticator } = require('otplib');
 const QRCode = require('qrcode');
 const { User } = require('../../models');
 const ApiResponse = require('../../utils/response');
+const JWT = require('../../utils/jwt');
+const AuthController = require('./authController');
+const ActivityController = require('../activity/activityController');
+const logger = require('../../utils/logger');
+const { UnauthorizedError, BadRequestError } = require('../../utils/errors');
 
 class TwoFactorController {
   // POST /api/auth/2fa/setup — generate secret + QR code
@@ -54,26 +59,71 @@ class TwoFactorController {
     } catch (err) { next(err); }
   }
 
-  // POST /api/auth/2fa/authenticate — used at login when 2FA is enabled
+  // POST /api/auth/2fa/authenticate — second step of login when 2FA is enabled.
+  // Verifies the TOTP token and — only on success — issues the real
+  // JWT tokens. This closes the security-audit §4.1 hole where 2FA
+  // was decorative: previously login handed out tokens on password
+  // alone, and this endpoint just returned { verified: true } to a
+  // non-existent express-session.
   static async authenticate(req, res, next) {
     try {
-      const { userId, token } = req.body;
-      if (!userId || !token) return ApiResponse.error(res, 'userId and token are required', 400);
+      const { userId, token, remember_me } = req.body;
+      if (!userId || !token) {
+        throw new BadRequestError('userId and token are required');
+      }
 
-      const user = await User.findByPk(userId, { attributes: ['id', 'two_factor_secret', 'two_factor_enabled'] });
-      if (!user || !user.two_factor_enabled) return ApiResponse.error(res, 'User not found or 2FA not enabled', 400);
+      const user = await User.findByPk(userId, {
+        attributes: { exclude: ['password_hash'] },
+      });
+      if (!user || !user.two_factor_enabled || !user.two_factor_secret) {
+        throw new UnauthorizedError('2FA not enabled for this account');
+      }
+      if (!user.is_active) {
+        throw new UnauthorizedError('Account is deactivated');
+      }
+      if (!user.email_verified) {
+        throw new UnauthorizedError('Email not verified');
+      }
 
       const valid = authenticator.verify({ token, secret: user.two_factor_secret });
-      if (!valid) return ApiResponse.error(res, 'Invalid token', 401);
+      if (!valid) {
+        // Log failed 2FA attempt so the activity trail catches TOTP
+        // brute force even though the rate limiter on this endpoint
+        // (authRateLimiter) does most of the work.
+        await ActivityController.logActivity({
+          user_id: userId,
+          action: 'failed_2fa',
+          metadata: { reason: 'Invalid TOTP token' },
+          ip_address: req.ip,
+          user_agent: req.get('user-agent'),
+        }).catch(() => {});
+        throw new UnauthorizedError('Invalid 2FA token');
+      }
 
-      // Mark session as 2FA-verified (store in req.session or return a short-lived token)
-      // For cookie-based auth, set a flag in session
-      req.session = req.session || {};
-      req.session.twoFactorVerified = true;
-      req.session.twoFactorUserId = userId;
+      // TOTP verified — this is the actual login moment. Mirror
+      // login()'s tail: bump last-login, mint tokens, set cookies,
+      // return the payload.
+      await user.updateLastLogin();
+      const tokens = JWT.generateTokens(user, { rememberMe: !!remember_me });
+      AuthController.setAuthCookies(res, tokens, { rememberMe: !!remember_me });
 
-      return ApiResponse.success(res, { verified: true });
-    } catch (err) { next(err); }
+      await ActivityController.logActivity({
+        user_id: user.id,
+        action: 'login',
+        metadata: { email: user.email, via: '2fa' },
+        ip_address: req.ip,
+        user_agent: req.get('user-agent'),
+      }).catch(() => {});
+      logger.info(`User logged in via 2FA: ${user.email}`);
+
+      return ApiResponse.success(res, {
+        user: user.toJSON(),
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      }, 'Login successful');
+    } catch (err) {
+      next(err);
+    }
   }
 
   // GET /api/auth/2fa/status

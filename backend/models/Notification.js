@@ -23,17 +23,16 @@ const Notification = sequelize.define(
       },
       onDelete: 'CASCADE',
     },
+    // Not an ENUM — controllers already pass 20+ distinct type strings
+    // (birthday, live_session, payment_confirmed, assignment_reminder,
+    // question_approved, chat_report, discord_invite, forum_reply, etc.),
+    // and the ENUM only had the original 8. Every extra value was
+    // silently failing on insert (Postgres rejected the enum value,
+    // callers swallowed the error). Migrating to STRING(64) lets any
+    // new lifecycle notification wire up without a migration. The
+    // controllers act as the whitelist.
     type: {
-      type: DataTypes.ENUM(
-        'course_enrollment',
-        'test_assignment',
-        'certificate_issued',
-        'announcement',
-        'question_reply',
-        'course_update',
-        'chat_mention',
-        'system'
-      ),
+      type: DataTypes.STRING(64),
       allowNull: false,
     },
     title: {
@@ -62,15 +61,13 @@ const Notification = sequelize.define(
     timestamps: true,
     underscored: true,
     indexes: [
-      {
-        fields: ['user_id'],
-      },
-      {
-        fields: ['is_read'],
-      },
-      {
-        fields: ['created_at'],
-      },
+      { fields: ['user_id'] },
+      { fields: ['is_read'] },
+      { fields: ['created_at'] },
+      // Composite: hot query is "unread count for user X". Cache is
+      // 60s so this only fires on cache miss, but a composite scan
+      // beats intersecting two single-column indexes at scale.
+      { fields: ['user_id', 'is_read'] },
     ],
   }
 );

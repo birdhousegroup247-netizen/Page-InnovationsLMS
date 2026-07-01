@@ -101,13 +101,21 @@ async function processCertificateShareNudges() {
     order: [['created_at', 'ASC']],
     limit: 100,
   });
+  if (due.length === 0) return;
+
+  // Batch-fetch students up front — kills the N+1 where each cert
+  // was doing its own findByPk on the student row.
+  const studentIds = Array.from(new Set(due.map((c) => c.student_id)));
+  const students = await User.findAll({
+    where: { id: studentIds },
+    attributes: ['id', 'email', 'full_name', 'email_opt_out'],
+  });
+  const studentById = new Map(students.map((s) => [s.id, s]));
 
   let sent = 0;
   for (const cert of due) {
     try {
-      const student = await User.findByPk(cert.student_id, {
-        attributes: ['id', 'email', 'full_name', 'email_opt_out'],
-      });
+      const student = studentById.get(cert.student_id);
       if (!student || !student.email || student.email_opt_out) {
         await cert.update({ share_nudge_sent_at: new Date() });
         continue;

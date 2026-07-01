@@ -6,58 +6,11 @@
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 
-/**
- * Generate CSRF token
- */
-function generateCSRFToken() {
-  return crypto.randomBytes(32).toString('hex');
-}
-
-/**
- * CSRF Protection Middleware
- * Protects against Cross-Site Request Forgery attacks
- */
-const csrfProtection = (req, res, next) => {
-  // Skip CSRF for GET, HEAD, OPTIONS
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    return next();
-  }
-
-  // Skip CSRF for API authentication (using JWT)
-  if (req.headers.authorization) {
-    return next();
-  }
-
-  const token = req.headers['x-csrf-token'] || req.body._csrf;
-  const sessionToken = req.session?.csrfToken;
-
-  if (!token || !sessionToken || token !== sessionToken) {
-    logger.warn('CSRF token validation failed', {
-      ip: req.ip,
-      path: req.path,
-      method: req.method,
-    });
-
-    return res.status(403).json({
-      success: false,
-      message: 'Invalid CSRF token',
-    });
-  }
-
-  next();
-};
-
-/**
- * Provide CSRF token to client
- */
-const provideCSRFToken = (req, res, next) => {
-  if (!req.session.csrfToken) {
-    req.session.csrfToken = generateCSRFToken();
-  }
-
-  res.locals.csrfToken = req.session.csrfToken;
-  next();
-};
+// NOTE: csrfProtection + provideCSRFToken previously lived here. They
+// referenced req.session.csrfToken, but express-session is not
+// installed anywhere in this app. Deleted 2026-07-01 during security
+// audit. The actual CSRF layer is the double-submit-cookie pattern in
+// server.js (utils/csrf.js), which does not depend on sessions.
 
 /**
  * Content Security Policy
@@ -319,8 +272,6 @@ const securityHeaders = [
 ];
 
 module.exports = {
-  csrfProtection,
-  provideCSRFToken,
   contentSecurityPolicy,
   preventClickjacking,
   preventMimeSniffing,
@@ -333,5 +284,4 @@ module.exports = {
   slowDown,
   honeypot,
   securityHeaders,
-  generateCSRFToken,
 };

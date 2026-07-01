@@ -277,18 +277,38 @@ class NotificationsController {
    */
   static async createBulkNotifications(notifications) {
     try {
-      const filtered = [];
-      for (const n of notifications) {
-        // eslint-disable-next-line no-await-in-loop
-        if (await NotificationsController._isAllowed(n.user_id, n.type)) {
-          filtered.push(n);
-        }
-      }
+      if (notifications.length === 0) return [];
+
+      // Batch the preferences lookup — one findAll instead of N per-row
+      // queries. Big win on announcement fanouts (hundreds of recipients).
+      const NEVER_MUTE = new Set([
+        'security_alert', 'account_suspension', 'payment_receipt', 'refund_issued',
+      ]);
+      const userIds = Array.from(new Set(notifications.map((n) => n.user_id).filter(Boolean)));
+      const users = await User.findAll({
+        where: { id: userIds },
+        attributes: ['id', 'notification_preferences'],
+      });
+      const prefsFor = new Map(users.map((u) => [u.id, u.notification_preferences || {}]));
+
+      const filtered = notifications.filter((n) => {
+        if (NEVER_MUTE.has(n.type)) return true;
+        const pref = prefsFor.get(n.user_id)?.[n.type];
+        return !pref || pref.in_app !== false;
+      });
+
       if (filtered.length === 0) {
         logger.info('All notifications suppressed by user preferences');
         return [];
       }
+
       const created = await Notification.bulkCreate(filtered);
+
+      // Invalidate every affected user's unread-count cache — without
+      // this, badge count stayed stale for up to 60s after a fanout.
+      const invalidateUsers = Array.from(new Set(filtered.map((n) => n.user_id).filter(Boolean)));
+      await Promise.all(invalidateUsers.map((uid) => CacheService.invalidateNotifications(uid)));
+
       logger.info(`${created.length}/${notifications.length} notifications created in bulk (rest suppressed by prefs)`);
       return created;
     } catch (error) {

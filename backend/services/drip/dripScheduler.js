@@ -5,6 +5,7 @@
  */
 
 const cron = require('node-cron');
+const { Op } = require('sequelize');
 const leadDripService = require('./leadDripService');
 const onboardingDripService = require('./onboardingDripService');
 const installmentReminderService = require('./installmentReminderService');
@@ -67,7 +68,29 @@ function startDripScheduler() {
     }
   });
 
-  logger.info('[DripScheduler] Started — hourly at :05, monthly earnings at 06:15 UTC on the 1st');
+  // Notification retention — 03:20 UTC daily. Deletes read
+  // notifications older than 90 days so power users don't accumulate
+  // 10k+ rows over a year. Unread rows never age out — they're
+  // actionable by definition.
+  cron.schedule('20 3 * * *', async () => {
+    try {
+      const { Notification } = require('../../models');
+      const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const deleted = await Notification.destroy({
+        where: {
+          is_read: true,
+          created_at: { [Op.lt]: cutoff },
+        },
+      });
+      if (deleted > 0) {
+        logger.info(`[notif-retention] Purged ${deleted} read notifications older than 90 days`);
+      }
+    } catch (err) {
+      logger.error(`[notif-retention] crashed: ${err.message || 'unknown'}\n${err.stack || ''}`);
+    }
+  });
+
+  logger.info('[DripScheduler] Started — hourly at :05, monthly earnings at 06:15 UTC on the 1st, notif retention 03:20 UTC daily');
 }
 
 module.exports = { startDripScheduler };

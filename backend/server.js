@@ -35,6 +35,37 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ──────────────────────────────────────────────────────────────────────
+// SECRET STRENGTH ASSERTIONS (production only).
+//
+// A weak JWT_SECRET lets an attacker forge access + refresh tokens.
+// A weak EMAIL_UNSUB_SECRET lets them craft unsubscribe links for
+// anyone. In dev we allow anything so `npm run dev` on a fresh clone
+// still boots — but in prod, fail-fast is better than silently issuing
+// forgeable tokens.
+if (process.env.NODE_ENV === 'production') {
+  const secretsToCheck = [
+    ['JWT_SECRET', process.env.JWT_SECRET],
+    ['JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET],
+    ['EMAIL_UNSUB_SECRET', process.env.EMAIL_UNSUB_SECRET || process.env.JWT_SECRET],
+  ];
+  const badSecrets = [];
+  for (const [name, value] of secretsToCheck) {
+    if (!value || value.length < 32) {
+      badSecrets.push(`${name}=${value ? `${value.length} chars` : 'MISSING'}`);
+    }
+    if (value && /^(change|placeholder|secret|password|admin|test)/i.test(value)) {
+      badSecrets.push(`${name} looks like a placeholder`);
+    }
+  }
+  if (badSecrets.length) {
+    // eslint-disable-next-line no-console
+    console.error('[FATAL] Weak secrets detected — refusing to boot in production:\n  ' + badSecrets.join('\n  '));
+    console.error('  Fix: openssl rand -hex 32   and set on Railway backend variables.');
+    process.exit(1);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // HEALTHCHECK ENDPOINTS — registered FIRST, before any middleware.
 //
 // Reason: Railway's healthcheck probe MUST get a 200 back within ~5
@@ -608,6 +639,26 @@ const startServer = async () => {
           type: Sequelize.DATE, allowNull: true, defaultValue: null,
         }).catch((e) => logger.warn(`  ⚠ Could not add share_nudge_sent_at to certificates: ${e.message}`));
         logger.info('  ✓ Added share_nudge_sent_at column to certificates');
+      }
+
+      // notifications.type: was an ENUM('course_enrollment', ...) with
+      // only 8 values, but controllers insert 20+ distinct type strings
+      // (birthday, payment_confirmed, live_session, ...). Every insert
+      // with an unknown value silently failed because callers swallow
+      // errors with .catch(() => {}). Migrate to VARCHAR(64) so the
+      // extra types actually land.
+      const notifsDesc = await qi.describeTable('notifications').catch(() => null);
+      if (notifsDesc && notifsDesc.type && String(notifsDesc.type.type || '').toLowerCase().includes('enum')) {
+        try {
+          await sequelize.query('ALTER TABLE notifications ALTER COLUMN type TYPE VARCHAR(64) USING type::VARCHAR(64)');
+          logger.info('  ✓ Migrated notifications.type ENUM → VARCHAR(64)');
+          // Drop the orphan enum type so it doesn't linger.
+          await sequelize
+            .query('DROP TYPE IF EXISTS "enum_notifications_type"')
+            .catch((e) => logger.warn(`  ⚠ Could not drop enum_notifications_type: ${e.message}`));
+        } catch (e) {
+          logger.warn(`  ⚠ notifications.type migration failed: ${e.message}`);
+        }
       }
 
       // instructor_applications: cv_url + credential_urls were added when the

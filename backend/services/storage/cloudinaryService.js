@@ -30,33 +30,53 @@ logger.info('Cloudinary configuration loaded', {
   has_api_secret: !!process.env.CLOUDINARY_API_SECRET
 });
 
+/**
+ * Stream a Buffer to Cloudinary via upload_stream. Accepts either a
+ * Node Buffer (preferred — what multer.memoryStorage gives us) or a
+ * data-URI string (for backwards compat with the base64 callers we
+ * haven't fully migrated yet). Kills the base64 memory bloat that
+ * used to double RAM footprint per upload.
+ */
+function _streamUpload(input, uploadOptions) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(uploadOptions, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+    if (Buffer.isBuffer(input)) {
+      stream.end(input);
+    } else {
+      // Legacy data-URI callers: upload_stream can't take a string,
+      // so we fall through to the SDK's upload() for those. Keep this
+      // path lean — new callers should pass Buffer instead.
+      cloudinary.uploader.upload(input, uploadOptions).then(resolve, reject);
+    }
+  });
+}
+
 class CloudinaryService {
   /**
    * Upload image to Cloudinary
-   * @param {String} fileBuffer - Base64 encoded image or buffer
-   * @param {String} folder - Cloudinary folder name
-   * @param {String} fileName - Optional file name
-   * @returns {Promise<Object>} Upload result
+   * @param {Buffer|String} input   - multer buffer (preferred) or base64 data URI
+   * @param {String} folder         - Cloudinary folder name
+   * @param {String} fileName       - Optional file name (public_id)
+   * @returns {Promise<Object>}     - Upload result
    */
-  static async uploadImage(fileBuffer, folder = 'lms', fileName = null) {
+  static async uploadImage(input, folder = 'lms', fileName = null) {
     try {
       const uploadOptions = {
         folder: `tekypro-lms/${folder}`,
         resource_type: 'image',
         allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
         transformation: [
-          { width: 1200, height: 630, crop: 'limit' }, // Max dimensions
-          { quality: 'auto' }, // Auto quality optimization
-          { fetch_format: 'auto' }, // Auto format conversion
+          { width: 1200, height: 630, crop: 'limit' },
+          { quality: 'auto' },
+          { fetch_format: 'auto' },
         ],
       };
+      if (fileName) uploadOptions.public_id = fileName;
 
-      if (fileName) {
-        uploadOptions.public_id = fileName;
-      }
-
-      const result = await cloudinary.uploader.upload(fileBuffer, uploadOptions);
-
+      const result = await _streamUpload(input, uploadOptions);
       logger.info(`Image uploaded to Cloudinary: ${result.secure_url}`);
 
       return {
@@ -74,7 +94,6 @@ class CloudinaryService {
         http_code: error.http_code,
         stack: error.stack
       });
-      // Throw the actual Cloudinary error message instead of generic one
       const errorMessage = error.error?.message || error.message || 'Failed to upload image to cloud storage';
       throw new Error(`Cloudinary upload failed: ${errorMessage}`);
     }
@@ -87,7 +106,7 @@ class CloudinaryService {
    * @param {String} fileName - Optional file name
    * @returns {Promise<Object>} Upload result
    */
-  static async uploadDocument(fileBuffer, folder = 'documents', fileName = null) {
+  static async uploadDocument(input, folder = 'documents', fileName = null, mimetype = null) {
     try {
       // PDFs need resource_type: 'image' for public delivery to work.
       // Free Cloudinary plans block raw/PDF delivery by default
@@ -95,19 +114,16 @@ class CloudinaryService {
       // pipeline which has no such restriction. Everything else
       // (txt/doc/docx/etc) stays on raw — those formats deliver fine.
       const looksPdf =
+        (mimetype && mimetype === 'application/pdf') ||
         (fileName || '').toLowerCase().endsWith('.pdf') ||
-        (typeof fileBuffer === 'string' && fileBuffer.startsWith('data:application/pdf'));
+        (typeof input === 'string' && input.startsWith('data:application/pdf'));
       const uploadOptions = {
         folder: `tekypro-lms/${folder}`,
         resource_type: looksPdf ? 'image' : 'raw',
       };
+      if (fileName) uploadOptions.public_id = fileName;
 
-      if (fileName) {
-        uploadOptions.public_id = fileName;
-      }
-
-      const result = await cloudinary.uploader.upload(fileBuffer, uploadOptions);
-
+      const result = await _streamUpload(input, uploadOptions);
       logger.info(`Document uploaded to Cloudinary: ${result.secure_url}`);
 
       return {
@@ -136,7 +152,7 @@ class CloudinaryService {
    * @param {String} fileName - Optional file name
    * @returns {Promise<Object>} Upload result
    */
-  static async uploadVideo(fileBuffer, folder = 'videos', fileName = null) {
+  static async uploadVideo(input, folder = 'videos', fileName = null) {
     try {
       const uploadOptions = {
         folder: `tekypro-lms/${folder}`,
@@ -144,13 +160,9 @@ class CloudinaryService {
         allowed_formats: ['mp4', 'mov', 'avi', 'wmv', 'flv'],
         chunk_size: 6000000, // 6MB chunks for large files
       };
+      if (fileName) uploadOptions.public_id = fileName;
 
-      if (fileName) {
-        uploadOptions.public_id = fileName;
-      }
-
-      const result = await cloudinary.uploader.upload(fileBuffer, uploadOptions);
-
+      const result = await _streamUpload(input, uploadOptions);
       logger.info(`Video uploaded to Cloudinary: ${result.secure_url}`);
 
       return {

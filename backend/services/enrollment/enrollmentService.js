@@ -82,9 +82,43 @@ async function runTransactionalSideEffects({ payment, studentId, courseIds, tran
     }
   }
 
+  // For bundles: pull the prerequisite chain up front. Skip any
+  // course in the bundle whose prereq isn't yet completed by this
+  // student. This lets the bundle purchase succeed (money already
+  // took) but delays the un-eligible enrollments until the student
+  // finishes their prereq. Log-only: no error to the customer.
+  const skippedCourseIds = new Set();
+  if (courseIds.length > 1) {
+    const courses = await Course.findAll({
+      where: { id: courseIds },
+      attributes: ['id', 'prerequisite_course_id', 'title'],
+      transaction,
+    });
+    for (const c of courses) {
+      if (!c.prerequisite_course_id) continue;
+      // Prereq already in this same bundle? Fine — student will finish it.
+      if (courseIds.includes(c.prerequisite_course_id)) continue;
+      const prereqDone = await Enrollment.findOne({
+        where: {
+          student_id: studentId,
+          course_id: c.prerequisite_course_id,
+          completed_at: { [require('sequelize').Op.ne]: null },
+        },
+        transaction,
+      });
+      if (!prereqDone) {
+        skippedCourseIds.add(c.id);
+        logger.warn(
+          `[bundle-enrol] Skipping course ${c.id} ("${c.title}") for user ${studentId} — prerequisite ${c.prerequisite_course_id} not completed. Payment ${payment.id}.`
+        );
+      }
+    }
+  }
+  const eligibleCourseIds = courseIds.filter((id) => !skippedCourseIds.has(id));
+
   // Enroll into each course, wire chat, wire tests. Loop covers both
   // single-course purchases (courseIds.length === 1) and bundles.
-  for (const courseId of courseIds) {
+  for (const courseId of eligibleCourseIds) {
     const [enrollment] = await Enrollment.findOrCreate({
       where: { student_id: studentId, course_id: courseId },
       defaults: {
@@ -132,14 +166,17 @@ async function runTransactionalSideEffects({ payment, studentId, courseIds, tran
   }
 
   // Bump enrollment_count on each course. Kept outside the courseIds
-  // loop only to keep the update queries batched.
-  await Course.increment('enrollment_count', {
-    by: 1,
-    where: { id: courseIds },
-    transaction,
-  });
+  // loop only to keep the update queries batched. Uses eligible list
+  // so we don't inflate the count for skipped bundle courses.
+  if (eligibleCourseIds.length > 0) {
+    await Course.increment('enrollment_count', {
+      by: 1,
+      where: { id: eligibleCourseIds },
+      transaction,
+    });
+  }
 
-  return { enrollments };
+  return { enrollments, skippedCourseIds: Array.from(skippedCourseIds) };
 }
 
 /**

@@ -543,6 +543,19 @@ class AuthController {
         });
       }
 
+      // Gate: if 2FA is enabled, do NOT issue tokens on password alone.
+      // Return a 200 with { requires2FA, userId } so the frontend
+      // collects the TOTP code and calls /api/auth/2fa/authenticate,
+      // which issues the real tokens on successful code verification.
+      if (user.two_factor_enabled) {
+        logger.info(`Login step 1 (password ok) for ${email}, awaiting 2FA`);
+        return ApiResponse.success(res, {
+          requires2FA: true,
+          userId: user.id,
+          rememberMe: !!remember_me,
+        }, '2FA code required');
+      }
+
       // Update last login
       await user.updateLastLogin();
 

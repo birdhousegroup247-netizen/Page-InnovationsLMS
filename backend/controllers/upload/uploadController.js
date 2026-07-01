@@ -19,12 +19,12 @@ class UploadController {
         throw new BadRequestError('No file uploaded');
       }
 
-      // Convert buffer to base64
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      // Stream the multer buffer straight to Cloudinary — no base64
+      // conversion, no doubled RAM. cloudinaryService accepts Buffer.
 
       // Upload to Cloudinary
       const result = await CloudinaryService.uploadImage(
-        base64File,
+        req.file.buffer,
         'profile-pictures',
         `user_${req.user.id}_${Date.now()}`
       );
@@ -50,9 +50,8 @@ class UploadController {
       if (!req.file) {
         throw new BadRequestError('No file uploaded');
       }
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
       const result = await CloudinaryService.uploadImage(
-        base64File,
+        req.file.buffer,
         'signup-avatars',
         `signup_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
       );
@@ -75,12 +74,12 @@ class UploadController {
 
       const courseId = req.body.courseId || Date.now();
 
-      // Convert buffer to base64
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      // Stream the multer buffer straight to Cloudinary — no base64
+      // conversion, no doubled RAM. cloudinaryService accepts Buffer.
 
       // Upload to Cloudinary
       const result = await CloudinaryService.uploadImage(
-        base64File,
+        req.file.buffer,
         'course-thumbnails',
         `course_${courseId}_${Date.now()}`
       );
@@ -107,14 +106,15 @@ class UploadController {
       const ext = req.file.originalname.match(/\.([^/.]+)$/)?.[1] || '';
       const fileName = req.file.originalname.replace(/\.[^/.]+$/, ''); // Remove extension for public_id
 
-      // Convert buffer to base64
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      // Stream the multer buffer straight to Cloudinary — no base64
+      // conversion, no doubled RAM. cloudinaryService accepts Buffer.
 
       // Upload to Cloudinary (include extension in public_id so URL has it)
       const result = await CloudinaryService.uploadDocument(
-        base64File,
+        req.file.buffer,
         'course-documents',
-        `course_${courseId}_${fileName}_${Date.now()}${ext ? '.' + ext : ''}`
+        `course_${courseId}_${fileName}_${Date.now()}${ext ? '.' + ext : ''}`,
+        req.file.mimetype
       );
 
       logger.info(`Course document uploaded: ${result.url}`);
@@ -158,14 +158,13 @@ class UploadController {
       }
 
       const isImage = req.file.mimetype.startsWith('image/');
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
       const ext = req.file.originalname.match(/\.([^/.]+)$/)?.[1] || '';
       const baseName = req.file.originalname.replace(/\.[^/.]+$/, '');
       const publicId = `announcement_${Date.now()}_${baseName}${ext ? '.' + ext : ''}`;
 
       const result = isImage
-        ? await CloudinaryService.uploadImage(base64File, 'announcement-attachments', publicId)
-        : await CloudinaryService.uploadDocument(base64File, 'announcement-attachments', publicId);
+        ? await CloudinaryService.uploadImage(req.file.buffer, 'announcement-attachments', publicId)
+        : await CloudinaryService.uploadDocument(req.file.buffer, 'announcement-attachments', publicId, req.file.mimetype);
 
       logger.info(`Announcement attachment uploaded (${isImage ? 'image' : 'document'}): ${result.url}`);
 
@@ -196,12 +195,12 @@ class UploadController {
         throw new BadRequestError('No file uploaded');
       }
 
-      // Convert buffer to base64
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      // Stream the multer buffer straight to Cloudinary — no base64
+      // conversion, no doubled RAM. cloudinaryService accepts Buffer.
 
       // Upload to Cloudinary
       const result = await CloudinaryService.uploadImage(
-        base64File,
+        req.file.buffer,
         'certificate-templates',
         `template_${Date.now()}`
       );
@@ -224,12 +223,12 @@ class UploadController {
         throw new BadRequestError('No file uploaded');
       }
 
-      // Convert buffer to base64
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      // Stream the multer buffer straight to Cloudinary — no base64
+      // conversion, no doubled RAM. cloudinaryService accepts Buffer.
 
       // Upload to Cloudinary
       const result = await CloudinaryService.uploadImage(
-        base64File,
+        req.file.buffer,
         'article-images',
         `article_${Date.now()}`
       );
@@ -252,24 +251,33 @@ class UploadController {
         throw new BadRequestError('No files uploaded');
       }
 
+      // Bulk uploads are gated to admin/instructor via the router; add
+      // a MIME allowlist regardless so a mis-wired route can't turn
+      // this into an anonymous "upload any 5 MB × 10 files" endpoint.
+      const ALLOWED_MIMES = new Set([
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+      ]);
+      for (const file of req.files) {
+        if (!ALLOWED_MIMES.has(file.mimetype)) {
+          throw new BadRequestError(`File type not allowed: ${file.mimetype}`);
+        }
+      }
+
       const folder = req.body.folder || 'general';
       const uploadPromises = req.files.map(async (file) => {
-        const base64File = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-
-        // Determine upload type based on mimetype
+        const publicId = `${file.originalname.replace(/\.[^/.]+$/, '')}_${Date.now()}`;
         if (file.mimetype.startsWith('image/')) {
-          return await CloudinaryService.uploadImage(
-            base64File,
-            folder,
-            `${file.originalname.replace(/\.[^/.]+$/, '')}_${Date.now()}`
-          );
-        } else {
-          return await CloudinaryService.uploadDocument(
-            base64File,
-            folder,
-            `${file.originalname.replace(/\.[^/.]+$/, '')}_${Date.now()}`
-          );
+          return CloudinaryService.uploadImage(file.buffer, folder, publicId);
         }
+        return CloudinaryService.uploadDocument(file.buffer, folder, publicId, file.mimetype);
       });
 
       const results = await Promise.all(uploadPromises);
@@ -296,12 +304,12 @@ class UploadController {
 
       const ext = req.file.originalname.match(/\.([^/.]+)$/)?.[1] || '';
       const fileName = req.file.originalname.replace(/\.[^/.]+$/, '');
-      const base64File = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
       const result = await CloudinaryService.uploadDocument(
-        base64File,
+        req.file.buffer,
         'assignment-submissions',
-        `submission_${req.user.id}_${fileName}_${Date.now()}${ext ? '.' + ext : ''}`
+        `submission_${req.user.id}_${fileName}_${Date.now()}${ext ? '.' + ext : ''}`,
+        req.file.mimetype
       );
 
       logger.info(`Assignment file uploaded by user ${req.user.id}: ${result.url}`);
