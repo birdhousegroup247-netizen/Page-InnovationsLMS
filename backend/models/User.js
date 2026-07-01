@@ -126,6 +126,23 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: false,
     },
+    // Lifecycle-email idempotency stamps. Each cron checks its own
+    // stamp before sending so nobody gets the same nudge twice.
+    last_reengagement_sent_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    last_earnings_summary_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'First-of-month cron uses this to avoid sending twice per month',
+    },
+    last_review_milestone: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Highest review-count milestone already emailed (0, 10, 50, 100, 250, 500)',
+    },
     status: {
       type: DataTypes.VIRTUAL,
       get() {

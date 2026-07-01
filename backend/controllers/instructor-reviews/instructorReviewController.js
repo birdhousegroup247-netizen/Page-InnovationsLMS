@@ -93,6 +93,11 @@ class InstructorReviewController {
         comment: comment || null,
       });
 
+      // Fire-and-forget milestone check — sends the 10/50/100/... email
+      // if this new review just pushed the instructor over a threshold.
+      const lifecycleSvc = require('../../services/lifecycle/lifecycleService');
+      lifecycleSvc.checkReviewMilestoneAndSend(parseInt(instructorId)).catch(() => {});
+
       return ApiResponse.created(res, { review }, 'Review submitted successfully');
     } catch (error) {
       next(error);

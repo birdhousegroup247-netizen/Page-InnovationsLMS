@@ -227,6 +227,35 @@ class AdminCoursesController {
                 }
             }
 
+            // First-course-published celebration email. Only fires when
+            // (a) this transition is draft → published, AND
+            // (b) this is the instructor's first-ever published course.
+            // Idempotent because the count check is done before the update.
+            if (status === 'published' && oldStatus !== 'published') {
+              try {
+                const { Course: CourseModel, User: UserModel } = require('../../models');
+                const otherPublished = await CourseModel.count({
+                  where: {
+                    instructor_id: course.instructor_id,
+                    status: 'published',
+                    id: { [Op.ne]: course.id },
+                  },
+                });
+                if (otherPublished === 0) {
+                  const instructor = await UserModel.findByPk(course.instructor_id, { attributes: ['email', 'full_name'] });
+                  if (instructor?.email) {
+                    const emailSvc = require('../../services/email/emailService');
+                    emailSvc.sendInstructorFirstCoursePublishedEmail(instructor.email, instructor.full_name, {
+                      courseTitle: course.title,
+                      courseId: course.id,
+                    }).catch((e) => logger.warn(`[first-published-email] ${instructor.email}: ${e.message}`));
+                  }
+                }
+              } catch (celebErr) {
+                logger.warn(`[first-published-email] check failed: ${celebErr.message}`);
+              }
+            }
+
             logger.info(`Course ${id} status updated from ${oldStatus} to ${status} by admin ${req.user.email}`);
             const statusAction =
               status === 'published' ? 'course_publish'

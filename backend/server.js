@@ -558,6 +558,11 @@ const startServer = async () => {
           // Opt-out flag flipped by /api/email/unsubscribe. Non-transactional
           // email paths check this before sending.
           email_opt_out: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+          // Lifecycle stamps used by the cold-student re-engagement,
+          // instructor monthly earnings, and review milestone crons.
+          last_reengagement_sent_at: { type: Sequelize.DATE,    allowNull: true,  defaultValue: null },
+          last_earnings_summary_at:  { type: Sequelize.DATE,    allowNull: true,  defaultValue: null },
+          last_review_milestone:     { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
         };
 
         // Grandfather existing users: anyone who has successfully logged in before
@@ -593,6 +598,16 @@ const startServer = async () => {
             logger.info(`  ✓ Added ${colName} column to leads`);
           }
         }
+      }
+
+      // certificates: share_nudge_sent_at stops the 3-day post-completion
+      // "share your cert on LinkedIn" email from firing twice.
+      const certsDesc = await qi.describeTable('certificates').catch(() => null);
+      if (certsDesc && !certsDesc.share_nudge_sent_at) {
+        await qi.addColumn('certificates', 'share_nudge_sent_at', {
+          type: Sequelize.DATE, allowNull: true, defaultValue: null,
+        }).catch((e) => logger.warn(`  ⚠ Could not add share_nudge_sent_at to certificates: ${e.message}`));
+        logger.info('  ✓ Added share_nudge_sent_at column to certificates');
       }
 
       // instructor_applications: cv_url + credential_urls were added when the

@@ -1122,6 +1122,136 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
     });
   }
 
+  // ─── Cold-student re-engagement (30 days inactive) ─────────────────────────
+  async sendReEngagementEmail(email, name, { courseTitle, courseId, daysInactive }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const firstName = (name?.split(' ')[0] || 'there').trim();
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
+      title: `Still learning, ${firstName}?`,
+      body: `<p>Hi <strong>${firstName}</strong>,</p>
+<p>It's been about ${daysInactive} days since we last saw you on TekyPro${courseTitle ? `, and <strong>${courseTitle}</strong> is right where you left it` : ''}.</p>
+<p>We know life gets busy. Here's a small nudge:</p>
+<div class="hi"><p><strong>Just 20 minutes today</strong> — one lesson, one practice question. That's how every certificate on TekyPro gets earned.</p></div>
+<p>Your progress is exactly where you left it. Every lesson you've marked complete is still marked complete. Come back whenever you're ready.</p>
+<p>We're rooting for you.</p>`,
+      ctaText: 'Pick up where I left off',
+      ctaUrl: courseId ? `${FE}/courses/${courseId}/learn` : `${FE}/my-courses`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `${firstName}, your TekyPro course is still waiting`,
+      html,
+      text: `Hi ${firstName}, it's been ${daysInactive} days. Pick up where you left off: ${FE}/my-courses`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Instructor first-course-published ─────────────────────────────────────
+  async sendInstructorFirstCoursePublishedEmail(email, name, { courseTitle, courseId }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#059669,#10b981)',
+      title: '🎉 Your first course is live!',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Big moment — <strong>${courseTitle}</strong> is now published and visible to every student on TekyPro. Welcome to the instructor roster!</p>
+<div class="hi"><strong>Next steps to grow your first cohort:</strong><ul>
+<li>Share your course link on LinkedIn, X, and your professional networks</li>
+<li>Post a welcome announcement inside the course so new students see it right away</li>
+<li>Schedule your first live session to build community early</li>
+<li>Check the Analytics tab regularly — enrollments and completion rate are the two metrics that matter most</li>
+</ul></div>
+<p>We'll be watching your dashboard and cheering when the first enrollment lands.</p>`,
+      ctaText: 'View my course',
+      ctaUrl: `${FE}/instructor/courses/${courseId}`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Your course "${courseTitle}" is live on TekyPro!`,
+      html,
+      text: `Hi ${name}, your first course "${courseTitle}" is now live. See it at ${FE}/instructor/courses/${courseId}`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Instructor monthly earnings summary ───────────────────────────────────
+  async sendInstructorMonthlyEarnings(email, name, { monthLabel, grossRevenue, enrollments, refunds, netRevenue, topCourse, currency = 'USD' }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#059669)',
+      title: `Your ${monthLabel} earnings`,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Here's your monthly TekyPro summary for <strong>${monthLabel}</strong>:</p>
+<div class="hi">
+<p><strong>Gross revenue:</strong> ${fmtMoney(grossRevenue, currency)}</p>
+<p><strong>New enrollments:</strong> ${enrollments}</p>
+${refunds > 0 ? `<p><strong>Refunds:</strong> ${fmtMoney(refunds, currency)}</p>` : ''}
+<p><strong>Net revenue:</strong> ${fmtMoney(netRevenue, currency)}</p>
+${topCourse ? `<p><strong>Top course:</strong> ${topCourse}</p>` : ''}
+</div>
+<p>Full breakdown and per-course numbers are in the instructor dashboard.</p>`,
+      ctaText: 'Open Dashboard',
+      ctaUrl: `${FE}/instructor/dashboard`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Your ${monthLabel} TekyPro earnings — ${fmtMoney(netRevenue, currency)}`,
+      html,
+      text: `Hi ${name}, ${monthLabel} on TekyPro: ${fmtMoney(grossRevenue, currency)} gross, ${enrollments} new enrollments, ${fmtMoney(netRevenue, currency)} net. Details at ${FE}/instructor/dashboard`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Instructor review milestone ───────────────────────────────────────────
+  async sendInstructorReviewMilestone(email, name, { milestone, averageRating }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#f59e0b,#eb1c22)',
+      title: `🏆 ${milestone} student reviews!`,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Big milestone: you just crossed <strong>${milestone} student reviews</strong> on TekyPro${averageRating ? ` at an average rating of <strong>${Number(averageRating).toFixed(2)} / 5.0</strong>` : ''}.</p>
+<div class="hi"><p>That's ${milestone} students who took the time to tell you what worked. That kind of feedback is gold — read a few, look for the patterns, and use them to sharpen your next lesson.</p></div>
+<p>Keep going. Every great instructor was once a first-course instructor.</p>`,
+      ctaText: 'See my reviews',
+      ctaUrl: `${FE}/instructor/dashboard`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `${milestone} student reviews! 🎉`,
+      html,
+      text: `Hi ${name}, congrats — you just passed ${milestone} student reviews on TekyPro. See them: ${FE}/instructor/dashboard`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Certificate share nudge (3 days after completion) ─────────────────────
+  async sendCertificateShareNudge(email, name, { courseTitle, courseId, certificateUrl, suggestedCourseTitle, suggestedCourseId }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const linkedInText = encodeURIComponent(`Just completed ${courseTitle} on TekyPro! 🎓`);
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certificateUrl || `${FE}/certificates`)}&summary=${linkedInText}`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
+      title: 'Show off that certificate',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>You finished <strong>${courseTitle}</strong> a few days ago — well done again. Your certificate is proof of the work you put in, and it deserves an audience.</p>
+<div class="hi"><p><strong>Two quick ways to make it count:</strong></p>
+<ul>
+<li><a href="${linkedInUrl}" style="color:#0e2b5c;text-decoration:underline">Share on LinkedIn</a> — one click, and everyone in your network sees the win</li>
+<li>Email a copy to your manager or team lead — great performance-review evidence</li>
+</ul></div>
+${suggestedCourseTitle ? `<p>And when you're ready for what's next: <strong>${suggestedCourseTitle}</strong> is a natural follow-up to what you just finished. Take a look when you have a moment.</p>` : '<p>Ready for what\'s next? Browse the catalog for your next challenge.</p>'}`,
+      ctaText: suggestedCourseTitle ? `Preview "${suggestedCourseTitle}"` : 'Browse Courses',
+      ctaUrl: suggestedCourseId ? `${FE}/courses/${suggestedCourseId}` : `${FE}/courses`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Share your ${courseTitle} certificate 🎓`,
+      html,
+      text: `Hi ${name}, your ${courseTitle} certificate is ready to share. LinkedIn: ${linkedInUrl}`,
+      recipientKind: 'user',
+    });
+  }
+
   // ─── Promotional / broadcast (admin-composed) ──────────────────────────────
   // Sent by the campaign worker for admin marketing broadcasts.
   // The body is arbitrary HTML the admin wrote; we wrap it in

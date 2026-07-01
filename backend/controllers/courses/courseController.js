@@ -312,6 +312,31 @@ class CourseController {
           });
           logger.info(`Chat room created for course ${course.id}`);
         }
+
+        // First-course-published celebration email. Only fires if this
+        // is the instructor's first-ever published course.
+        try {
+          const { Op: PubOp } = require('sequelize');
+          const otherPublished = await Course.count({
+            where: {
+              instructor_id: course.instructor_id,
+              status: 'published',
+              id: { [PubOp.ne]: course.id },
+            },
+          });
+          if (otherPublished === 0) {
+            const instructor = await User.findByPk(course.instructor_id, { attributes: ['email', 'full_name'] });
+            if (instructor?.email) {
+              const emailSvc = require('../../services/email/emailService');
+              emailSvc.sendInstructorFirstCoursePublishedEmail(instructor.email, instructor.full_name, {
+                courseTitle: course.title,
+                courseId: course.id,
+              }).catch((e) => logger.warn(`[first-published-email] ${instructor.email}: ${e.message}`));
+            }
+          }
+        } catch (celebErr) {
+          logger.warn(`[first-published-email] check failed: ${celebErr.message}`);
+        }
       }
 
       // Notify enrolled students if course is published

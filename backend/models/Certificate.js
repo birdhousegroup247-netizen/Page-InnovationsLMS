@@ -40,6 +40,12 @@ const Certificate = sequelize.define(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    // Stamped by the 3-day post-completion share-nudge cron so a student
+    // never gets the "share your certificate" email twice per course.
+    share_nudge_sent_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
