@@ -38,6 +38,10 @@ class JWT {
       id: user.id,
       email: user.email,
       role: user.role,
+      // Session invalidation marker. Bumped on password change or
+      // forced logout — authMiddleware rejects tokens whose tv doesn't
+      // match the current users.token_version. Works without Redis.
+      tv: user.token_version || 0,
     };
 
     return {

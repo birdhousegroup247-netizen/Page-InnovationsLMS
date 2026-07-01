@@ -715,8 +715,11 @@ class AuthController {
         throw new NotFoundError('User not found');
       }
 
-      // Update password
+      // Update password + bump token version. Every previously-issued
+      // access token becomes invalid on the next request (via the
+      // authMiddleware tv-check), forcing a fresh login everywhere.
       user.password_hash = await User.hashPassword(newPassword);
+      user.token_version = (user.token_version || 0) + 1;
       await user.save();
 
       // Mark token as used
@@ -751,8 +754,11 @@ class AuthController {
         throw new UnauthorizedError('Current password is incorrect');
       }
 
-      // Update password
+      // Update password + bump token version. Every previously-issued
+      // access token becomes invalid on the next request (via the
+      // authMiddleware tv-check), forcing a fresh login everywhere.
       user.password_hash = await User.hashPassword(newPassword);
+      user.token_version = (user.token_version || 0) + 1;
       await user.save();
 
       // Log activity

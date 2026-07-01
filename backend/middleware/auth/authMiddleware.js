@@ -45,6 +45,18 @@ const authenticate = async (req, res, next) => {
       throw new UnauthorizedError('Account is deactivated');
     }
 
+    // Token-version check: after a password change or a forced-logout
+    // the DB value is bumped and every previously-issued token becomes
+    // invalid. Kicks in even without Redis (unlike the token blacklist).
+    // Legacy tokens issued before this field existed have tv=undefined
+    // and are treated as version 0 — matches the User default so nothing
+    // breaks on the first deploy.
+    const dbVersion = user.token_version || 0;
+    const tokenVersion = decoded.tv || 0;
+    if (tokenVersion !== dbVersion) {
+      throw new UnauthorizedError('Session ended. Please log in again.');
+    }
+
     // Attach user to request
     req.user = user;
     next();
@@ -160,10 +172,50 @@ const checkNotSuspended = (req, res, next) => {
   next();
 };
 
+/**
+ * Fine-grained permission check for admin routes. Works alongside the
+ * existing `authorize()` role-based check — you can wire either one
+ * on any route.
+ *
+ * Usage: `router.post('/payouts', authenticate, requirePermission('payments.approve'), handler)`
+ *
+ * Semantics:
+ *   - super_admin bypasses every check
+ *   - non-admins are rejected (403)
+ *   - admins must have the exact permission string in
+ *     `user.admin_permissions` — a JSON array on the users row
+ *
+ * Legacy admins with `admin_permissions === null` behave as if they
+ * have no explicit permissions, so wiring this middleware on a route
+ * effectively opts every legacy admin out until an operator lists
+ * their perms. Deliberate: forces the client to think through who
+ * gets what. See VIREL-vs-TekyPro-audit §2.5 for why we adopted the
+ * pattern.
+ */
+const requirePermission = (permission) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return ApiResponse.unauthorized(res, 'Authentication required');
+    }
+    if (req.user.role === 'super_admin') return next();
+    if (req.user.role !== 'admin') {
+      return ApiResponse.forbidden(res, 'Admin access required');
+    }
+    const perms = Array.isArray(req.user.admin_permissions)
+      ? req.user.admin_permissions
+      : [];
+    if (!perms.includes(permission)) {
+      return ApiResponse.forbidden(res, `Missing permission: ${permission}`);
+    }
+    next();
+  };
+};
+
 module.exports = {
   authenticate,
   optionalAuthenticate,
   authorize,
   checkOwnership,
   checkNotSuspended,
+  requirePermission,
 };

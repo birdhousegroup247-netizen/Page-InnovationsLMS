@@ -143,6 +143,27 @@ const User = sequelize.define(
       defaultValue: 0,
       comment: 'Highest review-count milestone already emailed (0, 10, 50, 100, 250, 500)',
     },
+    // Bumped on password change, forced logout, or suspicious-activity
+    // response. Every access token carries the value at issue-time; the
+    // authenticate middleware compares payload.tv against the current
+    // DB value and rejects mismatched tokens. Works without Redis so
+    // logout genuinely invalidates the token — see security-audit §4.2.
+    token_version: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    // Fine-grained admin permission strings for the requirePermission()
+    // middleware — parallel to VIREL's admin RBAC pattern. Legacy admins
+    // (empty / null) still work via the existing `authorize()`
+    // role-based check; this only kicks in when a route explicitly
+    // requires a permission. Example values: ['users.manage',
+    // 'payments.view', 'courses.publish']. Super_admin bypasses.
+    admin_permissions: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+    },
     status: {
       type: DataTypes.VIRTUAL,
       get() {

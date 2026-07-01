@@ -1,5 +1,6 @@
 const { ContentProgress, ModuleContent, Enrollment, CourseModule, Certificate, Course, User } = require('../../models');
 const ApiResponse = require('../../utils/response');
+const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError } = require('../../utils/errors');
 const ActivityController = require('../activity/activityController');
 const NotificationsController = require('../notifications/notificationsController');
@@ -62,7 +63,7 @@ class ProgressController {
       try {
         await ProgressController.updateCourseProgress(req.user.id, content.module_id);
       } catch (progressError) {
-        console.error('Failed to update course progress:', progressError.message, progressError.stack);
+        logger.warn(`Failed to update course progress: ${progressError.message}\n${progressError.stack || ''}`);
       }
 
       // Log lesson_complete for streak tracking (only when newly completed)
@@ -72,7 +73,7 @@ class ProgressController {
 
       return ApiResponse.success(res, { progress }, 'Content marked as complete');
     } catch (error) {
-      console.error('markContentComplete error:', error.message, error.stack);
+      logger.error(`markContentComplete error: ${error.message}\n${error.stack || ''}`);
       next(error);
     }
   }
@@ -279,12 +280,12 @@ class ProgressController {
                   studentEmail.full_name,
                   courseData,
                   `${process.env.FRONTEND_URL || 'http://localhost:5173'}/certificates`
-                ).catch((e) => console.error('Completion email failed:', e.message));
+                ).catch((e) => logger.warn(`Completion email failed: ${e.message}`));
               }
             }
           }
         } catch (certErr) {
-          console.error('Auto-certificate failed (non-critical):', certErr.message);
+          logger.warn(`Auto-certificate failed (non-critical): ${certErr.message}`);
         }
       }
   }

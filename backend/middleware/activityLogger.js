@@ -4,6 +4,7 @@
  */
 
 const ActivityController = require('../controllers/activity/activityController');
+const logger = require('../utils/logger');
 
 /**
  * Middleware to log activity after successful request
@@ -59,10 +60,10 @@ const logActivity = (action, entity_type = null) => {
             entity_id,
             metadata
           ).catch(err => {
-            console.error('Error logging activity:', err.message);
+            logger.warn(`Error logging activity: ${err.message}`);
           });
         } catch (error) {
-          console.error('Activity logging error:', error.message);
+          logger.warn(`Activity logging error: ${error.message}`);
         }
       }
 
@@ -88,7 +89,7 @@ const logManualActivity = async (user_id, action, entity_type = null, entity_id 
       ip_address,
     });
   } catch (error) {
-    console.error('Manual activity logging error:', error.message);
+    logger.warn(`Manual activity logging error: ${error.message}`);
   }
 };
 
