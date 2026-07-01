@@ -9,6 +9,40 @@ const logger = require('../../utils/logger');
 const { NotFoundError, ForbiddenError, BadRequestError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const NotificationsController = require('../notifications/notificationsController');
+const emailSvc = require('../../services/email/emailService');
+
+// Shared helper for both the create() path and the scheduled cron.
+// Sends the course-announcement email to every enrolled student.
+// Fire-and-forget per recipient so a slow transport can't block the
+// caller. Respects opt-out via emailService.sendEmail's opt-out check.
+async function _fanoutAnnouncementEmail(courseId, announcement, courseTitle, instructorName) {
+  try {
+    const enrollments = await Enrollment.findAll({
+      where: { course_id: courseId },
+      attributes: ['student_id'],
+    });
+    if (!enrollments.length) return;
+    const students = await User.findAll({
+      where: { id: enrollments.map((e) => e.student_id), is_active: true },
+      attributes: ['id', 'email', 'full_name'],
+    });
+    for (const s of students) {
+      if (!s.email) continue;
+      emailSvc.sendCourseAnnouncement(s.email, s.full_name, {
+        id: announcement.id,
+        course_id: courseId,
+        course_title: courseTitle,
+        title: announcement.title,
+        content: announcement.message,
+        instructor_name: instructorName,
+      }).catch((err) => {
+        logger.warn(`[announcement] email failed for user ${s.id}: ${err.message}`);
+      });
+    }
+  } catch (e) {
+    logger.warn(`[announcement] fanout failed for course ${courseId}: ${e.message}`);
+  }
+}
 
 class AnnouncementsController {
   /**
@@ -81,6 +115,14 @@ class AnnouncementsController {
           }));
 
           await NotificationsController.createBulkNotifications(notifications);
+
+          const instructor = await User.findByPk(instructorId, { attributes: ['full_name'] });
+          _fanoutAnnouncementEmail(
+            courseId,
+            announcement,
+            course.title,
+            instructor?.full_name
+          ).catch(() => {});
         }
       }
 
@@ -621,6 +663,12 @@ class AnnouncementsController {
             }))
           );
         }
+        // Load course + instructor for the email body
+        const [course, instructor] = await Promise.all([
+          Course.findByPk(a.course_id, { attributes: ['title'] }),
+          User.findByPk(a.instructor_id, { attributes: ['full_name'] }),
+        ]);
+        _fanoutAnnouncementEmail(a.course_id, a, course?.title, instructor?.full_name).catch(() => {});
         a.notifications_sent_at = new Date();
         await a.save();
         logger.info(`[announcements.cron] delivered course announcement ${a.id}`);

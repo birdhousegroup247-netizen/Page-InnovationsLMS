@@ -85,6 +85,26 @@ const Lead = sequelize.define(
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+    // Consecutive send failures at the current drip_status. Reset to 0
+    // when the step succeeds and the lead advances. When it hits the
+    // cap (5), the lead is marked bounced and dropped from future runs.
+    bounce_count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    bounced_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    // Set by the /api/email/unsubscribe endpoint. When true, lead-drip
+    // + promo emails skip this lead. Transactional flows never hit
+    // leads, so no effect on those.
+    email_opt_out: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
   {
     tableName: 'leads',

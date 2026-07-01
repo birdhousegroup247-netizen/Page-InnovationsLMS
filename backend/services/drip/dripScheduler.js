@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const leadDripService = require('./leadDripService');
 const onboardingDripService = require('./onboardingDripService');
 const installmentReminderService = require('./installmentReminderService');
+const campaignWorker = require('../email/campaignWorker');
 const logger = require('../../utils/logger');
 
 function startDripScheduler() {
@@ -33,6 +34,12 @@ function startDripScheduler() {
       await installmentReminderService.processInstallments();
     } catch (err) {
       logger.error(`[DripScheduler] installmentReminderService crashed: ${err.message || err.name || 'unknown'}\n${err.stack || ''}`);
+    }
+
+    try {
+      await campaignWorker.processCampaigns();
+    } catch (err) {
+      logger.error(`[DripScheduler] campaignWorker crashed: ${err.message || err.name || 'unknown'}\n${err.stack || ''}`);
     }
   });
 

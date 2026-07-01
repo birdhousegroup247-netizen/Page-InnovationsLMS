@@ -194,6 +194,7 @@ async function runPostCommitSideEffects({ studentId, courseIds, payment, gateway
         remainingAmount: payment.installment_remaining_amount,
         invoiceDate: new Date().toLocaleDateString('en-US', { dateStyle: 'long' }),
         paymentId: payment.id,
+        currency: payment.currency || 'USD',
       });
       await emailSvc.sendPaymentCongrats(student.email, student.full_name, {
         courseTitle: primaryCourseTitle,

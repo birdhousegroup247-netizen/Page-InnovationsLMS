@@ -64,6 +64,7 @@ const CoursePlayer = lazyWithReload(() => import('./pages/CoursePlayer'));
 const ForgotPassword = lazyWithReload(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazyWithReload(() => import('./pages/ResetPassword'));
 const VerifyEmail = lazyWithReload(() => import('./pages/VerifyEmail'));
+const Unsubscribe = lazyWithReload(() => import('./pages/Unsubscribe'));
 const InstructorApply = lazyWithReload(() => import('./pages/InstructorApply'));
 const ProfileSettings = lazyWithReload(() => import('./pages/ProfileSettings'));
 const Notifications = lazyWithReload(() => import('./pages/Notifications'));
@@ -315,6 +316,7 @@ function App() {
             }
           />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/instructor-apply" element={<InstructorApply />} />
 
           {/* Google OAuth Callback */}

@@ -115,6 +115,17 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    // Set via the /api/email/unsubscribe endpoint. When true,
+    // non-transactional emails (drip, birthday, announcements, promo)
+    // skip this user. Transactional emails (verification, password
+    // reset, receipts, refunds, installment reminders, instructor
+    // status changes) bypass this flag — those are legally / operationally
+    // required and can't be opted out of.
+    email_opt_out: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     status: {
       type: DataTypes.VIRTUAL,
       get() {

@@ -230,6 +230,33 @@ class AssignedTestController {
         }));
 
         await NotificationsController.createBulkNotifications(notifications);
+
+        // Email the assigned students. Fire-and-forget per student so a
+        // slow SMTP host doesn't hold up the response.
+        try {
+          const { User } = require('../../models');
+          const emailSvc = require('../../services/email/emailService');
+          const studentRows = await User.findAll({
+            where: { id: createdAssignments.map((a) => a.student_id), is_active: true },
+            attributes: ['id', 'email', 'full_name'],
+          });
+          const testPayload = {
+            id: test.id,
+            test_name: test.test_name,
+            description: test.description,
+            total_questions: test.total_questions,
+            time_limit_minutes: test.time_limit_minutes,
+            due_date: due_date || null,
+          };
+          for (const s of studentRows) {
+            if (!s.email) continue;
+            emailSvc.sendTestAssignmentEmail(s.email, s.full_name, testPayload).catch((err) => {
+              logger.warn(`[assignTestToStudents] email failed for user ${s.id}: ${err.message}`);
+            });
+          }
+        } catch (emailErr) {
+          logger.warn(`[assignTestToStudents] email dispatch failed: ${emailErr.message}`);
+        }
       }
 
       logger.info(`Test ${testId} assigned to ${createdAssignments.length} students`);

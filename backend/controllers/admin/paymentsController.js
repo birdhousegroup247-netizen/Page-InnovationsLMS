@@ -252,6 +252,7 @@ class AdminPaymentsController {
               await emailSvc.sendRefundConfirmation(student.email, student.full_name, {
                 courseTitle: enrollment.course?.title || 'your course',
                 refundAmount: payment.amount,
+                currency: payment.currency || 'USD',
               });
             } catch (emailErr) {
               logger.warn('Refund email failed (non-critical):', emailErr.message);

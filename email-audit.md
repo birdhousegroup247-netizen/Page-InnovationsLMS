@@ -83,7 +83,7 @@ Grouped by trigger source.
 | `sendVerificationEmail` | Signup / resend-verification / admin-created user | `authController.register`, `authController.resendVerification`, `adminUsersController.createUser` |
 | `sendWelcomeEmail` | After email verification succeeds | `authController.verifyEmail` |
 | `sendPasswordResetEmail` | Forgot-password request | `authController.forgotPassword`, `adminUsersController.sendPasswordReset` |
-
+fix a
 ### Instructor onboarding
 | Template | Trigger |
 |---|---|

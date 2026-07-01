@@ -26,6 +26,7 @@ const STEPS = [
           ? new Date(payment.payment_date).toLocaleDateString('en-US', { dateStyle: 'long' })
           : null,
         paymentId: payment.id,
+        currency: payment.currency || 'USD',
       });
     },
   },

@@ -19,6 +19,7 @@ import {
   Award,
   Inbox as InboxIcon,
   ShieldCheck,
+  Mail,
 } from 'lucide-react';
 
 /**
@@ -190,6 +191,13 @@ const adminNavigation = [
         path: '/badges',
         icon: <Award className="w-4 h-4" />,
         feature: 'badges',
+      },
+      {
+        type: 'item',
+        label: 'Email Campaigns',
+        path: '/email-campaigns',
+        icon: <Mail className="w-4 h-4" />,
+        feature: 'emailCampaigns',
       },
     ],
   },

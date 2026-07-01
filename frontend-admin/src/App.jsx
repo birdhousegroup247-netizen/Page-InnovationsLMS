@@ -86,6 +86,7 @@ const Payments = lazyWithReload(() => import('./pages/admin/Payments'));
 const Announcements = lazyWithReload(() => import('./pages/admin/Announcements'));
 const Referrals = lazyWithReload(() => import('./pages/admin/Referrals'));
 const Badges = lazyWithReload(() => import('./pages/admin/Badges'));
+const EmailCampaigns = lazyWithReload(() => import('./pages/admin/EmailCampaigns'));
 const Inbox = lazyWithReload(() => import('./pages/admin/Inbox'));
 const AdminProfile = lazyWithReload(() => import('./pages/admin/AdminProfile'));
 const AdminSettings = lazyWithReload(() => import('./pages/admin/AdminSettings'));
@@ -466,6 +467,16 @@ function App() {
                 <FeatureGate flag="badges">
                   <AdminRoute>
                     <Badges />
+                  </AdminRoute>
+                </FeatureGate>
+              }
+            />
+            <Route
+              path="/email-campaigns"
+              element={
+                <FeatureGate flag="emailCampaigns">
+                  <AdminRoute>
+                    <EmailCampaigns />
                   </AdminRoute>
                 </FeatureGate>
               }

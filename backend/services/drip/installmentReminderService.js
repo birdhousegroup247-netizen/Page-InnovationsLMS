@@ -80,6 +80,7 @@ async function processInstallments() {
           remainingAmount,
           dueDate,
           payUrl,
+          currency: payment.currency || 'USD',
           ...(lockDate && { lockDate }),
         });
 

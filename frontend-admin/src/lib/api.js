@@ -450,4 +450,15 @@ export const adminBadgesAPI = {
   delete: (id) => api.delete(`/api/badges/${id}`),
 };
 
+// Admin: Email campaigns (promotional broadcast)
+export const adminEmailCampaignsAPI = {
+  list: () => api.get('/api/admin/email-campaigns'),
+  getById: (id) => api.get(`/api/admin/email-campaigns/${id}`),
+  create: (data) => api.post('/api/admin/email-campaigns', data),
+  update: (id, data) => api.put(`/api/admin/email-campaigns/${id}`, data),
+  remove: (id) => api.delete(`/api/admin/email-campaigns/${id}`),
+  sendNow: (id) => api.post(`/api/admin/email-campaigns/${id}/send`),
+  schedule: (id, scheduled_at) => api.post(`/api/admin/email-campaigns/${id}/schedule`, { scheduled_at }),
+};
+
 export default api;

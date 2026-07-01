@@ -21,6 +21,7 @@ const cron = require('node-cron');
 const { Op } = require('sequelize');
 const { User, sequelize } = require('../../models');
 const NotificationsController = require('../../controllers/notifications/notificationsController');
+const emailService = require('../email/emailService');
 const logger = require('../../utils/logger');
 
 const BELATED_GRACE_DAYS = 10;
@@ -54,7 +55,7 @@ async function runDailyBirthdayJob() {
   // fetch the small ones and filter in JS.
   const users = await User.findAll({
     where: { date_of_birth: { [Op.ne]: null }, is_active: true },
-    attributes: ['id', 'full_name', 'date_of_birth', 'birthday_celebrated_year'],
+    attributes: ['id', 'full_name', 'email', 'date_of_birth', 'birthday_celebrated_year'],
   });
 
   let fired = 0;
@@ -81,6 +82,14 @@ async function runDailyBirthdayJob() {
         link: '/notifications',
         priority: 'normal',
       });
+      // Fire the email alongside the notification — someone who
+      // isn't in the app today still gets the wish. Fire-and-forget
+      // because a transport hiccup shouldn't kill the batch.
+      if (u.email) {
+        emailService.sendBirthdayEmail(u.email, u.full_name).catch((err) => {
+          logger.warn(`[Birthday] email failed for user ${u.id}: ${err.message}`);
+        });
+      }
       fired += 1;
     } catch (err) {
       logger.warn(`[Birthday] notif failed for user ${u.id}: ${err.message}`);

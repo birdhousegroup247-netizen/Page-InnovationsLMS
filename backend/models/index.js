@@ -62,6 +62,8 @@ const Referral = require('./Referral');
 const AdminAnnouncement = require('./AdminAnnouncement');
 const AnnouncementReaction = require('./AnnouncementReaction');
 const CourseInstructor = require('./CourseInstructor');
+const EmailCampaign = require('./EmailCampaign');
+const EmailDelivery = require('./EmailDelivery');
 
 // ============================================================================
 // RELATIONSHIPS
@@ -397,6 +399,14 @@ AssignmentSubmission.belongsTo(Assignment, { foreignKey: 'assignment_id', as: 'a
 AssignmentSubmission.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 User.hasMany(AssignmentSubmission, { foreignKey: 'student_id', as: 'submissions' });
 
+// Email campaign relationships
+EmailCampaign.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+EmailCampaign.belongsTo(Course, { foreignKey: 'segment_course_id', as: 'segment_course' });
+EmailCampaign.hasMany(EmailDelivery, { foreignKey: 'campaign_id', as: 'deliveries', onDelete: 'CASCADE' });
+EmailDelivery.belongsTo(EmailCampaign, { foreignKey: 'campaign_id', as: 'campaign' });
+EmailDelivery.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+EmailDelivery.belongsTo(Lead, { foreignKey: 'lead_id', as: 'lead' });
+
 module.exports = {
   sequelize,  // Export sequelize instance
   User,
@@ -457,4 +467,6 @@ module.exports = {
   AdminAnnouncement,
   AnnouncementReaction,
   CourseInstructor,
+  EmailCampaign,
+  EmailDelivery,
 };

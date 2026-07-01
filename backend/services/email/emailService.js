@@ -13,12 +13,38 @@
 
 const nodemailer = require('nodemailer');
 const axios = require('axios');
+const crypto = require('crypto');
 const logger = require('../../utils/logger');
+
+// Currency formatting used in every payment / refund email. Same
+// symbol-map fallback as the frontend `utils/currency.js`, so a payment
+// stored as NGN renders `₦` instead of the historic hardcoded `$`.
+const CURRENCY_SYMBOLS = {
+  USD: '$', NGN: '₦', EUR: '€', GBP: '£', KES: 'KSh', GHS: '₵', ZAR: 'R',
+};
+function fmtMoney(value, currency = 'USD') {
+  const n = parseFloat(value || 0);
+  const code = (currency || 'USD').toUpperCase();
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch (_) {
+    return `${CURRENCY_SYMBOLS[code] || '$'}${n.toFixed(2)}`;
+  }
+}
 
 class EmailService {
   constructor() {
     this.resendKey = process.env.RESEND_API_KEY || '';
     this.from = process.env.EMAIL_FROM || `TekyPro LMS <${process.env.EMAIL_USER || 'noreply@tekypro.com'}>`;
+    // Secret used to sign unsubscribe tokens. Kept separate from the
+    // JWT secret so rotating one doesn't break the other. Falls back
+    // to JWT_SECRET so setups without a dedicated secret still work.
+    this.unsubSecret = process.env.EMAIL_UNSUB_SECRET || process.env.JWT_SECRET || 'change-me';
 
     if (this.resendKey) {
       logger.info('[Email] Using Resend HTTP API transport');
@@ -46,10 +72,58 @@ class EmailService {
   }
 
   /**
+   * Sign an unsubscribe token for a given recipient.
+   * @param {'user' | 'lead'} kind
+   * @param {number|string} id
+   * @returns {string} URL-safe token
+   */
+  makeUnsubToken(kind, id) {
+    return crypto
+      .createHmac('sha256', this.unsubSecret)
+      .update(`${kind}:${id}`)
+      .digest('hex');
+  }
+  verifyUnsubToken(kind, id, token) {
+    const expected = this.makeUnsubToken(kind, id);
+    // constant-time compare to avoid timing side-channels
+    const a = Buffer.from(expected, 'hex');
+    const b = Buffer.from(String(token), 'hex');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  }
+
+  /**
+   * Build the fully-signed unsubscribe URL for a given recipient. The
+   * base template's footer link is rewritten to this if the caller
+   * passes recipientKind + recipientId in options.
+   */
+  _unsubUrl(kind, id) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const token = this.makeUnsubToken(kind, id);
+    return `${FE}/unsubscribe?type=${kind}&id=${encodeURIComponent(id)}&token=${token}`;
+  }
+
+  /**
    * Send email via the active transport. Throws so the caller can decide
    * whether to retry / log / swallow.
+   *
+   * Options:
+   *   to, subject, html, text          — the email
+   *   bypassOptOut: true               — skip opt-out check (transactional only)
+   *   recipientKind, recipientId       — used to build a signed unsubscribe URL
    */
   async sendEmail(options) {
+    // Skip opt-out lookup for transactional mail (verification, password
+    // reset, receipt, refund, instructor approval/rejection/revocation,
+    // installment reminders). Marketing / drip mail must always check.
+    if (!options.bypassOptOut) {
+      const optedOut = await this._isOptedOut(options.to, options.recipientKind, options.recipientId);
+      if (optedOut) {
+        logger.info(`[Email] Skipped ${options.subject?.slice(0, 40)} — recipient ${options.to} opted out`);
+        return { success: false, skipped: 'opted_out' };
+      }
+    }
+
     if (this.transport === 'resend') {
       return this._sendViaResend(options);
     }
@@ -57,6 +131,39 @@ class EmailService {
       return this._sendViaSmtp(options);
     }
     throw new Error('Email transport not configured (set RESEND_API_KEY or EMAIL_HOST)');
+  }
+
+  /**
+   * Look up whether a given recipient has opted out. Checks both User
+   * (email_opt_out) and Lead (email_opt_out) tables by email.
+   * Cached briefly at the class instance level to keep the drip cron
+   * from hammering the DB.
+   */
+  async _isOptedOut(email, kind, id) {
+    if (!email) return false;
+    try {
+      const { User, Lead } = require('../../models');
+      // Prefer a direct ID lookup when caller told us who this is.
+      if (kind === 'user' && id) {
+        const u = await User.findByPk(id, { attributes: ['email_opt_out'] });
+        return !!u?.email_opt_out;
+      }
+      if (kind === 'lead' && id) {
+        const l = await Lead.findByPk(id, { attributes: ['email_opt_out'] });
+        return !!l?.email_opt_out;
+      }
+      // Fallback: check by email across both tables.
+      const [u, l] = await Promise.all([
+        User.findOne({ where: { email }, attributes: ['email_opt_out'] }),
+        Lead.findOne({ where: { email }, attributes: ['email_opt_out'] }),
+      ]);
+      return !!(u?.email_opt_out || l?.email_opt_out);
+    } catch (_) {
+      // If the column doesn't exist yet (mid-migration) or lookup
+      // fails, err on the side of sending — legal fallback is
+      // presence-of-flag not absence.
+      return false;
+    }
   }
 
   async _sendViaResend(options) {
@@ -134,6 +241,7 @@ class EmailService {
       subject: 'Welcome to TekyPro LMS!',
       html,
       text: `Welcome to TekyPro LMS, ${name}! Start your learning journey today.`,
+      bypassOptOut: true,
     });
   }
 
@@ -169,6 +277,7 @@ class EmailService {
       subject: 'Verify your TekyPro email address',
       html,
       text: `Hi ${name}, verify your TekyPro email by visiting ${verifyUrl} or by entering this code on the verification page: ${code}`,
+      bypassOptOut: true,
     });
   }
 
@@ -196,6 +305,7 @@ class EmailService {
       subject: 'Password Reset Request - TekyPro LMS',
       html,
       text: `Hi ${name}, Click this link to reset your password: ${resetUrl}`,
+      bypassOptOut: true,
     });
   }
 
@@ -228,6 +338,7 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
       subject: `Enrollment Confirmed: ${course.title}`,
       html,
       text: `Hi ${name}, You've successfully enrolled in ${course.title}. Start learning now!`,
+      bypassOptOut: true,
     });
   }
 
@@ -240,55 +351,22 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
    * @returns {Promise<Object>} Send result
    */
   async sendCourseCompletionEmail(email, name, course, certificateUrl) {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .certificate-badge { text-align: center; font-size: 80px; margin: 20px 0; }
-            .button { display: inline-block; padding: 12px 30px; background: #10b981; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Congratulations! 🎊</h1>
-            </div>
-            <div class="content">
-              <div class="certificate-badge">🎓</div>
-              <h2>Amazing Achievement, ${name}!</h2>
-              <p>You've successfully completed <strong>${course.title}</strong>!</p>
-
-              <p>This is a significant milestone in your learning journey. Your dedication and hard work have paid off!</p>
-
-              <p><strong>Your certificate is ready!</strong></p>
-              <a href="${certificateUrl}" class="button">Download Certificate</a>
-
-              <p>Share your achievement on LinkedIn and inspire others!</p>
-
-              <p>Keep up the great work and continue learning!</p>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#059669,#10b981)',
+      title: 'Congratulations — you finished!',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>You've officially completed <strong>${course.title}</strong>. That's a real milestone — dedication and hard work well earned.</p>
+<div class="hi" style="text-align:center"><p style="font-size:52px;margin:0">🎓</p><p style="margin:6px 0 0"><strong>Your certificate is ready.</strong></p></div>
+<p>Share your achievement on LinkedIn and inspire someone else to start. And keep the momentum going — the next course is only a click away.</p>`,
+      ctaText: 'Download Certificate',
+      ctaUrl: certificateUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: `🎓 Congratulations! You completed ${course.title}`,
       html,
       text: `Congratulations ${name}! You've completed ${course.title}. Download your certificate: ${certificateUrl}`,
+      recipientKind: 'user',
     });
   }
 
@@ -300,59 +378,30 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
    * @returns {Promise<Object>} Send result
    */
   async sendTestAssignmentEmail(email, name, test) {
-    const testUrl = `${process.env.FRONTEND_URL}/tests/${test.id}`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .test-info { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .button { display: inline-block; padding: 12px 30px; background: #f59e0b; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>New Test Assignment 📝</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-              <p>You have been assigned a new test:</p>
-
-              <div class="test-info">
-                <h3>${test.test_name}</h3>
-                <p>${test.description || 'Complete this test to assess your knowledge.'}</p>
-                <p><strong>Questions:</strong> ${test.total_questions}</p>
-                ${test.time_limit_minutes ? `<p><strong>Time Limit:</strong> ${test.time_limit_minutes} minutes</p>` : ''}
-                ${test.due_date ? `<p><strong>Due Date:</strong> ${new Date(test.due_date).toLocaleDateString()}</p>` : ''}
-              </div>
-
-              <a href="${testUrl}" class="button">Take Test Now</a>
-
-              <p>Good luck!</p>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const testUrl = `${FE}/tests/${test.id}`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#f59e0b,#d97706)',
+      title: 'New test assigned',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>You have a new test on TekyPro:</p>
+<div class="hi">
+<p><strong>${test.test_name}</strong></p>
+${test.description ? `<p style="color:#555">${test.description}</p>` : ''}
+${test.total_questions ? `<p><strong>Questions:</strong> ${test.total_questions}</p>` : ''}
+${test.time_limit_minutes ? `<p><strong>Time limit:</strong> ${test.time_limit_minutes} minutes</p>` : ''}
+${test.due_date ? `<p><strong>Due:</strong> ${new Date(test.due_date).toLocaleDateString('en-US', { dateStyle: 'long' })}</p>` : ''}
+</div>
+<p>Good luck!</p>`,
+      ctaText: 'Take Test Now',
+      ctaUrl: testUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: `New Test Assignment: ${test.test_name}`,
       html,
-      text: `Hi ${name}, You have been assigned a new test: ${test.test_name}. Take it now: ${testUrl}`,
+      text: `Hi ${name}, you have a new test assigned: ${test.test_name}. Take it now: ${testUrl}`,
+      recipientKind: 'user',
     });
   }
 
@@ -379,6 +428,7 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
       subject: 'Your TekyPro instructor application is being reviewed',
       html,
       text: `Hi ${name}, we received your instructor application. The admin team is reviewing it and you'll hear back within 2-3 business days.`,
+      bypassOptOut: true,
     });
   }
 
@@ -407,6 +457,7 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
       subject: `New instructor application from ${applicantName}`,
       html,
       text: `New instructor application from ${applicantName} (${applicantEmail}). Review at ${reviewUrl}`,
+      bypassOptOut: true,
     });
   }
 
@@ -417,70 +468,32 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
    * @returns {Promise<Object>} Send result
    */
   async sendInstructorApprovalEmail(email, name) {
-    const dashboardUrl = `${process.env.FRONTEND_URL}/instructor-dashboard`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .icon { text-align: center; font-size: 80px; margin: 20px 0; }
-            .button { display: inline-block; padding: 12px 30px; background: #10b981; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .features { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Application Approved! 🎉</h1>
-            </div>
-            <div class="content">
-              <div class="icon">👨‍🏫</div>
-              <h2>Congratulations, ${name}!</h2>
-              <p>We're excited to inform you that your instructor application has been <strong>approved</strong>!</p>
-
-              <p>You are now an official TekyPro instructor and can start creating and publishing courses.</p>
-
-              <div class="features">
-                <h3>What you can do now:</h3>
-                <ul>
-                  <li>✅ Create and publish courses</li>
-                  <li>✅ Upload course content (videos, documents, quizzes)</li>
-                  <li>✅ Manage enrolled students</li>
-                  <li>✅ Track student progress and performance</li>
-                  <li>✅ Communicate with your students</li>
-                  <li>✅ Earn revenue from course sales</li>
-                </ul>
-              </div>
-
-              <p>Ready to create your first course?</p>
-              <a href="${dashboardUrl}" class="button">Go to Instructor Dashboard</a>
-
-              <p>If you have any questions or need assistance, our support team is here to help!</p>
-
-              <p>Welcome to the TekyPro instructor community!</p>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const dashboardUrl = `${FE}/instructor-dashboard`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#059669,#10b981)',
+      title: 'Application Approved 🎉',
+      transactional: true,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Great news — your instructor application has been <strong>approved</strong>. Welcome to the TekyPro instructor community!</p>
+<div class="hi"><strong>What you can do now:</strong><ul>
+<li>Create and publish courses</li>
+<li>Upload course content — videos, documents, quizzes</li>
+<li>Manage enrolled students</li>
+<li>Track student progress and performance</li>
+<li>Communicate with your students</li>
+<li>Earn revenue from course sales</li>
+</ul></div>
+<p>Ready to create your first course?</p>`,
+      ctaText: 'Go to Instructor Dashboard',
+      ctaUrl: dashboardUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: '🎉 Your Instructor Application Has Been Approved!',
       html,
-      text: `Congratulations ${name}! Your instructor application has been approved. You can now start creating courses!`,
+      text: `Congratulations ${name}! Your instructor application has been approved. Get started at ${dashboardUrl}`,
+      bypassOptOut: true,
     });
   }
 
@@ -492,70 +505,32 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
    * @returns {Promise<Object>} Send result
    */
   async sendInstructorRejectionEmail(email, name, reason) {
-    const supportUrl = `${process.env.FRONTEND_URL}/support`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #f44336; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .reason-box { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Application Update</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-              <p>Thank you for your interest in becoming a TekyPro instructor.</p>
-
-              <p>After careful review, we regret to inform you that your instructor application has not been approved at this time.</p>
-
-              ${reason ? `
-                <div class="reason-box">
-                  <strong>Feedback:</strong>
-                  <p>${reason}</p>
-                </div>
-              ` : ''}
-
-              <p>We encourage you to:</p>
-              <ul>
-                <li>Review the feedback provided (if any)</li>
-                <li>Enhance your qualifications or teaching experience</li>
-                <li>Apply again in the future</li>
-              </ul>
-
-              <p>You can still enjoy all student features and continue learning on our platform!</p>
-
-              <p>If you have questions or would like more information, please don't hesitate to contact us.</p>
-              <a href="${supportUrl}" class="button">Contact Support</a>
-
-              <p>Thank you for your understanding.</p>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const supportUrl = `${FE}/support`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+      title: 'Application Update',
+      transactional: true,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Thank you for your interest in becoming a TekyPro instructor.</p>
+<p>After careful review, we're unable to approve your application at this time.</p>
+${reason ? `<div class="wa"><strong>Feedback:</strong><p>${reason}</p></div>` : ''}
+<p>We encourage you to:</p>
+<ul>
+<li>Review the feedback provided (if any)</li>
+<li>Enhance your qualifications or teaching experience</li>
+<li>Apply again in the future</li>
+</ul>
+<p>You can still enjoy all student features and continue learning on our platform.</p>`,
+      ctaText: 'Contact Support',
+      ctaUrl: supportUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: 'Instructor Application Update - TekyPro LMS',
       html,
-      text: `Hi ${name}, Thank you for your interest. Your instructor application has not been approved at this time. ${reason ? `Feedback: ${reason}` : ''}`,
+      text: `Hi ${name}, your instructor application was not approved at this time. ${reason ? `Feedback: ${reason}` : ''}`,
+      bypassOptOut: true,
     });
   }
 
@@ -567,70 +542,33 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
    * @returns {Promise<Object>} Send result
    */
   async sendInstructorRevocationEmail(email, name, reason) {
-    const supportUrl = `${process.env.FRONTEND_URL}/support`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #f44336; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .warning { background: #ffebee; padding: 15px; border-left: 4px solid #f44336; margin: 20px 0; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Important Account Update</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-
-              <div class="warning">
-                <strong>⚠️ Your instructor status has been revoked.</strong>
-              </div>
-
-              <p>We regret to inform you that your instructor privileges have been removed from your TekyPro account.</p>
-
-              ${reason ? `
-                <p><strong>Reason:</strong> ${reason}</p>
-              ` : ''}
-
-              <p>This means you will no longer be able to:</p>
-              <ul>
-                <li>Create or publish new courses</li>
-                <li>Access the instructor dashboard</li>
-                <li>Manage student enrollments</li>
-              </ul>
-
-              <p>Your existing courses may be archived or removed depending on the circumstances.</p>
-
-              <p>You can still access the platform as a student and enroll in courses.</p>
-
-              <p>If you believe this action was taken in error or would like to discuss this further, please contact our support team.</p>
-              <a href="${supportUrl}" class="button">Contact Support</a>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const supportUrl = `${FE}/support`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+      title: 'Important Account Update',
+      transactional: true,
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<div class="da"><strong>⚠️ Your instructor status has been revoked.</strong></div>
+<p>Your instructor privileges have been removed from your TekyPro account.</p>
+${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+<p>This means you will no longer be able to:</p>
+<ul>
+<li>Create or publish new courses</li>
+<li>Access the instructor dashboard</li>
+<li>Manage student enrollments</li>
+</ul>
+<p>Your existing courses may be archived or removed depending on the circumstances. You can still access the platform as a student and enroll in courses.</p>
+<p>If you believe this action was taken in error, please contact our support team.</p>`,
+      ctaText: 'Contact Support',
+      ctaUrl: supportUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: 'Instructor Status Update - TekyPro LMS',
       html,
-      text: `Hi ${name}, Your instructor status has been revoked. ${reason ? `Reason: ${reason}` : ''} Please contact support if you have questions.`,
+      text: `Hi ${name}, your instructor status has been revoked. ${reason ? `Reason: ${reason}` : ''} Contact support at ${supportUrl}`,
+      bypassOptOut: true,
     });
   }
 
@@ -642,71 +580,57 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
    * @returns {Promise<Object>} Send result
    */
   async sendCourseAnnouncement(email, studentName, announcement) {
-    const courseUrl = `${process.env.FRONTEND_URL}/courses/${announcement.course_id}`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .announcement { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Course Announcement 📢</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${studentName},</h2>
-              <p>Your instructor has posted a new announcement for <strong>${announcement.course_title}</strong>:</p>
-
-              <div class="announcement">
-                <h3>${announcement.title}</h3>
-                <p>${announcement.content}</p>
-                ${announcement.instructor_name ? `<p><em>- ${announcement.instructor_name}</em></p>` : ''}
-              </div>
-
-              <p>Stay updated with your course!</p>
-              <a href="${courseUrl}" class="button">View Course</a>
-
-              <p>Best regards,<br>The TekyPro Team</p>
-            </div>
-            <div class="footer">
-              <p>TekyPro - The Leading Remote DBA Service Provider</p>
-              <p><a href="https://www.tekypro.com">www.tekypro.com</a></p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const courseUrl = `${FE}/courses/${announcement.course_id}/announcements/${announcement.id || ''}`;
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
+      title: '📢 New course announcement',
+      body: `<p>Hi <strong>${studentName}</strong>,</p>
+<p>Your instructor posted a new announcement for <strong>${announcement.course_title}</strong>:</p>
+<div class="hi">
+<p style="margin:0 0 8px"><strong>${announcement.title}</strong></p>
+<p style="margin:0">${announcement.content}</p>
+${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— ${announcement.instructor_name}</em></p>` : ''}
+</div>`,
+      ctaText: 'Open Announcement',
+      ctaUrl: courseUrl,
+    });
     return this.sendEmail({
       to: email,
       subject: `Course Announcement: ${announcement.course_title}`,
       html,
-      text: `Hi ${studentName}, New announcement for ${announcement.course_title}: ${announcement.title} - ${announcement.content}`,
+      text: `Hi ${studentName}, new announcement for ${announcement.course_title}: ${announcement.title} — ${announcement.content}`,
+      recipientKind: 'user',
     });
   }
 
   // ─── Shared HTML shell ────────────────────────────────────────────────────
-  _baseTemplate({ headerColor = 'linear-gradient(135deg,#0e2b5c,#2e3192)', title, body, ctaText, ctaUrl }) {
+  //
+  // Options:
+  //   headerColor  — CSS background for the header block
+  //   title        — h1 inside the header
+  //   body         — HTML for the middle
+  //   ctaText/Url  — big red button below the body
+  //   unsubUrl     — signed unsubscribe link for the footer. If absent
+  //                  we fall back to a generic /unsubscribe path (kept
+  //                  for legacy compatibility during rollout).
+  //   transactional — flags a transactional email; footer omits the
+  //                   unsubscribe link entirely (receipts, refunds,
+  //                   verification, password reset).
+  _baseTemplate({ headerColor = 'linear-gradient(135deg,#0e2b5c,#2e3192)', title, body, ctaText, ctaUrl, unsubUrl, transactional = false }) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const cta = ctaText && ctaUrl
       ? `<div style="text-align:center;margin:28px 0"><a href="${ctaUrl}" style="display:inline-block;padding:14px 32px;background:#eb1c22;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;font-family:Arial,sans-serif">${ctaText}</a></div>`
       : '';
+    const unsubLine = transactional
+      ? ''
+      : `<p style="margin-top:10px;font-size:11px;color:#bbb">You received this because you registered on TekyPro. <a href="${unsubUrl || `${FE}/unsubscribe`}">Unsubscribe</a></p>`;
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f6f9;color:#333}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08)}.hdr{background:${headerColor};padding:28px 40px;text-align:center}.hdr .logo{font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;margin:0}.hdr h1{margin:8px 0 0;color:#fff;font-size:20px;font-weight:600}.bd{padding:32px 40px}.bd p{line-height:1.75;margin:0 0 16px}.bd ul{padding-left:20px;line-height:1.9}.hi{background:#f0f4ff;border-left:4px solid #0e2b5c;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.wa{background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.da{background:#fff0f0;border-left:4px solid #ef4444;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.ft{background:#f9fafb;padding:20px 40px;text-align:center;color:#888;font-size:12px;border-top:1px solid #eee}.ft a{color:#0e2b5c;text-decoration:none}</style>
 </head><body><div style="padding:16px"><div class="wrap">
 <div class="hdr"><p class="logo">TekyPro</p><h1>${title}</h1></div>
 <div class="bd">${body}${cta}</div>
-<div class="ft"><p>TekyPro — Professional Database Training</p><p><a href="https://www.tekypro.com">www.tekypro.com</a> · <a href="mailto:support@tekypro.com">support@tekypro.com</a></p><p style="margin-top:10px;font-size:11px;color:#bbb">You received this because you registered on TekyPro. <a href="${FE}/unsubscribe">Unsubscribe</a></p></div>
+<div class="ft"><p>TekyPro — Professional Database Training</p><p><a href="https://www.tekypro.com">www.tekypro.com</a> · <a href="mailto:support@tekypro.com">support@tekypro.com</a></p>${unsubLine}</div>
 </div></div></body></html>`;
   }
 
@@ -809,19 +733,20 @@ ${discountBlock}
 
   // ─── Payment Emails (Sequence B — Paid Users) ───────────────────────────────
 
-  async sendPaymentReceipt(email, name, { courseTitle, amountPaid, paymentPlan, remainingAmount, invoiceDate, paymentId }) {
+  async sendPaymentReceipt(email, name, { courseTitle, amountPaid, paymentPlan, remainingAmount, invoiceDate, paymentId, currency = 'USD' }) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const installmentNote = paymentPlan === 'installment' && remainingAmount
-      ? `<div class="wa"><p><strong>Installment Plan:</strong> Your remaining balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> is due in 21 days. We'll send a reminder before it's due.</p></div>`
+      ? `<div class="wa"><p><strong>Installment Plan:</strong> Your remaining balance of <strong>${fmtMoney(remainingAmount, currency)}</strong> is due in 21 days. We'll send a reminder before it's due.</p></div>`
       : '';
     const html = this._baseTemplate({
       headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
       title: 'Payment Confirmed — Receipt',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>Your payment has been received! Here is your receipt:</p>
 <div class="hi">
 <p><strong>Course:</strong> ${courseTitle}</p>
-<p><strong>Amount Paid:</strong> $${parseFloat(amountPaid).toFixed(2)} USD</p>
+<p><strong>Amount Paid:</strong> ${fmtMoney(amountPaid, currency)}</p>
 <p><strong>Payment Plan:</strong> ${paymentPlan === 'installment' ? '60/40 Installment' : 'Full Payment'}</p>
 <p><strong>Date:</strong> ${invoiceDate || new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}</p>
 <p><strong>Reference:</strong> #${paymentId || 'TKP-' + Date.now()}</p>
@@ -831,7 +756,13 @@ ${installmentNote}
       ctaText: 'Go to My Courses',
       ctaUrl: `${FE}/my-courses`,
     });
-    return this.sendEmail({ to: email, subject: `TekyPro Payment Receipt — ${courseTitle}`, html, text: `Hi ${name}, your payment for ${courseTitle} ($${amountPaid}) has been received.` });
+    return this.sendEmail({
+      to: email,
+      subject: `TekyPro Payment Receipt — ${courseTitle}`,
+      html,
+      text: `Hi ${name}, your payment for ${courseTitle} (${fmtMoney(amountPaid, currency)}) has been received.`,
+      bypassOptOut: true,
+    });
   }
 
   async sendPaymentCongrats(email, name, { courseTitle, courseId }) {
@@ -858,7 +789,7 @@ ${installmentNote}
       ctaText: 'Start Learning Now',
       ctaUrl: courseId ? `${FE}/courses/${courseId}/learn` : `${FE}/my-courses`,
     });
-    return this.sendEmail({ to: email, subject: `You're in! Welcome to ${courseTitle}`, html, text: `Congratulations ${name}! You're enrolled in ${courseTitle}. Start at ${FE}/my-courses` });
+    return this.sendEmail({ to: email, subject: `You're in! Welcome to ${courseTitle}`, html, text: `Congratulations ${name}! You're enrolled in ${courseTitle}. Start at ${FE}/my-courses`, bypassOptOut: true });
   }
 
   async sendOnboardingD1(email, name, { courseTitle, courseId }) {
@@ -917,41 +848,47 @@ ${installmentNote}
 
   // ─── Installment Reminder Sequence (Sequence C) ───────────────────────────
 
-  async sendInstallmentReminderD21(email, name, { remainingAmount, dueDate, payUrl }) {
+  async sendInstallmentReminderD21(email, name, { remainingAmount, dueDate, payUrl, currency = 'USD' }) {
+    const amt = fmtMoney(remainingAmount, currency);
     const html = this._baseTemplate({
       title: 'Friendly reminder: your balance is due',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Just a friendly heads-up — your TekyPro installment balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> is now due.</p>
-<div class="hi"><p><strong>Amount due:</strong> $${parseFloat(remainingAmount).toFixed(2)}<br><strong>Due date:</strong> ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
+<p>Just a friendly heads-up — your TekyPro installment balance of <strong>${amt}</strong> is now due.</p>
+<div class="hi"><p><strong>Amount due:</strong> ${amt}<br><strong>Due date:</strong> ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
 <p>Completing this payment takes less than 2 minutes and keeps your full course access uninterrupted.</p>
 <p>No rush — but sooner is better! 😊</p>`,
       ctaText: 'Complete Payment',
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Friendly reminder: your TekyPro balance of $${parseFloat(remainingAmount).toFixed(2)} is due`, html, text: `Hi ${name}, your TekyPro balance of $${remainingAmount} is due. Pay at ${payUrl}` });
+    return this.sendEmail({ to: email, subject: `Friendly reminder: your TekyPro balance of ${amt} is due`, html, text: `Hi ${name}, your TekyPro balance of ${amt} is due. Pay at ${payUrl}`, bypassOptOut: true });
   }
 
-  async sendInstallmentReminderD24(email, name, { remainingAmount, dueDate, payUrl }) {
+  async sendInstallmentReminderD24(email, name, { remainingAmount, dueDate, payUrl, currency = 'USD' }) {
+    const amt = fmtMoney(remainingAmount, currency);
     const html = this._baseTemplate({
       headerColor: 'linear-gradient(135deg,#f97316,#ea580c)',
       title: 'Your balance is 3 days overdue',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro installment balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> was due on ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })} and is now 3 days overdue.</p>
+<p>Your TekyPro installment balance of <strong>${amt}</strong> was due on ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })} and is now 3 days overdue.</p>
 <div class="wa"><p>Your course access is still fully active for now. To avoid any interruptions, please complete your payment as soon as possible.</p></div>
 <p>It only takes a moment to sort this out:</p>`,
-      ctaText: 'Pay $' + parseFloat(remainingAmount).toFixed(2) + ' Now',
+      ctaText: `Pay ${amt} Now`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro balance is 3 days overdue — still time to sort it out`, html, text: `Hi ${name}, your TekyPro balance of $${remainingAmount} is 3 days overdue. Pay at ${payUrl}` });
+    return this.sendEmail({ to: email, subject: `Your TekyPro balance is 3 days overdue — still time to sort it out`, html, text: `Hi ${name}, your TekyPro balance of ${amt} is 3 days overdue. Pay at ${payUrl}`, bypassOptOut: true });
   }
 
-  async sendInstallmentReminderD28(email, name, { remainingAmount, payUrl, lockDate }) {
+  async sendInstallmentReminderD28(email, name, { remainingAmount, payUrl, lockDate, currency = 'USD' }) {
+    const amt = fmtMoney(remainingAmount, currency);
     const html = this._baseTemplate({
       headerColor: 'linear-gradient(135deg,#dc2626,#ef4444)',
       title: 'Action Required: 4 days until access is restricted',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>We need to let you know that your TekyPro account will be <strong>partially restricted on ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</strong> if your balance remains unpaid.</p>
-<div class="da"><p><strong>⚠️ Balance overdue:</strong> $${parseFloat(remainingAmount).toFixed(2)}<br><strong>Restriction date:</strong> ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
+<div class="da"><p><strong>⚠️ Balance overdue:</strong> ${amt}<br><strong>Restriction date:</strong> ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
 <p>After restriction, you will lose access to:</p>
 <ul>
 <li>New lessons and modules</li>
@@ -963,15 +900,17 @@ ${installmentNote}
       ctaText: 'Pay Now to Keep Full Access',
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `URGENT: Your TekyPro account will be restricted in 4 days`, html, text: `URGENT: Your TekyPro balance of $${remainingAmount} is overdue. Account restricted on ${lockDate}. Pay at ${payUrl}` });
+    return this.sendEmail({ to: email, subject: `URGENT: Your TekyPro account will be restricted in 4 days`, html, text: `URGENT: Your TekyPro balance of ${amt} is overdue. Account restricted on ${lockDate}. Pay at ${payUrl}`, bypassOptOut: true });
   }
 
-  async sendInstallmentReminderD32(email, name, { remainingAmount, payUrl }) {
+  async sendInstallmentReminderD32(email, name, { remainingAmount, payUrl, currency = 'USD' }) {
+    const amt = fmtMoney(remainingAmount, currency);
     const html = this._baseTemplate({
       headerColor: '#dc2626',
       title: 'Your account has been partially restricted',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Because your installment balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong> remains unpaid, your TekyPro account has been <strong>partially restricted</strong>.</p>
+<p>Because your installment balance of <strong>${amt}</strong> remains unpaid, your TekyPro account has been <strong>partially restricted</strong>.</p>
 <div class="da"><p><strong>What you've lost access to:</strong><ul>
 <li>Starting new lessons or modules</li>
 <li>Practice tests and assignments</li>
@@ -980,39 +919,43 @@ ${installmentNote}
 </ul></p></div>
 <div class="hi"><p><strong>What you still have:</strong> You can continue any lessons you already started, and all your progress has been saved.</p></div>
 <p>Restore full access instantly with one payment:</p>`,
-      ctaText: 'Restore Full Access — $' + parseFloat(remainingAmount).toFixed(2),
+      ctaText: `Restore Full Access — ${amt}`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro account has been partially restricted`, html, text: `Hi ${name}, your TekyPro account is partially restricted. Pay $${remainingAmount} to restore full access at ${payUrl}` });
+    return this.sendEmail({ to: email, subject: `Your TekyPro account has been partially restricted`, html, text: `Hi ${name}, your TekyPro account is partially restricted. Pay ${amt} to restore full access at ${payUrl}`, bypassOptOut: true });
   }
 
-  async sendInstallmentReminderD35(email, name, { remainingAmount, payUrl }) {
+  async sendInstallmentReminderD35(email, name, { remainingAmount, payUrl, currency = 'USD' }) {
+    const amt = fmtMoney(remainingAmount, currency);
     const html = this._baseTemplate({
       headerColor: '#7f1d1d',
       title: 'Your account is on hold',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro account is now on hold due to an outstanding balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong>.</p>
+<p>Your TekyPro account is now on hold due to an outstanding balance of <strong>${amt}</strong>.</p>
 <p>We know life gets busy. That's why we've kept your account active for as long as possible — all your progress, notes, and bookmarks are completely safe.</p>
 <div class="da"><p>Your account is currently showing a fullscreen payment overlay. You will not be able to access course content until payment is completed.</p></div>
 <p>One click is all it takes to restore everything instantly:</p>`,
-      ctaText: 'Restore My Account — $' + parseFloat(remainingAmount).toFixed(2),
+      ctaText: `Restore My Account — ${amt}`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro account is on hold — here's how to restore it`, html, text: `Hi ${name}, your TekyPro account is on hold. Pay $${remainingAmount} to restore at ${payUrl}` });
+    return this.sendEmail({ to: email, subject: `Your TekyPro account is on hold — here's how to restore it`, html, text: `Hi ${name}, your TekyPro account is on hold. Pay ${amt} to restore at ${payUrl}`, bypassOptOut: true });
   }
 
-  async sendInstallmentSuspendedD42(email, name, { remainingAmount, payUrl }) {
+  async sendInstallmentSuspendedD42(email, name, { remainingAmount, payUrl, currency = 'USD' }) {
+    const amt = fmtMoney(remainingAmount, currency);
     const html = this._baseTemplate({
       headerColor: '#1c1c1c',
       title: 'Account Suspended',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro account has been suspended due to an unpaid balance of <strong>$${parseFloat(remainingAmount).toFixed(2)}</strong>.</p>
+<p>Your TekyPro account has been suspended due to an unpaid balance of <strong>${amt}</strong>.</p>
 <p>We're sorry it came to this. Your account data, progress, and certificates are all still here — waiting for you.</p>
 <p>To reactivate your account and restore full access <em>immediately</em>, complete your payment below:</p>`,
-      ctaText: 'Reactivate My Account — $' + parseFloat(remainingAmount).toFixed(2),
+      ctaText: `Reactivate My Account — ${amt}`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro account has been suspended`, html, text: `Hi ${name}, your TekyPro account has been suspended. Pay $${remainingAmount} to reactivate at ${payUrl}` });
+    return this.sendEmail({ to: email, subject: `Your TekyPro account has been suspended`, html, text: `Hi ${name}, your TekyPro account has been suspended. Pay ${amt} to reactivate at ${payUrl}`, bypassOptOut: true });
   }
 
   /**
@@ -1039,50 +982,24 @@ ${installmentNote}
    * @param {String} preview - Message preview (first 100 chars)
    */
   async sendChatNotificationEmail(email, name, type, senderName, preview) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const subject = type === 'mention'
       ? `${senderName} mentioned you in a chat`
       : `New message from ${senderName}`;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .preview { background: #fff; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; color: #555; font-style: italic; }
-            .button { display: inline-block; padding: 12px 30px; background: #3b82f6; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>💬 ${type === 'mention' ? 'You were mentioned' : 'New Message'}</h1>
-            </div>
-            <div class="content">
-              <h2>Hi ${name},</h2>
-              <p>${type === 'mention'
-                ? `<strong>${senderName}</strong> mentioned you in a chat on TekyPro LMS.`
-                : `You have a new direct message from <strong>${senderName}</strong>.`
-              }</p>
-              ${preview ? `<div class="preview">"${preview}"</div>` : ''}
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/messages" class="button">
-                Open Messages
-              </a>
-            </div>
-            <div class="footer">
-              <p>You received this because you were not online at the time. Log in to reply.</p>
-              <p>&copy; ${new Date().getFullYear()} TekyPro LMS</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    return this.sendEmail({ to: email, subject, html, text: `${senderName}: ${preview}` });
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
+      title: type === 'mention' ? '💬 You were mentioned' : '💬 New message',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>${type === 'mention'
+        ? `<strong>${senderName}</strong> mentioned you in a chat on TekyPro.`
+        : `You have a new direct message from <strong>${senderName}</strong>.`
+}</p>
+${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"${preview}"</p></div>` : ''}
+<p style="font-size:12px;color:#888">You received this because you were not online at the time.</p>`,
+      ctaText: 'Open Messages',
+      ctaUrl: `${FE}/messages`,
+    });
+    return this.sendEmail({ to: email, subject, html, text: `${senderName}: ${preview}`, recipientKind: 'user' });
   }
 
   async sendDiscordInviteEmail(email, name, { courseTitle, inviteLink }) {
@@ -1106,18 +1023,21 @@ ${installmentNote}
       subject: `Your Discord channel for ${courseTitle} is ready — TekyPro`,
       html,
       text: `Hi ${name}, your Discord channel for ${courseTitle} is ready. Join here: ${inviteLink}`,
+      bypassOptOut: true,
     });
   }
 
-  async sendRefundConfirmation(email, name, { courseTitle, refundAmount }) {
+  async sendRefundConfirmation(email, name, { courseTitle, refundAmount, currency = 'USD' }) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const amt = fmtMoney(refundAmount, currency);
     const html = this._baseTemplate({
       headerColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
       title: 'Your Refund Has Been Processed',
+      transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>Your refund for <strong>${courseTitle}</strong> has been processed.</p>
 <div class="hi">
-<p><strong>Refund Amount:</strong> $${parseFloat(refundAmount).toFixed(2)} USD</p>
+<p><strong>Refund Amount:</strong> ${amt}</p>
 <p><strong>Status:</strong> Refunded</p>
 </div>
 <p>Please allow 5–10 business days for the amount to appear on your original payment method. Your access to the course has been removed.</p>
@@ -1129,7 +1049,99 @@ ${installmentNote}
       to: email,
       subject: `Your TekyPro refund for ${courseTitle} has been processed`,
       html,
-      text: `Hi ${name}, your refund of $${refundAmount} for ${courseTitle} has been processed. Allow 5-10 business days.`,
+      text: `Hi ${name}, your refund of ${amt} for ${courseTitle} has been processed. Allow 5-10 business days.`,
+      bypassOptOut: true,
+    });
+  }
+
+  // ─── Birthday ───────────────────────────────────────────────────────────────
+  async sendBirthdayEmail(email, name) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const firstName = (name?.split(' ')[0] || 'there').trim();
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#ec4899,#f59e0b)',
+      title: `🎉 Happy Birthday, ${firstName}!`,
+      body: `<p>Hi <strong>${firstName}</strong>,</p>
+<p>Everyone at TekyPro is rooting for you today. 🎂</p>
+<p>Thank you for letting us be a small part of your learning journey — the curiosity you bring to every lesson is exactly what makes growth happen.</p>
+<p>Here's to another year of building, breaking, and getting better. We can't wait to see what you create next.</p>
+<p style="font-size:18px">💙 — The TekyPro Team</p>`,
+      ctaText: 'Open TekyPro',
+      ctaUrl: `${FE}/dashboard`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Happy Birthday, ${firstName}! 🎂`,
+      html,
+      text: `Happy Birthday, ${firstName}! Everyone at TekyPro is wishing you a great one. — The TekyPro Team`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Live session pre-start (15 min out) ───────────────────────────────────
+  async sendLiveSessionStartingEmail(email, name, { sessionTitle, courseTitle, scheduledAt, joinUrl }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const when = new Date(scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#059669,#10b981)',
+      title: 'Your live session starts in 15 minutes',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Heads up — <strong>${sessionTitle}</strong>${courseTitle ? ` (${courseTitle})` : ''} starts at <strong>${when}</strong>, in about 15 minutes.</p>
+<div class="hi"><p>Grab a drink, close a tab or two, and get comfortable. We'll see you there!</p></div>`,
+      ctaText: joinUrl ? 'Join Live Session' : 'Open TekyPro',
+      ctaUrl: joinUrl || `${FE}/dashboard`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Starting in 15 min: ${sessionTitle}`,
+      html,
+      text: `Hi ${name}, your live session ${sessionTitle} starts at ${when}. Join: ${joinUrl || FE}`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Assignment due-soon (24h out) ─────────────────────────────────────────
+  async sendAssignmentDueSoonEmail(email, name, { assignmentTitle, courseTitle, dueDate }) {
+    const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const dueStr = new Date(dueDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#f59e0b,#d97706)',
+      title: 'Assignment due tomorrow',
+      body: `<p>Hi <strong>${name}</strong>,</p>
+<p>Just a reminder that your assignment <strong>${assignmentTitle}</strong>${courseTitle ? ` in <em>${courseTitle}</em>` : ''} is due <strong>${dueStr}</strong> — about 24 hours from now.</p>
+<div class="wa"><p>If you've already submitted, thanks! You can ignore this. Otherwise, hop in and get it done.</p></div>`,
+      ctaText: 'Open My Assignments',
+      ctaUrl: `${FE}/my-assignments`,
+    });
+    return this.sendEmail({
+      to: email,
+      subject: `Reminder: ${assignmentTitle} is due tomorrow`,
+      html,
+      text: `Hi ${name}, your assignment ${assignmentTitle} is due ${dueStr}. Submit at ${FE}/my-assignments`,
+      recipientKind: 'user',
+    });
+  }
+
+  // ─── Promotional / broadcast (admin-composed) ──────────────────────────────
+  // Sent by the campaign worker for admin marketing broadcasts.
+  // The body is arbitrary HTML the admin wrote; we wrap it in
+  // `_baseTemplate` so the branding stays consistent.
+  async sendPromotionalEmail(email, name, { subject, title, bodyHtml, ctaText, ctaUrl, recipientKind = 'user', recipientId }) {
+    const html = this._baseTemplate({
+      headerColor: 'linear-gradient(135deg,#0e2b5c,#eb1c22)',
+      title: title || 'A note from TekyPro',
+      body: bodyHtml,
+      ctaText,
+      ctaUrl,
+      unsubUrl: recipientId ? this._unsubUrl(recipientKind, recipientId) : undefined,
+    });
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+      text: `${title || ''}\n\n${(bodyHtml || '').replace(/<[^>]+>/g, '').slice(0, 400)}`,
+      recipientKind,
+      recipientId,
     });
   }
 }

@@ -303,6 +303,7 @@ app.get('/api/version', getApiVersionInfo);
 
 // API Routes
 app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/email', require('./routes/api/email'));
 app.use('/api/seed', require('./routes/api/seed')); // One-time database seeding
 app.use('/api/categories', require('./routes/api/admin/categories')); // Public categories access
 app.use('/api/courses', require('./routes/api/courses'));
@@ -356,6 +357,7 @@ app.use('/api/admin/instructor-applications', require('./routes/admin/instructor
 app.use('/api/admin/courses', require('./routes/api/admin/courses'));
 app.use('/api/admin/coupons', require('./routes/api/admin/coupons'));
 app.use('/api/admin/leads', require('./routes/api/admin/leads'));
+app.use('/api/admin/email-campaigns', require('./routes/api/admin/email-campaigns'));
 app.use('/api/admin/bundles', require('./routes/api/admin/bundles'));
 app.use('/api/admin/referrals', require('./routes/api/admin/referrals'));
 app.use('/api/admin/enrollments', require('./routes/api/admin/enrollments'));
@@ -553,6 +555,9 @@ const startServer = async () => {
           email_verified: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
           email_verified_at: { type: Sequelize.DATE, allowNull: true, defaultValue: null },
           login_count: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+          // Opt-out flag flipped by /api/email/unsubscribe. Non-transactional
+          // email paths check this before sending.
+          email_opt_out: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
         };
 
         // Grandfather existing users: anyone who has successfully logged in before
@@ -566,6 +571,26 @@ const startServer = async () => {
           if (!usersDesc[colName]) {
             await qi.addColumn('users', colName, colDef);
             logger.info(`  ✓ Added ${colName} column to users`);
+          }
+        }
+      }
+
+      // leads: bounce_count + bounced_at drive the drip skip-after-N
+      // failures loop, and email_opt_out lets the unsubscribe route
+      // stop lead-drip mail without deleting the row.
+      const leadsDesc = await qi.describeTable('leads').catch(() => null);
+      if (leadsDesc) {
+        const leadCols = {
+          bounce_count:  { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+          bounced_at:    { type: Sequelize.DATE,    allowNull: true,  defaultValue: null },
+          email_opt_out: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+        };
+        for (const [colName, colDef] of Object.entries(leadCols)) {
+          if (!leadsDesc[colName]) {
+            await qi.addColumn('leads', colName, colDef).catch((e) => {
+              logger.warn(`  ⚠ Could not add ${colName} to leads: ${e.message}`);
+            });
+            logger.info(`  ✓ Added ${colName} column to leads`);
           }
         }
       }
@@ -824,6 +849,7 @@ const startServer = async () => {
         Assignment, AssignmentSubmission, AdminAnnouncement, AnnouncementReaction,
         CouponCode, CouponCodeCourse, CouponRedemption, Lead,
         EmailVerification, InstructorApplication, CourseInstructor,
+        EmailCampaign, EmailDelivery,
         // Tables that were probably created in the original seed but are
         // included here defensively in case any are missing on Railway
         // Postgres — Model.sync({ force:false }) is a no-op if they exist.
@@ -891,6 +917,9 @@ const startServer = async () => {
         [CouponCodeCourse, 'coupon_code_courses'],
         [CouponRedemption, 'coupon_redemptions'],
         [Lead, 'leads'],
+        // Email campaigns + per-recipient delivery log
+        [EmailCampaign, 'email_campaigns'],
+        [EmailDelivery, 'email_deliveries'],
       ];
 
       for (const [Model, tableName] of newModels) {
@@ -1125,6 +1154,9 @@ const startServer = async () => {
           },
         ];
 
+        const { User: SessUser } = require('./models');
+        const emailSvcSess = require('./services/email/emailService');
+
         for (const tier of tiers) {
           const now = new Date();
           const windowStart = new Date(now.getTime() + tier.minOffset);
@@ -1170,6 +1202,33 @@ const startServer = async () => {
             } catch (notifErr) {
               logger.warn(`[session-reminder] notify failed for session ${session.id}: ${notifErr.message}`);
             }
+
+            // Email fanout on the 15-min tier only. 24h + 1h are just
+            // in-app to keep inbox noise reasonable — the 15-min one is
+            // the "start now, click this link" tier where email adds
+            // real value for people not currently in the app.
+            if (tier.key === 'reminder_15min_sent_at') {
+              try {
+                const recipients = await SessUser.findAll({
+                  where: { id: Array.from(recipientIds), is_active: true },
+                  attributes: ['id', 'email', 'full_name'],
+                });
+                for (const r of recipients) {
+                  if (!r.email) continue;
+                  emailSvcSess.sendLiveSessionStartingEmail(r.email, r.full_name, {
+                    sessionTitle: session.title,
+                    courseTitle: session.course?.title || null,
+                    scheduledAt: session.scheduled_at,
+                    joinUrl: session.meeting_url || null,
+                  }).catch((err) => {
+                    logger.warn(`[session-reminder] email failed for user ${r.id}: ${err.message}`);
+                  });
+                }
+              } catch (emailErr) {
+                logger.warn(`[session-reminder] email dispatch failed for session ${session.id}: ${emailErr.message}`);
+              }
+            }
+
             await session.update({ [tier.key]: new Date() });
             logger.info(`[session-reminder] ${tier.key.replace('_sent_at','')} sent for session ${session.id} to ${recipientIds.size} user(s)`);
           }
@@ -1333,6 +1392,34 @@ const startServer = async () => {
             } catch (notifErr) {
               logger.warn(`[assignment-reminder] notify failed for assignment ${assignment.id}: ${notifErr.message}`);
             }
+
+            // Email only on the 24h tier — the 1h tier is close enough
+            // to due-time that inbox delivery latency makes it awkward,
+            // and the in-app notification is a better fit for last-mile
+            // urgency.
+            if (tier.key === 'reminder_24h_sent_at') {
+              try {
+                const { User: AsgnUser } = require('./models');
+                const emailSvcAsgn = require('./services/email/emailService');
+                const recipients = await AsgnUser.findAll({
+                  where: { id: recipientIds, is_active: true },
+                  attributes: ['id', 'email', 'full_name'],
+                });
+                for (const r of recipients) {
+                  if (!r.email) continue;
+                  emailSvcAsgn.sendAssignmentDueSoonEmail(r.email, r.full_name, {
+                    assignmentTitle: assignment.title,
+                    courseTitle: assignment.course?.title || null,
+                    dueDate: assignment.due_date,
+                  }).catch((err) => {
+                    logger.warn(`[assignment-reminder] email failed for user ${r.id}: ${err.message}`);
+                  });
+                }
+              } catch (emailErr) {
+                logger.warn(`[assignment-reminder] email dispatch failed for assignment ${assignment.id}: ${emailErr.message}`);
+              }
+            }
+
             await assignment.update({ [tier.key]: new Date() });
             logger.info(`[assignment-reminder] ${tier.key.replace('_sent_at','')} sent for assignment ${assignment.id} to ${recipientIds.length} student(s)`);
           }

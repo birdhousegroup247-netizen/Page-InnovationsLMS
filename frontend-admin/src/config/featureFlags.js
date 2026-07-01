@@ -58,6 +58,7 @@ export const FEATURES = {
   coupons: true,
   referrals: true,
   badges: true,
+  emailCampaigns: true,   // admin promotional broadcast composer
 
   // Finance & reporting
   payments: true,
