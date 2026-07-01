@@ -460,7 +460,8 @@ export const twoFactorAPI = {
   setup: () => api.post('/api/auth/2fa/setup'),
   verify: (token) => api.post('/api/auth/2fa/verify', { token }),
   disable: (token) => api.post('/api/auth/2fa/disable', { token }),
-  authenticate: (userId, token) => api.post('/api/auth/2fa/authenticate', { userId, token }),
+  authenticate: (userId, token, remember_me = false) =>
+    api.post('/api/auth/2fa/authenticate', { userId, token, remember_me }),
 };
 
 // Bulk Enrollment API

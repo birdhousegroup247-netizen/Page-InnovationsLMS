@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, paymentsAPI } from '../lib/api';
+import { authAPI, paymentsAPI, twoFactorAPI } from '../lib/api';
 import { tokenStorage } from '../utils/tokenStorage';
 
 const AuthContext = createContext(null);
@@ -83,7 +83,21 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe = false) => {
     try {
       const response = await authAPI.login({ email, password, remember_me: rememberMe });
-      const { user, accessToken, refreshToken } = response.data.data;
+      const payload = response.data.data;
+
+      // 2FA branch — backend returns { requires2FA, userId, rememberMe }
+      // instead of tokens. The Login page hands off to a code-input UI
+      // that calls verify2FA() with the userId + TOTP code.
+      if (payload?.requires2FA) {
+        return {
+          success: false,
+          requires2FA: true,
+          userId: payload.userId,
+          rememberMe: !!payload.rememberMe,
+        };
+      }
+
+      const { user, accessToken, refreshToken } = payload;
 
       // Per-tab storage. rememberMe seeds localStorage so new tabs /
       // browser restarts can recover the session; without it the tokens
@@ -102,6 +116,23 @@ export const AuthProvider = ({ children }) => {
         return { success: false, emailNotVerified: true, email: data.email, error: data.message };
       }
       const message = data?.message || 'Login failed';
+      return { success: false, error: message };
+    }
+  };
+
+  // Step 2 of a 2FA login. Called by the OTP input on the Login page
+  // after the initial email+password succeeded and returned
+  // requires2FA. Success returns the same shape as a normal login.
+  const verify2FA = async (userId, token, rememberMe = false) => {
+    try {
+      const response = await twoFactorAPI.authenticate(userId, token, rememberMe);
+      const { user, accessToken, refreshToken } = response.data.data;
+      tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe });
+      setUser(user);
+      setIsAuthenticated(true);
+      return { success: true, user };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Invalid 2FA code';
       return { success: false, error: message };
     }
   };
@@ -176,6 +207,7 @@ export const AuthProvider = ({ children }) => {
     installmentData,
     installmentStage,
     login,
+    verify2FA,
     register,
     logout,
     updateProfile,

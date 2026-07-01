@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowLeft, ArrowRight, KeyRound } from 'lucide-react';
 import logo from '../assets/logo.png';
 import {
   inputClass as fInput,
@@ -15,7 +15,7 @@ import {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, logout } = useAuth();
+  const { login, logout, verify2FA } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -23,6 +23,10 @@ export default function Login() {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // 2FA step 2 — set after email+password succeeded but backend requires
+  // a TOTP code before issuing tokens. Null means we're on step 1.
+  const [twoFactor, setTwoFactor] = useState(null); // { userId, rememberMe }
+  const [otpCode, setOtpCode] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -30,6 +34,40 @@ export default function Login() {
       [e.target.name]: e.target.value,
     });
     setError('');
+  };
+
+  // Shared post-auth routing — used by both the plain-login path and
+  // the 2FA-verified path. Keeps the role gating rules in one place.
+  const routeAuthedUser = async (user) => {
+    const selectedRole = localStorage.getItem('selectedRole');
+
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      await logout();
+      setError('Administrators should use the admin portal.');
+      return;
+    }
+
+    if (selectedRole === 'student') {
+      if (user.role !== 'student') {
+        await logout();
+        setError('This login is for students only. If you are an instructor, please go back and select "I\'m an Instructor".');
+        return;
+      }
+      navigate('/dashboard');
+    } else if (selectedRole === 'instructor') {
+      if (user.role !== 'instructor') {
+        await logout();
+        setError('This login is for instructors only. If you are a student, please go back and select "I\'m a Student".');
+        return;
+      }
+      navigate('/instructor/dashboard');
+    } else if (user.role === 'instructor') {
+      localStorage.setItem('selectedRole', 'instructor');
+      navigate('/instructor/dashboard');
+    } else {
+      localStorage.setItem('selectedRole', 'student');
+      navigate('/dashboard');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -46,41 +84,16 @@ export default function Login() {
         return;
       }
 
+      // 2FA required — flip to the OTP step. Password already accepted
+      // by the backend but no tokens issued yet.
+      if (!result.success && result.requires2FA) {
+        setTwoFactor({ userId: result.userId, rememberMe: !!result.rememberMe });
+        setOtpCode('');
+        return;
+      }
+
       if (result.success) {
-        const { user } = result;
-        const selectedRole = localStorage.getItem('selectedRole');
-
-        // Admins should use the admin portal
-        if (user.role === 'admin' || user.role === 'super_admin') {
-          await logout();
-          setError('Administrators should use the admin portal.');
-          return;
-        }
-
-        // Honour role chosen on landing page; otherwise route by actual role.
-        if (selectedRole === 'student') {
-          if (user.role !== 'student') {
-            await logout();
-            setError('This login is for students only. If you are an instructor, please go back and select "I\'m an Instructor".');
-            return;
-          }
-          navigate('/dashboard');
-        } else if (selectedRole === 'instructor') {
-          if (user.role !== 'instructor') {
-            await logout();
-            setError('This login is for instructors only. If you are a student, please go back and select "I\'m a Student".');
-            return;
-          }
-          navigate('/instructor/dashboard');
-        } else {
-          if (user.role === 'instructor') {
-            localStorage.setItem('selectedRole', 'instructor');
-            navigate('/instructor/dashboard');
-          } else {
-            localStorage.setItem('selectedRole', 'student');
-            navigate('/dashboard');
-          }
-        }
+        await routeAuthedUser(result.user);
       } else {
         setError(result.error);
       }
@@ -89,6 +102,34 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!otpCode.trim() || !/^\d{6}$/.test(otpCode.trim())) {
+      setError('Enter the 6-digit code from your authenticator app.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await verify2FA(twoFactor.userId, otpCode.trim(), twoFactor.rememberMe);
+      if (result.success) {
+        await routeAuthedUser(result.user);
+      } else {
+        setError(result.error);
+      }
+    } catch (_) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel2FA = () => {
+    setTwoFactor(null);
+    setOtpCode('');
+    setError('');
   };
 
   return (
@@ -204,10 +245,12 @@ export default function Login() {
             {/* Header */}
             <div className="mb-7">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                Welcome back
+                {twoFactor ? 'Two-factor code' : 'Welcome back'}
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
-                Sign in to continue to your account.
+                {twoFactor
+                  ? 'Open your authenticator app and enter the 6-digit code for TekyPro.'
+                  : 'Sign in to continue to your account.'}
               </p>
             </div>
 
@@ -223,7 +266,61 @@ export default function Login() {
               </div>
             )}
 
-            {/* Form */}
+            {/* 2FA step 2 — TOTP entry */}
+            {twoFactor ? (
+              <form onSubmit={handleVerifyOtp} className="space-y-5">
+                <div>
+                  <label htmlFor="otp" className={fLabel}>
+                    Authenticator code <span className="text-red-500 normal-case">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <KeyRound className="h-4 w-4 text-gray-400 dark:text-text-dark-muted" />
+                    </div>
+                    <input
+                      id="otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d{6}"
+                      maxLength={6}
+                      placeholder="123456"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      required
+                      autoComplete="one-time-code"
+                      autoFocus
+                      className={fInput + ' font-mono tracking-widest text-center text-lg'}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || otpCode.length !== 6}
+                  className={primaryButtonClass}
+                >
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Verifying…
+                    </>
+                  ) : (
+                    <>
+                      Verify and sign in
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCancel2FA}
+                  className="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  Cancel and go back
+                </button>
+              </form>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email */}
               <div>
@@ -318,8 +415,12 @@ export default function Login() {
                 )}
               </button>
             </form>
+            )}
 
-            {/* Divider */}
+            {/* Divider — hidden during 2FA step so the user focuses on
+                the code entry, not alternative sign-in options. */}
+            {!twoFactor && (
+            <>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-border-dark transition-colors" />
@@ -377,6 +478,8 @@ export default function Login() {
                 </>
               )}
             </p>
+            </>
+            )}
           </div>
 
           {/* Footer */}
