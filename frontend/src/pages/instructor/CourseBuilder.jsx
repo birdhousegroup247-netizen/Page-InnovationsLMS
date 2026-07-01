@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../../components/ui/Toast';
 import { coursesAPI, modulesAPI, contentsAPI } from '../../lib/api';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import {
   BookOpen,
   Plus,
@@ -1270,7 +1271,7 @@ export default function CourseBuilder() {
               previewContent.article_content ? (
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none p-4 bg-gray-50 dark:bg-dark-700 rounded-lg"
-                  dangerouslySetInnerHTML={{ __html: previewContent.article_content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewContent.article_content) }}
                 />
               ) : (
                 <p className="text-sm text-gray-500">No article content set for this lesson.</p>

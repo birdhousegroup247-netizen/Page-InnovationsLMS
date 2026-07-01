@@ -11,6 +11,7 @@ const onboardingDripService = require('./onboardingDripService');
 const installmentReminderService = require('./installmentReminderService');
 const campaignWorker = require('../email/campaignWorker');
 const lifecycleService = require('../lifecycle/lifecycleService');
+const orphanCleanup = require('../lifecycle/orphanCleanupService');
 const logger = require('../../utils/logger');
 
 function startDripScheduler() {
@@ -65,6 +66,18 @@ function startDripScheduler() {
       await lifecycleService.processInstructorMonthlyEarnings();
     } catch (err) {
       logger.error(`[DripScheduler] processInstructorMonthlyEarnings crashed: ${err.message || err.name || 'unknown'}\n${err.stack || ''}`);
+    }
+  });
+
+  // Cloudinary orphan cleanup — 04:30 UTC on the 2nd of each month.
+  // Destroys assets belonging to courses archived 90+ days ago and
+  // users deactivated 90+ days ago. See orphanCleanupService for
+  // the design notes on why we don't hard-delete the DB rows.
+  cron.schedule('30 4 2 * *', async () => {
+    try {
+      await orphanCleanup.runOrphanCleanup();
+    } catch (err) {
+      logger.error(`[DripScheduler] orphan cleanup crashed: ${err.message || err.name || 'unknown'}\n${err.stack || ''}`);
     }
   });
 

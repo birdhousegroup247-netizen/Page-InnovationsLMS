@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { knowledgeAPI } from '../lib/api';
 import { BookOpen, Search, ArrowLeft, Clock } from 'lucide-react';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 export default function KnowledgeBase() {
   const [articles, setArticles] = useState([]);
@@ -63,7 +64,7 @@ export default function KnowledgeBase() {
         )}
         <div
           className="prose prose-invert max-w-none text-text-secondary leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: selected.content || selected.body || '' }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.content || selected.body || '') }}
         />
       </div>
     );

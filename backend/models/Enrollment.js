@@ -35,6 +35,16 @@ const Enrollment = sequelize.define(
       type: DataTypes.DECIMAL(5, 2),
       defaultValue: 0.0,
     },
+    // Cache the count of completed lessons from the last recompute.
+    // The progress cron / lesson-complete handler skips the full
+    // recompute when this hasn't changed since the last recompute.
+    // Saves ~5 queries per lesson click for the common case where
+    // the student is just adjusting playback (not completing).
+    last_completed_count: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+    },
   },
   {
     tableName: 'enrollments',

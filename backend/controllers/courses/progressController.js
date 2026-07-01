@@ -208,6 +208,21 @@ class ProgressController {
       },
     });
 
+    // Debounce: if the count hasn't changed since the last recompute
+    // AND we're not at 100% (which we always want to re-check for the
+    // certificate-issue branch), skip the update entirely. A student
+    // scrubbing a video without completing lessons was firing 5
+    // queries per click for no state change.
+    if (
+      enrollment.last_completed_count === completedCount
+      && enrollment.progress_percentage
+      && parseFloat(enrollment.progress_percentage) < 99.999
+    ) {
+      // Still bump last_accessed so activity tracking notices.
+      await enrollment.update({ last_accessed: now });
+      return;
+    }
+
     const progressPercentage = (completedCount / totalContent) * 100;
     // Defensive — strict === 100 on a float can drift; treat
     // anything within rounding tolerance as fully complete.
@@ -217,6 +232,7 @@ class ProgressController {
     await enrollment.update({
       progress_percentage: progressPercentage.toFixed(2),
       last_accessed: now,
+      last_completed_count: completedCount,
       // Set once, never unset. If the student was ever 100% complete
       // we keep that timestamp so their certificate + the Completed
       // filter on My Courses stay truthful even if the instructor

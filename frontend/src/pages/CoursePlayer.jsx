@@ -29,6 +29,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 import { Button, Spinner } from '../components/ui';
 import { useToast } from '../components/ui/Toast';
 import QuestionDiscussion from '../components/course/QuestionDiscussion';
@@ -887,7 +888,7 @@ export default function CoursePlayer() {
                       <>
                         <div
                           className="max-w-none p-6 sm:p-8 text-gray-800 dark:text-gray-200 leading-relaxed [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:dark:text-white [&_h3]:mt-6 [&_h3]:mb-2 [&_p]:mb-4 [&_p]:text-base [&_p]:leading-7 transition-colors"
-                          dangerouslySetInnerHTML={{ __html: formatArticleContent(currentContent.article_content) }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatArticleContent(currentContent.article_content)) }}
                         />
                         {/* Sentinel — triggers auto-complete when scrolled into view */}
                         <div ref={articleEndRef} className="h-1" />

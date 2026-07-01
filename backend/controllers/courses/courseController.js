@@ -470,37 +470,59 @@ class CourseController {
         }
       }
 
-      const enrollment = await Enrollment.create({
-        student_id: req.user.id,
-        course_id: id,
-      });
+      // Free enrol goes through the same helper as paid enrol + admin
+      // comp: a `comp` Payment row + runTransactionalSideEffects for
+      // chat / tests / referral / badges / notifications. Wraps in a
+      // transaction so we don't end up with an Enrollment row but no
+      // ChatRoomMember when a mid-flow step fails.
+      const enrollmentSvc = require('../../services/enrollment/enrollmentService');
+      let compPayment;
+      let enrollment;
+      await sequelize.transaction(async (transaction) => {
+        compPayment = await Payment.create({
+          student_id: req.user.id,
+          course_id: id,
+          amount: 0,
+          intended_amount: 0,
+          original_amount: course.price || 0,
+          discount_amount: course.price || 0,
+          currency: 'USD',
+          payment_method: 'comp',
+          payment_status: 'completed',
+          payment_plan: 'full',
+          payment_gateway: 'stripe', // enum needs a value; not exercised
+          payment_date: new Date(),
+          installment_status: 'not_applicable',
+          transaction_id: `FREE-${req.user.id}-${id}-${Date.now()}`,
+          metadata: {
+            free_course_enrollment: true,
+          },
+        }, { transaction });
 
-      // Auto-join course chat room as approved member on enrollment
-      const chatRoom = await ChatRoom.findOne({ where: { course_id: id, is_active: true } });
-      if (chatRoom) {
-        await ChatRoomMember.findOrCreate({
-          where: { room_id: chatRoom.id, user_id: req.user.id },
-          defaults: { room_id: chatRoom.id, user_id: req.user.id, role: 'student', status: 'approved' },
+        const { enrollments } = await enrollmentSvc.runTransactionalSideEffects({
+          payment: compPayment,
+          studentId: req.user.id,
+          courseIds: [parseInt(id)],
+          transaction,
         });
-      }
-
-      // Update course enrollment count
-      await course.increment('enrollment_count');
-
-      // Create notification for student
-      await NotificationsController.createNotification({
-        user_id: req.user.id,
-        type: 'course_enrollment',
-        title: 'Course Enrollment Successful',
-        message: `You have successfully enrolled in "${course.title}"`,
-        link: `/courses/${course.id}`,
-        priority: 'normal',
+        enrollment = enrollments[0];
       });
 
-      // Notify the lead instructor + every co-instructor on the
-      // course_instructors join (lead/co/ta) that a new student joined.
-      // Fire-and-forget — don't block the enrollment response if one
-      // of the notif inserts fails.
+      // Post-commit best-effort side-effects: notification, congrats
+      // email, referral reward, badge check. Free enrols skip the
+      // receipt/congrats email pair (that's a paid-flow thing) but
+      // still get the enrolment notification.
+      enrollmentSvc.runPostCommitSideEffects({
+        studentId: req.user.id,
+        courseIds: [parseInt(id)],
+        payment: compPayment,
+        gateway: 'free',
+        sendEmails: false,
+      }).catch((e) => logger.warn(`free-enrol post-commit failed: ${e.message}`));
+
+      // Instructor "new student joined" fanout — separate from the
+      // student notification the helper fires. Bulk create dedupes
+      // lead + co-instructors + TAs, skips self-enrolment.
       try {
         const recipients = new Set();
         if (course.instructor_id) recipients.add(course.instructor_id);
@@ -511,8 +533,6 @@ class CourseController {
         for (const ci of coInstructors) {
           if (ci.instructor_id) recipients.add(ci.instructor_id);
         }
-        // Skip self-enrollment edge case (instructor enrolling in
-        // their own course shouldn't ping themselves).
         recipients.delete(req.user.id);
         if (recipients.size > 0) {
           const studentName = req.user.full_name || 'A new student';
@@ -531,65 +551,31 @@ class CourseController {
         logger.warn(`Enrollment notif to instructor(s) failed: ${notifErr.message}`);
       }
 
-      // Auto-assign any published tests for this course
-      try {
-        const { AssignedTest, TestAssignment } = require('../../models');
-        const publishedTests = await AssignedTest.findAll({
-          where: { course_id: id, status: 'published' },
-          attributes: ['id', 'test_name', 'end_date'],
-        });
-
-        for (const test of publishedTests) {
-          // Skip if test has already ended
-          if (test.end_date && new Date() > new Date(test.end_date)) continue;
-
-          await TestAssignment.findOrCreate({
-            where: { test_id: test.id, student_id: req.user.id },
-            defaults: { test_id: test.id, student_id: req.user.id, due_date: test.end_date || null, status: 'pending' },
-          });
-        }
-
-        if (publishedTests.length > 0) {
-          logger.info(`Auto-assigned ${publishedTests.length} test(s) to student ${req.user.id} on enrollment in course ${id}`);
-        }
-      } catch (testErr) {
-        logger.warn(`Failed to auto-assign tests on enrollment: ${testErr.message}`);
-      }
-
-      // Discord: send invite + assign role (non-blocking)
+      // Discord: send invite + assign role (non-blocking). isFullyPaid
+      // stays false — free enrollment doesn't warrant the paid-course
+      // role that some Discord servers gate on.
       try {
         const discordCtrl = require('../discord/discordController');
-        const isFullyPaid = !!(course.price && parseFloat(course.price) > 0);
-        discordCtrl.onEnroll(req.user.id, course.id, isFullyPaid).catch(() => {});
+        discordCtrl.onEnroll(req.user.id, course.id, false).catch(() => {});
       } catch (discordErr) {
         logger.warn(`Discord enroll hook skipped: ${discordErr.message}`);
       }
 
-      // Log activity
       await ActivityController.logFromRequest(req, 'course_enroll', 'course', course.id, {
         course_title: course.title,
         course_id: course.id,
+        comp_payment_id: compPayment.id,
       });
 
-      // Send enrollment confirmation email (fire-and-forget)
+      // Enrollment confirmation email — still the free-enrol version,
+      // not the paid receipt.
       emailService.sendEnrollmentConfirmation(req.user.email, req.user.full_name, course).catch((e) =>
         logger.warn(`Enrollment email failed for ${req.user.email}: ${e.message}`)
       );
 
-      // Reward referrer for free-course enrollment (fire-and-forget)
-      Referral.findOne({ where: { referred_id: req.user.id, status: 'pending' } }).then(async (ref) => {
-        if (ref) {
-          await ref.update({ status: 'rewarded', rewarded_at: new Date() });
-          await User.increment('referral_credits', { by: 1, where: { id: ref.referrer_id } });
-        }
-      }).catch((e) => logger.warn(`Referral reward failed: ${e.message}`));
+      logger.info(`User ${req.user.email} enrolled in course: ${course.title} (comp payment ${compPayment.id})`);
 
-      // Badge check for enrollment milestone
-      BadgesController.checkAndAward(req.user.id, 'enrollment_count').catch(() => {});
-
-      logger.info(`User ${req.user.email} enrolled in course: ${course.title}`);
-
-      return ApiResponse.created(res, { enrollment }, 'Successfully enrolled in course');
+      return ApiResponse.created(res, { enrollment, payment_id: compPayment.id }, 'Successfully enrolled in course');
     } catch (error) {
       next(error);
     }
