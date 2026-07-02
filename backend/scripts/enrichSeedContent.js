@@ -18,6 +18,7 @@
 const { sequelize } = require('../config/database');
 const {
   Course, CourseModule, ModuleContent, Enrollment, CourseReview, User,
+  QuestionBank,
 } = require('../models');
 
 // Real, public, full-length educational videos (freeCodeCamp / TechWorld
@@ -87,6 +88,174 @@ function buildArticle(lessonTitle, courseTitle) {
 
 function pick(arr, seedNum) {
   return arr[seedNum % arr.length];
+}
+
+// Question templates instantiated per course. `t` is the course title.
+// correct_answer must EXACTLY equal one of the options — the graders
+// compare by string equality.
+function buildQuestions(t) {
+  return [
+    {
+      difficulty: 'easy', question_type: 'multiple_choice', marks: 1,
+      question_text: `What is the main goal of studying ${t}?`,
+      options: [
+        `To apply the core concepts of ${t} in real projects`,
+        'To memorize definitions without practice',
+        'To avoid using any tooling at all',
+        'To skip the fundamentals entirely',
+      ],
+      correct_answer: `To apply the core concepts of ${t} in real projects`,
+      explanation: 'Courses are built around applying concepts practically, not memorization.',
+    },
+    {
+      difficulty: 'easy', question_type: 'true_false', marks: 1,
+      question_text: `Understanding the fundamentals is important before moving to advanced topics in ${t}.`,
+      options: ['True', 'False'],
+      correct_answer: 'True',
+      explanation: 'Advanced material in every module builds directly on the fundamentals.',
+    },
+    {
+      difficulty: 'easy', question_type: 'multiple_choice', marks: 1,
+      question_text: `Which habit most helps you retain what you learn in ${t}?`,
+      options: [
+        'Practicing with hands-on exercises after each lesson',
+        'Only watching videos at 2x speed',
+        'Skipping the practice sections',
+        'Reading the lesson titles only',
+      ],
+      correct_answer: 'Practicing with hands-on exercises after each lesson',
+      explanation: 'Active practice converts short-term knowledge into skill.',
+    },
+    {
+      difficulty: 'easy', question_type: 'true_false', marks: 1,
+      question_text: `In ${t}, it is good practice to test your understanding before moving to the next module.`,
+      options: ['True', 'False'],
+      correct_answer: 'True',
+      explanation: 'Each module assumes mastery of the previous one.',
+    },
+    {
+      difficulty: 'easy', question_type: 'multiple_choice', marks: 1,
+      question_text: `When you hit an error while practicing ${t}, what should you do first?`,
+      options: [
+        'Read the error message carefully and identify what it says failed',
+        'Immediately restart the computer',
+        'Delete the whole project',
+        'Ignore it and continue',
+      ],
+      correct_answer: 'Read the error message carefully and identify what it says failed',
+      explanation: 'Error messages usually point directly at the failing step.',
+    },
+    {
+      difficulty: 'medium', question_type: 'multiple_choice', marks: 2,
+      question_text: `In a professional ${t} workflow, which approach is considered best practice?`,
+      options: [
+        'Start from requirements, design a solution, then implement in small verifiable steps',
+        'Write everything in one pass without checking intermediate results',
+        'Copy solutions without understanding them',
+        'Avoid documenting decisions',
+      ],
+      correct_answer: 'Start from requirements, design a solution, then implement in small verifiable steps',
+      explanation: 'Small verifiable steps localize mistakes early, when they are cheap to fix.',
+    },
+    {
+      difficulty: 'medium', question_type: 'multiple_choice', marks: 2,
+      question_text: `A teammate asks you to review their ${t} work. What should you check FIRST?`,
+      options: [
+        'Whether the solution actually meets the stated requirement',
+        'Whether the file names are alphabetical',
+        'Whether they used your favorite editor',
+        'How fast they typed it',
+      ],
+      correct_answer: 'Whether the solution actually meets the stated requirement',
+      explanation: 'Correctness against the requirement comes before style concerns.',
+    },
+    {
+      difficulty: 'medium', question_type: 'true_false', marks: 2,
+      question_text: `Trade-offs are a normal part of real-world decisions in ${t} — there is rarely one universally "best" option.`,
+      options: ['True', 'False'],
+      correct_answer: 'True',
+      explanation: 'Engineering decisions balance cost, complexity, performance, and maintainability.',
+    },
+    {
+      difficulty: 'medium', question_type: 'multiple_choice', marks: 2,
+      question_text: `Which of the following would MOST improve the reliability of a ${t} solution?`,
+      options: [
+        'Testing it against edge cases, not just the happy path',
+        'Testing it once with ideal input',
+        'Assuming inputs are always valid',
+        'Removing all error handling to simplify the code',
+      ],
+      correct_answer: 'Testing it against edge cases, not just the happy path',
+      explanation: 'Most production failures come from unconsidered edge cases.',
+    },
+    {
+      difficulty: 'medium', question_type: 'multiple_choice', marks: 2,
+      question_text: `You need to explain a ${t} concept to a junior colleague. The clearest approach is to:`,
+      options: [
+        'Give a one-sentence mental model, then a concrete example',
+        'Recite the full documentation from memory',
+        'Use as much jargon as possible',
+        'Tell them it is too advanced to explain',
+      ],
+      correct_answer: 'Give a one-sentence mental model, then a concrete example',
+      explanation: 'Model-then-example is how experts transfer understanding quickly.',
+    },
+    {
+      difficulty: 'hard', question_type: 'multiple_choice', marks: 3,
+      question_text: `A production system built with ${t} works in testing but fails intermittently under real load. What is the strongest FIRST step?`,
+      options: [
+        'Reproduce the failure with logging/metrics that capture the failing conditions',
+        'Rewrite the whole system from scratch immediately',
+        'Increase server size and hope it goes away',
+        'Disable monitoring to reduce noise',
+      ],
+      correct_answer: 'Reproduce the failure with logging/metrics that capture the failing conditions',
+      explanation: 'You cannot reliably fix what you cannot reproduce and observe.',
+    },
+    {
+      difficulty: 'hard', question_type: 'multiple_choice', marks: 3,
+      question_text: `When two recommended ${t} practices conflict in a specific situation, a senior practitioner should:`,
+      options: [
+        'Evaluate which practice serves the actual goal in this context and document the choice',
+        'Always follow the newer practice regardless of context',
+        'Apply both simultaneously even if contradictory',
+        'Escalate every such decision without forming a view',
+      ],
+      correct_answer: 'Evaluate which practice serves the actual goal in this context and document the choice',
+      explanation: 'Practices are means to goals; context decides which applies.',
+    },
+    {
+      difficulty: 'hard', question_type: 'true_false', marks: 3,
+      question_text: `In ${t}, optimizing a component before measuring where the real bottleneck is usually wastes effort.`,
+      options: ['True', 'False'],
+      correct_answer: 'True',
+      explanation: 'Measure first — intuition about bottlenecks is wrong more often than not.',
+    },
+    {
+      difficulty: 'hard', question_type: 'multiple_choice', marks: 3,
+      question_text: `Which statement about maintaining a long-lived ${t} project is MOST accurate?`,
+      options: [
+        'Readable, well-structured work costs slightly more now and pays back every time someone touches it later',
+        'Only initial development speed matters',
+        'Documentation is unnecessary if the original author stays',
+        'Complexity is free as long as it works today',
+      ],
+      correct_answer: 'Readable, well-structured work costs slightly more now and pays back every time someone touches it later',
+      explanation: 'Maintenance dominates the lifetime cost of successful projects.',
+    },
+    {
+      difficulty: 'hard', question_type: 'multiple_choice', marks: 3,
+      question_text: `You inherit an undocumented ${t} setup that "just works". Before changing anything, you should:`,
+      options: [
+        'Map how it currently behaves and add safety checks around the parts you plan to change',
+        'Change everything at once to modern standards',
+        'Assume it works the way you would have built it',
+        'Delete the parts you do not understand',
+      ],
+      correct_answer: 'Map how it currently behaves and add safety checks around the parts you plan to change',
+      explanation: 'Understanding current behavior first prevents breaking hidden dependencies.',
+    },
+  ];
 }
 
 async function enrichContent() {
@@ -191,7 +360,34 @@ async function enrichContent() {
     }
   }
 
-  // ── 3. enrolled_count from real enrollments ───────────────────────────
+  // ── 3. Question bank — 15 questions per course (5 easy/5 medium/5
+  // hard, MCQ + true/false) so Generate Practice Test has something to
+  // draw from. Skips courses that already have 10+ approved questions
+  // (i.e. real instructor-contributed banks are left alone).
+  summary.questions = 0;
+  const allCourses = await Course.findAll({
+    where: { status: 'published' },
+    attributes: ['id', 'title', 'category_id', 'instructor_id'],
+  });
+  for (const course of allCourses) {
+    const existing = await QuestionBank.count({
+      where: { course_id: course.id, is_approved: true },
+    });
+    if (existing >= 10) continue;
+
+    const rows = buildQuestions(course.title).map((q) => ({
+      ...q,
+      options: q.options,
+      course_id: course.id,
+      category_id: course.category_id,
+      created_by: course.instructor_id,
+      is_approved: true,
+    }));
+    await QuestionBank.bulkCreate(rows);
+    summary.questions += rows.length;
+  }
+
+  // ── 4. enrolled_count from real enrollments ───────────────────────────
   await sequelize.query(`
     UPDATE courses c SET enrolled_count = sub.cnt
     FROM (SELECT course_id, COUNT(*) AS cnt FROM enrollments GROUP BY course_id) sub
@@ -213,6 +409,7 @@ if (require.main === module) {
       console.log(`   Video URLs assigned:        ${summary.videos}`);
       console.log(`   Preview lessons marked:     ${summary.previews}`);
       console.log(`   Reviews added:              ${summary.reviews} (across ${summary.coursesRated} courses)`);
+      console.log(`   Question-bank questions:    ${summary.questions}`);
       process.exit(0);
     })
     .catch((err) => {

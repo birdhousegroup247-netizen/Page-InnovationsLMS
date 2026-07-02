@@ -157,7 +157,10 @@ class PracticeTestController {
         const studentAnswer = answers.find((a) => a.question_id === tq.question_id);
         const question = tq.question;
 
-        const isCorrect = studentAnswer && studentAnswer.answer === question.correct_answer;
+        // Frontend sends selected_answer; older clients sent answer. Accept both
+        // — reading only .answer graded every submission 0.
+        const givenAnswer = studentAnswer?.answer ?? studentAnswer?.selected_answer;
+        const isCorrect = givenAnswer != null && givenAnswer === question.correct_answer;
         const marksAwarded = isCorrect ? question.marks : 0;
 
         if (isCorrect) correctCount++;
@@ -168,7 +171,7 @@ class PracticeTestController {
         gradedAnswers.push({
           attempt_id: attemptId,
           question_id: tq.question_id,
-          student_answer: studentAnswer?.answer || null,
+          student_answer: givenAnswer ?? null,
           is_correct: isCorrect,
           marks_awarded: marksAwarded,
         });
