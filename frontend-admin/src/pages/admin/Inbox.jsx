@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { chatAPI } from '../../lib/api';
+import { getSocket, connectSocket } from '../../lib/socket';
+import { tokenStorage } from '../../utils/tokenStorage';
 import { Container, PageHeader } from '../../components/layout';
 import { Button, Spinner } from '../../components/ui';
 import { cn } from '../../utils/cn';
@@ -66,6 +68,9 @@ export default function Inbox() {
   const [sending, setSending] = useState(false);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const messagesEndRef = useRef(null);
+  // Conversation ids currently in the sidebar — lets the socket effect
+  // detect brand-new threads without depending on `conversations` state.
+  const knownConvIds = useRef(new Set());
 
   // Helper: derive "the other person" from a conversation row
   const otherUser = useCallback(
@@ -83,6 +88,7 @@ export default function Inbox() {
       const r = await chatAPI.getConversations();
       const list = r.data?.data?.conversations || [];
       setConversations(list);
+      knownConvIds.current = new Set(list.map((c) => Number(c.id)));
     } catch { /* silent */ }
     setLoadingThreads(false);
   }, []);
@@ -116,6 +122,61 @@ export default function Inbox() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [messages.length]);
+
+  // ─── Real-time: incoming student messages ────────────────────────────────
+  // The Inbox had no socket at all — an admin sitting on a conversation
+  // never saw the student's replies until they reloaded.
+  useEffect(() => {
+    const socket = getSocket() || connectSocket(tokenStorage.get('accessToken'));
+    if (!socket) return;
+
+    const joinChannel = () => {
+      if (selectedId) socket.emit('join:conversation', selectedId);
+    };
+    joinChannel();
+    // Server-side channel membership dies with the socket session — after
+    // any reconnect we must re-join or the live feed silently stops.
+    socket.on('connect', joinChannel);
+
+    const onMessage = ({ message, conversationId }) => {
+      if (!conversationId || !message) return;
+      if (Number(conversationId) === Number(selectedId)) {
+        setMessages((prev) => (prev.find((m) => m.id === message.id) ? prev : [...prev, message]));
+        if (message.sender_id !== myId) {
+          chatAPI.markConversationRead(selectedId).catch(() => {});
+        }
+      }
+      // Bump the thread in the list either way
+      setConversations((prev) =>
+        prev.map((c) => (c.id === Number(conversationId)
+          ? {
+              ...c,
+              last_message_at: message.created_at,
+              unread_count: Number(conversationId) === Number(selectedId) ? 0 : (c.unread_count || 0) + 1,
+            }
+          : c))
+      );
+    };
+
+    // A DM in a conversation not yet in the sidebar (brand-new thread).
+    // Uses the ref (not state) so this effect doesn't depend on
+    // `conversations` and churn leave/join on every message.
+    const onNewDm = ({ conversationId }) => {
+      if (!knownConvIds.current.has(Number(conversationId))) {
+        loadConversations();
+      }
+    };
+
+    socket.on('chat:message', onMessage);
+    socket.on('chat:new_dm', onNewDm);
+
+    return () => {
+      if (selectedId) socket.emit('leave:conversation', selectedId);
+      socket.off('connect', joinChannel);
+      socket.off('chat:message', onMessage);
+      socket.off('chat:new_dm', onNewDm);
+    };
+  }, [selectedId, myId, loadConversations]);
 
   // ─── Send ────────────────────────────────────────────────────────────────
   const handleSend = async () => {

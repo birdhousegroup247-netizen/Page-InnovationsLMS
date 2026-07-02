@@ -140,19 +140,9 @@ if (process.env.ENABLE_COMPRESSION === 'true') {
   logger.info('✓ Response compression enabled');
 }
 
-// CORS configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-  'http://localhost:5173',  // Main app dev
-  'http://localhost:5174',  // Admin app dev
-  process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
-  // Production URLs - Render
-  'https://tekyprolms.onrender.com',
-  'https://admin-tekyprolms.onrender.com',
-  // Production URLs - Railway
-  'https://tekypro-student-production.up.railway.app',
-  'https://tekypro-admin-production.up.railway.app',
-];
+// CORS configuration — shared with Socket.IO (config/socket.js) so the
+// websocket handshake accepts exactly the same origins as REST.
+const { allowedOrigins } = require('./config/allowedOrigins');
 
 app.use(
   cors({

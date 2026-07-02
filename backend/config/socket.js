@@ -21,14 +21,15 @@ function isUserOnline(userId) {
 }
 
 function initializeSocketIO(server) {
+  // Same allowlist as the HTTP CORS middleware. This list used to be a
+  // separate, shorter one without the production URLs — REST worked in
+  // prod while every socket handshake was CORS-rejected, which killed
+  // all real-time chat.
+  const { allowedOrigins } = require('./allowedOrigins');
+
   const io = new Server(server, {
     cors: {
-      origin: [
-        process.env.FRONTEND_URL || 'http://localhost:5173',
-        process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
-        'http://localhost:5173',
-        'http://localhost:5174',
-      ],
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },

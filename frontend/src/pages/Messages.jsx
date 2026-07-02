@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { chatAPI } from '../lib/api';
-import { getSocket } from '../lib/socket';
+import { getSocket, connectSocket } from '../lib/socket';
+import { tokenStorage } from '../utils/tokenStorage';
 import { Spinner } from '../components/ui';
 import { cn } from '../utils/cn';
 import RoomSettingsPanel from '../components/chat/RoomSettingsPanel';
@@ -496,10 +497,22 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
 
   // ── Socket real-time ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const socket = getSocket();
+    // Child effects run before the parent's, so on a hard page load of
+    // /messages this fires before AppLayout's connectSocket — getSocket()
+    // was null, we bailed, and real-time stayed dead until the user
+    // switched chats. Create the connection ourselves if it isn't up yet
+    // (connectSocket is idempotent).
+    const socket = getSocket() || connectSocket(tokenStorage.get('accessToken'));
     if (!socket) return;
 
-    socket.emit(type === 'room' ? 'join:room' : 'join:conversation', id);
+    const joinChannel = () =>
+      socket.emit(type === 'room' ? 'join:room' : 'join:conversation', id);
+
+    joinChannel();
+    // Server-side room membership dies with the socket session; after any
+    // reconnect (server restart, network blip, laptop sleep) we must
+    // re-join or the live feed silently stops.
+    socket.on('connect', joinChannel);
 
     const onMessage = ({ message, roomId, conversationId }) => {
       // Loose-compare IDs because the backend may send numbers while
@@ -563,6 +576,7 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
 
     return () => {
       socket.emit(type === 'room' ? 'leave:room' : 'leave:conversation', id);
+      socket.off('connect', joinChannel);
       socket.off('chat:message', onMessage);
       socket.off('chat:reaction', onReaction);
       socket.off('chat:read', onRead);
@@ -1011,7 +1025,9 @@ export default function Messages() {
 
   // Presence via socket
   useEffect(() => {
-    const socket = getSocket();
+    // Same mount-order guard as the per-chat effect: create the socket if
+    // AppLayout hasn't yet (hard page load lands here first).
+    const socket = getSocket() || connectSocket(tokenStorage.get('accessToken'));
     if (!socket) return;
 
     // Server sends initial list on connect

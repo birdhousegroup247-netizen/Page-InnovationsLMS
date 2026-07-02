@@ -12,6 +12,9 @@ let socket = null;
 
 export function connectSocket(token) {
   if (socket?.connected) return socket;
+  // No token = server would reject the handshake and the client would
+  // burn its reconnection attempts on guaranteed failures.
+  if (!token) return socket;
 
   socket = io(API_BASE_URL, {
     auth: { token },
