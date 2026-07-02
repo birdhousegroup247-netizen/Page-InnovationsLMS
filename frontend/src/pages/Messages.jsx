@@ -964,6 +964,7 @@ function ConvItem({ conv, userId, isActive, onClick, onlineUsers }) {
 }
 
 function RoomItem({ room, isActive, onClick }) {
+  const unread = room.unread_count || 0;
   return (
     <button onClick={onClick} className={cn(
       'w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors',
@@ -972,10 +973,18 @@ function RoomItem({ room, isActive, onClick }) {
         <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{room.course?.title}</p>
+        <p className={cn('text-sm text-gray-900 dark:text-white truncate', unread > 0 ? 'font-bold' : 'font-medium')}>
+          {room.course?.title}
+        </p>
         <p className="text-xs text-gray-500">{room.members?.length ?? 0} member{room.members?.length !== 1 ? 's' : ''}</p>
       </div>
-      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      {unread > 0 ? (
+        <span className="bg-brand-blue text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center flex-shrink-0">
+          {unread > 99 ? '99+' : unread}
+        </span>
+      ) : (
+        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      )}
     </button>
   );
 }
@@ -1061,22 +1070,40 @@ export default function Messages() {
       );
     };
 
+    // Bodyless ping on the user channel whenever any of my rooms gets a
+    // message — the room channel itself only reaches the open chat, so
+    // this is what keeps the OTHER rooms' badges live (WhatsApp-style).
+    const onRoomActivity = ({ roomId }) => {
+      const isActiveRoom = activeChat?.type === 'room' && Number(activeChat.id) === Number(roomId);
+      if (isActiveRoom) return;
+      setRooms((prev) =>
+        prev.map((r) => Number(r.id) === Number(roomId)
+          ? { ...r, unread_count: (r.unread_count || 0) + 1 }
+          : r)
+      );
+    };
+
     socket.on('connected', onConnected);
     socket.on('presence:online', onOnline);
     socket.on('presence:offline', onOffline);
     socket.on('chat:message', onMsg);
+    socket.on('chat:room_activity', onRoomActivity);
 
     return () => {
       socket.off('connected', onConnected);
       socket.off('presence:online', onOnline);
       socket.off('presence:offline', onOffline);
       socket.off('chat:message', onMsg);
+      socket.off('chat:room_activity', onRoomActivity);
     };
   }, [activeChat]);
 
   const openRoom = (room) => {
     setActiveChat({ type: 'room', id: room.id, roomId: room.id, title: room.course?.title || 'Course Chat', subtitle: `${room.members?.length ?? 0} members` });
     setShowRequests(false);
+    // Opening zeroes the badge locally; the chat window's mount effect
+    // marks it seen server-side.
+    setRooms((prev) => prev.map((r) => r.id === room.id ? { ...r, unread_count: 0 } : r));
   };
 
   const openConv = (conv) => {

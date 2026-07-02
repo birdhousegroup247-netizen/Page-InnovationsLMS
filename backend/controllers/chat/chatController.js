@@ -225,7 +225,38 @@ class ChatController {
           : [];
       }
 
-      return ApiResponse.success(res, { rooms }, 'Rooms retrieved');
+      // Per-room unread_count for the WhatsApp-style badge in the room
+      // list: messages from others newer than my last visit. Rooms where
+      // I have no membership row (instructor overview of own courses)
+      // have no watermark and report 0.
+      const roomIds2 = rooms.map((r) => r.id);
+      const myRows = roomIds2.length
+        ? await ChatRoomMember.findAll({
+            where: { user_id: userId, room_id: { [Op.in]: roomIds2 } },
+            attributes: ['room_id', 'last_seen_at', 'joined_at', 'created_at'],
+            raw: true,
+          })
+        : [];
+      const watermark = new Map(myRows.map((m) => [m.room_id, m.last_seen_at || m.joined_at || m.created_at]));
+      const roomsOut = await Promise.all(rooms.map(async (room) => {
+        const json = room.toJSON();
+        if (watermark.has(room.id)) {
+          const since = watermark.get(room.id);
+          json.unread_count = await Message.count({
+            where: {
+              room_id: room.id,
+              sender_id: { [Op.ne]: userId },
+              deleted_at: null,
+              ...(since ? { created_at: { [Op.gt]: since } } : {}),
+            },
+          });
+        } else {
+          json.unread_count = 0;
+        }
+        return json;
+      }));
+
+      return ApiResponse.success(res, { rooms: roomsOut }, 'Rooms retrieved');
     } catch (error) {
       next(error);
     }
