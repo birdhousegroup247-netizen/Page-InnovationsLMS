@@ -158,6 +158,7 @@ export default function CoursePlayer() {
   // Default sidebar closed on mobile so content shows first
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
   const [course, setCourse] = useState(null);
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const [currentContent, setCurrentContent] = useState(null);
   const [progress, setProgress] = useState({});
   const [loading, setLoading] = useState(true);
@@ -418,6 +419,7 @@ export default function CoursePlayer() {
       }
 
       setCourse(courseData);
+      setIsEnrolled(!!courseRes.data?.data?.isEnrolled);
 
       // Fetch progress separately so it doesn't break course loading
       let progressData = {};
@@ -448,6 +450,13 @@ export default function CoursePlayer() {
       setLoading(false);
     }
   };
+
+  // The account-level "preview" trial gate only applies to courses the
+  // student does NOT own. An enrollment (free enrol, comp, part- or fully
+  // paid) means full access to THIS course — part-payment lockout is
+  // handled separately by the installment suspension flow, and drip
+  // scheduling still applies to enrolled students.
+  const isPreviewLocked = (content) => isPreview && !isEnrolled && !content.is_preview;
 
   const findFirstIncompleteLesson = (courseData, progressData) => {
     if (!courseData.modules) return null;
@@ -713,9 +722,9 @@ export default function CoursePlayer() {
                       <div className="flex-shrink-0">
                         {isCompleted ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : isPreview && !content.is_preview ? (
+                        ) : isPreviewLocked(content) ? (
                           <Lock className={`h-5 w-5 ${isActive ? 'text-white/70' : 'text-gray-400 dark:text-text-dark-muted'}`} />
-                        ) : !isPreview && content.is_drip_locked ? (
+                        ) : content.is_drip_locked ? (
                           <Calendar className={`h-5 w-5 ${isActive ? 'text-white/70' : 'text-yellow-500'}`} title={`Unlocks ${content.drip_unlock_date}`} />
                         ) : isActive ? (
                           <PlayCircle className="h-5 w-5" />
@@ -746,12 +755,13 @@ export default function CoursePlayer() {
           <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
             {/* Video/Content Player */}
             <div className="mb-6 relative">
-              {/* Lock overlay for preview-mode users on non-preview lessons */}
-              {isPreview && !currentContent.is_preview && (
+              {/* Lock overlay for preview-mode users on non-preview lessons
+                  in courses they haven't enrolled in */}
+              {isPreviewLocked(currentContent) && (
                 <LockOverlay courseId={id} />
               )}
               {/* Drip lock overlay — lesson not yet unlocked by schedule */}
-              {!isPreview && currentContent.is_drip_locked && (
+              {!isPreviewLocked(currentContent) && currentContent.is_drip_locked && (
                 <LockOverlay variant="drip" unlockDate={currentContent.drip_unlock_date} />
               )}
               {/* Video content */}

@@ -609,6 +609,20 @@ const startServer = async () => {
             logger.info(`  ✓ Added ${colName} column to users`);
           }
         }
+
+        // Enrolled students stuck in 'preview': every enrollment path now
+        // activates the account (shared enrollment helper), but enrollments
+        // created before that fix — or seeded directly — left accounts in
+        // preview, which locked students out of courses they own. Idempotent.
+        await sequelize.query(
+          `UPDATE users SET registration_status = 'active'
+           WHERE registration_status = 'preview'
+             AND role = 'student'
+             AND id IN (SELECT DISTINCT student_id FROM enrollments)`
+        ).then(([, meta]) => {
+          const n = meta?.rowCount ?? 0;
+          if (n > 0) logger.info(`  ✓ Activated ${n} enrolled user(s) stuck in preview`);
+        }).catch((e) => logger.warn(`Preview-enrollee activation skipped: ${e.message}`));
       }
 
       // leads: bounce_count + bounced_at drive the drip skip-after-N
