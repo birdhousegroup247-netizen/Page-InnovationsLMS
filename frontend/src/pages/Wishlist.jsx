@@ -50,25 +50,43 @@ export default function Wishlist() {
   };
 
   return (
-    <Container className="py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-text-dark-primary flex items-center gap-2">
-            <Heart className="h-6 w-6 text-brand-red fill-brand-red" />
-            My Wishlist
-          </h1>
-          <p className="text-gray-500 dark:text-text-dark-muted text-sm mt-1">
-            {wishlist.length} {wishlist.length === 1 ? 'course' : 'courses'} saved
-          </p>
+    <>
+      {/* Gradient hero — same anatomy as the other Library pages
+          (Saved Lessons, My Notes): icon + title left, glass action
+          button right. This page used to be the only one with a plain
+          text header. */}
+      <div className="bg-gradient-to-br from-brand-blue via-brand-purple to-brand-red relative overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
+        <div className="relative z-10 py-12 sm:py-16">
+          <Container>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Heart className="h-6 w-6 text-white fill-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white">My Wishlist</h1>
+                  <p className="text-white/80 text-sm mt-0.5">
+                    {wishlist.length} {wishlist.length === 1 ? 'course' : 'courses'} saved
+                  </p>
+                </div>
+              </div>
+              <Link to="/courses">
+                <Button
+                  variant="outline"
+                  leftIcon={<BookOpen className="h-4 w-4" />}
+                  className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
+                >
+                  Browse Courses
+                </Button>
+              </Link>
+            </div>
+          </Container>
         </div>
-        <Link to="/courses">
-          <Button variant="outline" leftIcon={<BookOpen className="h-4 w-4" />}>
-            Browse Courses
-          </Button>
-        </Link>
       </div>
 
+      <Container className="py-8">
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm">
           {error}
@@ -198,6 +216,7 @@ export default function Wishlist() {
           })}
         </div>
       )}
-    </Container>
+      </Container>
+    </>
   );
 }
