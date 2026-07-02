@@ -18,6 +18,9 @@ import { useToast } from '../components/ui/Toast';
 export default function TakeTest() {
   const { showToast } = useToast();
   const { attemptId, testId } = useParams();
+  // The attempt actually being taken — for assigned tests the id only
+  // exists after the start call responds.
+  const [activeAttemptId, setActiveAttemptId] = useState(null);
   const navigate = useNavigate();
   const [test, setTest] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -59,14 +62,20 @@ export default function TakeTest() {
       // back to 60 minutes regardless of what the student chose.
       const data = response.data.data;
       const meta = data.test || {};
+      const limitMinutes = meta.time_limit_minutes ?? data.attempt?.time_limit_minutes;
+      const limitSeconds = limitMinutes ? limitMinutes * 60 : 3600;
       setTest({
         title: meta.test_name || meta.title || 'Practice Test',
         total_marks: meta.total_marks ?? data.attempt?.total_marks,
         passing_score: meta.passing_score,
+        time_limit_seconds: limitSeconds,
       });
       setQuestions(data.questions || []);
-      const limitMinutes = meta.time_limit_minutes ?? data.attempt?.time_limit_minutes;
-      setTimeRemaining(limitMinutes ? limitMinutes * 60 : 3600);
+      setTimeRemaining(limitSeconds);
+      // Assigned flow arrives with :testId only — the attempt is created
+      // by the start call, so its id MUST come from the response. The old
+      // code submitted to attemptId (undefined for assigned) → 404.
+      setActiveAttemptId(data.attempt?.id ?? attemptId ?? null);
 
       // Start timer
       startTimer();
@@ -152,17 +161,20 @@ export default function TakeTest() {
           question_id: parseInt(questionId),
           selected_answer: answer
         })),
-        time_taken: (test?.time_limit_seconds || 3600) - timeRemaining
+        // Backend field is time_taken_seconds — `time_taken` was ignored
+        // and every attempt stored a null duration.
+        time_taken_seconds: (test?.time_limit_seconds || 3600) - timeRemaining
       };
 
+      const submitId = activeAttemptId ?? attemptId;
       let response;
       if (isPractice) {
-        response = await practiceTestsAPI.submit(attemptId, submitData);
+        response = await practiceTestsAPI.submit(submitId, submitData);
       } else {
-        response = await assignedTestsAPI.submitAttempt(attemptId, submitData);
+        response = await assignedTestsAPI.submitAttempt(submitId, submitData);
       }
 
-      const resultId = response.data.data.attempt_id || attemptId;
+      const resultId = response.data.data?.results?.attempt_id || submitId;
       navigate(`/test-results/${resultId}`);
     } catch (error) {
       console.error('Failed to submit test:', error);

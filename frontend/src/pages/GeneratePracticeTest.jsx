@@ -108,8 +108,12 @@ export default function GeneratePracticeTest() {
       };
 
       const response = await practiceTestsAPI.generate(payload);
-      const attemptId = response.data.data.attempt_id;
-      navigate(`/practice-tests/${attemptId}/take`);
+      // Backend responds { attempt: { id, ... }, questions } — the old
+      // read of data.attempt_id was undefined, navigating to
+      // /practice-tests/undefined/take → "Failed to load test".
+      const newAttemptId = response.data.data?.attempt?.id ?? response.data.data?.attempt_id;
+      if (!newAttemptId) throw new Error('No attempt id in generate response');
+      navigate(`/practice-tests/${newAttemptId}/take`);
     } catch (error) {
       console.error('Failed to generate practice test:', error);
       const errorMessage = error.response?.data?.message || 'Failed to generate practice test. Please try again.';

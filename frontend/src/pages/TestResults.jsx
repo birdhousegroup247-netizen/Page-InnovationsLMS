@@ -40,7 +40,39 @@ export default function TestResults() {
         response = await assignedTestsAPI.getResults(attemptId);
       }
 
-      setResults(response.data.data);
+      // Normalize the backend shape ({ results: {...}, questions: [...] },
+      // same for practice and assigned) into what this page renders. The
+      // old code set the raw payload and destructured fields that were
+      // never there — every stat rendered undefined/NaN.
+      const raw = response.data.data || {};
+      const r = raw.results || {};
+      const questions = raw.questions || [];
+      setResults({
+        score: r.score,
+        total_marks: r.total_marks,
+        total_questions: questions.length || 0,
+        correct_answers: questions.filter((q) => q.is_correct).length,
+        incorrect_answers: questions.filter((q) => !q.is_correct).length,
+        time_taken: r.time_taken_seconds ?? 0,
+        passing_score: r.passing_score,
+        passed: r.passed ?? (parseFloat(r.percentage) >= 50),
+        test: { title: r.test_name || 'Practice Test' },
+        // Assigned tests with deferred results return no questions +
+        // a message — show the "results later" screen.
+        can_view_results: questions.length > 0 ? true : (raw.message ? false : true),
+        show_explanations: true,
+        answers: questions.map((q) => ({
+          id: q.id,
+          is_correct: q.is_correct,
+          selected_answer: q.student_answer,
+          question: {
+            question_text: q.question_text,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+            difficulty: q.difficulty,
+          },
+        })),
+      });
     } catch (error) {
       console.error('Failed to fetch results:', error);
       showToast('Failed to load results', 'error');
