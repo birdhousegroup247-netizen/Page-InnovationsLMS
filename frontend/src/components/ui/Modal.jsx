@@ -66,36 +66,39 @@ const Modal = ({
       {...props}
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" />
 
       {/* Modal */}
       <div
         className={cn(
-          'relative w-full bg-white rounded-xl shadow-2xl animate-slide-up',
+          'relative w-full bg-white dark:bg-dark-800 rounded-xl shadow-2xl dark:shadow-black/50 animate-slide-up overflow-hidden',
           sizes[size],
           className
         )}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-border-dark">
             {title && (
-              <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                className="ml-auto p-1.5 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-colors"
                 aria-label="Close modal"
               >
-                <X className="w-5 h-5 text-text-muted" />
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
         )}
 
-        {/* Content */}
-        <div className="px-6 py-4">{children}</div>
+        {/* Content — capped height + internal scroll so tall forms (e.g.
+            the announcement composer) never push the action buttons off
+            screen. Body scroll is locked while a modal is open, so
+            without this the overflow was simply unreachable. */}
+        <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">{children}</div>
       </div>
     </div>
   );
@@ -107,7 +110,7 @@ Modal.Body = ({ children, className }) => (
 );
 
 Modal.Footer = ({ children, className }) => (
-  <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-gray-50 rounded-b-xl', className)}>
+  <div className={cn('flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-border-dark bg-gray-50 dark:bg-dark-900/50 rounded-b-xl', className)}>
     {children}
   </div>
 );
