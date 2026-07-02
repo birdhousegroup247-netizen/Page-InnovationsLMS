@@ -19,6 +19,36 @@ if (isProduction && !SEED_SECRET) {
 } else {
 
 /**
+ * @route   POST /api/seed/enrich
+ * @desc    Fill blanks in seeded data (article bodies, video URLs, lesson
+ *          descriptions, preview flags, course reviews). Additive and
+ *          idempotent — safe to run on a live DB, never deletes.
+ * @access  Public (but protected by secret key)
+ */
+router.post('/enrich', async (req, res) => {
+  try {
+    const { secret } = req.body;
+    if (secret !== process.env.SEED_SECRET) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid seed secret. Set SEED_SECRET environment variable.',
+      });
+    }
+
+    const { enrichContent } = require('../../scripts/enrichSeedContent');
+    const summary = await enrichContent();
+
+    return res.json({
+      success: true,
+      message: 'Content enrichment complete',
+      data: summary,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * @route   POST /api/seed
  * @desc    Seed database with initial data (ONE TIME USE)
  * @access  Public (but protected by secret key)
