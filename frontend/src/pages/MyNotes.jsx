@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { notesAPI } from '../lib/api';
-import { FileText, Pencil, Trash2, Check, X, BookOpen, Clock } from 'lucide-react';
+import { notesAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
+import { FileText, Pencil, Trash2, Check, X, BookOpen, Clock, Plus } from 'lucide-react';
 import { Container, EmptyState } from '../components/layout';
-import { Spinner, Alert } from '../components/ui';
+import { Spinner, Alert, Button, Modal } from '../components/ui';
 import { cn } from '../utils/cn';
 
 function NoteCard({ note, onUpdate, onDelete }) {
@@ -121,9 +121,131 @@ function NoteCard({ note, onUpdate, onDelete }) {
       )}
 
       <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
-        {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        {/* Sequelize serializes timestamps as createdAt (JS attribute),
+            not the created_at column name — reading only created_at
+            rendered "Invalid Date" on every card. */}
+        {(() => {
+          const d = new Date(note.created_at || note.createdAt);
+          return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        })()}
       </p>
     </div>
+  );
+}
+
+// "New note" modal — pick an enrolled course, then a lesson in it, write
+// the note. Same API the in-player notes panel uses; this just gives
+// notes a home that doesn't require having a video open.
+function NewNoteModal({ isOpen, onClose, onCreated }) {
+  const [courses, setCourses] = useState([]);
+  const [courseId, setCourseId] = useState('');
+  const [lessons, setLessons] = useState([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+  const [contentId, setContentId] = useState('');
+  const [text, setText] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setError('');
+    enrollmentsAPI.getMyCourses()
+      .then((r) => {
+        const rows = r.data?.data?.enrollments || r.data?.data?.courses || [];
+        const list = rows
+          .map((e) => ({ id: e.course?.id ?? e.course_id ?? e.id, title: e.course?.title ?? e.title }))
+          .filter((c) => c.id && c.title);
+        setCourses(list);
+      })
+      .catch(() => setError('Could not load your courses'));
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!courseId) { setLessons([]); setContentId(''); return; }
+    setLessonsLoading(true);
+    setContentId('');
+    coursesAPI.getById(courseId)
+      .then((r) => {
+        const modules = r.data?.data?.course?.modules || [];
+        const flat = modules.flatMap((m) =>
+          (m.contents || []).map((c) => ({ id: c.id, title: c.title, moduleTitle: m.title }))
+        );
+        setLessons(flat);
+      })
+      .catch(() => setError('Could not load lessons for that course'))
+      .finally(() => setLessonsLoading(false));
+  }, [courseId]);
+
+  const handleCreate = async (e) => {
+    e?.preventDefault?.();
+    if (!contentId || !text.trim() || saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      await notesAPI.createNote(contentId, { content: text.trim() });
+      setText('');
+      setCourseId('');
+      setContentId('');
+      onCreated();
+      onClose();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to save note');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectClass = 'w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition-colors';
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="New note" size="md">
+      <form onSubmit={handleCreate} className="space-y-4">
+        {error && <Alert variant="danger">{error}</Alert>}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Course</label>
+          <select value={courseId} onChange={(e) => setCourseId(e.target.value)} className={selectClass} required>
+            <option value="">Select a course…</option>
+            {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Lesson</label>
+          <select
+            value={contentId}
+            onChange={(e) => setContentId(e.target.value)}
+            className={selectClass}
+            disabled={!courseId || lessonsLoading}
+            required
+          >
+            <option value="">{lessonsLoading ? 'Loading lessons…' : 'Select a lesson…'}</option>
+            {lessons.map((l) => (
+              <option key={l.id} value={l.id}>{l.moduleTitle} — {l.title}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Note</label>
+          <textarea
+            rows={5}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Write your note…"
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue resize-none transition-colors"
+            required
+          />
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary" loading={saving} disabled={!contentId || !text.trim()}>
+            Save note
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -132,6 +254,7 @@ export default function MyNotes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [showNew, setShowNew] = useState(false);
 
   useEffect(() => {
     fetchNotes();
@@ -192,6 +315,13 @@ export default function MyNotes() {
                   {notes.length} {notes.length === 1 ? 'note' : 'notes'} across all your courses
                 </p>
               </div>
+              <button
+                onClick={() => setShowNew(true)}
+                className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold rounded-xl transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New note</span>
+              </button>
             </div>
           </Container>
         </div>
@@ -222,7 +352,9 @@ export default function MyNotes() {
           <EmptyState
             icon={<FileText className="w-16 h-16" />}
             title="No notes yet"
-            description="Take notes while watching lessons to see them here"
+            description="Take notes while watching lessons, or create one right here"
+            actionLabel="New note"
+            onAction={() => setShowNew(true)}
           />
         ) : filtered.length === 0 ? (
           <EmptyState
@@ -254,6 +386,12 @@ export default function MyNotes() {
           </div>
         )}
       </Container>
+
+      <NewNoteModal
+        isOpen={showNew}
+        onClose={() => setShowNew(false)}
+        onCreated={fetchNotes}
+      />
     </>
   );
 }
