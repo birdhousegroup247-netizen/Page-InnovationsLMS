@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
 import { Package, BookOpen, Star, Tag, ArrowLeft, CheckCircle, Clock, BarChart2, ShoppingCart } from 'lucide-react';
 import { Spinner } from '../components/ui';
+import { formatPrice } from '../utils/currency';
 
 export default function BundleDetail() {
   const { id } = useParams();
@@ -117,7 +118,7 @@ export default function BundleDetail() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-text-secondary text-sm line-through">
-                      ${Number(course.price || 0).toFixed(2)}
+                      {formatPrice(course.price)}
                     </p>
                   </div>
                 </div>
@@ -138,7 +139,7 @@ export default function BundleDetail() {
             )}
 
             <div className="mb-4">
-              <p className="text-3xl font-bold text-white">${Number(bundle.price || 0).toFixed(2)}</p>
+              <p className="text-3xl font-bold text-white">{formatPrice(bundle.price)}</p>
               {savings > 0 && (
                 <p className="text-text-secondary text-sm mt-1">
                   <span className="line-through">${Number(bundle.total_value).toFixed(2)}</span>

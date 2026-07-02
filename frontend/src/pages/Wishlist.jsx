@@ -5,6 +5,7 @@ import { wishlistAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
 import { cn } from '../utils/cn';
+import { formatPrice } from '../utils/currency';
 
 export default function Wishlist() {
   const navigate = useNavigate();
@@ -169,7 +170,7 @@ export default function Wishlist() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-brand-blue dark:text-brand-blue-light">
-                      {course.price > 0 ? `$${Number(course.price).toFixed(2)}` : 'Free'}
+                      {course.price > 0 ? formatPrice(course.price) : 'Free'}
                     </span>
                     <div className="flex gap-2">
                       <Link to={`/courses/${course.id}`}>

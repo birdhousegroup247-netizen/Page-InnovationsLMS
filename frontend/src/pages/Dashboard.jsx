@@ -24,6 +24,7 @@ import EmptyState from '../components/common/EmptyState';
 import emptyCourses from '../assets/empty-courses.svg';
 import emptyRecommendations from '../assets/empty-recommendations.svg';
 import { cn } from '../utils/cn';
+import { formatPrice } from '../utils/currency';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -104,7 +105,7 @@ export default function Dashboard() {
           students: course.total_enrollments || 0,
           thumbnail: course.thumbnail_url || null,
           level: course.difficulty || 'Beginner',
-          price: course.price ? `$${course.price}` : 'Free',
+          price: course.price ? formatPrice(course.price) : 'Free',
         }));
 
         setStats(processedStats);

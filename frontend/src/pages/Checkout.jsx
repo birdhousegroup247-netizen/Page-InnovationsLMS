@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import api, { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
 import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle, Package } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { formatPrice } from '../utils/currency';
 
 // Load Paystack Inline.js from CDN
 function loadPaystackScript() {
@@ -399,15 +400,15 @@ export default function Checkout() {
             <div className="space-y-2 text-sm border-t border-gray-100 dark:border-dark-700 pt-4 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Original price</span>
-                <span className="text-gray-900 dark:text-white">${parseFloat(installmentPayment.original_amount || 0).toFixed(2)}</span>
+                <span className="text-gray-900 dark:text-white">{formatPrice(installmentPayment.original_amount)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Already paid (60%)</span>
-                <span className="text-gray-900 dark:text-white">${parseFloat(installmentPayment.amount || 0).toFixed(2)}</span>
+                <span className="text-gray-900 dark:text-white">{formatPrice(installmentPayment.amount)}</span>
               </div>
               <div className="flex justify-between font-semibold text-base border-t border-gray-200 dark:border-dark-700 pt-2">
                 <span className="text-gray-900 dark:text-white">Remaining balance</span>
-                <span className="text-brand-blue">${remaining.toFixed(2)}</span>
+                <span className="text-brand-blue">{formatPrice(remaining)}</span>
               </div>
             </div>
 
@@ -425,7 +426,7 @@ export default function Checkout() {
                 className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <CreditCard className="w-5 h-5" />
-                {paystackLoading ? 'Loading...' : `Pay $${remaining.toFixed(2)} Now`}
+                {paystackLoading ? 'Loading...' : `Pay ${formatPrice(remaining)} Now`}
               </button>
             )}
             {installmentPayment?.payment_gateway === 'paypal' && (
@@ -454,7 +455,7 @@ export default function Checkout() {
                   className="w-full py-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <CreditCard className="w-5 h-5" />
-                  {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay $${remaining.toFixed(2)} Now`}
+                  {checkoutLoading ? 'Redirecting to Secure Payment...' : `Pay ${formatPrice(remaining)} Now`}
                 </button>
               )}
 
@@ -587,18 +588,18 @@ export default function Checkout() {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Course price</span>
                 <span className="text-gray-900 dark:text-white font-medium">
-                  ${basePrice.toFixed(2)}
+                  {formatPrice(basePrice)}
                 </span>
               </div>
               {appliedCoupon && (
                 <div className="flex justify-between text-green-600 dark:text-green-400">
                   <span>Discount ({couponCode.toUpperCase()})</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                  <span>-{formatPrice(discountAmount)}</span>
                 </div>
               )}
               <div className="border-t border-gray-200 dark:border-border-dark pt-2 mt-2 flex justify-between font-semibold text-base">
                 <span className="text-gray-900 dark:text-white">Total</span>
-                <span className="text-brand-blue">${priceAfterCoupon.toFixed(2)}</span>
+                <span className="text-brand-blue">{formatPrice(priceAfterCoupon)}</span>
               </div>
             </div>
 
@@ -606,11 +607,11 @@ export default function Checkout() {
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs space-y-1.5">
                 <div className="flex justify-between text-blue-700 dark:text-blue-300 font-medium">
                   <span>Due now (60%)</span>
-                  <span>${dueNow.toFixed(2)}</span>
+                  <span>{formatPrice(dueNow)}</span>
                 </div>
                 <div className="flex justify-between text-blue-600 dark:text-blue-400">
                   <span>Due in 21 days (40%)</span>
-                  <span>${dueLater.toFixed(2)}</span>
+                  <span>{formatPrice(dueLater)}</span>
                 </div>
               </div>
             )}
@@ -645,7 +646,7 @@ export default function Checkout() {
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white ml-2 flex-shrink-0">
-                  ${priceAfterCoupon.toFixed(2)}
+                  {formatPrice(priceAfterCoupon)}
                 </span>
               </label>
 
@@ -673,7 +674,7 @@ export default function Checkout() {
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-brand-blue ml-2 flex-shrink-0">
-                  ${dueNow.toFixed(2)}
+                  {formatPrice(dueNow)}
                 </span>
               </label>
             </div>
@@ -704,7 +705,7 @@ export default function Checkout() {
                     {couponCode.toUpperCase()}
                   </div>
                   <div className="text-xs text-green-600 dark:text-green-500">
-                    -${discountAmount.toFixed(2)} saved!
+                    -{formatPrice(discountAmount)} saved!
                   </div>
                 </div>
                 <button
@@ -763,7 +764,7 @@ export default function Checkout() {
                 <CreditCard className="w-5 h-5" />
                 {checkoutLoading
                   ? 'Redirecting...'
-                  : `Pay ${paymentPlan === 'installment' ? `$${dueNow.toFixed(2)} Now` : `$${priceAfterCoupon.toFixed(2)}`}`}
+                  : `Pay ${paymentPlan === 'installment' ? `${formatPrice(dueNow)} Now` : `${formatPrice(priceAfterCoupon)}`}`}
               </span>
               <span className="text-xs opacity-75 font-normal">International (Stripe)</span>
             </button>
@@ -778,7 +779,7 @@ export default function Checkout() {
                 <CreditCard className="w-5 h-5" />
                 {paystackLoading
                   ? 'Loading...'
-                  : `Pay ${paymentPlan === 'installment' ? `$${dueNow.toFixed(2)} Now` : `$${priceAfterCoupon.toFixed(2)}`}`}
+                  : `Pay ${paymentPlan === 'installment' ? `${formatPrice(dueNow)} Now` : `${formatPrice(priceAfterCoupon)}`}`}
               </span>
               <span className="text-xs opacity-75 font-normal">Nigeria (Paystack)</span>
             </button>

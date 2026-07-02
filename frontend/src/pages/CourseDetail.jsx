@@ -26,6 +26,7 @@ import {
 import { Container } from '../components/layout';
 import { Card, Badge, Button, Spinner, Avatar } from '../components/ui';
 import { cn } from '../utils/cn';
+import { formatPrice } from '../utils/currency';
 import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import CourseReviews from '../components/course/CourseReviews';
 import PaymentModal from '../components/payment/PaymentModal';
@@ -518,10 +519,10 @@ export default function CourseDetail() {
                         <>
                           <div className="flex items-baseline gap-3">
                             <p className="text-4xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
-                              ${(course.price - (course.price * course.discount_percentage / 100)).toFixed(2)}
+                              {formatPrice(course.price - (course.price * course.discount_percentage / 100))}
                             </p>
                             <p className="text-xl text-gray-400 dark:text-text-dark-muted line-through transition-colors">
-                              ${course.price.toFixed(2)}
+                              {formatPrice(course.price)}
                             </p>
                           </div>
                           <div className="mt-2 inline-flex items-center gap-1.5 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium">
@@ -531,7 +532,7 @@ export default function CourseDetail() {
                         </>
                       ) : (
                         <p className="text-4xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
-                          ${course.price.toFixed(2)}
+                          {formatPrice(course.price)}
                         </p>
                       )}
                     </div>

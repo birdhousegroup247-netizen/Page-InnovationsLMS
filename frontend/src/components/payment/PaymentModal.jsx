@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, CreditCard, Lock, Check, AlertCircle, Loader } from 'lucide-react';
 import { Button } from '../ui';
 import { cn } from '../../utils/cn';
+import { formatPrice } from '../../utils/currency';
 
 export default function PaymentModal({ isOpen, onClose, course, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -236,7 +237,7 @@ export default function PaymentModal({ isOpen, onClose, course, onSuccess }) {
                     </>
                   ) : (
                     <>
-                      {isFree ? 'Enroll For Free' : `Pay $${discountedPrice.toFixed(2)}`}
+                      {isFree ? 'Enroll For Free' : `Pay ${formatPrice(discountedPrice)}`}
                     </>
                   )}
                 </button>
@@ -286,7 +287,7 @@ export default function PaymentModal({ isOpen, onClose, course, onSuccess }) {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Original Price</span>
                         <span className="text-gray-900 dark:text-white font-medium">
-                          ${price.toFixed(2)}
+                          {formatPrice(price)}
                         </span>
                       </div>
 
@@ -296,7 +297,7 @@ export default function PaymentModal({ isOpen, onClose, course, onSuccess }) {
                             Discount ({discount}%)
                           </span>
                           <span className="text-green-600 dark:text-green-400 font-medium">
-                            -${((price * discount) / 100).toFixed(2)}
+                            -{formatPrice((price * discount) / 100)}
                           </span>
                         </div>
                       )}
@@ -304,7 +305,7 @@ export default function PaymentModal({ isOpen, onClose, course, onSuccess }) {
                       <div className="border-t border-gray-200 dark:border-border-dark pt-3 flex justify-between">
                         <span className="font-semibold text-gray-900 dark:text-white">Total</span>
                         <span className="font-bold text-xl text-brand-blue">
-                          ${discountedPrice.toFixed(2)}
+                          {formatPrice(discountedPrice)}
                         </span>
                       </div>
                     </>

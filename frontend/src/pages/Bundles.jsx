@@ -4,6 +4,7 @@ import { Package, BookOpen, Star, Tag, ChevronRight, ShoppingCart } from 'lucide
 import api from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
+import { formatPrice } from '../utils/currency';
 
 export default function Bundles() {
   const navigate = useNavigate();
@@ -103,7 +104,7 @@ export default function Bundles() {
                           <BookOpen className="h-4 w-4 text-brand-blue flex-shrink-0" />
                           <span className="truncate">{course.title}</span>
                           <span className="ml-auto flex-shrink-0 text-gray-400 text-xs">
-                            ${Number(course.price || 0).toFixed(2)}
+                            {formatPrice(course.price)}
                           </span>
                         </div>
                       ))}
@@ -113,7 +114,7 @@ export default function Bundles() {
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-dark-700">
                       <div>
                         <p className="text-2xl font-bold text-brand-blue">
-                          ${Number(bundle.price).toFixed(2)}
+                          {formatPrice(bundle.price)}
                         </p>
                         {bundle.total_value > Number(bundle.price) && (
                           <p className="text-xs text-gray-400 line-through">

@@ -19,6 +19,15 @@ import { Badge, Button, Spinner } from '../components/ui';
 import WishlistButton from '../components/ui/WishlistButton';
 import emptyCourses from '../assets/empty-courses.svg';
 import { cn } from '../utils/cn';
+import { formatPrice } from '../utils/currency';
+
+// Discounted price if a discount is set, else list price. null = free.
+function effectivePrice(course) {
+  const price = parseFloat(course.price || 0);
+  if (!price) return null;
+  const discount = parseFloat(course.discount_percentage || 0);
+  return discount > 0 ? price - (price * discount) / 100 : price;
+}
 
 export default function Courses() {
   const navigate = useNavigate();
@@ -100,10 +109,17 @@ export default function Courses() {
     setSelectedLevel('');
   };
 
-  const handleEnroll = async (courseId) => {
+  // Mirrors CourseDetail's enroll logic: paid courses go to checkout
+  // (the old code called the free-enroll API for everything, so paid
+  // courses hit the server's "Payment required" rejection in an alert).
+  const handleEnroll = async (course) => {
+    if (parseFloat(course.price || 0) > 0) {
+      navigate(`/checkout?course_id=${course.id}`);
+      return;
+    }
     try {
-      await coursesAPI.enroll(courseId);
-      navigate(`/courses/${courseId}`);
+      await coursesAPI.enroll(course.id);
+      navigate(`/courses/${course.id}`);
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to enroll');
     }
@@ -333,6 +349,37 @@ export default function Courses() {
   );
 }
 
+// Price line shared by both card layouts: bold current price, strikethrough
+// list price when discounted, green "Free" when the course costs nothing.
+function CoursePrice({ course, className }) {
+  const price = effectivePrice(course);
+  const hasDiscount = price !== null && parseFloat(course.discount_percentage || 0) > 0;
+
+  return (
+    <div className={cn('flex items-baseline gap-2', className)}>
+      {price === null ? (
+        <span className="text-lg font-bold text-green-600 dark:text-green-400">Free</span>
+      ) : (
+        <>
+          <span className="text-lg font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
+            {formatPrice(price)}
+          </span>
+          {hasDiscount && (
+            <>
+              <span className="text-sm text-gray-400 dark:text-text-dark-muted line-through">
+                {formatPrice(course.price)}
+              </span>
+              <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                {parseFloat(course.discount_percentage)}% off
+              </span>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // Course Card Component
 function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
   // Guard against null/undefined course
@@ -402,28 +449,30 @@ function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
               )}
             </div>
 
-            <div className="flex items-center gap-3">
-              <Link to={`/courses/${course.id}`} className="flex-1">
-                <Button variant="outline" size="sm" fullWidth>
-                  View Details
-                </Button>
-              </Link>
-              {isEnrolled ? (
-                <Link to={`/courses/${course.id}/learn`} className="flex-1">
-                  <Button variant="primary" size="sm" fullWidth>
-                    Continue learning
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <CoursePrice course={course} className="sm:mr-auto" />
+              <div className="flex items-center gap-3">
+                <Link to={`/courses/${course.id}`}>
+                  <Button variant="outline" size="sm">
+                    View Details
                   </Button>
                 </Link>
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => onEnroll(course.id)}
-                  className="flex-1"
-                >
-                  Enroll Now
-                </Button>
-              )}
+                {isEnrolled ? (
+                  <Link to={`/courses/${course.id}/learn`}>
+                    <Button variant="primary" size="sm">
+                      Continue learning
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onEnroll(course)}
+                  >
+                    Enroll Now
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -481,6 +530,9 @@ function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
           )}
         </div>
 
+        {/* Price */}
+        <CoursePrice course={course} className="mb-4" />
+
         {/* Actions */}
         <div className="flex items-center gap-2">
           <Link to={`/courses/${course.id}`} className="flex-1">
@@ -498,7 +550,7 @@ function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => onEnroll(course.id)}
+              onClick={() => onEnroll(course)}
               className="flex-1"
             >
               Enroll
