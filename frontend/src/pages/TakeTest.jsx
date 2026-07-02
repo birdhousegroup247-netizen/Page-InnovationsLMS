@@ -51,10 +51,22 @@ export default function TakeTest() {
         response = await assignedTestsAPI.startAttempt(testId);
       }
 
+      // Normalize the two payload shapes:
+      //   practice: { attempt: { time_limit_minutes, total_marks, ... }, questions }
+      //   assigned: { attempt, test: { test_name, time_limit_minutes, ... }, questions }
+      // The old code read data.test/.time_limit_seconds — undefined for
+      // practice tests, so the title was blank and the timer always fell
+      // back to 60 minutes regardless of what the student chose.
       const data = response.data.data;
-      setTest(data.test);
+      const meta = data.test || {};
+      setTest({
+        title: meta.test_name || meta.title || 'Practice Test',
+        total_marks: meta.total_marks ?? data.attempt?.total_marks,
+        passing_score: meta.passing_score,
+      });
       setQuestions(data.questions || []);
-      setTimeRemaining(data.time_limit_seconds || 3600);
+      const limitMinutes = meta.time_limit_minutes ?? data.attempt?.time_limit_minutes;
+      setTimeRemaining(limitMinutes ? limitMinutes * 60 : 3600);
 
       // Start timer
       startTimer();

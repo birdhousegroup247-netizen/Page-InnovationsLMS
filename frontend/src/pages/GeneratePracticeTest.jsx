@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, BookOpen, Clock, Award, ArrowLeft, Play } from 'lucide-react';
+import { Sparkles, BookOpen, Clock, Award, ArrowLeft, Play, CheckCircle } from 'lucide-react';
 import { practiceTestsAPI, categoriesAPI, coursesAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner } from '../components/ui';
@@ -56,6 +56,7 @@ export default function GeneratePracticeTest() {
       [difficulty]: parseInt(value) || 0
     };
     const total = newDiff.easy + newDiff.medium + newDiff.hard;
+    setActivePreset(null); // hand-tuned — preset highlight no longer true
     setConfig(prev => ({
       ...prev,
       difficulty: newDiff,
@@ -87,17 +88,20 @@ export default function GeneratePracticeTest() {
       return;
     }
 
-    if (config.category_ids.length === 0) {
-      showToast('Please select at least one category', 'warning');
+    // Course and/or category — either narrows the question bank. The old
+    // check demanded a category even though the UI labels them optional,
+    // so students who (reasonably) only ticked courses hit a dead end.
+    if (config.category_ids.length === 0 && config.course_ids.length === 0) {
+      showToast('Select at least one course or category', 'warning');
       return;
     }
 
     try {
       setGenerating(true);
 
-      // Transform payload to match backend expectations
       const payload = {
-        categories: config.category_ids,  // Backend expects 'categories' not 'category_ids'
+        courses: config.course_ids,
+        categories: config.category_ids,
         difficulty: 'mixed',              // Backend expects single string, not distribution object
         question_count: config.total_questions,  // Backend expects 'question_count' not 'total_questions'
         time_limit_minutes: config.time_limit_minutes
@@ -122,7 +126,12 @@ export default function GeneratePracticeTest() {
     { name: 'Challenge Mode', easy: 2, medium: 8, hard: 15, time: 45 },
   ];
 
+  // Highlighted preset name — cleared when the user hand-tunes the
+  // distribution so the highlight never lies.
+  const [activePreset, setActivePreset] = useState(null);
+
   const applyPreset = (preset) => {
+    setActivePreset(preset.name);
     setConfig(prev => ({
       ...prev,
       difficulty: {
@@ -171,18 +180,27 @@ export default function GeneratePracticeTest() {
       <Container className="py-8">
         {/* Presets */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
             Quick Presets
           </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            One click fills in the question count, difficulty mix, and time limit below — then pick your courses and hit Generate.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {presets.map((preset) => (
               <button
                 key={preset.name}
                 onClick={() => applyPreset(preset)}
-                className="p-4 bg-white dark:bg-dark-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-brand-blue dark:hover:border-brand-blue transition-all"
+                className={cn(
+                  'p-4 rounded-xl border-2 transition-all text-left',
+                  activePreset === preset.name
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-brand-blue ring-1 ring-brand-blue/30'
+                    : 'bg-white dark:bg-dark-800 border-gray-200 dark:border-gray-700 hover:border-brand-blue dark:hover:border-brand-blue'
+                )}
               >
-                <p className="font-medium text-gray-900 dark:text-white mb-1">
+                <p className="font-medium text-gray-900 dark:text-white mb-1 flex items-center gap-2">
                   {preset.name}
+                  {activePreset === preset.name && <CheckCircle className="w-4 h-4 text-brand-blue" />}
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   {preset.easy + preset.medium + preset.hard} questions • {preset.time} min

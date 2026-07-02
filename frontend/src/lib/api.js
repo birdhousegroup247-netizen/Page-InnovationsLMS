@@ -195,14 +195,6 @@ export const progressAPI = {
   getProgress: (courseId) => api.get(`/api/courses/${courseId}/progress`),
 };
 
-export const examsAPI = {
-  getPracticeTests: (params) => api.get('/api/exams/practice-tests', { params }),
-  getPracticeTestById: (id) => api.get(`/api/exams/practice-tests/${id}`),
-  submitPracticeTest: (id, data) => api.post(`/api/exams/practice-tests/${id}/submit`, data),
-  getAssignedTests: () => api.get('/api/exams/assigned-tests'),
-  getTestAttempt: (attemptId) => api.get(`/api/exams/attempts/${attemptId}`),
-};
-
 // Practice Tests API (Student)
 export const practiceTestsAPI = {
   generate: (data) => api.post('/api/practice-tests/generate', data),

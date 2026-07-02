@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FileText, Clock, Award, Play, ArrowLeft, CheckCircle } from 'lucide-react';
-import { examsAPI } from '../lib/api';
+import { FileText, Clock, Award, Play, ArrowLeft, CheckCircle, Sparkles } from 'lucide-react';
+import { practiceTestsAPI, assignedTestsAPI } from '../lib/api';
 import { Container, EmptyState } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
 import emptyTests from '../assets/empty-tests.svg';
@@ -12,6 +12,7 @@ export default function PracticeTests() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tests, setTests] = useState([]);
+  const [stats, setStats] = useState(null);
   const [assignedTests, setAssignedTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,12 +25,18 @@ export default function PracticeTests() {
   const fetchTests = async () => {
     try {
       setLoading(true);
-      const [practiceRes, assignedRes] = await Promise.all([
-        examsAPI.getPracticeTests(),
-        examsAPI.getAssignedTests(),
+      setError('');
+      // Practice tab = my completed generated-test attempts (history);
+      // Assigned tab = tests instructors/admins assigned to me. The old
+      // code called /api/exams/* — a namespace that never existed on the
+      // backend, so this page 404'd forever.
+      const [historyRes, assignedRes] = await Promise.all([
+        practiceTestsAPI.getHistory(),
+        assignedTestsAPI.getMyTests(),
       ]);
 
-      setTests(practiceRes.data.data.tests || []);
+      setTests(historyRes.data.data.attempts || []);
+      setStats(historyRes.data.data.stats || null);
       setAssignedTests(assignedRes.data.data.tests || []);
     } catch (err) {
       console.error('Error fetching tests:', err);
@@ -39,7 +46,60 @@ export default function PracticeTests() {
     }
   };
 
-  const TestCard = ({ test, isAssigned = false }) => (
+  // A completed generated-test attempt from history.
+  const AttemptCard = ({ attempt }) => {
+    const pct = Math.round(parseFloat(attempt.percentage || 0));
+    const passed = pct >= 50;
+    return (
+      <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card hover:shadow-md dark:hover:shadow-elevated transition-all animate-slide-up">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center',
+              passed ? 'bg-green-500/10' : 'bg-red-500/10')}>
+              <Award className={cn('h-6 w-6', passed ? 'text-green-500' : 'text-red-500')} />
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4 mb-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary transition-colors">
+                Practice Test — {attempt.question_count} questions
+              </h3>
+              <span className={cn('text-lg font-bold', passed ? 'text-green-500' : 'text-red-500')}>
+                {pct}%
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-text-dark-muted mb-4 transition-colors">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4" />
+                {attempt.score}/{attempt.total_marks} marks
+              </span>
+              {attempt.time_taken_seconds != null && (
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  {Math.round(attempt.time_taken_seconds / 60)} min
+                </span>
+              )}
+              {attempt.completed_at && (
+                <span>
+                  {new Date(attempt.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              )}
+              {attempt.difficulty && <Badge variant="info">{attempt.difficulty}</Badge>}
+            </div>
+
+            <Link to={`/test-results/${attempt.id}`}>
+              <Button variant="outline" size="sm">View Results</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // A test an instructor/admin assigned to me.
+  const AssignedCard = ({ test }) => (
     <div className="bg-white dark:bg-dark-800 rounded-xl p-6 shadow-sm dark:shadow-card hover:shadow-md dark:hover:shadow-elevated transition-all animate-slide-up">
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0">
@@ -51,22 +111,21 @@ export default function PracticeTests() {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4 mb-2">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-text-dark-primary transition-colors">
-              {test.title}
+              {test.test_name || test.title}
             </h3>
-            {isAssigned && (
-              <Badge variant="warning">Assigned</Badge>
-            )}
+            <Badge variant="warning">Assigned</Badge>
           </div>
 
-          <p className="text-sm text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors line-clamp-2">
-            {test.description}
-          </p>
+          {test.description && (
+            <p className="text-sm text-gray-600 dark:text-text-dark-secondary mb-4 transition-colors line-clamp-2">
+              {test.description}
+            </p>
+          )}
 
-          {/* Test Stats */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-text-dark-muted mb-4 transition-colors">
             <div className="flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
-              <span>{test.duration_minutes || 60} min</span>
+              <span>{test.time_limit_minutes || 60} min</span>
             </div>
             <div className="flex items-center gap-1.5">
               <FileText className="h-4 w-4" />
@@ -80,43 +139,13 @@ export default function PracticeTests() {
             )}
           </div>
 
-          {/* Best Score */}
-          {test.best_score && (
-            <div className="mb-4 p-3 bg-green-50 dark:bg-green-500/10 rounded-lg transition-colors">
-              <div className="flex items-center gap-2">
-                <Award className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm text-gray-600 dark:text-text-dark-secondary transition-colors">
-                  Best Score:
-                </span>
-                <span className="text-sm text-green-600 dark:text-green-400 font-semibold transition-colors">
-                  {test.best_score}%
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3">
-            <Link to={`/tests/${test.id}/take`}>
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<Play className="h-4 w-4" />}
-              >
-                {test.best_score ? 'Retake Test' : 'Start Test'}
-              </Button>
-            </Link>
-            {test.best_score && (
-              <Link to={`/tests/${test.id}/results`}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                >
-                  View Results
-                </Button>
-              </Link>
-            )}
-          </div>
+          {/* Full assignment detail (attempts left, deadlines, results)
+              lives on My Assigned Tests — this card is the shortcut. */}
+          <Link to="/my-assigned-tests">
+            <Button variant="primary" size="sm" leftIcon={<Play className="h-4 w-4" />}>
+              Open in My Assigned Tests
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
@@ -193,32 +222,46 @@ export default function PracticeTests() {
           </div>
         )}
 
+        {/* Practice tab: stats strip + Generate CTA */}
+        {!loading && !error && activeTab === 'practice' && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            {stats && stats.totalAttempts > 0 ? (
+              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-text-dark-secondary">
+                <span><strong className="text-gray-900 dark:text-white">{stats.totalAttempts}</strong> attempts</span>
+                <span>Average <strong className="text-gray-900 dark:text-white">{Math.round(stats.averageScore)}%</strong></span>
+                <span>Best <strong className="text-green-600 dark:text-green-400">{Math.round(stats.bestScore)}%</strong></span>
+              </div>
+            ) : <div />}
+            <Link to="/generate-practice-test">
+              <Button variant="primary" leftIcon={<Sparkles className="h-4 w-4" />}>
+                Generate New Test
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Empty State */}
-        {!loading && currentTests.length === 0 && (
+        {!loading && !error && currentTests.length === 0 && (
           <EmptyState
             image={emptyTests}
             icon={activeTab === 'practice' ? <FileText className="w-16 h-16" /> : <CheckCircle className="w-16 h-16" />}
-            title={activeTab === 'practice' ? 'No practice tests available' : 'No assigned tests'}
+            title={activeTab === 'practice' ? 'No practice attempts yet' : 'No assigned tests'}
             description={
               activeTab === 'practice'
-                ? 'Check back later for new tests'
+                ? 'Generate a custom test from the question bank to start practicing'
                 : "Your instructor hasn't assigned any tests yet"
             }
-            actionLabel="Browse Courses"
-            onAction={() => navigate('/courses')}
+            actionLabel={activeTab === 'practice' ? 'Generate a Test' : undefined}
+            onAction={activeTab === 'practice' ? () => navigate('/generate-practice-test') : undefined}
           />
         )}
 
         {/* Tests List */}
-        {!loading && currentTests.length > 0 && (
+        {!loading && !error && currentTests.length > 0 && (
           <div className="space-y-4">
-            {currentTests.map((test, index) => (
-              <TestCard
-                key={test.id}
-                test={test}
-                isAssigned={activeTab === 'assigned'}
-              />
-            ))}
+            {activeTab === 'practice'
+              ? currentTests.map((attempt) => <AttemptCard key={attempt.id} attempt={attempt} />)
+              : currentTests.map((test) => <AssignedCard key={test.id} test={test} />)}
           </div>
         )}
       </Container>

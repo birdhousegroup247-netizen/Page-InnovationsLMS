@@ -20,21 +20,24 @@ class PracticeTestController {
 
     try {
       const {
-        categories,
+        categories = [],
+        courses = [],
         difficulty,
         question_count = 50,
         time_limit_minutes,
       } = req.body;
 
-      if (!categories || categories.length === 0) {
-        throw new BadRequestError('At least one category must be selected');
+      // Filter by course and/or category — questions carry both. The old
+      // contract required categories while the UI labeled them optional
+      // and put courses first; course selections were silently ignored
+      // and students dead-ended on "select at least one category".
+      if (categories.length === 0 && courses.length === 0) {
+        throw new BadRequestError('Select at least one course or category');
       }
 
-      // Build query for questions
-      const where = {
-        category_id: { [Op.in]: categories },
-        is_approved: true,
-      };
+      const where = { is_approved: true };
+      if (categories.length > 0) where.category_id = { [Op.in]: categories };
+      if (courses.length > 0) where.course_id = { [Op.in]: courses };
 
       if (difficulty && difficulty !== 'mixed') {
         where.difficulty = difficulty;
