@@ -305,23 +305,28 @@ export default function MyNotes() {
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float-delayed" />
         <div className="relative z-10 py-12 sm:py-16">
           <Container>
-            <div className="flex items-center gap-4 mb-2">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <FileText className="h-6 w-6 text-white" />
+            {/* Same hero anatomy as MyCourses: title block left, one
+                outline glass Button right, justify-between. */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white">My Notes</h1>
+                  <p className="text-white/80 text-sm mt-0.5">
+                    {notes.length} {notes.length === 1 ? 'note' : 'notes'} across all your courses
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-bold text-white">My Notes</h1>
-                <p className="text-white/80 text-sm mt-0.5">
-                  {notes.length} {notes.length === 1 ? 'note' : 'notes'} across all your courses
-                </p>
-              </div>
-              <button
+              <Button
+                variant="outline"
+                leftIcon={<Plus className="h-4 w-4" />}
                 onClick={() => setShowNew(true)}
-                className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold rounded-xl transition-colors"
+                className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New note</span>
-              </button>
+                New Note
+              </Button>
             </div>
           </Container>
         </div>
