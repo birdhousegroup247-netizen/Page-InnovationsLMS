@@ -82,7 +82,7 @@ class ReviewsController {
   static async getCourseReviews(req, res, next) {
     try {
       const { courseId } = req.params;
-      const { page = 1, limit = 10, sort = 'recent' } = req.query;
+      const { page = 1, limit = 10, sort = 'recent', rating } = req.query;
       const offset = (page - 1) * limit;
 
       // Check if course exists
@@ -107,11 +107,19 @@ class ReviewsController {
           order = [['created_at', 'DESC']];
       }
 
+      const where = {
+        course_id: courseId,
+        is_approved: true,
+      };
+      // Optional star filter (?rating=1..5) — the review-breakdown bars on
+      // the course page use this.
+      const ratingFilter = parseInt(rating, 10);
+      if (ratingFilter >= 1 && ratingFilter <= 5) {
+        where.rating = ratingFilter;
+      }
+
       const { count, rows } = await CourseReview.findAndCountAll({
-        where: {
-          course_id: courseId,
-          is_approved: true,
-        },
+        where,
         include: [
           {
             model: User,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { coursesAPI, instructorReviewsAPI, liveSessionsAPI, discordAPI } from '../lib/api';
+import { coursesAPI, instructorReviewsAPI, liveSessionsAPI, discordAPI, wishlistAPI } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowLeft,
@@ -51,10 +51,52 @@ export default function CourseDetail() {
   const [instructorStats, setInstructorStats] = useState(null);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [discordInvite, setDiscordInvite] = useState(null);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     fetchCourse();
   }, [id]);
+
+  useEffect(() => {
+    if (!user) return;
+    wishlistAPI
+      .check(id)
+      .then((res) => setWishlisted(res.data.data.wishlisted))
+      .catch(() => {});
+  }, [id, user]);
+
+  const handleToggleWishlist = async () => {
+    if (wishlistBusy) return;
+    setWishlistBusy(true);
+    try {
+      if (wishlisted) {
+        await wishlistAPI.remove(id);
+        setWishlisted(false);
+      } else {
+        await wishlistAPI.add(id);
+        setWishlisted(true);
+      }
+    } catch {
+      // silent — the button just stays in its previous state
+    } finally {
+      setWishlistBusy(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/courses/${id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: course?.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {}
+  };
 
   // Viewer is the course owner if their id matches the course's
   // instructor_id, or they're an admin/super_admin. Used to:
@@ -585,19 +627,9 @@ export default function CourseDetail() {
                         size="lg"
                         fullWidth
                         leftIcon={<Share2 className="h-5 w-5" />}
-                        onClick={async () => {
-                          const url = `${window.location.origin}/courses/${id}`;
-                          try {
-                            if (navigator.share) {
-                              await navigator.share({ title: course.title, url });
-                            } else {
-                              await navigator.clipboard.writeText(url);
-                              alert('Course link copied to clipboard');
-                            }
-                          } catch {}
-                        }}
+                        onClick={handleShare}
                       >
-                        Share course
+                        {shareCopied ? 'Link copied!' : 'Share course'}
                       </Button>
                       <Button
                         variant="outline"
@@ -617,15 +649,26 @@ export default function CourseDetail() {
                       </Button>
                     </>
                   ) : isEnrolled ? (
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      fullWidth
-                      onClick={() => navigate(`/courses/${id}/learn`)}
-                      leftIcon={<PlayCircle className="h-5 w-5" />}
-                    >
-                      Continue Learning
-                    </Button>
+                    <>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        fullWidth
+                        onClick={() => navigate(`/courses/${id}/learn`)}
+                        leftIcon={<PlayCircle className="h-5 w-5" />}
+                      >
+                        Continue Learning
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        fullWidth
+                        leftIcon={<Share2 className="h-4 w-4" />}
+                        onClick={handleShare}
+                      >
+                        {shareCopied ? 'Link copied!' : 'Share Course'}
+                      </Button>
+                    </>
                   ) : (
                     <>
                       <Button
@@ -643,13 +686,25 @@ export default function CourseDetail() {
                         variant="outline"
                         size="lg"
                         fullWidth
-                        leftIcon={<Bookmark className="h-4 w-4" />}
+                        disabled={wishlistBusy}
+                        onClick={handleToggleWishlist}
+                        leftIcon={
+                          <Bookmark
+                            className={cn('h-4 w-4', wishlisted && 'fill-brand-blue text-brand-blue')}
+                          />
+                        }
                       >
-                        Add to Wishlist
+                        {wishlisted ? 'In your Wishlist' : 'Add to Wishlist'}
                       </Button>
 
-                      <Button variant="ghost" size="lg" fullWidth leftIcon={<Share2 className="h-4 w-4" />}>
-                        Share Course
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        fullWidth
+                        leftIcon={<Share2 className="h-4 w-4" />}
+                        onClick={handleShare}
+                      >
+                        {shareCopied ? 'Link copied!' : 'Share Course'}
                       </Button>
                     </>
                   )}
