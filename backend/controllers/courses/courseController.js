@@ -226,7 +226,33 @@ class CourseController {
           role: r.role,
         }));
 
-      const responseData = { course, instructors, isEnrolled, progress };
+      // Server-side content gate. The client lock overlay is UI only —
+      // without this, the raw JSON handed every video URL and full article
+      // body to anyone who opened the network tab. Full access requires
+      // owning the course one way or another; everyone else gets lesson
+      // metadata (title, type, duration) so the curriculum still renders,
+      // but the playable fields are stripped on non-preview lessons.
+      const isOwner =
+        !!req.user &&
+        (req.user.id === course.instructor_id ||
+          ['admin', 'super_admin'].includes(req.user.role) ||
+          instructors.some((i) => i.id === req.user.id));
+      const hasFullAccess = isEnrolled || isOwner;
+
+      if (!hasFullAccess && course.modules) {
+        course.modules.forEach((mod) => {
+          (mod.contents || []).forEach((content) => {
+            if (!content.is_preview) {
+              content.dataValues.youtube_url = null;
+              content.dataValues.youtube_video_id = null;
+              content.dataValues.document_url = null;
+              content.dataValues.article_content = null;
+            }
+          });
+        });
+      }
+
+      const responseData = { course, instructors, isEnrolled, hasFullAccess, progress };
 
       // Cache for 2 minutes (shorter for logged-in users)
       await cache.set('course_details', cacheKey, responseData, 120);

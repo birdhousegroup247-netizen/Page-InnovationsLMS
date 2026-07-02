@@ -194,6 +194,19 @@ async function runTransactionalSideEffects({ payment, studentId, courseIds, tran
 async function runPostCommitSideEffects({ studentId, courseIds, payment, gateway = 'stripe', sendEmails = true }) {
   const NotificationsController = require('../../controllers/notifications/notificationsController');
 
+  // Drop this student's cached course-detail responses. The endpoint
+  // caches per user for 2 minutes and strips playable content for
+  // non-enrolled viewers — without this, a student who just paid could
+  // land in the player and still see the stripped (locked) version.
+  try {
+    const cache = require('../../utils/cache');
+    await Promise.all(
+      courseIds.map((cid) => cache.del('course_details', `course:${cid}:${studentId}`))
+    );
+  } catch (e) {
+    logger.warn(`Course-detail cache invalidation failed (non-critical): ${e.message}`);
+  }
+
   // Load fresh names/emails for the emails + notification link.
   const [student, courses] = await Promise.all([
     User.findByPk(studentId, { attributes: ['id', 'full_name', 'email'] }),

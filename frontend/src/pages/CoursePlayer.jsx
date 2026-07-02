@@ -152,13 +152,15 @@ function getVideoType(content) {
 export default function CoursePlayer() {
   const { id } = useParams(); // Course ID
   const navigate = useNavigate();
-  const { user, isPreview, isSuspended, installmentStage } = useAuth();
+  const { user, isSuspended, installmentStage } = useAuth();
   const { showToast } = useToast();
 
   // Default sidebar closed on mobile so content shows first
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
   const [course, setCourse] = useState(null);
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  // Server-computed access (enrolled OR owner/roster/admin). Until it
+  // loads, assume access so the lock overlay doesn't flash for students.
+  const [hasFullAccess, setHasFullAccess] = useState(true);
   const [currentContent, setCurrentContent] = useState(null);
   const [progress, setProgress] = useState({});
   const [loading, setLoading] = useState(true);
@@ -419,7 +421,11 @@ export default function CoursePlayer() {
       }
 
       setCourse(courseData);
-      setIsEnrolled(!!courseRes.data?.data?.isEnrolled);
+      // hasFullAccess is the server's verdict (enrollment, ownership,
+      // roster, admin). Fall back to isEnrolled for responses cached
+      // before the field existed.
+      const payload = courseRes.data?.data || {};
+      setHasFullAccess(payload.hasFullAccess ?? !!payload.isEnrolled);
 
       // Fetch progress separately so it doesn't break course loading
       let progressData = {};
@@ -451,12 +457,14 @@ export default function CoursePlayer() {
     }
   };
 
-  // The account-level "preview" trial gate only applies to courses the
-  // student does NOT own. An enrollment (free enrol, comp, part- or fully
-  // paid) means full access to THIS course — part-payment lockout is
-  // handled separately by the installment suspension flow, and drip
-  // scheduling still applies to enrolled students.
-  const isPreviewLocked = (content) => isPreview && !isEnrolled && !content.is_preview;
+  // A lesson is locked when the viewer has no full access to this course
+  // (not enrolled, not the owner/roster/admin) and the lesson isn't marked
+  // as a free preview. Mirrors the server's stripping rule — the server
+  // already blanks the playable fields on locked lessons, this overlay is
+  // the friendly face on top. Part-payment lockout is handled separately
+  // by the installment suspension flow; drip scheduling applies to
+  // everyone with access.
+  const isContentLocked = (content) => !hasFullAccess && !content.is_preview;
 
   const findFirstIncompleteLesson = (courseData, progressData) => {
     if (!courseData.modules) return null;
@@ -722,7 +730,7 @@ export default function CoursePlayer() {
                       <div className="flex-shrink-0">
                         {isCompleted ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : isPreviewLocked(content) ? (
+                        ) : isContentLocked(content) ? (
                           <Lock className={`h-5 w-5 ${isActive ? 'text-white/70' : 'text-gray-400 dark:text-text-dark-muted'}`} />
                         ) : content.is_drip_locked ? (
                           <Calendar className={`h-5 w-5 ${isActive ? 'text-white/70' : 'text-yellow-500'}`} title={`Unlocks ${content.drip_unlock_date}`} />
@@ -755,13 +763,13 @@ export default function CoursePlayer() {
           <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
             {/* Video/Content Player */}
             <div className="mb-6 relative">
-              {/* Lock overlay for preview-mode users on non-preview lessons
-                  in courses they haven't enrolled in */}
-              {isPreviewLocked(currentContent) && (
+              {/* Lock overlay on non-preview lessons for viewers without
+                  full access to this course */}
+              {isContentLocked(currentContent) && (
                 <LockOverlay courseId={id} />
               )}
               {/* Drip lock overlay — lesson not yet unlocked by schedule */}
-              {!isPreviewLocked(currentContent) && currentContent.is_drip_locked && (
+              {!isContentLocked(currentContent) && currentContent.is_drip_locked && (
                 <LockOverlay variant="drip" unlockDate={currentContent.drip_unlock_date} />
               )}
               {/* Video content */}
