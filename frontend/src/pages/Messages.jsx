@@ -966,16 +966,22 @@ function ConvItem({ conv, userId, isActive, onClick, onlineUsers }) {
 
 function RoomItem({ room, isActive, onClick }) {
   const unread = room.unread_count || 0;
+  const isLounge = room.type === 'lounge';
   return (
     <button onClick={onClick} className={cn(
       'w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors',
       isActive && 'bg-blue-50 dark:bg-dark-700 border-l-2 border-brand-blue')}>
-      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-        <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+      <div className={cn(
+        'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+        isLounge ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'
+      )}>
+        {isLounge
+          ? <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          : <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
       </div>
       <div className="flex-1 min-w-0">
         <p className={cn('text-sm text-gray-900 dark:text-white truncate', unread > 0 ? 'font-bold' : 'font-medium')}>
-          {room.course?.title}
+          {room.name || room.course?.title || 'Chat room'}
         </p>
         <p className="text-xs text-gray-500">{room.members?.length ?? 0} member{room.members?.length !== 1 ? 's' : ''}</p>
       </div>
@@ -1101,7 +1107,17 @@ export default function Messages() {
   }, [activeChat]);
 
   const openRoom = (room) => {
-    setActiveChat({ type: 'room', id: room.id, roomId: room.id, title: room.course?.title || 'Course Chat', subtitle: `${room.members?.length ?? 0} members` });
+    setActiveChat({
+      type: 'room',
+      id: room.id,
+      roomId: room.id,
+      title: room.name || room.course?.title || 'Course Chat',
+      subtitle: `${room.members?.length ?? 0} members`,
+      // Settings bar (lock/remove/report) is for the room's owner only —
+      // an instructor in the lounge or a co-taught room they don't own
+      // gets the read-only members bar instead.
+      canManage: isInstructor && room.course?.instructor_id === user?.id,
+    });
     setShowRequests(false);
     // Opening zeroes the badge locally; the chat window's mount effect
     // marks it seen server-side.
@@ -1125,7 +1141,8 @@ export default function Messages() {
     const other = c.user_a === user?.id ? c.participant_b : c.participant_a;
     return other?.full_name?.toLowerCase().includes(search.toLowerCase());
   });
-  const filteredRooms = rooms.filter((r) => r.course?.title?.toLowerCase().includes(search.toLowerCase()));
+  const filteredRooms = rooms.filter((r) =>
+    (r.name || r.course?.title || '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="h-[calc(100vh-64px)] flex bg-gray-50 dark:bg-dark-900">
@@ -1241,7 +1258,7 @@ export default function Messages() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeChat ? (
           <>
-            {isInstructor && activeChat.type === 'room' && (
+            {activeChat.canManage && activeChat.type === 'room' && (
               <button
                 onClick={() => setShowRoomSettings(true)}
                 className="w-full flex items-center gap-2 px-6 py-2 bg-brand-blue/5 dark:bg-brand-blue/10 border-b border-brand-blue/20 dark:border-brand-blue/30 text-xs font-semibold text-brand-blue dark:text-cyan-400 hover:bg-brand-blue/10 transition-colors"
@@ -1251,14 +1268,16 @@ export default function Messages() {
                 <ChevronRight className="w-3.5 h-3.5 ml-auto" />
               </button>
             )}
-            {/* Students get the same bar, read-only: see who's in the room */}
-            {!isInstructor && activeChat.type === 'room' && (
+            {/* Everyone who can't manage the room gets the read-only
+                members bar — students in course rooms, instructors in
+                the lounge or in rooms they don't own. */}
+            {!activeChat.canManage && activeChat.type === 'room' && (
               <button
                 onClick={() => setShowRoomMembers(true)}
                 className="w-full flex items-center gap-2 px-6 py-2 bg-brand-blue/5 dark:bg-brand-blue/10 border-b border-brand-blue/20 dark:border-brand-blue/30 text-xs font-semibold text-brand-blue dark:text-cyan-400 hover:bg-brand-blue/10 transition-colors"
               >
                 <User className="w-3.5 h-3.5" />
-                Course mates — see who's in this room
+                {activeChat.title === "Instructors' Lounge" ? 'Members — see who\'s in the lounge' : 'Course mates — see who\'s in this room'}
                 <ChevronRight className="w-3.5 h-3.5 ml-auto" />
               </button>
             )}
@@ -1289,8 +1308,8 @@ export default function Messages() {
         )}
       </div>
 
-      {/* Instructor moderation drawer for the active room */}
-      {isInstructor && activeChat?.type === 'room' && (
+      {/* Instructor moderation drawer for rooms they own */}
+      {activeChat?.canManage && activeChat?.type === 'room' && (
         <RoomSettingsPanel
           roomId={activeChat.id}
           isOpen={showRoomSettings}
@@ -1298,8 +1317,8 @@ export default function Messages() {
         />
       )}
 
-      {/* Read-only course-mates drawer for students — same format */}
-      {!isInstructor && activeChat?.type === 'room' && (
+      {/* Read-only members drawer for everyone else — same format */}
+      {!activeChat?.canManage && activeChat?.type === 'room' && (
         <RoomMembersPanel
           roomId={activeChat.id}
           isOpen={showRoomMembers}

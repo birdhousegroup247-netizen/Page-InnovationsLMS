@@ -14,15 +14,31 @@ const ChatRoom = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    // Null for platform rooms (type='lounge') that aren't tied to a
+    // course. Course rooms keep the one-room-per-course uniqueness
+    // (Postgres unique allows multiple NULLs).
     course_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       unique: true,
       references: {
         model: 'courses',
         key: 'id',
       },
       onDelete: 'CASCADE',
+    },
+    // 'course' = normal per-course room; 'lounge' = the staff room every
+    // instructor + admin is auto-joined to. STRING not ENUM — controllers
+    // are the whitelist (see notifications-audit §3.1 for why).
+    type: {
+      type: DataTypes.STRING(32),
+      allowNull: false,
+      defaultValue: 'course',
+    },
+    // Display name for rooms without a course ("Instructors' Lounge").
+    name: {
+      type: DataTypes.STRING(120),
+      allowNull: true,
     },
     is_active: {
       type: DataTypes.BOOLEAN,

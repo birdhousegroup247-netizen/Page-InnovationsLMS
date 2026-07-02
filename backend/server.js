@@ -600,6 +600,13 @@ const startServer = async () => {
           }
         }
 
+        // chat_rooms.course_id must be nullable for the Instructors'
+        // Lounge (a platform room with no course). The safety-net sweep
+        // only ADDS missing columns; nullability needs an explicit ALTER.
+        await sequelize.query(
+          'ALTER TABLE chat_rooms ALTER COLUMN course_id DROP NOT NULL'
+        ).catch((e) => logger.warn(`chat_rooms.course_id nullability skipped: ${e.message}`));
+
         // Enrolled students stuck in 'preview': every enrollment path now
         // activates the account (shared enrollment helper), but enrollments
         // created before that fix — or seeded directly — left accounts in

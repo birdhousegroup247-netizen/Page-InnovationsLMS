@@ -181,6 +181,26 @@ class ChatController {
       const userId = req.user.id;
       const role = req.user.role;
 
+      // Instructors' Lounge — one platform-wide staff room, lazily
+      // provisioned: created on first fetch by any instructor/admin, and
+      // each of them is auto-joined as an approved member. No cron, no
+      // signup hook — membership materializes the first time they open
+      // the Messages tab.
+      if (['instructor', 'admin', 'super_admin'].includes(role)) {
+        try {
+          const [lounge] = await ChatRoom.findOrCreate({
+            where: { type: 'lounge' },
+            defaults: { type: 'lounge', name: "Instructors' Lounge", course_id: null, is_active: true },
+          });
+          await ChatRoomMember.findOrCreate({
+            where: { room_id: lounge.id, user_id: userId },
+            defaults: { status: 'approved', role: 'instructor', joined_at: new Date() },
+          });
+        } catch (loungeErr) {
+          logger.warn(`Lounge provisioning failed (non-critical): ${loungeErr.message}`);
+        }
+      }
+
       let rooms;
 
       if (role === 'instructor') {
@@ -223,6 +243,26 @@ class ChatController {
               ],
             })
           : [];
+      }
+
+      // The instructor branch queries by course ownership, which misses
+      // the course-less lounge — append it from their membership. (The
+      // membership-based student/admin branch picks it up naturally.)
+      if (role === 'instructor' && !rooms.some((r) => r.type === 'lounge')) {
+        const lounge = await ChatRoom.findOne({
+          where: { type: 'lounge', is_active: true },
+          include: [
+            { model: Course, as: 'course', attributes: ['id', 'title', 'instructor_id'] },
+            {
+              model: ChatRoomMember,
+              as: 'members',
+              where: { status: 'approved' },
+              required: false,
+              include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'profile_picture', 'role'] }],
+            },
+          ],
+        });
+        if (lounge) rooms = [lounge, ...rooms];
       }
 
       // Per-room unread_count for the WhatsApp-style badge in the room
@@ -302,14 +342,17 @@ class ChatController {
         : [];
       const reachableIds = new Set(roommates.map((m) => m.user_id));
 
-      // Instructors can also DM admins/super_admins for support, even though
-      // admins don't sit in course chat rooms. Pull their ids in and merge.
+      // Instructors can also DM admins/super_admins for support, and any
+      // other instructor platform-wide — the instructor pool is vetted
+      // (admin-approved), so colleague-to-colleague messaging is safe and
+      // expected (cohort-academy standard, not open-marketplace).
       if (role === 'instructor') {
-        const admins = await User.findAll({
-          where: { is_active: true, role: { [Op.in]: ['admin', 'super_admin'] } },
+        const staff = await User.findAll({
+          where: { is_active: true, role: { [Op.in]: ['admin', 'super_admin', 'instructor'] } },
           attributes: ['id'],
         });
-        admins.forEach((a) => reachableIds.add(a.id));
+        staff.forEach((a) => reachableIds.add(a.id));
+        reachableIds.delete(userId);
       }
 
       if (reachableIds.size === 0) return ApiResponse.success(res, { users: [] });
@@ -845,7 +888,11 @@ class ChatController {
       const senderIsAdmin = ['admin', 'super_admin'].includes(senderRole);
       const recipientIsAdmin = ['admin', 'super_admin'].includes(recipient.role);
 
-      if (!senderIsAdmin && !recipientIsAdmin) {
+      // Instructor↔instructor is always allowed — the pool is vetted, and
+      // colleagues need to coordinate across courses.
+      const bothInstructors = senderRole === 'instructor' && recipient.role === 'instructor';
+
+      if (!senderIsAdmin && !recipientIsAdmin && !bothInstructors) {
         const connected = await _sharesRoom(userId, parseInt(recipientId));
         if (!connected) throw new ForbiddenError('You can only message people you share a course with');
       }
