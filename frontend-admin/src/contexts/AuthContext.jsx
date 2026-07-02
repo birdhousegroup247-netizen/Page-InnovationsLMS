@@ -101,7 +101,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  /**
+   * @param {{ redirect?: string | false }} opts redirect defaults to
+   *   '/login'. Pass false to skip the hard reload — e.g. the login page's
+   *   "use a different account" flow wants to stay in place and just
+   *   re-render the form.
+   */
+  const logout = async ({ redirect = '/login' } = {}) => {
     try {
       await authAPI.logout();
     } catch (error) {
@@ -117,7 +123,9 @@ export const AuthProvider = ({ children }) => {
 
       setUser(null);
       setIsAuthenticated(false);
-      window.location.assign('/login');
+      if (redirect !== false) {
+        window.location.assign(redirect);
+      }
     }
   };
 

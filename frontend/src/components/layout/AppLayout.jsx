@@ -151,8 +151,9 @@ export default function AppLayout({ children }) {
   const handleLogout = () => setShowLogoutConfirm(true);
 
   const confirmLogout = () => {
-    logout();
-    navigate('/login');
+    // logout() hard-redirects when done — navigating here too would race it
+    // (login page mounts while still "authenticated" → bounced → flicker).
+    logout({ redirect: '/login' });
   };
 
   return (

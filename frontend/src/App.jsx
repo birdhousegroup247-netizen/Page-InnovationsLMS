@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { lazy, Suspense, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui';
@@ -173,14 +173,64 @@ function InstructorRoute({ children }) {
   return <AppLayout>{children}</AppLayout>;
 }
 
-// Public Route Component (redirect to appropriate dashboard if already logged in)
+// Shown when an already-signed-in user opens /login or /signup. The old
+// behavior was a silent Navigate to the dashboard — which made it impossible
+// to ever reach the login form to switch accounts ("the browser always opens
+// the old account"). Now the user gets an explicit choice.
+function AlreadySignedIn() {
+  const { user, logout } = useAuth();
+  const [switching, setSwitching] = useState(false);
+
+  const selectedRole = localStorage.getItem('selectedRole');
+  const dashboardPath =
+    selectedRole === 'instructor' && user.role === 'instructor'
+      ? '/instructor/dashboard'
+      : '/dashboard';
+
+  const handleSwitchAccount = async () => {
+    setSwitching(true);
+    // redirect:false — clearing auth state makes PublicRoute re-render its
+    // children (the login form) in place; a hard reload isn't needed and
+    // would just flash the page.
+    await logout({ redirect: false });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center p-4 transition-colors">
+      <div className="w-full max-w-md bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          You're already signed in
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">
+          Signed in as <span className="font-semibold text-gray-900 dark:text-white">{user.email}</span>
+        </p>
+        <div className="space-y-3">
+          <Link
+            to={dashboardPath}
+            className="block w-full px-6 py-3 bg-brand-blue hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
+          >
+            Continue as {user.full_name || user.email}
+          </Link>
+          <button
+            type="button"
+            onClick={handleSwitchAccount}
+            disabled={switching}
+            className="block w-full px-6 py-3 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 text-gray-700 dark:text-gray-200 font-semibold rounded-xl transition-colors disabled:opacity-60"
+          >
+            {switching ? 'Signing out…' : 'Use a different account'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Public Route Component. If the visitor already has a session, offer to
+// continue or switch accounts instead of silently bouncing to the dashboard.
 function PublicRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
 
-  console.log('[PublicRoute] isAuthenticated:', isAuthenticated, 'loading:', loading, 'user:', user?.email);
-
   if (loading) {
-    console.log('[PublicRoute] Still loading...');
     return (
       <div className="min-h-screen bg-dark-900 flex items-center justify-center">
         <div className="text-center">
@@ -192,18 +242,9 @@ function PublicRoute({ children }) {
   }
 
   if (isAuthenticated && user) {
-    // Redirect based on selected role from landing page
-    const selectedRole = localStorage.getItem('selectedRole');
-    console.log('[PublicRoute] User is authenticated, selectedRole:', selectedRole, 'user.role:', user.role);
-    if (selectedRole === 'instructor' && user.role === 'instructor') {
-      console.log('[PublicRoute] Redirecting to /instructor/dashboard');
-      return <Navigate to="/instructor/dashboard" replace />;
-    }
-    console.log('[PublicRoute] Redirecting to /dashboard');
-    return <Navigate to="/dashboard" replace />;
+    return <AlreadySignedIn />;
   }
 
-  console.log('[PublicRoute] Showing public content (login/register)');
   return children;
 }
 

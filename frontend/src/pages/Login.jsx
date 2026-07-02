@@ -41,22 +41,24 @@ export default function Login() {
   const routeAuthedUser = async (user) => {
     const selectedRole = localStorage.getItem('selectedRole');
 
+    // redirect:false — logout()'s default hard reload would wipe the error
+    // message before the user ever saw it.
     if (user.role === 'admin' || user.role === 'super_admin') {
-      await logout();
+      await logout({ redirect: false });
       setError('Administrators should use the admin portal.');
       return;
     }
 
     if (selectedRole === 'student') {
       if (user.role !== 'student') {
-        await logout();
+        await logout({ redirect: false });
         setError('This login is for students only. If you are an instructor, please go back and select "I\'m an Instructor".');
         return;
       }
       navigate('/dashboard');
     } else if (selectedRole === 'instructor') {
       if (user.role !== 'instructor') {
-        await logout();
+        await logout({ redirect: false });
         setError('This login is for instructors only. If you are a student, please go back and select "I\'m a Student".');
         return;
       }

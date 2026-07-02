@@ -137,7 +137,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  /**
+   * @param {{ redirect?: string | false }} opts redirect defaults to '/'
+   *   (hard reload to landing). Pass a path to land elsewhere, or false to
+   *   skip the reload entirely — e.g. the Login page logging out a
+   *   wrong-role session needs its error message to survive, and a hard
+   *   reload would wipe it.
+   */
+  const logout = async ({ redirect = '/' } = {}) => {
     try {
       await authAPI.logout();
     } catch (error) {
@@ -160,10 +167,12 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
 
-      // Hard reload to landing so any in-memory state from protected routes is dropped.
-      // Using assign (not replace) so the back button doesn't drop them right back into
-      // a stale authenticated route.
-      window.location.assign('/');
+      if (redirect !== false) {
+        // Hard reload so any in-memory state from protected routes is dropped.
+        // Using assign (not replace) so the back button doesn't drop them right
+        // back into a stale authenticated route.
+        window.location.assign(redirect);
+      }
     }
   };
 

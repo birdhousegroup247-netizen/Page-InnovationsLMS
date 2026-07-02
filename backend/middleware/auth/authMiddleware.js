@@ -10,12 +10,15 @@ const TokenBlacklist = require('../../utils/tokenBlacklist');
  */
 const authenticate = async (req, res, next) => {
   try {
-    // Get token from cookie first, fallback to Authorization header for backward compatibility
-    let token = req.cookies.accessToken;
+    // Bearer header FIRST, cookie as fallback. The cookie is browser-wide
+    // (shared by every tab and by both frontends), so if it wins, whoever
+    // logged in last hijacks every other tab's identity. The per-tab
+    // Authorization header is the caller's explicit identity — honor it.
+    // Cookie fallback remains for cookie-only sessions (Google OAuth).
+    let token = JWT.extractFromHeader(req.headers.authorization);
 
     if (!token) {
-      const authHeader = req.headers.authorization;
-      token = JWT.extractFromHeader(authHeader);
+      token = req.cookies.accessToken;
     }
 
     if (!token) {
@@ -74,12 +77,11 @@ const authenticate = async (req, res, next) => {
  */
 const optionalAuthenticate = async (req, res, next) => {
   try {
-    // Get token from cookie first, fallback to Authorization header
-    let token = req.cookies.accessToken;
+    // Bearer header first, cookie fallback — same ordering as authenticate.
+    let token = JWT.extractFromHeader(req.headers.authorization);
 
     if (!token) {
-      const authHeader = req.headers.authorization;
-      token = JWT.extractFromHeader(authHeader);
+      token = req.cookies.accessToken;
     }
 
     if (token) {

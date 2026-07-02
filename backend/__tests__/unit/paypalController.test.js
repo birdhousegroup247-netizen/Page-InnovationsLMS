@@ -41,6 +41,17 @@ jest.mock('../../services/payment/paypalService', () => ({
   verifyWebhookSignature: jest.fn(),
 }));
 
+// Enrollment goes through the shared helper now, not direct Enrollment.create
+jest.mock('../../services/enrollment/enrollmentService', () => ({
+  resolveBundleCourseIds: jest.fn().mockResolvedValue(null),
+  runTransactionalSideEffects: jest.fn().mockResolvedValue(undefined),
+  runPostCommitSideEffects: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../config/database', () => ({
+  sequelize: { transaction: jest.fn(async (cb) => cb({})) },
+}));
+
 jest.mock('../../services/email/emailService', () => ({
   sendPaymentReceipt: jest.fn().mockResolvedValue(undefined),
   sendPaymentCongrats: jest.fn().mockResolvedValue(undefined),
@@ -64,6 +75,7 @@ jest.mock('../../utils/logger', () => ({
 
 const PayPalController = require('../../controllers/payments/paypalController');
 const paypalService = require('../../services/payment/paypalService');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 const { User, Course, Payment, Enrollment, ChatRoom } = require('../../models');
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -280,7 +292,12 @@ describe('PayPalController.captureOrder', () => {
     await PayPalController.captureOrder(req, res, next);
 
     expect(paypalService.captureOrder).toHaveBeenCalledWith('ORDER_ABC');
-    expect(Enrollment.create).toHaveBeenCalledWith({ student_id: 7, course_id: 42 });
+    expect(enrollmentSvc.runTransactionalSideEffects).toHaveBeenCalledWith(
+      expect.objectContaining({ studentId: 7, courseIds: [42] })
+    );
+    expect(enrollmentSvc.runPostCommitSideEffects).toHaveBeenCalledWith(
+      expect.objectContaining({ studentId: 7, courseIds: [42], gateway: 'paypal' })
+    );
     expect(payment.update).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ enrolled: false /* enrollment.findByPk not stubbed */ }) })

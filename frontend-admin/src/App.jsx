@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
@@ -153,9 +153,47 @@ function AdminRoute({ children }) {
 }
 
 
-// Public Route Component (redirect to dashboard if already logged in)
+// Shown when the browser has a NON-admin session (e.g. a student logged in
+// on the main app — the auth cookie is shared) and the user opens the admin
+// login page. Without this, PublicRoute bounced them to /dashboard, AdminRoute
+// bounced them to Access Denied, and the login form was unreachable.
+function NonAdminSessionBlock() {
+  const { user, logout } = useAuth();
+  const [switching, setSwitching] = useState(false);
+
+  const handleSwitchAccount = async () => {
+    setSwitching(true);
+    // redirect:false — once auth state clears, PublicRoute re-renders the
+    // login form in place. A hard reload here just flashes the page.
+    await logout({ redirect: false });
+  };
+
+  return (
+    <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-dark-800 rounded-2xl shadow-lg p-8 text-center">
+        <h1 className="text-2xl font-bold text-white mb-2">Not an admin account</h1>
+        <p className="text-text-secondary mb-8">
+          This browser is signed in as{' '}
+          <span className="font-semibold text-white">{user.email}</span>, which
+          doesn't have admin access.
+        </p>
+        <button
+          type="button"
+          onClick={handleSwitchAccount}
+          disabled={switching}
+          className="block w-full px-6 py-3 bg-brand-blue hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-60"
+        >
+          {switching ? 'Signing out…' : 'Sign out and log in as admin'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Public Route Component (redirect to dashboard if already logged in as an
+// admin; non-admin sessions get an explicit switch-account screen)
 function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -168,8 +206,11 @@ function PublicRoute({ children }) {
     );
   }
 
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated && user) {
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <NonAdminSessionBlock />;
   }
 
   return children;

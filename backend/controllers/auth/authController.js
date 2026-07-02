@@ -614,8 +614,11 @@ class AuthController {
    */
   static async refreshToken(req, res, next) {
     try {
-      // Try to get refresh token from cookie first, fallback to body for backward compatibility
-      const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+      // Body FIRST, cookie fallback. The cookie is browser-wide, so when two
+      // accounts are open in different tabs, refreshing via the cookie would
+      // hand this tab the OTHER account's tokens (silent identity swap). The
+      // client sends the refresh token it means in the body — trust that.
+      const refreshToken = req.body.refreshToken || req.cookies.refreshToken;
 
       if (!refreshToken) {
         throw new BadRequestError('Refresh token is required');
@@ -776,16 +779,18 @@ class AuthController {
    */
   static async logout(req, res, next) {
     try {
-      // Get tokens from cookies
+      // The tab logging out may be authenticated via Bearer while the
+      // browser-wide cookie belongs to a different session — blacklist both.
+      const bearerToken = JWT.extractFromHeader(req.headers.authorization);
       const accessToken = req.cookies.accessToken;
       const refreshToken = req.cookies.refreshToken;
 
-      // Blacklist both tokens if they exist
-      if (accessToken) {
+      const accessTokens = [...new Set([bearerToken, accessToken].filter(Boolean))];
+      for (const token of accessTokens) {
         try {
-          const decoded = JWT.decode(accessToken);
+          const decoded = JWT.decode(token);
           const ttl = TokenBlacklist.calculateTTL(decoded);
-          await TokenBlacklist.addToBlacklist(accessToken, ttl);
+          await TokenBlacklist.addToBlacklist(token, ttl);
         } catch (error) {
           logger.warn('Failed to blacklist access token:', error);
         }
