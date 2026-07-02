@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { questionsAPI } from '../../lib/api';
 import { Button, Spinner } from '../ui';
+import { useToast } from '../ui/Toast';
 
 export default function QuestionModal({ isOpen, onClose, question, onSuccess, courses, categories }) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -111,7 +113,7 @@ export default function QuestionModal({ isOpen, onClose, question, onSuccess, co
       onSuccess();
     } catch (error) {
       console.error('Failed to save question:', error);
-      alert('Failed to save question. Please try again.');
+      showToast('Failed to save question. Please try again.', 'warning');
     } finally {
       setLoading(false);
     }

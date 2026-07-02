@@ -5,8 +5,10 @@ import { practiceTestsAPI, categoriesAPI, coursesAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner } from '../components/ui';
 import { cn } from '../utils/cn';
+import { useToast } from '../components/ui/Toast';
 
 export default function GeneratePracticeTest() {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -81,12 +83,12 @@ export default function GeneratePracticeTest() {
 
   const handleGenerate = async () => {
     if (config.total_questions === 0) {
-      alert('Please select at least one question');
+      showToast('Please select at least one question', 'warning');
       return;
     }
 
     if (config.category_ids.length === 0) {
-      alert('Please select at least one category');
+      showToast('Please select at least one category', 'warning');
       return;
     }
 
@@ -107,7 +109,7 @@ export default function GeneratePracticeTest() {
     } catch (error) {
       console.error('Failed to generate practice test:', error);
       const errorMessage = error.response?.data?.message || 'Failed to generate practice test. Please try again.';
-      alert(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setGenerating(false);
     }

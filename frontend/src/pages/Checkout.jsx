@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import api, { coursesAPI, paymentsAPI, couponsAPI } from '../lib/api';
-import { CheckCircle, Tag, Info, ArrowLeft, Lock, CreditCard, Calendar, AlertTriangle, Package } from 'lucide-react';
-import logo from '../assets/logo.png';
+import { CheckCircle, Tag, Info, Lock, CreditCard, Calendar, AlertTriangle, Package } from 'lucide-react';
+import StandaloneHeader from '../components/layout/StandaloneHeader';
 import { formatPrice } from '../utils/currency';
 
 // Load Paystack Inline.js from CDN
@@ -346,23 +346,17 @@ export default function Checkout() {
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
-        {/* Header */}
-        <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-border-dark px-4 py-4">
-          <div className="max-w-2xl mx-auto flex items-center gap-4">
-            <button
-              onClick={() => navigate('/billing')}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm">Back to Billing</span>
-            </button>
-            <img src={logo} alt="TekyPro" className="h-8 w-auto" />
-            <div className="flex items-center gap-1 ml-auto text-xs text-gray-500 dark:text-gray-400">
+        <StandaloneHeader
+          backTo="/billing"
+          title="Complete your payment"
+          subtitle={installmentPayment.course?.title || 'Remaining balance'}
+          right={
+            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <Lock className="w-3 h-3" />
               Secure Checkout
             </div>
-          </div>
-        </div>
+          }
+        />
 
         <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
           {isOverdue && (
@@ -472,23 +466,16 @@ export default function Checkout() {
   // ── New enrollment checkout ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-border-dark px-4 py-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm">Back</span>
-          </button>
-          <img src={logo} alt="TekyPro" className="h-8 w-auto" />
-          <div className="flex items-center gap-1 ml-auto text-xs text-gray-500 dark:text-gray-400">
+      <StandaloneHeader
+        title="Checkout"
+        subtitle={bundle ? bundle.title : course?.title}
+        right={
+          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <Lock className="w-3 h-3" />
             Secure Checkout
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8">

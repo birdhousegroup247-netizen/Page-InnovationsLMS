@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { coursesAPI, progressAPI, liveSessionsAPI, forumAPI, assignmentsAPI } from '../lib/api';
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   CheckCircle,
@@ -555,24 +556,21 @@ export default function CoursePlayer() {
     return progress[contentId]?.completed || false;
   };
 
-  const calculateCourseProgress = () => {
-    if (!course?.modules) return 0;
-
-    let totalLessons = 0;
-    let completedLessons = 0;
-
-    course.modules.forEach((module) => {
-      if (module.contents) {
-        totalLessons += module.contents.length;
-        module.contents.forEach((content) => {
-          if (isLessonCompleted(content.id)) {
-            completedLessons++;
-          }
-        });
-      }
+  const getLessonCounts = () => {
+    let total = 0;
+    let completed = 0;
+    (course?.modules || []).forEach((module) => {
+      (module.contents || []).forEach((content) => {
+        total += 1;
+        if (isLessonCompleted(content.id)) completed += 1;
+      });
     });
+    return { total, completed };
+  };
 
-    return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const calculateCourseProgress = () => {
+    const { total, completed } = getLessonCounts();
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
   };
 
   if (loading) {
@@ -634,6 +632,7 @@ export default function CoursePlayer() {
   }
 
   const courseProgress = calculateCourseProgress();
+  const lessonCounts = getLessonCounts();
   const hasNextLesson = findNextLesson() !== null;
   const hasPreviousLesson = findPreviousLesson() !== null;
 
@@ -644,31 +643,41 @@ export default function CoursePlayer() {
 
       {/* Top Navigation Bar */}
       <header className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-border-dark sticky top-0 z-50 transition-colors">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 lg:hidden transition-colors"
+              className="p-2 rounded-lg text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 lg:hidden transition-colors flex-shrink-0"
+              aria-label={sidebarOpen ? 'Close course content' : 'Open course content'}
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Link to="/dashboard" className="flex items-center gap-2">
+            <Link
+              to="/my-courses"
+              className="p-2 rounded-lg text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors flex-shrink-0"
+              title="Back to My Courses"
+              aria-label="Back to My Courses"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <Link to="/dashboard" className="hidden sm:flex items-center flex-shrink-0">
               <img src={logo} alt="TekyPro" className="h-8 w-auto object-contain" />
             </Link>
-            <div className="hidden sm:block">
-              <h1 className="text-sm sm:text-base font-medium text-gray-900 dark:text-text-dark-primary line-clamp-1 transition-colors">
+            <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-border-dark flex-shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-text-dark-primary truncate transition-colors">
                 {decodeEntities(course.title)}
               </h1>
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-text-dark-muted transition-colors">
-                <span>{courseProgress}% Complete</span>
+                <span>{lessonCounts.completed}/{lessonCounts.total} lessons</span>
                 <span>•</span>
-                <span>{user?.full_name}</span>
+                <span>{courseProgress}% complete</span>
               </div>
             </div>
           </div>
 
-          <Link to="/my-courses">
-            <Button variant="ghost" leftIcon={<Home className="h-4 w-4" />} size="sm">
+          <Link to="/my-courses" className="flex-shrink-0">
+            <Button variant="outline" leftIcon={<Home className="h-4 w-4" />} size="sm">
               <span className="hidden sm:inline">My Courses</span>
             </Button>
           </Link>
@@ -761,6 +770,38 @@ export default function CoursePlayer() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-dark-900 transition-colors">
           <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+            {/* Lesson title leads the page — the student should know what
+                lesson they're on before the content, especially for
+                articles where title-after-body read backwards. */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-dark-primary transition-colors">
+                  {decodeEntities(currentContent.title)}
+                </h1>
+                <p className="text-gray-500 dark:text-text-dark-muted text-sm mt-1 capitalize transition-colors">
+                  {currentContent.content_type === 'recorded_class' ? 'Recorded class' : currentContent.content_type}
+                  {currentContent.duration_minutes ? ` • ${currentContent.duration_minutes} min` : ''}
+                </p>
+              </div>
+
+              {!isLessonCompleted(currentContent.id) ? (
+                <Button
+                  variant="primary"
+                  onClick={handleMarkComplete}
+                  loading={markingComplete}
+                  leftIcon={<CheckCircle className="h-4 w-4" />}
+                  className="whitespace-nowrap"
+                >
+                  Mark as Complete
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg font-medium transition-colors">
+                  <CheckCircle className="h-4 w-4" />
+                  Completed
+                </div>
+              )}
+            </div>
+
             {/* Video/Content Player */}
             <div className="mb-6 relative">
               {/* Lock overlay on non-preview lessons for viewers without
@@ -958,37 +999,6 @@ export default function CoursePlayer() {
                 </div>
               )}
 
-              {/* Lesson Title and Actions */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
-                    {decodeEntities(currentContent.title)}
-                  </h1>
-                  {currentContent.duration_minutes && (
-                    <p className="text-gray-600 dark:text-text-dark-secondary text-sm transition-colors">
-                      Duration: {currentContent.duration_minutes} minutes
-                    </p>
-                  )}
-                </div>
-
-                {!isLessonCompleted(currentContent.id) && (
-                  <Button
-                    variant="primary"
-                    onClick={handleMarkComplete}
-                    loading={markingComplete}
-                    leftIcon={<CheckCircle className="h-4 w-4" />}
-                    className="whitespace-nowrap"
-                  >
-                    Mark as Complete
-                  </Button>
-                )}
-                {isLessonCompleted(currentContent.id) && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg font-medium transition-colors">
-                    <CheckCircle className="h-4 w-4" />
-                    Completed
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Tabs Section */}
@@ -1100,23 +1110,42 @@ export default function CoursePlayer() {
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
                   <div>
-                    {currentContent.description ? (
+                    {currentContent.description && (
                       <>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-text-dark-primary mb-3 transition-colors">
                           About this lesson
                         </h2>
-                        <p className="text-gray-600 dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap transition-colors">
+                        <p className="text-gray-600 dark:text-text-dark-secondary leading-relaxed whitespace-pre-wrap mb-6 transition-colors">
                           {currentContent.description}
                         </p>
                       </>
-                    ) : (
-                      <div className="text-center py-12">
-                        <BookOpen className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-                        <p className="text-gray-600 dark:text-text-dark-secondary">
-                          No description available for this lesson.
+                    )}
+                    {/* Compact lesson facts — always present so the tab is
+                        never a giant empty state when there's no description */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-400 dark:text-text-dark-muted mb-0.5">Type</p>
+                        <p className="font-medium text-gray-900 dark:text-text-dark-primary capitalize">
+                          {currentContent.content_type === 'recorded_class' ? 'Recorded class' : currentContent.content_type}
                         </p>
                       </div>
-                    )}
+                      {currentContent.duration_minutes && (
+                        <div>
+                          <p className="text-gray-400 dark:text-text-dark-muted mb-0.5">Duration</p>
+                          <p className="font-medium text-gray-900 dark:text-text-dark-primary">
+                            {currentContent.duration_minutes} minutes
+                          </p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-gray-400 dark:text-text-dark-muted mb-0.5">Status</p>
+                        <p className={cn('font-medium', isLessonCompleted(currentContent.id)
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-900 dark:text-text-dark-primary')}>
+                          {isLessonCompleted(currentContent.id) ? 'Completed' : 'Not completed'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 

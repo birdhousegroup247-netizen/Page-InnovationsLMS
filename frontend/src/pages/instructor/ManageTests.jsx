@@ -17,8 +17,10 @@ import { assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
 import { Button, Spinner, Badge, Tooltip } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import { useToast } from '../../components/ui/Toast';
 
 export default function ManageTests() {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export default function ManageTests() {
       await assignedTestsAPI.publishTest(test.id, test.course_id ? { assign_to: 'all' } : {});
       await fetchTests();
     } catch (e) {
-      alert(e?.response?.data?.message || 'Failed to publish test');
+      showToast(e?.response?.data?.message || 'Failed to publish test', 'error');
     } finally {
       setActingOn(null);
     }
@@ -75,7 +77,7 @@ export default function ManageTests() {
       await assignedTestsAPI.archiveTest(test.id);
       await fetchTests();
     } catch (e) {
-      alert(e?.response?.data?.message || 'Failed to archive test');
+      showToast(e?.response?.data?.message || 'Failed to archive test', 'error');
     } finally {
       setActingOn(null);
     }
@@ -88,7 +90,7 @@ export default function ManageTests() {
       await assignedTestsAPI.updateTest(test.id, { status: 'draft' });
       await fetchTests();
     } catch (e) {
-      alert(e?.response?.data?.message || 'Failed to restore test');
+      showToast(e?.response?.data?.message || 'Failed to restore test', 'error');
     } finally {
       setActingOn(null);
     }

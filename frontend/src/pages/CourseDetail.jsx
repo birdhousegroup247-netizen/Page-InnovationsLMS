@@ -30,8 +30,10 @@ import { formatPrice } from '../utils/currency';
 import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import CourseReviews from '../components/course/CourseReviews';
 import PaymentModal from '../components/payment/PaymentModal';
+import { useToast } from '../components/ui/Toast';
 
 export default function CourseDetail() {
+  const { showToast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -173,7 +175,7 @@ export default function CourseDetail() {
       }, 1500);
     } catch (error) {
       console.error('Enrollment error:', error);
-      alert(error.response?.data?.message || 'Failed to enroll');
+      showToast(error.response?.data?.message || 'Failed to enroll', 'error');
     }
   };
 

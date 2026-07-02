@@ -13,8 +13,10 @@ import { practiceTestsAPI, assignedTestsAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner } from '../components/ui';
 import { cn } from '../utils/cn';
+import { useToast } from '../components/ui/Toast';
 
 export default function TakeTest() {
+  const { showToast } = useToast();
   const { attemptId, testId } = useParams();
   const navigate = useNavigate();
   const [test, setTest] = useState(null);
@@ -58,7 +60,7 @@ export default function TakeTest() {
       startTimer();
     } catch (error) {
       console.error('Failed to fetch test:', error);
-      alert('Failed to load test');
+      showToast('Failed to load test', 'error');
       navigate('/practice-tests');
     } finally {
       setLoading(false);
@@ -152,7 +154,7 @@ export default function TakeTest() {
       navigate(`/test-results/${resultId}`);
     } catch (error) {
       console.error('Failed to submit test:', error);
-      alert('Failed to submit test. Please try again.');
+      showToast('Failed to submit test. Please try again.', 'warning');
     } finally {
       setSubmitting(false);
     }

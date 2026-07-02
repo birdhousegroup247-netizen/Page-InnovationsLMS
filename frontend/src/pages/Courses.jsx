@@ -20,6 +20,7 @@ import WishlistButton from '../components/ui/WishlistButton';
 import emptyCourses from '../assets/empty-courses.svg';
 import { cn } from '../utils/cn';
 import { formatPrice } from '../utils/currency';
+import { useToast } from '../components/ui/Toast';
 
 // Discounted price if a discount is set, else list price. null = free.
 function effectivePrice(course) {
@@ -30,6 +31,7 @@ function effectivePrice(course) {
 }
 
 export default function Courses() {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -121,7 +123,7 @@ export default function Courses() {
       await coursesAPI.enroll(course.id);
       navigate(`/courses/${course.id}`);
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to enroll');
+      showToast(error.response?.data?.message || 'Failed to enroll', 'error');
     }
   };
 

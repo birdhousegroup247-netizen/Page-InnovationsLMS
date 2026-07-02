@@ -16,8 +16,10 @@ import { practiceTestsAPI, assignedTestsAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
 import { cn } from '../utils/cn';
+import { useToast } from '../components/ui/Toast';
 
 export default function TestResults() {
+  const { showToast } = useToast();
   const { attemptId } = useParams();
   const navigate = useNavigate();
   const [results, setResults] = useState(null);
@@ -41,7 +43,7 @@ export default function TestResults() {
       setResults(response.data.data);
     } catch (error) {
       console.error('Failed to fetch results:', error);
-      alert('Failed to load results');
+      showToast('Failed to load results', 'error');
       navigate('/practice-tests');
     } finally {
       setLoading(false);

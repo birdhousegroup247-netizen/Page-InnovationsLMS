@@ -16,8 +16,10 @@ import { assignedTestsAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner, Badge } from '../components/ui';
 import { cn } from '../utils/cn';
+import { useToast } from '../components/ui/Toast';
 
 export default function MyAssignedTests() {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,7 @@ export default function MyAssignedTests() {
       }
     } catch (error) {
       console.error('Failed to start test:', error);
-      alert(error.response?.data?.message || 'Failed to start test');
+      showToast(error.response?.data?.message || 'Failed to start test', 'error');
       setStartingTest(null); // Reset loading state on error
     }
   };

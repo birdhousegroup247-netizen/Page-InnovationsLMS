@@ -29,6 +29,7 @@ import {
 import { Container } from '../../components/layout';
 import { Button, Spinner } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import { useToast } from '../../components/ui/Toast';
 
 const STEPS = [
   { title: 'Basic Info', icon: Info },
@@ -38,6 +39,7 @@ const STEPS = [
 ];
 
 export default function CreateTest() {
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -323,52 +325,52 @@ export default function CreateTest() {
     switch (currentStep) {
       case 0: // Test Details
         if (!testData.title.trim()) {
-          alert('Please enter a test title');
+          showToast('Please enter a test title', 'warning');
           return false;
         }
         if (!testData.category_id) {
-          alert('Please select a category');
+          showToast('Please select a category', 'warning');
           return false;
         }
         // Course is optional — leaving it blank scopes the test to the
         // whole category so it covers general questions plus questions
         // from any course in the category.
         if (testData.time_limit_minutes < 1) {
-          alert('Time limit must be at least 1 minute');
+          showToast('Time limit must be at least 1 minute', 'warning');
           return false;
         }
         if (testData.total_points < 1) {
-          alert('Total points must be at least 1');
+          showToast('Total points must be at least 1', 'warning');
           return false;
         }
         if (testData.passing_score < 0 || testData.passing_score > 100) {
-          alert('Passing score must be between 0 and 100');
+          showToast('Passing score must be between 0 and 100', 'warning');
           return false;
         }
         return true;
 
       case 1: // Add Questions
         if (selectedQuestions.length === 0) {
-          alert('Please select at least one question');
+          showToast('Please select at least one question', 'warning');
           return false;
         }
         return true;
 
       case 2: // Assign Students
         if (selectedStudents.length === 0) {
-          alert('Please select at least one student');
+          showToast('Please select at least one student', 'warning');
           return false;
         }
         if (!testData.start_date) {
-          alert('Please set a start date');
+          showToast('Please set a start date', 'warning');
           return false;
         }
         if (!testData.due_date) {
-          alert('Please set a due date');
+          showToast('Please set a due date', 'warning');
           return false;
         }
         if (new Date(testData.due_date) <= new Date(testData.start_date)) {
-          alert('Due date must be after start date');
+          showToast('Due date must be after start date', 'warning');
           return false;
         }
         return true;
@@ -460,7 +462,7 @@ export default function CreateTest() {
       console.error('Failed to create test:', error);
       const errorMessage =
         error.response?.data?.message || 'Failed to create test. Please try again.';
-      alert(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setSubmitting(false);
     }
