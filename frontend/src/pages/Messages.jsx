@@ -6,6 +6,7 @@ import { tokenStorage } from '../utils/tokenStorage';
 import { Spinner } from '../components/ui';
 import { cn } from '../utils/cn';
 import RoomSettingsPanel from '../components/chat/RoomSettingsPanel';
+import RoomMembersPanel from '../components/chat/RoomMembersPanel';
 import {
   MessageSquare, Send, BookOpen, User, Clock, Users, ChevronRight,
   AlertCircle, Reply, X, AtSign, Paperclip, FileText, Search,
@@ -999,6 +1000,7 @@ export default function Messages() {
   const [activeChat, setActiveChat]     = useState(null);
   const [showRequests, setShowRequests] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
+  const [showRoomMembers, setShowRoomMembers] = useState(false);
   const [search, setSearch]             = useState('');
   const [onlineUsers, setOnlineUsers]   = useState(new Set());
   const [showNewDM, setShowNewDM]       = useState(false);
@@ -1249,6 +1251,17 @@ export default function Messages() {
                 <ChevronRight className="w-3.5 h-3.5 ml-auto" />
               </button>
             )}
+            {/* Students get the same bar, read-only: see who's in the room */}
+            {!isInstructor && activeChat.type === 'room' && (
+              <button
+                onClick={() => setShowRoomMembers(true)}
+                className="w-full flex items-center gap-2 px-6 py-2 bg-brand-blue/5 dark:bg-brand-blue/10 border-b border-brand-blue/20 dark:border-brand-blue/30 text-xs font-semibold text-brand-blue dark:text-cyan-400 hover:bg-brand-blue/10 transition-colors"
+              >
+                <User className="w-3.5 h-3.5" />
+                Course mates — see who's in this room
+                <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+              </button>
+            )}
             <div className="flex-1 overflow-hidden">
               <ChatWindow
                 key={`${activeChat.type}-${activeChat.id}`}
@@ -1282,6 +1295,15 @@ export default function Messages() {
           roomId={activeChat.id}
           isOpen={showRoomSettings}
           onClose={() => setShowRoomSettings(false)}
+        />
+      )}
+
+      {/* Read-only course-mates drawer for students — same format */}
+      {!isInstructor && activeChat?.type === 'room' && (
+        <RoomMembersPanel
+          roomId={activeChat.id}
+          isOpen={showRoomMembers}
+          onClose={() => setShowRoomMembers(false)}
         />
       )}
     </div>
