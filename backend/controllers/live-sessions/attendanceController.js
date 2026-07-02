@@ -165,6 +165,16 @@ class AttendanceController {
         created_by: req.user.id,
       });
 
+      // Displaying an attendance code means class has started. Without
+      // this, instructors who never clicked the separate "go live" action
+      // left the session 'scheduled' — and the student page only shows
+      // the check-in button on 'live' sessions, so nobody could enter
+      // the code they were staring at.
+      if (session.status === 'scheduled') {
+        await session.update({ status: 'live' });
+        logger.info(`[attendance] session ${session.id} auto-flipped to live on code generation`);
+      }
+
       // Notify enrolled students that a check-in window is open.
       // The notification deliberately does NOT contain the code —
       // students must read it from the instructor's shared screen.

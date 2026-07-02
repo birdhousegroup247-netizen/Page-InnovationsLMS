@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { attendanceAPI } from '../lib/api';
+import { getSocket } from '../lib/socket';
 import {
   UserCheck, Calendar, Clock, CheckCircle, AlertCircle, X, BookOpen, Radio,
 } from 'lucide-react';
@@ -87,19 +88,39 @@ export default function Attendance() {
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const fetch = async () => {
-    setLoading(true);
-    setError('');
+  // silent=true refreshes in the background (socket ping / poll) without
+  // flashing the loading spinner over the list.
+  const fetch = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
     try {
       const res = await attendanceAPI.getMyAttendance();
       setSessions(res.data?.data?.sessions || []);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to load attendance');
+      if (!silent) setError(err?.response?.data?.message || 'Failed to load attendance');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
   useEffect(() => { fetch(); }, []);
+
+  // Live refresh: when the instructor generates a code, the backend
+  // flips the session to 'live' and pushes an in-app notification.
+  // Refetch on that signal so the check-in button appears without a
+  // manual reload — plus a slow poll as a fallback for missed events.
+  useEffect(() => {
+    const socket = getSocket();
+    const onNotif = () => fetch(true);
+    socket?.on('notification', onNotif);
+
+    const poll = setInterval(() => fetch(true), 60000);
+    return () => {
+      socket?.off('notification', onNotif);
+      clearInterval(poll);
+    };
+  }, []);
 
   const openCheckIn = (s) => {
     setPicked(s);
