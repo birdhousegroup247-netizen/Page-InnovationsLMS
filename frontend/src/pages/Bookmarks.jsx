@@ -120,10 +120,10 @@ export default function Bookmarks() {
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
-                  My Bookmarks
+                  Saved Lessons
                 </h1>
                 <p className="text-lg text-white/90 animate-fade-in mt-1">
-                  {bookmarks.length} saved {bookmarks.length === 1 ? 'item' : 'items'}
+                  {bookmarks.length} saved {bookmarks.length === 1 ? 'item' : 'items'} — lessons and articles you bookmarked while learning
                 </p>
               </div>
             </div>

@@ -113,7 +113,10 @@ const studentNavigation = [
     children: [
       {
         type: 'item',
-        label: 'Bookmarks',
+        // "Saved Lessons", not "Bookmarks" — students couldn't tell it apart
+        // from Wishlist in the sidebar. Wishlist = courses to buy later;
+        // this = lesson/article spots saved while studying.
+        label: 'Saved Lessons',
         path: '/bookmarks',
         icon: <Bookmark className="w-4 h-4" />,
         feature: 'bookmarks',
