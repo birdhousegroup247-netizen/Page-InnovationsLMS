@@ -88,13 +88,19 @@ export default function AppLayout({ children }) {
       }
     };
 
+    // Room chatter refreshes the badge silently — no toast, a busy
+    // course room would be unbearable otherwise.
+    const onRoomActivity = () => refreshUnread();
+
     socket.on('notification', onNotif);
     socket.on('chat:new_dm', onNewDm);
     socket.on('chat:mention', onMention);
+    socket.on('chat:room_activity', onRoomActivity);
     return () => {
       socket.off('notification', onNotif);
       socket.off('chat:new_dm', onNewDm);
       socket.off('chat:mention', onMention);
+      socket.off('chat:room_activity', onRoomActivity);
     };
   }, [refreshUnread, location.pathname, showToast]);
 
@@ -116,8 +122,12 @@ export default function AppLayout({ children }) {
       refreshNotifCount();
     };
     const onNotifChanged = () => refreshNotifCount();
+    // Messages page dispatches chat:seen after marking a room/DM read so
+    // the badge drops immediately instead of on the next poll.
+    const onChatSeen = () => refreshUnread();
     window.addEventListener('focus', onFocus);
     window.addEventListener('notifications:changed', onNotifChanged);
+    window.addEventListener('chat:seen', onChatSeen);
     const id = setInterval(() => {
       refreshUnread();
       refreshNotifCount();
@@ -125,6 +135,7 @@ export default function AppLayout({ children }) {
     return () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('notifications:changed', onNotifChanged);
+      window.removeEventListener('chat:seen', onChatSeen);
       clearInterval(id);
     };
   }, [user, refreshUnread, refreshNotifCount]);
@@ -169,6 +180,7 @@ export default function AppLayout({ children }) {
       <Topbar
         user={user}
         notifications={notifCount}
+        messages={unreadCount}
         onLogout={handleLogout}
         onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       />

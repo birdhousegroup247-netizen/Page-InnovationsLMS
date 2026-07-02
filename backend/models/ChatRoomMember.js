@@ -75,6 +75,13 @@ const ChatRoomMember = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // Last time the member had the room OPEN. Any room message newer
+    // than this (from someone else) counts as unread in the sidebar /
+    // topbar badge. Null = never opened → count from joined_at.
+    last_seen_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: 'chat_room_members',

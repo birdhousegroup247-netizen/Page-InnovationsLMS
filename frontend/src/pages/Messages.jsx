@@ -509,6 +509,16 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
       socket.emit(type === 'room' ? 'join:room' : 'join:conversation', id);
 
     joinChannel();
+
+    // Opening a room marks its messages + mentions read (bumps
+    // last_seen_at server-side). The chat:seen event tells AppLayout to
+    // refresh the sidebar/topbar badge right away instead of waiting
+    // for the next poll.
+    if (type === 'room') {
+      chatAPI.markMentionsSeen(id)
+        .then(() => window.dispatchEvent(new Event('chat:seen')))
+        .catch(() => {});
+    }
     // Server-side room membership dies with the socket session; after any
     // reconnect (server restart, network blip, laptop sleep) we must
     // re-join or the live feed silently stops.
@@ -527,8 +537,16 @@ function ChatWindow({ type, id, userId, title, subtitle, isInstructor, conversat
       if (message.is_pinned) setPinnedMsg(message);
       // Mark read immediately when the window is already open
       if (type === 'dm' && message.sender_id !== userId) {
-        chatAPI.markConversationRead(id).catch(() => {});
+        chatAPI.markConversationRead(id)
+          .then(() => window.dispatchEvent(new Event('chat:seen')))
+          .catch(() => {});
         socket.emit('chat:read', { conversationId: id });
+      }
+      if (type === 'room' && message.sender_id !== userId) {
+        // Viewing the room = seen; keep the badge at zero while open.
+        chatAPI.markMentionsSeen(id)
+          .then(() => window.dispatchEvent(new Event('chat:seen')))
+          .catch(() => {});
       }
     };
 
@@ -1064,7 +1082,9 @@ export default function Messages() {
   const openConv = (conv) => {
     const other = conv.user_a === user?.id ? conv.participant_b : conv.participant_a;
     setActiveChat({ type: 'dm', id: conv.id, title: other?.full_name || 'User', subtitle: other?.role });
-    chatAPI.markConversationRead(conv.id).catch(() => {});
+    chatAPI.markConversationRead(conv.id)
+      .then(() => window.dispatchEvent(new Event('chat:seen')))
+      .catch(() => {});
     setConversations((prev) => prev.map((c) => c.id === conv.id ? { ...c, unread_count: 0 } : c));
     const socket = getSocket();
     if (socket) socket.emit('chat:read', { conversationId: conv.id });

@@ -1223,10 +1223,36 @@ class ChatController {
         where: { user_id: userId, type: 'chat_mention', is_read: false },
       });
 
+      // 3) Room unread — messages in course rooms I'm an active member
+      // of, from someone else, newer than my last visit (last_seen_at;
+      // joined_at for rooms I've never opened). Without this, ordinary
+      // room messages (no @mention) never badged anyone anywhere.
+      const memberships = await ChatRoomMember.findAll({
+        where: { user_id: userId, status: 'approved' },
+        attributes: ['room_id', 'last_seen_at', 'joined_at', 'created_at'],
+        raw: true,
+      });
+      let roomUnread = 0;
+      if (memberships.length) {
+        const counts = await Promise.all(memberships.map((m) => {
+          const since = m.last_seen_at || m.joined_at || m.created_at;
+          return Message.count({
+            where: {
+              room_id: m.room_id,
+              sender_id: { [Op.ne]: userId },
+              deleted_at: null,
+              ...(since ? { created_at: { [Op.gt]: since } } : {}),
+            },
+          });
+        }));
+        roomUnread = counts.reduce((s, n) => s + n, 0);
+      }
+
       return ApiResponse.success(res, {
         dm_unread: dmUnread,
         mention_unread: mentionUnread,
-        total: dmUnread + mentionUnread,
+        room_unread: roomUnread,
+        total: dmUnread + mentionUnread + roomUnread,
       });
     } catch (error) {
       next(error);
@@ -1244,7 +1270,9 @@ class ChatController {
       const member = await ChatRoomMember.findOne({
         where: { room_id: roomId, user_id: req.user.id },
       });
-      if (member) await member.update({ mentions_seen_at: new Date() });
+      // last_seen_at doubles as the room-unread watermark for the
+      // sidebar/topbar badge — opening the room marks everything read.
+      if (member) await member.update({ mentions_seen_at: new Date(), last_seen_at: new Date() });
 
       // Also flip the linked chat_mention notifications to is_read so
       // the sidebar badge updates immediately. The metadata column on

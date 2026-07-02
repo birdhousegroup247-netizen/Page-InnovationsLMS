@@ -338,6 +338,28 @@ function emitToRole(io, role, event, data) {
 function emitRoomMessage(io, roomId, message) {
   io.to(`room:${roomId}`).emit('chat:message', { message, roomId });
 
+  // Light ping to every member's personal channel so the sidebar/topbar
+  // unread badge updates even when they're elsewhere in the app — the
+  // room channel above only reaches people with the chat open. No
+  // message body: just "something happened in your room, refetch".
+  (async () => {
+    try {
+      const { ChatRoomMember } = require('../models');
+      const members = await ChatRoomMember.findAll({
+        where: { room_id: roomId, status: 'approved' },
+        attributes: ['user_id'],
+        raw: true,
+      });
+      const senderId = message?.sender?.id || message?.sender_id;
+      for (const m of members) {
+        if (m.user_id === senderId) continue;
+        io.to(`user:${m.user_id}`).emit('chat:room_activity', { roomId });
+      }
+    } catch (err) {
+      logger.warn(`room_activity ping failed for room ${roomId}: ${err.message}`);
+    }
+  })();
+
   // Also ping each @mentioned user on their personal channel so the
   // sidebar badge / toast can update without them needing to be in the
   // room channel. The `user:${id}` channel is joined on connect so this

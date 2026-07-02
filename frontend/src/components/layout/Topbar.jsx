@@ -12,7 +12,7 @@ import GlobalSearch from '../common/GlobalSearch';
  * Based on FUSELearn design with universal theme support
  * Responsive with mobile menu toggle
  */
-const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) => {
+const Topbar = ({ user, notifications = 0, messages = 0, onLogout, onMenuToggle, className }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
@@ -56,12 +56,17 @@ const Topbar = ({ user, notifications = 0, onLogout, onMenuToggle, className }) 
             )}
           </button>
 
-          {/* Messages */}
+          {/* Messages — same red count badge as the bell */}
           <Link
             to="/messages"
             className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
           >
             <MessageSquare className="w-5 h-5 text-gray-600 dark:text-text-dark-secondary transition-colors" />
+            {messages > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-brand-red text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                {messages > 99 ? '99+' : messages}
+              </span>
+            )}
           </Link>
 
           {/* Notifications */}
