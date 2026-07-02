@@ -31,7 +31,7 @@ const Select = ({
     <div className={cn('w-full', !fullWidth && 'max-w-sm')}>
       {/* Label */}
       {label && (
-        <label className="block text-sm font-medium text-text-primary mb-2">
+        <label className="block text-sm font-medium text-text-primary dark:text-text-dark-primary mb-2">
           {label}
           {required && <span className="text-error ml-1">*</span>}
         </label>
@@ -41,7 +41,7 @@ const Select = ({
       <div className="relative">
         {/* Left Icon */}
         {leftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted dark:text-text-dark-muted">
             {leftIcon}
           </div>
         )}
@@ -50,7 +50,7 @@ const Select = ({
         <select
           disabled={disabled}
           className={cn(
-            'w-full appearance-none px-4 py-2.5 bg-white border rounded-lg text-text-primary',
+            'w-full appearance-none px-4 py-2.5 bg-white border rounded-lg text-text-primary dark:text-text-dark-primary',
             'focus:outline-none focus:ring-2 focus:border-transparent transition-all',
             'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50',
             leftIcon && 'pl-10',
@@ -75,7 +75,7 @@ const Select = ({
         </select>
 
         {/* Chevron Icon */}
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-text-muted">
+        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-text-muted dark:text-text-dark-muted">
           <ChevronDown className="w-5 h-5" />
         </div>
       </div>
@@ -83,7 +83,7 @@ const Select = ({
       {/* Error or Helper Text */}
       {error && <p className="text-error text-xs mt-1.5">{error}</p>}
       {!error && helperText && (
-        <p className="text-text-muted text-xs mt-1.5">{helperText}</p>
+        <p className="text-text-muted dark:text-text-dark-muted text-xs mt-1.5">{helperText}</p>
       )}
     </div>
   );

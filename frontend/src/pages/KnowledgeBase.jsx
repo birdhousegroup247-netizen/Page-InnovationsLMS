@@ -51,19 +51,19 @@ export default function KnowledgeBase() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button
           onClick={() => setSelected(null)}
-          className="flex items-center gap-2 text-sm text-text-secondary hover:text-white mb-6 transition-colors"
+          className="flex items-center gap-2 text-sm text-gray-600 dark:text-text-dark-secondary hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Knowledge Base
         </button>
-        <h1 className="text-2xl font-bold text-white mb-2">{selected.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{selected.title}</h1>
         {selected.updated_at && (
-          <p className="text-xs text-text-secondary mb-6 flex items-center gap-1">
+          <p className="text-xs text-gray-600 dark:text-text-dark-secondary mb-6 flex items-center gap-1">
             <Clock className="w-3 h-3" />
             Last updated {new Date(selected.updated_at).toLocaleDateString('en-US', { dateStyle: 'medium' })}
           </p>
         )}
         <div
-          className="prose prose-invert max-w-none text-text-secondary leading-relaxed"
+          className="prose dark:prose-invert max-w-none text-gray-600 dark:text-text-dark-secondary leading-relaxed"
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.content || selected.body || '') }}
         />
       </div>
@@ -74,21 +74,21 @@ export default function KnowledgeBase() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2 mb-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
           <BookOpen className="w-6 h-6 text-brand-blue" /> Knowledge Base
         </h1>
-        <p className="text-text-secondary text-sm">Guides, tutorials, and answers to common questions.</p>
+        <p className="text-gray-600 dark:text-text-dark-secondary text-sm">Guides, tutorials, and answers to common questions.</p>
       </div>
 
       {/* Search */}
       <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 dark:text-text-dark-secondary" />
         <input
           type="text"
           placeholder="Search articles..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-3 bg-dark-800 border border-dark-700 rounded-xl text-white placeholder-text-secondary focus:outline-none focus:border-brand-blue transition-colors"
+          className="w-full pl-9 pr-4 py-3 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-text-dark-muted focus:outline-none focus:border-brand-blue transition-colors"
         />
       </div>
 
@@ -96,25 +96,25 @@ export default function KnowledgeBase() {
         {/* Articles list */}
         <div className="md:col-span-2">
           {loading ? (
-            <div className="text-center text-text-secondary py-12">Loading articles...</div>
+            <div className="text-center text-gray-600 dark:text-text-dark-secondary py-12">Loading articles...</div>
           ) : filtered.length === 0 ? (
-            <div className="text-center text-text-secondary py-12">No articles found.</div>
+            <div className="text-center text-gray-600 dark:text-text-dark-secondary py-12">No articles found.</div>
           ) : (
             <div className="space-y-3">
               {filtered.map((article) => (
                 <button
                   key={article.id}
                   onClick={() => openArticle(article.slug)}
-                  className="w-full text-left bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-brand-blue/50 transition-colors group"
+                  className="w-full text-left bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl p-4 hover:border-brand-blue/50 transition-colors group"
                 >
-                  <h3 className="text-white font-medium group-hover:text-brand-blue transition-colors mb-1">
+                  <h3 className="text-gray-900 dark:text-white font-medium group-hover:text-brand-blue transition-colors mb-1">
                     {article.title}
                   </h3>
                   {article.excerpt && (
-                    <p className="text-text-secondary text-sm line-clamp-2">{article.excerpt}</p>
+                    <p className="text-gray-600 dark:text-text-dark-secondary text-sm line-clamp-2">{article.excerpt}</p>
                   )}
                   {article.category && (
-                    <span className="mt-2 inline-block text-xs px-2 py-0.5 rounded-full bg-dark-700 text-text-secondary">
+                    <span className="mt-2 inline-block text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-text-dark-secondary">
                       {article.category}
                     </span>
                   )}
@@ -127,13 +127,13 @@ export default function KnowledgeBase() {
         {/* Popular sidebar */}
         {popular.length > 0 && (
           <div>
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Popular</h2>
+            <h2 className="text-sm font-semibold text-gray-600 dark:text-text-dark-secondary uppercase tracking-wide mb-3">Popular</h2>
             <div className="space-y-2">
               {popular.slice(0, 6).map((article) => (
                 <button
                   key={article.id}
                   onClick={() => openArticle(article.slug)}
-                  className="w-full text-left text-sm text-text-secondary hover:text-white transition-colors py-1"
+                  className="w-full text-left text-sm text-gray-600 dark:text-text-dark-secondary hover:text-gray-900 dark:hover:text-white transition-colors py-1"
                 >
                   {article.title}
                 </button>

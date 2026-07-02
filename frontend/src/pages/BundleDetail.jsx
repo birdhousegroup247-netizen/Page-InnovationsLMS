@@ -35,7 +35,7 @@ export default function BundleDetail() {
   if (error || !bundle) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-text-secondary mb-4">{error || 'Bundle not found'}</p>
+        <p className="text-gray-600 dark:text-text-dark-secondary mb-4">{error || 'Bundle not found'}</p>
         <Link to="/bundles" className="text-brand-blue hover:underline">Back to Bundles</Link>
       </div>
     );
@@ -51,7 +51,7 @@ export default function BundleDetail() {
       {/* Back */}
       <button
         onClick={() => navigate('/bundles')}
-        className="flex items-center gap-2 text-sm text-text-secondary hover:text-white mb-6 transition-colors"
+        className="flex items-center gap-2 text-sm text-gray-600 dark:text-text-dark-secondary hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> All Bundles
       </button>
@@ -63,23 +63,23 @@ export default function BundleDetail() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Package className="w-6 h-6 text-brand-blue" />
-              <h1 className="text-2xl font-bold text-white">{bundle.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{bundle.name}</h1>
             </div>
             {bundle.description && (
-              <p className="text-text-secondary leading-relaxed">{bundle.description}</p>
+              <p className="text-gray-600 dark:text-text-dark-secondary leading-relaxed">{bundle.description}</p>
             )}
           </div>
 
           {/* Courses */}
           <div>
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-4">
+            <h2 className="text-sm font-semibold text-gray-600 dark:text-text-dark-secondary uppercase tracking-wide mb-4">
               {bundle.courses?.length || 0} Courses Included
             </h2>
             <div className="space-y-3">
               {(bundle.courses || []).map((course) => (
                 <div
                   key={course.id}
-                  className="flex gap-4 bg-dark-800 border border-dark-700 rounded-xl p-4"
+                  className="flex gap-4 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl p-4"
                 >
                   {course.thumbnail_url ? (
                     <img
@@ -88,16 +88,16 @@ export default function BundleDetail() {
                       className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-dark-700 flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-6 h-6 text-text-secondary" />
+                    <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-dark-700 flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-6 h-6 text-gray-600 dark:text-text-dark-secondary" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-medium truncate">{course.title}</h3>
+                    <h3 className="text-gray-900 dark:text-white font-medium truncate">{course.title}</h3>
                     {course.instructor && (
-                      <p className="text-text-secondary text-xs mt-0.5">by {course.instructor.full_name}</p>
+                      <p className="text-gray-600 dark:text-text-dark-secondary text-xs mt-0.5">by {course.instructor.full_name}</p>
                     )}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-text-secondary">
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-600 dark:text-text-dark-secondary">
                       {course.difficulty && (
                         <span className="flex items-center gap-1">
                           <BarChart2 className="w-3 h-3" /> {course.difficulty}
@@ -117,7 +117,7 @@ export default function BundleDetail() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-text-secondary text-sm line-through">
+                    <p className="text-gray-600 dark:text-text-dark-secondary text-sm line-through">
                       {formatPrice(course.price)}
                     </p>
                   </div>
@@ -129,7 +129,7 @@ export default function BundleDetail() {
 
         {/* Right — purchase card */}
         <div className="lg:col-span-1">
-          <div className="bg-dark-800 border border-dark-700 rounded-2xl p-6 sticky top-24">
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-2xl p-6 sticky top-24">
             {savingsPct > 0 && (
               <div className="flex items-center gap-2 mb-4">
                 <span className="px-2.5 py-1 bg-green-900/40 text-green-400 text-xs font-semibold rounded-full flex items-center gap-1">
@@ -139,9 +139,9 @@ export default function BundleDetail() {
             )}
 
             <div className="mb-4">
-              <p className="text-3xl font-bold text-white">{formatPrice(bundle.price)}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatPrice(bundle.price)}</p>
               {savings > 0 && (
-                <p className="text-text-secondary text-sm mt-1">
+                <p className="text-gray-600 dark:text-text-dark-secondary text-sm mt-1">
                   <span className="line-through">${Number(bundle.total_value).toFixed(2)}</span>
                   <span className="text-green-400 ml-2">You save ${Number(savings).toFixed(2)}</span>
                 </p>
@@ -155,7 +155,7 @@ export default function BundleDetail() {
               <ShoppingCart className="w-4 h-4" /> Buy Bundle
             </button>
 
-            <ul className="space-y-2 text-sm text-text-secondary">
+            <ul className="space-y-2 text-sm text-gray-600 dark:text-text-dark-secondary">
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                 {bundle.courses?.length || 0} courses in one purchase

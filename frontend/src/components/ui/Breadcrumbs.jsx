@@ -13,7 +13,7 @@ import { cn } from '../../utils/cn';
  * </Breadcrumbs>
  */
 const Breadcrumbs = ({ children, separator, className }) => {
-  const Separator = separator || <ChevronRight className="w-4 h-4 text-text-muted" />;
+  const Separator = separator || <ChevronRight className="w-4 h-4 text-text-muted dark:text-text-dark-muted" />;
 
   const childrenArray = Array.isArray(children) ? children : [children];
 
@@ -40,8 +40,8 @@ Breadcrumbs.Item = ({ children, href, current, icon: Icon, className }) => {
       className={cn(
         'flex items-center gap-1.5 text-sm font-medium transition-colors',
         current
-          ? 'text-text-primary cursor-default'
-          : 'text-text-muted hover:text-text-primary',
+          ? 'text-text-primary dark:text-text-dark-primary cursor-default'
+          : 'text-text-muted dark:text-text-dark-muted hover:text-text-primary dark:text-text-dark-primary',
         className
       )}
     >

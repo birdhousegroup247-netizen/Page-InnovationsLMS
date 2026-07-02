@@ -45,7 +45,7 @@ const Radio = ({
           {label && (
             <label
               className={cn(
-                'font-medium text-text-primary',
+                'font-medium text-text-primary dark:text-text-dark-primary',
                 disabled && 'opacity-50',
                 !disabled && 'cursor-pointer'
               )}
@@ -54,7 +54,7 @@ const Radio = ({
             </label>
           )}
           {description && (
-            <p className={cn('text-text-muted mt-0.5', disabled && 'opacity-50')}>
+            <p className={cn('text-text-muted dark:text-text-dark-muted mt-0.5', disabled && 'opacity-50')}>
               {description}
             </p>
           )}
@@ -80,7 +80,7 @@ export const RadioGroup = ({
     <div className={cn('w-full', className)}>
       {/* Label */}
       {label && (
-        <label className="block text-sm font-medium text-text-primary mb-3">
+        <label className="block text-sm font-medium text-text-primary dark:text-text-dark-primary mb-3">
           {label}
           {required && <span className="text-error ml-1">*</span>}
         </label>
@@ -92,7 +92,7 @@ export const RadioGroup = ({
       {/* Error or Helper Text */}
       {error && <p className="text-error text-xs mt-2">{error}</p>}
       {!error && helperText && (
-        <p className="text-text-muted text-xs mt-2">{helperText}</p>
+        <p className="text-text-muted dark:text-text-dark-muted text-xs mt-2">{helperText}</p>
       )}
     </div>
   );

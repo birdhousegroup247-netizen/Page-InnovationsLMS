@@ -95,7 +95,7 @@ Table.Head = ({
   return (
     <th
       className={cn(
-        'px-6 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider',
+        'px-6 py-3 text-left text-xs font-semibold text-text-secondary dark:text-text-dark-secondary uppercase tracking-wider',
         sortable && 'cursor-pointer select-none hover:bg-gray-100',
         className
       )}
@@ -105,7 +105,7 @@ Table.Head = ({
       <div className="flex items-center gap-2">
         {children}
         {sortable && (
-          <span className="text-text-muted">
+          <span className="text-text-muted dark:text-text-dark-muted">
             {sortDirection === 'asc' ? (
               <ChevronUp className="w-4 h-4" />
             ) : sortDirection === 'desc' ? (
@@ -131,7 +131,7 @@ Table.Cell = ({ children, className, align = 'left', ...props }) => {
   return (
     <td
       className={cn(
-        'px-6 py-4 text-sm text-text-primary whitespace-nowrap',
+        'px-6 py-4 text-sm text-text-primary dark:text-text-dark-primary whitespace-nowrap',
         alignments[align],
         className
       )}
@@ -148,7 +148,7 @@ Table.Empty = ({ children, colSpan, className }) => {
     <tr>
       <td
         colSpan={colSpan || 100}
-        className={cn('px-6 py-12 text-center text-text-muted', className)}
+        className={cn('px-6 py-12 text-center text-text-muted dark:text-text-dark-muted', className)}
       >
         {children || 'No data available'}
       </td>

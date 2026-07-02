@@ -42,9 +42,9 @@ const ProgressBar = ({
       {/* Label and Percentage */}
       {(label || showPercentage) && (
         <div className="flex items-center justify-between mb-2">
-          {label && <span className="text-sm font-medium text-text-primary">{label}</span>}
+          {label && <span className="text-sm font-medium text-text-primary dark:text-text-dark-primary">{label}</span>}
           {showPercentage && !indeterminate && (
-            <span className="text-sm font-medium text-text-secondary">{normalizedValue}%</span>
+            <span className="text-sm font-medium text-text-secondary dark:text-text-dark-secondary">{normalizedValue}%</span>
           )}
         </div>
       )}
@@ -132,7 +132,7 @@ export const CircularProgress = ({
       {/* Percentage Text */}
       {showPercentage && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-semibold text-text-primary">
+          <span className="text-lg font-semibold text-text-primary dark:text-text-dark-primary">
             {Math.round(normalizedValue)}%
           </span>
         </div>

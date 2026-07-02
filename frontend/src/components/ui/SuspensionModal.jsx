@@ -23,15 +23,15 @@ export default function SuspensionModal() {
   if (isSuspended) {
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-5">
             <AlertOctagon className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Suspended</h2>
-          <p className="text-gray-500 text-sm mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Suspended</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
             Your account has been suspended due to an unpaid installment balance.
           </p>
-          <p className="text-gray-500 text-sm mb-6">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
             Please complete your payment to restore full access to your courses.
           </p>
           <button
@@ -55,15 +55,15 @@ export default function SuspensionModal() {
   // Soft lock (D35)
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+      <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
         <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-5">
           <Lock className="w-8 h-8 text-orange-600" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Content Access Paused</h2>
-        <p className="text-gray-500 text-sm mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Content Access Paused</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
           Your installment payment is significantly overdue. Course access has been temporarily paused.
         </p>
-        <p className="text-gray-500 text-sm mb-6">
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
           Complete your payment to immediately restore access. Your progress is saved.
         </p>
         <button

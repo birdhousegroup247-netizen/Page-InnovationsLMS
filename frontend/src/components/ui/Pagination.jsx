@@ -105,7 +105,7 @@ const Pagination = ({
             <span
               key={`ellipsis-${index}`}
               className={cn(
-                'inline-flex items-center justify-center text-text-muted',
+                'inline-flex items-center justify-center text-text-muted dark:text-text-dark-muted',
                 sizes[size]
               )}
             >
@@ -123,7 +123,7 @@ const Pagination = ({
               sizes[size],
               currentPage === page
                 ? 'bg-brand-blue text-white border-brand-blue hover:bg-brand-blue-600'
-                : 'border-border hover:bg-gray-100 text-text-primary'
+                : 'border-border hover:bg-gray-100 text-text-primary dark:text-text-dark-primary'
             )}
             aria-label={`Page ${page}`}
             aria-current={currentPage === page ? 'page' : undefined}
@@ -200,7 +200,7 @@ export const SimplePagination = ({
         Previous
       </button>
 
-      <span className="text-sm text-text-secondary">
+      <span className="text-sm text-text-secondary dark:text-text-dark-secondary">
         Page {currentPage} of {totalPages}
       </span>
 

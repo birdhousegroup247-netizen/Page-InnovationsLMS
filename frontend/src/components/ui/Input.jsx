@@ -29,7 +29,7 @@ const Input = forwardRef(
     const inputType = isPassword && showPassword ? 'text' : type;
 
     const baseStyles =
-      'block w-full px-4 py-2.5 text-base text-text-primary bg-white border rounded-lg transition-all duration-200 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed';
+      'block w-full px-4 py-2.5 text-base text-text-primary dark:text-text-dark-primary bg-white border rounded-lg transition-all duration-200 placeholder:text-text-muted dark:text-text-dark-muted focus:outline-none focus:ring-2 focus:ring-brand-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed';
 
     const errorStyles = error
       ? 'border-brand-red focus:ring-brand-red-500'
@@ -40,7 +40,7 @@ const Input = forwardRef(
     return (
       <div className={cn('relative', fullWidth ? 'w-full' : '', containerClassName)}>
         {label && (
-          <label className="block text-sm font-medium text-text-primary mb-1.5">
+          <label className="block text-sm font-medium text-text-primary dark:text-text-dark-primary mb-1.5">
             {label}
             {props.required && <span className="text-brand-red ml-1">*</span>}
           </label>
@@ -49,7 +49,7 @@ const Input = forwardRef(
         <div className="relative">
           {/* Left Icon */}
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-text-dark-muted">
               {leftIcon}
             </div>
           )}
@@ -67,7 +67,7 @@ const Input = forwardRef(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-text-dark-muted hover:text-text-primary dark:text-text-dark-primary transition-colors"
               tabIndex={-1}
             >
               {showPassword ? (
@@ -78,7 +78,7 @@ const Input = forwardRef(
             </button>
           ) : (
             rightIcon && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-text-dark-muted">
                 {rightIcon}
               </div>
             )
@@ -92,7 +92,7 @@ const Input = forwardRef(
 
         {/* Helper Text */}
         {helperText && !error && (
-          <p className="mt-1.5 text-sm text-text-muted">{helperText}</p>
+          <p className="mt-1.5 text-sm text-text-muted dark:text-text-dark-muted">{helperText}</p>
         )}
       </div>
     );

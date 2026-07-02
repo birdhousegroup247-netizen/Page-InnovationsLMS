@@ -22,17 +22,17 @@ const EmptyState = ({
       {...props}
     >
       {icon && (
-        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-text-muted">
+        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-dark-700 flex items-center justify-center mb-4 text-text-muted dark:text-text-dark-muted">
           {icon}
         </div>
       )}
 
       {title && (
-        <h3 className="text-lg font-semibold text-text-primary mb-2">{title}</h3>
+        <h3 className="text-lg font-semibold text-text-primary dark:text-text-dark-primary mb-2">{title}</h3>
       )}
 
       {description && (
-        <p className="text-sm text-text-muted max-w-md mb-6">{description}</p>
+        <p className="text-sm text-text-muted dark:text-text-dark-muted max-w-md mb-6">{description}</p>
       )}
 
       {actionLabel && onAction && (
