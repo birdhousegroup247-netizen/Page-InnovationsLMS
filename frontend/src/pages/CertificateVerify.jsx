@@ -45,7 +45,7 @@ export default function CertificateVerify() {
             </div>
             <Award className="w-16 h-16 text-brand-blue mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Certificate of Completion</h1>
-            <p className="text-gray-500 dark:text-text-secondary text-sm mb-6">This certificate is authentic and was issued by TekyPro</p>
+            <p className="text-gray-500 dark:text-text-secondary text-sm mb-6">This certificate is authentic and was issued by Page Innovation</p>
 
             <div className="space-y-4 text-left">
               <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-xl">
@@ -80,7 +80,7 @@ export default function CertificateVerify() {
         )}
 
         <Link to="/" className="inline-block mt-6 text-sm text-brand-blue hover:underline">
-          TekyPro LMS
+          Page Innovation LMS
         </Link>
       </div>
     </div>

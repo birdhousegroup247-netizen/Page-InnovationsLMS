@@ -3,7 +3,7 @@
  *
  * Extracted from BadgesController on 2026-07-01 as the reference
  * pattern for the "no controller > 200 lines" discipline stolen from
- * VIREL (see VIREL-vs-TekyPro-audit.md §2.1). Badges is a small
+ * VIREL (see VIREL-vs-Page Innovation-audit.md §2.1). Badges is a small
  * domain — 4 read/write methods + one internal `checkAndAward` — so
  * it's a clean pilot for the pattern.
  *

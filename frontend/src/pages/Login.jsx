@@ -177,12 +177,12 @@ export default function Login() {
 
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
           {/* Logo */}
-          <img src={logo} alt="TekyPro" className="h-20 w-auto mb-8 filter brightness-0 invert" />
+          <img src={logo} alt="Page Innovation" className="h-20 w-auto mb-8 filter brightness-0 invert" />
 
           {/* Illustration/Content */}
           <div className="text-center max-w-md">
             <h1 className="text-4xl font-bold mb-4 animate-fade-in">
-              Welcome to TekyPro
+              Welcome to Page Innovation
             </h1>
             <p className="text-xl text-white/90 mb-8 animate-slide-up">
               The Leading Remote DBA Service Provider
@@ -239,7 +239,7 @@ export default function Login() {
         <div className="w-full max-w-xl">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8 animate-fade-in">
-            <img src={logo} alt="TekyPro" className="h-12 w-auto mx-auto" />
+            <img src={logo} alt="Page Innovation" className="h-12 w-auto mx-auto" />
           </div>
 
           {/* Form Card */}
@@ -251,7 +251,7 @@ export default function Login() {
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
                 {twoFactor
-                  ? 'Open your authenticator app and enter the 6-digit code for TekyPro.'
+                  ? 'Open your authenticator app and enter the 6-digit code for Page Innovation.'
                   : 'Sign in to continue to your account.'}
               </p>
             </div>
@@ -466,7 +466,7 @@ export default function Login() {
             <p className="text-center text-sm text-gray-600 dark:text-text-dark-secondary mt-6">
               {(typeof window !== 'undefined' && localStorage.getItem('selectedRole') === 'instructor') ? (
                 <>
-                  New to teaching on TekyPro?{' '}
+                  New to teaching on Page Innovation?{' '}
                   <Link to="/instructor-apply" className="text-brand-purple dark:text-purple-300 hover:underline font-semibold">
                     Apply to teach
                   </Link>
@@ -486,7 +486,7 @@ export default function Login() {
 
           {/* Footer */}
           <p className="text-center text-sm text-gray-500 dark:text-text-dark-muted mt-8 transition-colors">
-            © 2025 TekyPro. All rights reserved.
+            © 2025 Page Innovation. All rights reserved.
           </p>
         </div>
       </div>

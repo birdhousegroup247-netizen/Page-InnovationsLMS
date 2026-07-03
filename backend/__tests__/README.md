@@ -1,8 +1,8 @@
-# TekyPro LMS - Testing Guide
+# Page Innovation LMS - Testing Guide
 
 ## Overview
 
-This directory contains all tests for the TekyPro LMS backend.
+This directory contains all tests for the Page Innovation LMS backend.
 
 ## Test Structure
 
@@ -84,7 +84,7 @@ Tests use the same `.env` configuration as development. Make sure your test data
 ```bash
 # Create test database
 mysql -u root -p
-CREATE DATABASE tekypro_lms_test;
+CREATE DATABASE pageinnovation_lms_test;
 ```
 
 Optionally, set `NODE_ENV=test` and use a separate test database.

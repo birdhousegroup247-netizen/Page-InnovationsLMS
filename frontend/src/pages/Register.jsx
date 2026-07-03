@@ -211,7 +211,7 @@ export default function Register() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="TekyPro" className="h-9 w-auto filter brightness-0 invert" />
+            <img src={logo} alt="Page Innovation" className="h-9 w-auto filter brightness-0 invert" />
             <span className="text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">
               · Learn. Build. Ship.
             </span>
@@ -269,7 +269,7 @@ export default function Register() {
         <div className="w-full max-w-xl">
           {/* Mobile-only logo */}
           <div className="lg:hidden text-center mb-5 animate-fade-in">
-            <img src={logo} alt="TekyPro" className="h-9 w-auto mx-auto" />
+            <img src={logo} alt="Page Innovation" className="h-9 w-auto mx-auto" />
           </div>
 
           <div className={formCardClass}>
@@ -347,7 +347,7 @@ export default function Register() {
                         maxSizeMB={3}
                         currentFile={null}
                         uploadEndpoint="/api/upload/signup-avatar"
-                        folder="tekyprolms/signup-avatars"
+                        folder="pageinnovationlms/signup-avatars"
                       />
                     )}
                   </div>
@@ -628,7 +628,7 @@ export default function Register() {
                     className="w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-border-dark bg-white dark:bg-dark-700 text-brand-blue focus:ring-brand-blue focus:ring-offset-0 dark:focus:ring-offset-dark-800 transition-colors cursor-pointer"
                   />
                   <span className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                    I agree to TekyPro's{' '}
+                    I agree to Page Innovation's{' '}
                     <Link to="/terms" className="text-brand-blue hover:underline font-medium">Terms of Service</Link>{' '}
                     and{' '}
                     <Link to="/privacy" className="text-brand-blue hover:underline font-medium">Privacy Policy</Link>.
@@ -697,7 +697,7 @@ export default function Register() {
 
           {/* Footer */}
           <p className="text-center text-sm text-gray-500 dark:text-text-dark-muted mt-8 transition-colors">
-            © 2025 TekyPro. All rights reserved.
+            © 2025 Page Innovation. All rights reserved.
           </p>
         </div>
       </div>

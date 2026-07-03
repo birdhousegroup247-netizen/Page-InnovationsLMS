@@ -138,7 +138,7 @@ export default function AdminProfile() {
                       maxSizeMB={5}
                       currentFile={avatarUrl}
                       uploadEndpoint="/api/upload/profile-picture"
-                      folder="tekyprolms/avatars"
+                      folder="pageinnovationlms/avatars"
                     />
                   </div>
                 </div>

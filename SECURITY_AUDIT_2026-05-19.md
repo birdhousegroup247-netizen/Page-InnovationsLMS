@@ -1,4 +1,4 @@
-# Pre-Launch Security Audit — TekyPro LMS
+# Pre-Launch Security Audit — Page Innovation LMS
 **Date:** 2026-05-19
 **Audit type:** Pre-Launch Checklist (security-prompts.md §7)
 **Launch target:** ~2026-05-31
@@ -66,7 +66,7 @@ JWT_REFRESH_SECRET=ce1e211892e953f9674d3f4b74a40f3d42c1d63f476db39487c65cc786bc5
 
 ### A3 — Seed script hard-codes `password123` for all seeded users
 **File:** `backend/scripts/seedDatabase.js:132`, `:137`, `:152`
-Default seed creates `admin@tekypro.com` (super_admin) + others, all with bcrypt hash of `password123`.
+Default seed creates `admin@pageinnovation.com` (super_admin) + others, all with bcrypt hash of `password123`.
 **Risk:** If `npm run seed` is ever run against production, attackers know the admin password.
 **Fix:** Either (a) refuse to run when `NODE_ENV=production`, or (b) require an env var `SEED_ADMIN_PASSWORD` at runtime. Recommend (a).
 ```js
@@ -96,7 +96,7 @@ const redactFormat = winston.format((info) => {
 
 ### A5 — Privacy policy / cookie consent / data-deletion endpoint missing
 **Evidence:** No `/api/users/me/account` delete route, no privacy-policy / GDPR / cookie-consent files found in `frontend/` or `frontend-admin/`. `CTO_ROADMAP.md:276` lists "GDPR compliance features" as future work.
-**Risk:** If TekyPro serves any EU/UK student, this is legally non-compliant.
+**Risk:** If Page Innovation serves any EU/UK student, this is legally non-compliant.
 **Fix (minimum):**
 1. Add a static privacy policy page on the marketing site / login.
 2. Add a "Delete my account" endpoint: `DELETE /api/users/me/account` with confirmation flow, that nullifies/deletes the user's PII per retention policy.
@@ -150,7 +150,7 @@ const redactFormat = winston.format((info) => {
 | U1 | Domain registrar lock + 2FA | His registrar account |
 | U2 | 2FA on Railway / Render / Cloudinary / PayPal | Those accounts |
 | U3 | Database backups configured + restore tested | Wherever DB ends up hosted (Railway provides automated daily backups on paid tiers; verify after renewal) |
-| U4 | DNS SPF/DKIM/DMARC | `dig tekypro.com TXT` once DNS resolves |
+| U4 | DNS SPF/DKIM/DMARC | `dig pageinnovation.com TXT` once DNS resolves |
 | U5 | Incident response plan exists | Owner-side process |
 | U6 | Production env vars don't reuse the leaked JWT secrets from B1 | After rotation, confirm Railway env has new values |
 

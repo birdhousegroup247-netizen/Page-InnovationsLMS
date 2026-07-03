@@ -44,7 +44,7 @@ const EmailCampaign = sequelize.define(
     body_html: {
       type: DataTypes.TEXT,
       allowNull: false,
-      comment: 'HTML for the body block. Wrapped in the standard TekyPro shell at send time.',
+      comment: 'HTML for the body block. Wrapped in the standard Page Innovation shell at send time.',
     },
     cta_text: {
       type: DataTypes.STRING(100),

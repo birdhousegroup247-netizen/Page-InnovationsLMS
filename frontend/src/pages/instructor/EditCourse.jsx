@@ -520,7 +520,7 @@ export default function EditCourse() {
                 acceptedTypes="image"
                 maxSizeMB={5}
                 currentFile={thumbnailPreview}
-                folder="tekyprolms/courses"
+                folder="pageinnovationlms/courses"
               />
 
               {validationErrors.thumbnail && (

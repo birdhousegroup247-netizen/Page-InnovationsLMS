@@ -28,7 +28,7 @@ class CertificateService {
         courseName,
         completionDate,
         certificateId,
-        instructorName: instructorName || 'TekyPro Team',
+        instructorName: instructorName || 'Page Innovation Team',
       });
 
       logger.info(`Certificate generated successfully: ${certificateId}`);

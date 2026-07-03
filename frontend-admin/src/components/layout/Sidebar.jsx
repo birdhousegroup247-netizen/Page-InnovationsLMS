@@ -196,7 +196,7 @@ const Sidebar = ({ items = [], className, isOpen = false, onClose }) => {
         {/* Logo */}
         <div className="px-6 py-6">
           <Link to="/" className="flex items-center">
-            <img src={logo} alt="TekyPro" className="h-8 w-auto" />
+            <img src={logo} alt="Page Innovation" className="h-8 w-auto" />
           </Link>
         </div>
 

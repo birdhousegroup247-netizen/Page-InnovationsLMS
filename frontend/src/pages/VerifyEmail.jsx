@@ -134,7 +134,7 @@ export default function VerifyEmail() {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <img src={logo} alt="TekyPro" className="h-12 w-auto mx-auto mb-4" />
+          <img src={logo} alt="Page Innovation" className="h-12 w-auto mx-auto mb-4" />
         </div>
 
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8">

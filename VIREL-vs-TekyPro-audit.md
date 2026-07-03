@@ -1,8 +1,8 @@
-# VIREL vs TekyPro — Comparison Audit (2026-07-01)
+# VIREL vs Page Innovation — Comparison Audit (2026-07-01)
 
 Same audit format as the other seven files at this repo's root. This
 one compares **VIREL** (`/home/anointed/Desktop/VIREL`) — the rewards
-platform you inherited — against **TekyPro** — the LMS you built.
+platform you inherited — against **Page Innovation** — the LMS you built.
 
 **Framing:** you didn't write VIREL. You're evaluating whether the
 developer(s) who did are strong, what you can learn from their code,
@@ -22,7 +22,7 @@ and where your own code style is stronger or weaker.
 
 ### Developer skill
 
-| Dimension | VIREL dev | You (TekyPro) | Winner |
+| Dimension | VIREL dev | You (Page Innovation) | Winner |
 |---|---|---|---|
 | **TypeScript discipline** | ✅ Full TS, interfaces on request objects | ❌ Plain JS, no types anywhere | VIREL |
 | **Architecture / layering** | ✅ routes → controllers → services → models (clean) | ⚠️ controllers do too much; helpers scattered | VIREL |
@@ -41,7 +41,7 @@ and where your own code style is stronger or weaker.
 
 **VIREL developer: 6.5 / 10** — strong architecture instincts, real TypeScript, tests exist. But security is genuinely alarming for a real-money product, and code hygiene (console.logs everywhere, `any` overuse) undercuts the TS benefit.
 
-**You on TekyPro: 6 / 10** — you ship features fast, your money-flow is more correct than theirs, and you've now got a serious auditing culture. But no TypeScript, no tests, and controllers mix too many concerns.
+**You on Page Innovation: 6 / 10** — you ship features fast, your money-flow is more correct than theirs, and you've now got a serious auditing culture. But no TypeScript, no tests, and controllers mix too many concerns.
 
 **These are close.** They're better in a few structural ways, you're better in a few operational ways. The delta isn't experience — it's *taste and priorities*.
 
@@ -57,12 +57,12 @@ approve, reject, request, refund. The controller is thin — just
 parses input and calls the service. Every domain in VIREL follows
 this pattern.
 
-**Compare TekyPro:** your controllers are 500–800 lines each and mix
+**Compare Page Innovation:** your controllers are 500–800 lines each and mix
 input validation, DB writes, side-effects, and email sending. Only
 after the finance audit did you extract `enrollmentService` — but
 that's one service. VIREL has services for every domain from day one.
 
-**Steal:** for every controller in TekyPro > 300 lines, extract a
+**Steal:** for every controller in Page Innovation > 300 lines, extract a
 `Service` class that owns the business logic. Controller becomes
 thin. Bonus: it becomes testable in isolation.
 
@@ -73,11 +73,11 @@ thin. Bonus: it becomes testable in isolation.
 `proof-ocr-anchor.service.ts`, `proof-decision.service.ts` (combines
 signals). Each file has one job.
 
-TekyPro's assignment grading is one big controller. If you ever add
+Page Innovation's assignment grading is one big controller. If you ever add
 auto-grading with AI (which every LMS is doing), you want VIREL's
 shape: separate anti-fraud, validation, and decision layers.
 
-**Steal:** when TekyPro adds AI features (grading, plagiarism check,
+**Steal:** when Page Innovation adds AI features (grading, plagiarism check,
 content moderation), split it into `service` + `-validation` +
 `-decision` from the start.
 
@@ -88,12 +88,12 @@ content moderation), split it into `service` + `-validation` +
 mocked inputs. Not a lot, but the pattern is set up (`jest.config.ts`,
 `tests/setup.ts`). Any dev can add a test in 10 minutes.
 
-**TekyPro has zero tests.** You've now got 7 audit docs that name
+**Page Innovation has zero tests.** You've now got 7 audit docs that name
 specific behaviors — that's exactly what should be captured as a
 test.
 
 **Steal:** copy VIREL's `jest.config.ts` + `tests/setup.ts` pattern
-into TekyPro. Start with `tests/finance/bundle-checkout.test.ts` for
+into Page Innovation. Start with `tests/finance/bundle-checkout.test.ts` for
 the audit item you just fixed. Test-per-audit-finding.
 
 ### 2.4 Real TypeScript
@@ -103,10 +103,10 @@ Every request handler has typed request interfaces
 service returns typed results. Even with 581 `any` usages, the
 skeleton is typed.
 
-**TekyPro:** no types. When you rename a field on a Payment row, you
+**Page Innovation:** no types. When you rename a field on a Payment row, you
 find out at runtime.
 
-**Steal:** if you migrate TekyPro to TypeScript, start with the models
+**Steal:** if you migrate Page Innovation to TypeScript, start with the models
 + service returns. Even partial adoption catches the highest-impact
 bugs.
 
@@ -117,7 +117,7 @@ the exact permission it needs. Super_admin bypasses. The permission
 list (`admin.manage`, `mission.manage`, etc.) is duplicated in the
 admin frontend for pre-render gating.
 
-**TekyPro:** `authorize('admin', 'super_admin')` — every admin route
+**Page Innovation:** `authorize('admin', 'super_admin')` — every admin route
 just checks role, not permission. Fine for now but doesn't scale to
 a team where different admins do different jobs.
 
@@ -131,22 +131,22 @@ VIREL has separate `User` and `Admin` collections with separate JWT
 verification. Admins can never accidentally leak into the user API
 and vice versa. Clean.
 
-**TekyPro:** everything is in the `User` table with a role enum. Fine
+**Page Innovation:** everything is in the `User` table with a role enum. Fine
 for scale, but leaks bugs like "admin logs in via student login and
 somehow gets a student token." VIREL's separation is safer.
 
-**Not necessarily worth changing** — TekyPro's dual-role instructor
+**Not necessarily worth changing** — Page Innovation's dual-role instructor
 pattern (`[[project-dual-role-design]]`) needs a single user record.
 Just know the trade-off.
 
 ### 2.7 Token version invalidation
 
 `user.tokenVersion` is baked into every JWT. Bumping it invalidates
-every issued token — clean logout-everywhere. TekyPro relies on
+every issued token — clean logout-everywhere. Page Innovation relies on
 Redis token blacklist (§4.2 of security-audit.md — silently no-ops
 without Redis).
 
-**Steal:** add `token_version` INT to `users` in TekyPro. On password
+**Steal:** add `token_version` INT to `users` in Page Innovation. On password
 change / suspicious activity, bump it. Middleware checks the version
 matches the DB. No Redis needed for this — always works.
 
@@ -184,7 +184,7 @@ return `${payloadBase64}.${signature}`;
 Homegrown crypto. Missing header, missing standard claims, no
 `kid`, no algorithm negotiation. Works, but why?
 
-**Your TekyPro version** uses `jsonwebtoken` library with separate
+**Your Page Innovation version** uses `jsonwebtoken` library with separate
 access + refresh secrets, expiry of 24h/7d (or 7d/30d with
 remember-me), and just got a boot-time secret-strength assertion
 (security-audit fix). You're clearly better here.
@@ -215,7 +215,7 @@ schema and snapshot it at request time.
 
 **Steal-the-lesson:** money records must snapshot everything they
 need at write time. Never trust the current state of a related row
-at read time. TekyPro's Payment table already does this (amount,
+at read time. Page Innovation's Payment table already does this (amount,
 currency, coupon_code_id all snapshotted).
 
 ### 3.3 🟠 `Math.random()` for OTP
@@ -234,7 +234,7 @@ const generateNumericOTP = (length: number): string => {
 account login + phone verification + withdrawal PIN, this is a real
 issue. Should be `crypto.randomInt(0, 10)`.
 
-**TekyPro's verification code** uses `crypto.randomInt` correctly.
+**Page Innovation's verification code** uses `crypto.randomInt` correctly.
 Your side wins this one.
 
 ### 3.4 🟠 User enumeration on login
@@ -252,7 +252,7 @@ learn which ones have accounts. Basic account harvesting.
 **Fix:** always return the same success message
 regardless of DB hit. Send email only if account exists.
 
-**TekyPro:** already correct on forgot-password (need to verify per
+**Page Innovation:** already correct on forgot-password (need to verify per
 security-audit §4.9 but the pattern is there).
 
 ### 3.5 🟠 Store-review backdoor account
@@ -277,7 +277,7 @@ This is common for Apple/Google app-store reviewers, but:
 (no balance, no bank account, sandbox-tagged) OR use a signed
 short-lived reviewer token issued by admin panel.
 
-TekyPro has no equivalent because it's not app-store distributed —
+Page Innovation has no equivalent because it's not app-store distributed —
 but note the pattern for the future.
 
 ### 3.6 🟠 Verbose auth logging leaks IDs
@@ -294,7 +294,7 @@ admin IDs and correlate them with actions.
 **Fix:** structured logger + debug gate. VIREL has `Logger` imported
 in `app.ts` but the middleware still uses `console.log`.
 
-TekyPro has the same `console.log` sprinkling problem — you use
+Page Innovation has the same `console.log` sprinkling problem — you use
 Winston for high-value logs but plenty of `console.log` leaks.
 Improvement for both.
 
@@ -311,7 +311,7 @@ this.walletAccountNumber = ENV.MONNIFY_WALLET_ACCOUNT_NUMBER_LIVE;
 No `NODE_ENV` switch to sandbox. Anyone running the API locally with
 a `.env` copied from prod is one bug away from moving real money.
 
-**TekyPro's payment services** always route through env-configured
+**Page Innovation's payment services** always route through env-configured
 keys and never mix. Better hygiene.
 
 ### 3.8 🟡 Dynamic `await import(...)` inside methods
@@ -340,7 +340,7 @@ For a TypeScript project, this is a lot of `any`. It undercuts the
 whole benefit of TS — if half your params are `any`, the compiler
 can't help.
 
-**Same issue in TekyPro conceptually** (no types at all), but VIREL
+**Same issue in Page Innovation conceptually** (no types at all), but VIREL
 opted into the discipline and then didn't enforce it. That's worse
 than not opting in.
 
@@ -350,7 +350,7 @@ than not opting in.
 
 ### 4.1 Transactional side-effects
 
-TekyPro's `enrollmentService.runTransactionalSideEffects` wraps
+Page Innovation's `enrollmentService.runTransactionalSideEffects` wraps
 every enrollment in `sequelize.transaction`. Coupon lock, enrollment
 row, chat join, test assign — atomic. VIREL's `RequestWithdrawal`
 tries to be atomic but rolls back manually on failure:
@@ -367,7 +367,7 @@ transactions (with replica sets), and this flow should use them.
 
 ### 4.2 Currency-aware everything
 
-You built `formatCurrency(value, currency)` in TekyPro across
+You built `formatCurrency(value, currency)` in Page Innovation across
 backend emails + both frontends. VIREL is NGN-only, hardcoded — a
 `"NGN 500"` string embedded in the throw message. Fine for a
 single-market product now, but not portable.
@@ -477,7 +477,7 @@ worth respecting.
 
 - **VIREL codebase is more structurally mature.** Services, tests,
   TypeScript, RBAC.
-- **TekyPro codebase is more operationally mature.** Audits,
+- **Page Innovation codebase is more operationally mature.** Audits,
   memory, currency-aware, transactional, security-hardened.
 - **Both are shippable products.** Neither is a hobby project.
 
@@ -507,7 +507,7 @@ on at an interview — VIREL's developer is meaningfully ahead:
 
 If I only saw the code without knowing who wrote what, I'd guess
 VIREL's dev has been writing production Node/TS for 4-6 years and
-TekyPro's dev is more like 1-3 years but very sharp on the domain.
+Page Innovation's dev is more like 1-3 years but very sharp on the domain.
 
 **Where you actually win** isn't code craft — it's **product judgment
 and rigor**. You audit. You care about money-flow correctness. You

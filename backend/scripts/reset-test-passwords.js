@@ -7,7 +7,7 @@ async function resetPasswords() {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'tekypro_lms'
+    database: process.env.DB_NAME || 'pageinnovation_lms'
   });
 
   try {
@@ -21,9 +21,9 @@ async function resetPasswords() {
 
     // Update passwords for all test users
     const testUsers = [
-      'student@tekypro.com',
-      'instructor@tekypro.com',
-      'admin@tekypro.com'
+      'student@pageinnovation.com',
+      'instructor@pageinnovation.com',
+      'admin@pageinnovation.com'
     ];
 
     for (const email of testUsers) {
@@ -36,9 +36,9 @@ async function resetPasswords() {
 
     console.log('\n✅ All test user passwords have been reset to: Admin@123');
     console.log('\nTest accounts:');
-    console.log('- student@tekypro.com / Admin@123');
-    console.log('- instructor@tekypro.com / Admin@123');
-    console.log('- admin@tekypro.com / Admin@123');
+    console.log('- student@pageinnovation.com / Admin@123');
+    console.log('- instructor@pageinnovation.com / Admin@123');
+    console.log('- admin@pageinnovation.com / Admin@123');
 
   } catch (error) {
     console.error('Error:', error);

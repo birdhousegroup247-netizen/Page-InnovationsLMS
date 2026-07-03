@@ -1,10 +1,10 @@
-# TekyPro Learning Management System (LMS)
+# Page Innovation Learning Management System (LMS)
 
 > **⚠️ SECURITY NOTICE:** This repository contains sensitive information. Always keep `.env` files secure and never commit them to version control.
 
 ## 🎓 Project Overview
 
-TekyPro LMS is a comprehensive Learning Management System built for database training excellence, specifically designed for MSSQL Server training with scalability for PostgreSQL, MySQL, and other technologies.
+Page Innovation LMS is a comprehensive Learning Management System built for database training excellence, specifically designed for MSSQL Server training with scalability for PostgreSQL, MySQL, and other technologies.
 
 ### Key Features
 
@@ -73,10 +73,10 @@ npm install
 mysql -u root -p
 
 # Create database
-CREATE DATABASE tekypro_lms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE pageinnovation_lms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # Import schema and seed data
-USE tekypro_lms;
+USE pageinnovation_lms;
 SOURCE database/schema.sql;
 SOURCE database/seed.sql;
 
@@ -122,9 +122,9 @@ npm run dev
 
 | Email | Password | Role | Purpose |
 |-------|----------|------|---------|
-| admin@tekypro.com | Admin@123 | Super Admin | Full system access |
-| instructor@tekypro.com | Admin@123 | Instructor | Create courses/tests |
-| student@tekypro.com | Admin@123 | Student | Enroll and learn |
+| admin@pageinnovation.com | Admin@123 | Super Admin | Full system access |
+| instructor@pageinnovation.com | Admin@123 | Instructor | Create courses/tests |
+| student@pageinnovation.com | Admin@123 | Student | Enroll and learn |
 
 **⚠️ SECURITY:** Change these passwords immediately in production!
 
@@ -238,13 +238,13 @@ For production, use a managed MySQL service:
 
 ## 📄 License
 
-Proprietary - TekyPro - The Leading Remote DBA Service Provider
+Proprietary - Page Innovation - The Leading Remote DBA Service Provider
 
 ## 🆘 Support
 
 For issues or questions:
-- Email: support@tekypro.com
-- Website: https://www.tekypro.com
+- Email: support@pageinnovation.com
+- Website: https://www.pageinnovation.com
 
 ## 🗺️ Roadmap
 
@@ -259,4 +259,4 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ by TekyPro**
+**Built with ❤️ by Page Innovation**

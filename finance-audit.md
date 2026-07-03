@@ -1,4 +1,4 @@
-# Finance Audit — TekyPro (2026-06-26)
+# Finance Audit — Page Innovation (2026-06-26)
 
 End-to-end audit of the money flow across all 3 apps: student frontend,
 instructor frontend (same React project), admin frontend, and the shared

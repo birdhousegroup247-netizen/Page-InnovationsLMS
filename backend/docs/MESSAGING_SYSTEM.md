@@ -640,7 +640,7 @@ user:stopped_typing { userId }
 
 
 
-● Here's what's left that would meaningfully improve TekyPro:                      
+● Here's what's left that would meaningfully improve Page Innovation:                      
                     
   Core LMS gaps                                                                    
   1. Auto-issue certificates — trigger certificate generation automatically when a
@@ -691,7 +691,7 @@ user:stopped_typing { userId }
                                                                                          
 ●  mysqled for 1 patuern (ctrl+o to expand)  dev/null <<'SQL'                            
    SELECT TABLE_NAME, INDEX_NAME, COLUMN_NAME                                            
-● Bash(mysql -u root -pSunmboye@1 tekypro_lms 2>/dev/null <<'SQL'                        
+● Bash(mysql -u root -pSunmboye@1 pageinnovation_lms 2>/dev/null <<'SQL'                        
       SELECT TABLE_NAME,'INDEX_NAME,'COLUMN_NAME…)                                       
   ⎿A TABLE_NAMEMINDEX_NAME      COLUMN_NAME                                              
      activity_logs      activity_logs_action    action       ations','messages')         

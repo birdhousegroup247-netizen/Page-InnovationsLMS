@@ -1,5 +1,5 @@
 # ============================================================================
-# TekyPro LMS Backend - Production Dockerfile
+# Page Innovation LMS Backend - Production Dockerfile
 # ============================================================================
 
 FROM node:18-alpine AS base

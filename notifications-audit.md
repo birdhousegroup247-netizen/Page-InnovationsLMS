@@ -1,4 +1,4 @@
-# Notifications Audit — TekyPro (2026-07-01)
+# Notifications Audit — Page Innovation (2026-07-01)
 
 Audit of the in-app notification system parallel to the email audit.
 Covers the model, trigger sites, unread-count correctness, per-user

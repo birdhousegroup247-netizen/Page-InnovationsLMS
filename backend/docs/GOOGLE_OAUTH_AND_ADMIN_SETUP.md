@@ -1,6 +1,6 @@
 # Google OAuth & Admin Dashboard Setup Guide
 
-Complete guide for setting up Google OAuth authentication and the Admin Dashboard for TekyPro LMS.
+Complete guide for setting up Google OAuth authentication and the Admin Dashboard for Page Innovation LMS.
 
 ---
 
@@ -30,7 +30,7 @@ Google OAuth allows users to sign in using their Google accounts. When a user au
 
 2. **Create a New Project** (or select existing)
    - Click "Select a project" → "New Project"
-   - Name: "TekyPro LMS"
+   - Name: "Page Innovation LMS"
    - Click "Create"
 
 3. **Enable Google+ API**
@@ -42,7 +42,7 @@ Google OAuth allows users to sign in using their Google accounts. When a user au
    - Go to: APIs & Services → Credentials
    - Click "Create Credentials" → "OAuth client ID"
    - Application type: "Web application"
-   - Name: "TekyPro LMS Web"
+   - Name: "Page Innovation LMS Web"
 
 5. **Configure Authorized Origins**
    ```
@@ -159,7 +159,7 @@ It should contain:
 ```env
 NODE_ENV=development
 PORT=5001
-DB_NAME=tekypro_lms
+DB_NAME=pageinnovation_lms
 DB_USER=root
 DB_PASSWORD=your-password
 JWT_SECRET=your-jwt-secret
@@ -184,7 +184,7 @@ You should see:
 ```
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🔧 TekyPro LMS Admin Dashboard API                     ║
+║   🔧 Page Innovation LMS Admin Dashboard API                     ║
 ║                                                           ║
 ║   Environment: development                                ║
 ║   Port: 5001                                              ║
@@ -192,8 +192,8 @@ You should see:
 ║   Server URL: http://localhost:5001                       ║
 ║   Health Check: http://localhost:5001/health             ║
 ║                                                           ║
-║   TekyPro - The Leading Remote DBA Service Provider      ║
-║   https://www.tekypro.com                                 ║
+║   Page Innovation - The Leading Remote DBA Service Provider      ║
+║   https://www.pageinnovation.com                                 ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 ```
@@ -310,7 +310,7 @@ curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "full_name": "Admin User",
-    "email": "admin@tekypro.com",
+    "email": "admin@pageinnovation.com",
     "password": "Admin@123456",
     "role": "admin"
   }'
@@ -414,7 +414,7 @@ curl http://localhost:5001/api/admin/analytics/students/performance \
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "student@tekypro.com",
+    "email": "student@pageinnovation.com",
     "password": "Student@123"
   }'
 
@@ -493,7 +493,7 @@ curl http://localhost:5001/api/admin/users \
 - Both servers use same database
 - Check database credentials in admin `.env`
 - Ensure MySQL is running
-- Test connection: `mysql -u root -p tekypro_lms`
+- Test connection: `mysql -u root -p pageinnovation_lms`
 
 ---
 

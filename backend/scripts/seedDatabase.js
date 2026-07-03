@@ -134,7 +134,7 @@ class DatabaseSeeder {
         // Create Super Admin
         const superAdmin = await User.create({
             full_name: 'System Administrator',
-            email: 'admin@tekypro.com',
+            email: 'admin@pageinnovation.com',
             password_hash: hashedPassword,
             role: 'super_admin',
             is_active: true,
@@ -147,7 +147,7 @@ class DatabaseSeeder {
         for (let i = 0; i < 2; i++) {
             const admin = await User.create({
                 full_name: faker.person.fullName(),
-                email: faker.internet.email({ provider: 'tekypro.com' }).toLowerCase(),
+                email: faker.internet.email({ provider: 'pageinnovation.com' }).toLowerCase(),
                 password_hash: hashedPassword,
                 role: 'admin',
                 is_active: true,
@@ -335,7 +335,7 @@ class DatabaseSeeder {
                         student_name: student.full_name,
                         course_title: course.title,
                         issue_date: faker.date.recent(),
-                        certificate_url: `https://tekypro.com/certificates/${faker.string.alphanumeric(16)}`
+                        certificate_url: `https://pageinnovation.com/certificates/${faker.string.alphanumeric(16)}`
                     });
                 }
             }

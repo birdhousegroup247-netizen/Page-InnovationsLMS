@@ -1,8 +1,8 @@
-# TekyPro LMS - Backend API
+# Page Innovation LMS - Backend API
 
 ## 🎉 Backend Setup Complete!
 
-The TekyPro LMS backend is now fully configured and running successfully.
+The Page Innovation LMS backend is now fully configured and running successfully.
 
 ## ✅ What's Been Set Up
 
@@ -53,7 +53,7 @@ backend/
 - ✅ express-rate-limit (Rate limiting)
 
 ### 3. **Database Connection**
-- ✅ Connected to MySQL database: `tekypro_lms`
+- ✅ Connected to MySQL database: `pageinnovation_lms`
 - ✅ 30 tables ready to use
 - ✅ Sequelize ORM configured
 
@@ -120,12 +120,12 @@ FRONTEND_URL=http://localhost:3000
 # Database
 DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=tekypro_lms
+DB_NAME=pageinnovation_lms
 DB_USER=root
 DB_PASSWORD=Sunmboye@1
 
 # JWT (will be used for authentication)
-JWT_SECRET=tekypro-lms-development-secret-key...
+JWT_SECRET=pageinnovation-lms-development-secret-key...
 JWT_EXPIRE=24h
 ```
 
@@ -225,11 +225,11 @@ npm update
 For issues or questions:
 - Check the logs: `/logs/`
 - Review the plan: `/User/plan.md`
-- TekyPro Website: https://www.tekypro.com
+- Page Innovation Website: https://www.pageinnovation.com
 
 ---
 
 **Status:** ✅ Backend infrastructure complete
 **Next:** Build authentication APIs (Day 1-2 of development plan)
 
-**TekyPro - The Leading Remote DBA Service Provider**
+**Page Innovation - The Leading Remote DBA Service Provider**

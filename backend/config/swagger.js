@@ -8,13 +8,13 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'TekyPro LMS API',
+      title: 'Page Innovation LMS API',
       version: '1.0.0',
-      description: 'Complete API documentation for TekyPro Learning Management System',
+      description: 'Complete API documentation for Page Innovation Learning Management System',
       contact: {
-        name: 'TekyPro Support',
-        url: 'https://www.tekypro.com',
-        email: 'support@tekypro.com',
+        name: 'Page Innovation Support',
+        url: 'https://www.pageinnovation.com',
+        email: 'support@pageinnovation.com',
       },
       license: {
         name: 'ISC',
@@ -27,7 +27,7 @@ const options = {
         description: 'Development server',
       },
       {
-        url: 'https://api.tekypro.com',
+        url: 'https://api.pageinnovation.com',
         description: 'Production server',
       },
     ],

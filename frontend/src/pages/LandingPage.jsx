@@ -130,14 +130,14 @@ export default function LandingPage() {
       name: 'Sarah Johnson',
       role: 'Senior Software Engineer @ Google',
       image: 'https://randomuser.me/api/portraits/women/44.jpg',
-      quote: 'TekyPro transformed my career trajectory. The SQL mastery course not only taught me advanced concepts but also prepared me for real-world challenges. Within 3 months, I landed my dream job at Google!',
+      quote: 'Page Innovation transformed my career trajectory. The SQL mastery course not only taught me advanced concepts but also prepared me for real-world challenges. Within 3 months, I landed my dream job at Google!',
       rating: 5,
     },
     {
       name: 'Michael Chen',
       role: 'Lead Data Analyst @ Amazon',
       image: 'https://randomuser.me/api/portraits/men/32.jpg',
-      quote: 'The hands-on projects were invaluable. Unlike other platforms, TekyPro focuses on practical skills that employers actually need. I now work at Amazon thanks to the comprehensive training.',
+      quote: 'The hands-on projects were invaluable. Unlike other platforms, Page Innovation focuses on practical skills that employers actually need. I now work at Amazon thanks to the comprehensive training.',
       rating: 5,
     },
     {
@@ -193,7 +193,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo - Fixed Alignment */}
             <div className="flex items-center gap-3 cursor-pointer select-none">
-              <img src={logo} alt="TekyPro" className="h-12 w-auto" />
+              <img src={logo} alt="Page Innovation" className="h-12 w-auto" />
             </div>
 
             {/* Auth Buttons */}
@@ -458,7 +458,7 @@ export default function LandingPage() {
           <div className="max-w-full mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Why Choose TekyPro?
+              Why Choose Page Innovation?
             </h2>
             <p className="text-lg text-gray-700 dark:text-gray-300">
               Everything you need to succeed in your tech career.
@@ -497,7 +497,7 @@ export default function LandingPage() {
                 Loved by students worldwide
               </h2>
               <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
-                Join thousands of professionals who transformed their careers with TekyPro.
+                Join thousands of professionals who transformed their careers with Page Innovation.
               </p>
               
               <div className="flex gap-4 mb-8">
@@ -610,7 +610,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
-                <img src={logo} alt="TekyPro" className="h-8 w-auto" />
+                <img src={logo} alt="Page Innovation" className="h-8 w-auto" />
               </div>
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed font-medium">
                 The leading platform for database administration and cloud technology training.
@@ -646,7 +646,7 @@ export default function LandingPage() {
           </div>
           
           <div className="border-t border-gray-200 dark:border-gray-800 pt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            © {new Date().getFullYear()} TekyPro. All rights reserved.
+            © {new Date().getFullYear()} Page Innovation. All rights reserved.
           </div>
           </div>
         </div>

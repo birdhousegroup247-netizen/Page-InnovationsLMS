@@ -12,7 +12,7 @@ const register = new promClient.Registry();
 // Add default metrics (CPU, memory, event loop, etc.)
 promClient.collectDefaultMetrics({
   register,
-  prefix: 'tekypro_lms_',
+  prefix: 'pageinnovation_lms_',
   gcDurationBuckets: [0.001, 0.01, 0.1, 1, 2, 5], // Garbage collection duration buckets
 });
 
@@ -22,7 +22,7 @@ promClient.collectDefaultMetrics({
 
 // HTTP Request Duration
 const httpRequestDuration = new promClient.Histogram({
-  name: 'tekypro_lms_http_request_duration_seconds',
+  name: 'pageinnovation_lms_http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
   buckets: [0.001, 0.01, 0.1, 0.5, 1, 2, 5, 10], // Response time buckets in seconds
@@ -31,7 +31,7 @@ const httpRequestDuration = new promClient.Histogram({
 
 // HTTP Request Counter
 const httpRequestCounter = new promClient.Counter({
-  name: 'tekypro_lms_http_requests_total',
+  name: 'pageinnovation_lms_http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
   registers: [register],
@@ -39,14 +39,14 @@ const httpRequestCounter = new promClient.Counter({
 
 // Active Connections
 const activeConnections = new promClient.Gauge({
-  name: 'tekypro_lms_active_connections',
+  name: 'pageinnovation_lms_active_connections',
   help: 'Number of active connections',
   registers: [register],
 });
 
 // Database Query Duration
 const dbQueryDuration = new promClient.Histogram({
-  name: 'tekypro_lms_db_query_duration_seconds',
+  name: 'pageinnovation_lms_db_query_duration_seconds',
   help: 'Duration of database queries in seconds',
   labelNames: ['query_type', 'table'],
   buckets: [0.001, 0.01, 0.05, 0.1, 0.5, 1, 2, 5],
@@ -55,7 +55,7 @@ const dbQueryDuration = new promClient.Histogram({
 
 // Cache Hit/Miss Counter
 const cacheCounter = new promClient.Counter({
-  name: 'tekypro_lms_cache_operations_total',
+  name: 'pageinnovation_lms_cache_operations_total',
   help: 'Total number of cache operations',
   labelNames: ['operation', 'result'], // operation: get/set, result: hit/miss/error
   registers: [register],
@@ -63,7 +63,7 @@ const cacheCounter = new promClient.Counter({
 
 // File Upload Size
 const fileUploadSize = new promClient.Histogram({
-  name: 'tekypro_lms_file_upload_bytes',
+  name: 'pageinnovation_lms_file_upload_bytes',
   help: 'Size of uploaded files in bytes',
   labelNames: ['file_type'],
   buckets: [1024, 10240, 102400, 1048576, 10485760, 104857600], // 1KB to 100MB
@@ -72,7 +72,7 @@ const fileUploadSize = new promClient.Histogram({
 
 // Active Users Gauge
 const activeUsers = new promClient.Gauge({
-  name: 'tekypro_lms_active_users',
+  name: 'pageinnovation_lms_active_users',
   help: 'Number of currently active users',
   labelNames: ['role'],
   registers: [register],
@@ -80,14 +80,14 @@ const activeUsers = new promClient.Gauge({
 
 // Course Enrollments Counter
 const courseEnrollments = new promClient.Counter({
-  name: 'tekypro_lms_course_enrollments_total',
+  name: 'pageinnovation_lms_course_enrollments_total',
   help: 'Total number of course enrollments',
   registers: [register],
 });
 
 // Test Submissions Counter
 const testSubmissions = new promClient.Counter({
-  name: 'tekypro_lms_test_submissions_total',
+  name: 'pageinnovation_lms_test_submissions_total',
   help: 'Total number of test submissions',
   labelNames: ['test_type'], // practice, assigned
   registers: [register],
@@ -95,14 +95,14 @@ const testSubmissions = new promClient.Counter({
 
 // Certificate Generations Counter
 const certificateGenerations = new promClient.Counter({
-  name: 'tekypro_lms_certificates_generated_total',
+  name: 'pageinnovation_lms_certificates_generated_total',
   help: 'Total number of certificates generated',
   registers: [register],
 });
 
 // Email Sent Counter
 const emailsSent = new promClient.Counter({
-  name: 'tekypro_lms_emails_sent_total',
+  name: 'pageinnovation_lms_emails_sent_total',
   help: 'Total number of emails sent',
   labelNames: ['email_type', 'status'], // status: success/failure
   registers: [register],
@@ -110,7 +110,7 @@ const emailsSent = new promClient.Counter({
 
 // Socket.IO Connections
 const socketConnections = new promClient.Gauge({
-  name: 'tekypro_lms_socket_connections',
+  name: 'pageinnovation_lms_socket_connections',
   help: 'Number of active Socket.IO connections',
   registers: [register],
 });
@@ -177,7 +177,7 @@ async function metricsEndpoint(req, res) {
  * Health check with metrics
  */
 function healthCheck(req, res) {
-  const metrics = register.getSingleMetric('tekypro_lms_http_requests_total');
+  const metrics = register.getSingleMetric('pageinnovation_lms_http_requests_total');
 
   res.json({
     success: true,

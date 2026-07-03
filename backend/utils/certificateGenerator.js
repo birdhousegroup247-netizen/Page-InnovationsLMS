@@ -12,7 +12,7 @@ const generateCertificate = async (data) => {
     courseName,
     completionDate,
     certificateId,
-    instructorName = 'TekyPro Team',
+    instructorName = 'Page Innovation Team',
   } = data;
 
   return new Promise(async (resolve, reject) => {
@@ -108,7 +108,7 @@ const generateCertificate = async (data) => {
 
       // Generate QR code
       const qrCodeDataUrl = await QRCode.toDataURL(
-        `${process.env.FRONTEND_URL || 'https://tekypro.com'}/verify/${certificateId}`
+        `${process.env.FRONTEND_URL || 'https://pageinnovation.com'}/verify/${certificateId}`
       );
 
       // QR Code for verification
@@ -141,10 +141,10 @@ const generateCertificate = async (data) => {
            align: 'center',
          });
 
-      // TekyPro branding
+      // Page Innovation branding
       doc.fontSize(10)
          .fillColor('#3b82f6')
-         .text('TekyPro LMS - www.tekypro.com', 0, doc.page.height - 40, {
+         .text('Page Innovation LMS - www.pageinnovation.com', 0, doc.page.height - 40, {
            align: 'center',
            width: doc.page.width,
          });

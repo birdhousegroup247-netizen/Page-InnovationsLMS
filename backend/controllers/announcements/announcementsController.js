@@ -521,7 +521,7 @@ class AnnouncementsController {
         return {
           ...plain,
           source: 'admin',
-          author_name: plain.admin?.full_name || 'TekyPro',
+          author_name: plain.admin?.full_name || 'Page Innovation',
           author_avatar: plain.admin?.profile_picture || null,
           can_edit: false,
           can_delete: false,

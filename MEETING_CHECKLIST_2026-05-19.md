@@ -14,7 +14,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 >
 > **b) Create an app in PayPal Developer Dashboard**
 > Go to https://developer.paypal.com/dashboard/applications
-> Create a new app called "TekyPro LMS".
+> Create a new app called "Page Innovation LMS".
 > You'll see two tabs: **Sandbox** (for testing) and **Live** (for real payments).
 > From each tab, copy and send me:
 >  - Client ID
@@ -24,7 +24,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 >
 > **c) Create a Webhook**
 > Same dashboard → Webhooks section → Add Webhook.
-> Use this URL for now: I'll send it to you once Railway is back up (it will look like `https://tekyprolms-production.up.railway.app/api/webhooks/paypal`). Later we'll switch it to your own domain.
+> Use this URL for now: I'll send it to you once Railway is back up (it will look like `https://pageinnovationlms-production.up.railway.app/api/webhooks/paypal`). Later we'll switch it to your own domain.
 > Under "Event types", check these three:
 >  - Payment capture completed
 >  - Payment capture refunded
@@ -48,7 +48,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 > Sir, for the "Sign in with Google" button, please create a project in the Google Cloud Console:
 >
 > 1. Go to https://console.cloud.google.com
-> 2. Create a new project called "TekyPro"
+> 2. Create a new project called "Page Innovation"
 > 3. Go to **APIs & Services → OAuth consent screen** → set it up with your business email
 > 4. Then go to **Credentials → Create Credentials → OAuth Client ID** → choose "Web Application"
 > 5. Send me the **Client ID** and **Client Secret** it gives you
@@ -63,20 +63,20 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 
 > Sir, the LMS needs an email account to send things like payment receipts and password resets to students.
 >
-> We want it to come from `noreply@tekypro.com`.
+> We want it to come from `noreply@pageinnovation.com`.
 >
 > **You have two options:**
 >
 > **Option A — Use cPanel (cheapest)**
-> If your domain `tekypro.com` is hosted on cPanel, log into cPanel → Email Accounts → Create `noreply@tekypro.com`. Send me:
->  - The email address (`noreply@tekypro.com`)
+> If your domain `pageinnovation.com` is hosted on cPanel, log into cPanel → Email Accounts → Create `noreply@pageinnovation.com`. Send me:
+>  - The email address (`noreply@pageinnovation.com`)
 >  - The password
->  - The SMTP server name (usually `mail.tekypro.com`)
+>  - The SMTP server name (usually `mail.pageinnovation.com`)
 >
-> Note: The cPanel you use for email doesn't have to be the same one we host the app on. It just has to be the one that manages mail for `tekypro.com`.
+> Note: The cPanel you use for email doesn't have to be the same one we host the app on. It just has to be the one that manages mail for `pageinnovation.com`.
 >
 > **Option B — Google Workspace (better deliverability, ~$6/month)**
-> If you already use Google Workspace, create `noreply@tekypro.com` there, then generate an "App Password" and send it to me.
+> If you already use Google Workspace, create `noreply@pageinnovation.com` there, then generate an "App Password" and send it to me.
 >
 > Either option works. cPanel is free if you already pay for hosting.
 
@@ -89,7 +89,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 > Sir, for Discord we'll need to do a quick screen share — about 10 minutes — to set up the bot together. I'll guide you through:
 >
 > 1. Going to https://discord.com/developers/applications
-> 2. Creating a "New Application" called TekyPro
+> 2. Creating a "New Application" called Page Innovation
 > 3. Adding a Bot to it
 > 4. Copying the Bot Token
 > 5. Inviting the bot to your Discord server
@@ -132,7 +132,7 @@ Just ask him: "Do you plan to host live sessions inside Discord or just use it f
 >  - cPanel login
 >  - DNS / nameserver instructions
 >
-> `tekypro.com` is still not resolving — that means the domain isn't pointed to a server yet. The hosting welcome email will tell us how to fix that.
+> `pageinnovation.com` is still not resolving — that means the domain isn't pointed to a server yet. The hosting welcome email will tell us how to fix that.
 
 **Maps to:** server IP, cPanel access, DNS config
 
@@ -165,7 +165,7 @@ Once renewed → backend redeploys → real Railway URL exists → can be given 
 > Sir, after our call, please get me ready:
 > 1. PayPal: Sandbox + Live Client ID & Secret + Webhook ID
 > 2. Google: Client ID & Secret from Google Cloud Console
-> 3. Email: `noreply@tekypro.com` from your cPanel (with password & SMTP host)
+> 3. Email: `noreply@pageinnovation.com` from your cPanel (with password & SMTP host)
 > 4. Discord: schedule a screen-share for the bot setup
 > 5. Hosting: forward me the hosting welcome email with the server IP
 > 6. Cloudinary: create a free account and send me Cloud Name, API Key, API Secret
@@ -184,4 +184,4 @@ Once renewed → backend redeploys → real Railway URL exists → can be given 
 - [ ] Build frontend PayPal SDK button + capture call
 - [ ] End-to-end sandbox payment test
 - [ ] Commit & push the PayPal backend work
-- [ ] When client domain is live: swap webhook URL from Railway to `https://api.tekypro.com/api/webhooks/paypal`
+- [ ] When client domain is live: swap webhook URL from Railway to `https://api.pageinnovation.com/api/webhooks/paypal`

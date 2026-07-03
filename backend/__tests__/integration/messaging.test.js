@@ -37,7 +37,7 @@ const TS = Date.now(); // unique suffix per test run
 
 beforeAll(async () => {
   // Login as super admin (always exists)
-  adminAuth = await login('admin@tekypro.com');
+  adminAuth = await login('admin@pageinnovation.com');
 
   // Create a test instructor user
   const instrReg = await request(app).post('/api/auth/register').send({
@@ -65,7 +65,7 @@ beforeAll(async () => {
   let course = await Course.findOne({ where: { status: 'published' } });
   if (!course) {
     // Get admin user for instructor_id
-    const adminUser = await User.findOne({ where: { email: 'admin@tekypro.com' } });
+    const adminUser = await User.findOne({ where: { email: 'admin@pageinnovation.com' } });
     const cat = await sequelize.query("SELECT id FROM categories LIMIT 1", { type: sequelize.QueryTypes.SELECT });
     course = await Course.create({
       title: `Test Course ${TS}`,
@@ -511,7 +511,7 @@ describe('Direct Messages', () => {
   let studentUserId, adminUserId;
 
   beforeAll(async () => {
-    const adminUser = await User.findOne({ where: { email: 'admin@tekypro.com' } });
+    const adminUser = await User.findOne({ where: { email: 'admin@pageinnovation.com' } });
     studentUserId = testStudentUser?.id;
     adminUserId   = adminUser?.id;
   });

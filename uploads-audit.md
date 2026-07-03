@@ -1,4 +1,4 @@
-# File Uploads / Cloudinary Audit — TekyPro (2026-07-01)
+# File Uploads / Cloudinary Audit — Page Innovation (2026-07-01)
 
 Audit of the upload pipeline: multer middleware, Cloudinary service
 integration, per-endpoint limits, MIME validation, and delivery.

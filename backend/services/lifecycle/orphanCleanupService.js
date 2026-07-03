@@ -24,8 +24,8 @@ const ARCHIVE_AGE_DAYS = 90;
 /**
  * Try to extract a Cloudinary public_id from a full delivery URL.
  * Cloudinary URLs look like:
- *   https://res.cloudinary.com/CLOUD/image/upload/[transforms/]v1234/tekypro-lms/folder/name.jpg
- *   https://res.cloudinary.com/CLOUD/raw/upload/v1234/tekypro-lms/folder/name.pdf
+ *   https://res.cloudinary.com/CLOUD/image/upload/[transforms/]v1234/pageinnovation-lms/folder/name.jpg
+ *   https://res.cloudinary.com/CLOUD/raw/upload/v1234/pageinnovation-lms/folder/name.pdf
  * The public_id is everything AFTER the version segment `v\d+/`,
  * minus the file extension.
  *

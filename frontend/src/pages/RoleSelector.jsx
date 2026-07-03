@@ -69,7 +69,7 @@ export default function RoleSelector() {
         <div className="text-center mb-12 animate-fade-in">
           <img
             src={logo}
-            alt="TekyPro"
+            alt="Page Innovation"
             className="h-16 sm:h-20 mx-auto mb-6 drop-shadow-lg"
           />
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">

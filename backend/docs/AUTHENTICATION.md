@@ -1,4 +1,4 @@
-# TekyPro LMS - Authentication API Documentation
+# Page Innovation LMS - Authentication API Documentation
 
 ## 🔐 Authentication System
 
@@ -526,4 +526,4 @@ Authorization: Bearer {{accessToken}}
 
 ---
 
-**TekyPro - The Leading Remote DBA Service Provider**
+**Page Innovation - The Leading Remote DBA Service Provider**

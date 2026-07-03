@@ -1613,7 +1613,7 @@ export default function AdminCourses() {
               acceptedTypes="image"
               maxSizeMB={5}
               currentFile={createForm.thumbnail_url}
-              folder="tekypro/course-thumbnails"
+              folder="pageinnovation/course-thumbnails"
               onUploadSuccess={(url) =>
                 setCreateForm((prev) => ({ ...prev, thumbnail_url: url || '' }))
               }
@@ -1762,7 +1762,7 @@ export default function AdminCourses() {
                 acceptedTypes="image"
                 maxSizeMB={5}
                 currentFile={editForm.thumbnail_url}
-                folder="tekypro/course-thumbnails"
+                folder="pageinnovation/course-thumbnails"
                 onUploadSuccess={(url) =>
                   setEditForm((prev) => ({ ...prev, thumbnail_url: url || '' }))
                 }

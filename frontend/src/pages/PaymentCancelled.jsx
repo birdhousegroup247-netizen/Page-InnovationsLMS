@@ -10,7 +10,7 @@ export default function PaymentCancelled() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col items-center justify-center p-4">
       <div className="mb-8">
-        <img src={logo} alt="TekyPro" className="h-10 w-auto mx-auto" />
+        <img src={logo} alt="Page Innovation" className="h-10 w-auto mx-auto" />
       </div>
 
       <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
@@ -47,7 +47,7 @@ export default function PaymentCancelled() {
 
       <p className="mt-6 text-xs text-gray-500 dark:text-gray-400">
         Need help?{' '}
-        <a href="mailto:support@tekypro.com" className="text-brand-blue hover:underline">
+        <a href="mailto:support@pageinnovation.com" className="text-brand-blue hover:underline">
           Contact Support
         </a>
       </p>

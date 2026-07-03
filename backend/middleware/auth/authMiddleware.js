@@ -191,7 +191,7 @@ const checkNotSuspended = (req, res, next) => {
  * have no explicit permissions, so wiring this middleware on a route
  * effectively opts every legacy admin out until an operator lists
  * their perms. Deliberate: forces the client to think through who
- * gets what. See VIREL-vs-TekyPro-audit §2.5 for why we adopted the
+ * gets what. See VIREL-vs-Page Innovation-audit §2.5 for why we adopted the
  * pattern.
  */
 const requirePermission = (permission) => {

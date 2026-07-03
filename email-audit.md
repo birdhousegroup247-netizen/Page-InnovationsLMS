@@ -1,4 +1,4 @@
-# Email Audit — TekyPro (2026-07-01)
+# Email Audit — Page Innovation (2026-07-01)
 
 End-to-end audit of every automated email the platform sends (or should
 be sending) across the 3 apps. Covers transports, trigger paths,
@@ -157,7 +157,7 @@ retried every hour, forever, until the transport is fixed.
 
 Fix (5 min of configuration, no code):
 1. Sign up at https://resend.com (free tier: 3k emails / mo, 100 / day)
-2. Verify a sending domain (tekypro.com — DKIM records via Namecheap DNS)
+2. Verify a sending domain (pageinnovation.com — DKIM records via Namecheap DNS)
 3. Generate an API key
 4. On Railway, set env var `RESEND_API_KEY=re_...` on the backend service
 5. Redeploy — boot log will show `[Email] Using Resend HTTP API transport`

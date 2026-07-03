@@ -40,7 +40,7 @@ function fmtMoney(value, currency = 'USD') {
 class EmailService {
   constructor() {
     this.resendKey = process.env.RESEND_API_KEY || '';
-    this.from = process.env.EMAIL_FROM || `TekyPro LMS <${process.env.EMAIL_USER || 'noreply@tekypro.com'}>`;
+    this.from = process.env.EMAIL_FROM || `Page Innovation LMS <${process.env.EMAIL_USER || 'noreply@pageinnovation.com'}>`;
     // Per-purpose senders. Any address @ the Resend-verified domain works
     // without extra setup; unset vars fall back to the default sender.
     //   EMAIL_FROM_REGISTRATION → signup verification + welcome
@@ -230,9 +230,9 @@ class EmailService {
   async sendWelcomeEmail(email, name) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const html = this._baseTemplate({
-      title: 'Welcome to TekyPro!',
+      title: 'Welcome to Page Innovation!',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Welcome to TekyPro Learning Management System! We're excited to have you join our community of learners.</p>
+<p>Welcome to Page Innovation Learning Management System! We're excited to have you join our community of learners.</p>
 <div class="hi"><strong>Here's what you can do:</strong><ul>
 <li>Browse and enroll in courses</li>
 <li>Learn from expert instructors</li>
@@ -247,9 +247,9 @@ class EmailService {
     return this.sendEmail({
       fromKind: 'registration',
       to: email,
-      subject: 'Welcome to TekyPro LMS!',
+      subject: 'Welcome to Page Innovation LMS!',
       html,
-      text: `Welcome to TekyPro LMS, ${name}! Start your learning journey today.`,
+      text: `Welcome to Page Innovation LMS, ${name}! Start your learning journey today.`,
       bypassOptOut: true,
     });
   }
@@ -267,7 +267,7 @@ class EmailService {
     const html = this._baseTemplate({
       title: 'Verify Your Email',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Welcome to TekyPro! To finish creating your account, please verify your email address.</p>
+<p>Welcome to Page Innovation! To finish creating your account, please verify your email address.</p>
 <p>You have two ways to verify — pick whichever is easier:</p>
 <div class="hi">
 <p style="margin:0 0 8px"><strong>Option 1 — Click the button below</strong></p>
@@ -277,16 +277,16 @@ class EmailService {
 <p style="margin:0 0 8px"><strong>Option 2 — Enter this code on the verification page</strong></p>
 <p style="margin:0;font-size:32px;letter-spacing:8px;font-weight:900;color:#0e2b5c;font-family:'Courier New',monospace">${code}</p>
 </div>
-<p style="font-size:13px;color:#888">If you did not create a TekyPro account, you can safely ignore this email.</p>`,
+<p style="font-size:13px;color:#888">If you did not create a Page Innovation account, you can safely ignore this email.</p>`,
       ctaText: 'Verify My Email',
       ctaUrl: verifyUrl,
     });
     return this.sendEmail({
       fromKind: 'registration',
       to: email,
-      subject: 'Verify your TekyPro email address',
+      subject: 'Verify your Page Innovation email address',
       html,
-      text: `Hi ${name}, verify your TekyPro email by visiting ${verifyUrl} or by entering this code on the verification page: ${code}`,
+      text: `Hi ${name}, verify your Page Innovation email by visiting ${verifyUrl} or by entering this code on the verification page: ${code}`,
       bypassOptOut: true,
     });
   }
@@ -304,7 +304,7 @@ class EmailService {
       headerColor: 'linear-gradient(135deg,#dc2626,#b91c1c)',
       title: 'Password Reset Request',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>We received a request to reset the password for your TekyPro account. Click the button below to set a new password.</p>
+<p>We received a request to reset the password for your Page Innovation account. Click the button below to set a new password.</p>
 <div class="wa"><strong>Security Notice:</strong> This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.</div>
 <p style="font-size:13px;color:#888">Or copy and paste this link into your browser:<br><span style="word-break:break-all;color:#0e2b5c">${resetUrl}</span></p>`,
       ctaText: 'Reset My Password',
@@ -312,7 +312,7 @@ class EmailService {
     });
     return this.sendEmail({
       to: email,
-      subject: 'Password Reset Request - TekyPro LMS',
+      subject: 'Password Reset Request - Page Innovation LMS',
       html,
       text: `Hi ${name}, Click this link to reset your password: ${resetUrl}`,
       bypassOptOut: true,
@@ -394,7 +394,7 @@ ${course.duration_hours ? `<p style="margin:0"><strong>Duration:</strong> ${cour
       headerColor: 'linear-gradient(135deg,#f59e0b,#d97706)',
       title: 'New test assigned',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>You have a new test on TekyPro:</p>
+<p>You have a new test on Page Innovation:</p>
 <div class="hi">
 <p><strong>${test.test_name}</strong></p>
 ${test.description ? `<p style="color:#555">${test.description}</p>` : ''}
@@ -423,11 +423,11 @@ ${test.due_date ? `<p><strong>Due:</strong> ${new Date(test.due_date).toLocaleDa
     const html = this._baseTemplate({
       title: 'We received your instructor application',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Thanks for applying to teach on TekyPro. We've received your application and our admin team is reviewing it.</p>
+<p>Thanks for applying to teach on Page Innovation. We've received your application and our admin team is reviewing it.</p>
 <div class="hi"><strong>What happens next:</strong><ul>
 <li>Our team reviews your details and supporting documents — usually within 2–3 business days</li>
 <li>You'll receive an email once your application is approved or if we need more information</li>
-<li>In the meantime, you can use TekyPro as a student — browse courses, watch previews, and join the community</li>
+<li>In the meantime, you can use Page Innovation as a student — browse courses, watch previews, and join the community</li>
 </ul></div>
 <p>If you have any questions while you wait, just reply to this email.</p>`,
       ctaText: 'Go to My Dashboard',
@@ -435,7 +435,7 @@ ${test.due_date ? `<p><strong>Due:</strong> ${new Date(test.due_date).toLocaleDa
     });
     return this.sendEmail({
       to: email,
-      subject: 'Your TekyPro instructor application is being reviewed',
+      subject: 'Your Page Innovation instructor application is being reviewed',
       html,
       text: `Hi ${name}, we received your instructor application. The admin team is reviewing it and you'll hear back within 2-3 business days.`,
       bypassOptOut: true,
@@ -452,7 +452,7 @@ ${test.due_date ? `<p><strong>Due:</strong> ${new Date(test.due_date).toLocaleDa
       headerColor: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
       title: 'New Instructor Application',
       body: `<p>Hi <strong>${adminName || 'Admin'}</strong>,</p>
-<p>A new instructor application has been submitted on TekyPro and is awaiting review.</p>
+<p>A new instructor application has been submitted on Page Innovation and is awaiting review.</p>
 <div class="hi">
 <p><strong>Applicant:</strong> ${applicantName}</p>
 <p><strong>Email:</strong> ${applicantEmail}</p>
@@ -485,7 +485,7 @@ ${test.due_date ? `<p><strong>Due:</strong> ${new Date(test.due_date).toLocaleDa
       title: 'Application Approved 🎉',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Great news — your instructor application has been <strong>approved</strong>. Welcome to the TekyPro instructor community!</p>
+<p>Great news — your instructor application has been <strong>approved</strong>. Welcome to the Page Innovation instructor community!</p>
 <div class="hi"><strong>What you can do now:</strong><ul>
 <li>Create and publish courses</li>
 <li>Upload course content — videos, documents, quizzes</li>
@@ -522,7 +522,7 @@ ${test.due_date ? `<p><strong>Due:</strong> ${new Date(test.due_date).toLocaleDa
       title: 'Application Update',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Thank you for your interest in becoming a TekyPro instructor.</p>
+<p>Thank you for your interest in becoming a Page Innovation instructor.</p>
 <p>After careful review, we're unable to approve your application at this time.</p>
 ${reason ? `<div class="wa"><strong>Feedback:</strong><p>${reason}</p></div>` : ''}
 <p>We encourage you to:</p>
@@ -537,7 +537,7 @@ ${reason ? `<div class="wa"><strong>Feedback:</strong><p>${reason}</p></div>` : 
     });
     return this.sendEmail({
       to: email,
-      subject: 'Instructor Application Update - TekyPro LMS',
+      subject: 'Instructor Application Update - Page Innovation LMS',
       html,
       text: `Hi ${name}, your instructor application was not approved at this time. ${reason ? `Feedback: ${reason}` : ''}`,
       bypassOptOut: true,
@@ -560,7 +560,7 @@ ${reason ? `<div class="wa"><strong>Feedback:</strong><p>${reason}</p></div>` : 
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
 <div class="da"><strong>⚠️ Your instructor status has been revoked.</strong></div>
-<p>Your instructor privileges have been removed from your TekyPro account.</p>
+<p>Your instructor privileges have been removed from your Page Innovation account.</p>
 ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
 <p>This means you will no longer be able to:</p>
 <ul>
@@ -575,7 +575,7 @@ ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
     });
     return this.sendEmail({
       to: email,
-      subject: 'Instructor Status Update - TekyPro LMS',
+      subject: 'Instructor Status Update - Page Innovation LMS',
       html,
       text: `Hi ${name}, your instructor status has been revoked. ${reason ? `Reason: ${reason}` : ''} Contact support at ${supportUrl}`,
       bypassOptOut: true,
@@ -634,13 +634,13 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
       : '';
     const unsubLine = transactional
       ? ''
-      : `<p style="margin-top:10px;font-size:11px;color:#bbb">You received this because you registered on TekyPro. <a href="${unsubUrl || `${FE}/unsubscribe`}">Unsubscribe</a></p>`;
+      : `<p style="margin-top:10px;font-size:11px;color:#bbb">You received this because you registered on Page Innovation. <a href="${unsubUrl || `${FE}/unsubscribe`}">Unsubscribe</a></p>`;
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f6f9;color:#333}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08)}.hdr{background:${headerColor};padding:28px 40px;text-align:center}.hdr .logo{font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;margin:0}.hdr h1{margin:8px 0 0;color:#fff;font-size:20px;font-weight:600}.bd{padding:32px 40px}.bd p{line-height:1.75;margin:0 0 16px}.bd ul{padding-left:20px;line-height:1.9}.hi{background:#f0f4ff;border-left:4px solid #0e2b5c;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.wa{background:#fff8e1;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.da{background:#fff0f0;border-left:4px solid #ef4444;padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0}.ft{background:#f9fafb;padding:20px 40px;text-align:center;color:#888;font-size:12px;border-top:1px solid #eee}.ft a{color:#0e2b5c;text-decoration:none}</style>
 </head><body><div style="padding:16px"><div class="wrap">
-<div class="hdr"><p class="logo">TekyPro</p><h1>${title}</h1></div>
+<div class="hdr"><p class="logo">Page Innovation</p><h1>${title}</h1></div>
 <div class="bd">${body}${cta}</div>
-<div class="ft"><p>TekyPro — Professional Database Training</p><p><a href="https://www.tekypro.com">www.tekypro.com</a> · <a href="mailto:support@tekypro.com">support@tekypro.com</a></p>${unsubLine}</div>
+<div class="ft"><p>Page Innovation — Professional Database Training</p><p><a href="https://www.pageinnovation.com">www.pageinnovation.com</a> · <a href="mailto:support@pageinnovation.com">support@pageinnovation.com</a></p>${unsubLine}</div>
 </div></div></body></html>`;
   }
 
@@ -651,7 +651,7 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
     const html = this._baseTemplate({
       title: 'Your Free Preview is Ready!',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Welcome to TekyPro! Your account is all set — you now have <strong>free preview access</strong> to all our courses.</p>
+<p>Welcome to Page Innovation! Your account is all set — you now have <strong>free preview access</strong> to all our courses.</p>
 <div class="hi"><strong>What you can do right now:</strong><ul>
 <li>Browse the full course catalogue</li>
 <li>Watch Lesson 1 of any course — completely free</li>
@@ -662,7 +662,7 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
       ctaText: 'Browse Courses Free',
       ctaUrl: `${FE}/courses`,
     });
-    return this.sendEmail({ to: email, subject: `Welcome to TekyPro, ${name} — your free preview is ready`, html, text: `Hi ${name}, your TekyPro free preview is ready. Browse courses at ${FE}/courses` });
+    return this.sendEmail({ to: email, subject: `Welcome to Page Innovation, ${name} — your free preview is ready`, html, text: `Hi ${name}, your Page Innovation free preview is ready. Browse courses at ${FE}/courses` });
   }
 
   async sendLeadFollowupD1(email, name, courseTitle = 'your course') {
@@ -670,8 +670,8 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
     const html = this._baseTemplate({
       title: `Your course is waiting for you`,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Just checking in — <strong>${courseTitle}</strong> is ready and waiting for you on TekyPro.</p>
-<p>Thousands of database professionals have used TekyPro to advance their careers, pass certification exams, and land better-paying roles.</p>
+<p>Just checking in — <strong>${courseTitle}</strong> is ready and waiting for you on Page Innovation.</p>
+<p>Thousands of database professionals have used Page Innovation to advance their careers, pass certification exams, and land better-paying roles.</p>
 <div class="hi"><strong>Your free preview includes:</strong><ul>
 <li>Full course outline so you know exactly what you'll learn</li>
 <li>Lesson 1 of every module — watch before you commit</li>
@@ -681,23 +681,23 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
       ctaText: 'Continue to Course',
       ctaUrl: `${FE}/courses`,
     });
-    return this.sendEmail({ to: email, subject: `${name}, your TekyPro course is waiting for you`, html, text: `Hi ${name}, your course on TekyPro is ready. Continue at ${FE}/courses` });
+    return this.sendEmail({ to: email, subject: `${name}, your Page Innovation course is waiting for you`, html, text: `Hi ${name}, your course on Page Innovation is ready. Continue at ${FE}/courses` });
   }
 
   async sendLeadFollowupD3(email, name) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const html = this._baseTemplate({
-      title: 'What TekyPro students are saying',
+      title: 'What Page Innovation students are saying',
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>We thought you'd like to hear from some of our graduates:</p>
-<div class="hi"><p><em>"I passed my Oracle DBA certification after completing the TekyPro course. The hands-on practice labs made all the difference."</em><br>— <strong>Adesola K., Lagos</strong></p></div>
-<div class="hi"><p><em>"I was able to negotiate a 40% salary increase after completing my PostgreSQL certification through TekyPro. Worth every penny."</em><br>— <strong>James M., Nairobi</strong></p></div>
+<div class="hi"><p><em>"I passed my Oracle DBA certification after completing the Page Innovation course. The hands-on practice labs made all the difference."</em><br>— <strong>Adesola K., Lagos</strong></p></div>
+<div class="hi"><p><em>"I was able to negotiate a 40% salary increase after completing my PostgreSQL certification through Page Innovation. Worth every penny."</em><br>— <strong>James M., Nairobi</strong></p></div>
 <div class="hi"><p><em>"The installment plan made it affordable for me. Full access from day one while I paid over time."</em><br>— <strong>Priya T., London</strong></p></div>
 <p>Your free preview is still active. Come see what the full course looks like.</p>`,
       ctaText: 'See Course Details',
       ctaUrl: `${FE}/courses`,
     });
-    return this.sendEmail({ to: email, subject: `What TekyPro students say (real results)`, html, text: `Hi ${name}, see what TekyPro students are saying at ${FE}/courses` });
+    return this.sendEmail({ to: email, subject: `What Page Innovation students say (real results)`, html, text: `Hi ${name}, see what Page Innovation students are saying at ${FE}/courses` });
   }
 
   async sendLeadFollowupD7(email, name) {
@@ -706,7 +706,7 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
       headerColor: 'linear-gradient(135deg,#f59e0b,#d97706)',
       title: 'Your free preview — final week',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro free preview has been active for a week now. We want to make sure you're making the most of it before time runs out.</p>
+<p>Your Page Innovation free preview has been active for a week now. We want to make sure you're making the most of it before time runs out.</p>
 <div class="wa"><strong>You still have access to:</strong><ul>
 <li>Full course outlines for all courses</li>
 <li>Lesson 1 free in every course</li>
@@ -726,7 +726,7 @@ ${announcement.instructor_name ? `<p style="margin:8px 0 0;color:#555"><em>— $
       ? `<div class="hi"><p><strong>Special offer just for you:</strong> Use code <strong style="font-size:18px;color:#eb1c22">${couponCode}</strong> at checkout for a discount on your enrollment.</p></div>`
       : '';
     const html = this._baseTemplate({
-      title: 'A personal note from TekyPro',
+      title: 'A personal note from Page Innovation',
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>This is our last email in this series — we don't want to crowd your inbox.</p>
 <p>We noticed you haven't enrolled yet, and we want to understand why. Is it the price? The timing? Or maybe you'd like to see more before committing?</p>
@@ -734,7 +734,7 @@ ${discountBlock}
 <p>Whatever the reason, your free preview account will stay open. You can come back anytime.</p>
 <p>But if you're ready — even just a little curious — click below and take a look at what's inside. No commitment required.</p>
 <p>We'd love to have you in the course.</p>
-<p>— The TekyPro Team</p>`,
+<p>— The Page Innovation Team</p>`,
       ctaText: 'Take One More Look',
       ctaUrl: `${FE}/courses`,
     });
@@ -768,7 +768,7 @@ ${installmentNote}
     });
     return this.sendEmail({
       to: email,
-      subject: `TekyPro Payment Receipt — ${courseTitle}`,
+      subject: `Page Innovation Payment Receipt — ${courseTitle}`,
       html,
       text: `Hi ${name}, your payment for ${courseTitle} (${fmtMoney(amountPaid, currency)}) has been received.`,
       bypassOptOut: true,
@@ -781,10 +781,10 @@ ${installmentNote}
       headerColor: 'linear-gradient(135deg,#059669,#10b981)',
       title: `You're officially in! 🎉`,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Congratulations! You are now enrolled in <strong>${courseTitle}</strong> on TekyPro.</p>
+<p>Congratulations! You are now enrolled in <strong>${courseTitle}</strong> on Page Innovation.</p>
 <p>Here's how to get started:</p>
 <div class="hi"><ol style="padding-left:20px;line-height:2">
-<li><strong>Log in</strong> to your TekyPro account</li>
+<li><strong>Log in</strong> to your Page Innovation account</li>
 <li>Go to <strong>My Courses</strong></li>
 <li>Click on <strong>${courseTitle}</strong> to open it</li>
 <li>Start with <strong>Module 1, Lesson 1</strong> and work your way through</li>
@@ -805,7 +805,7 @@ ${installmentNote}
   async sendOnboardingD1(email, name, { courseTitle, courseId }) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const html = this._baseTemplate({
-      title: 'Your first 3 steps on TekyPro',
+      title: 'Your first 3 steps on Page Innovation',
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>Day 1! Here are the three most important things to do right now to set yourself up for success in <strong>${courseTitle}</strong>:</p>
 <div class="hi"><p><strong>Step 1 — Watch Lesson 1</strong><br>Don't overthink it. Just click play and start. Momentum beats perfection every time.</p></div>
@@ -821,10 +821,10 @@ ${installmentNote}
   async sendOnboardingD3(email, name, { courseTitle }) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
     const html = this._baseTemplate({
-      title: 'Did you know TekyPro has these features?',
+      title: 'Did you know Page Innovation has these features?',
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>You've been with us for 3 days. How are things going in <strong>${courseTitle}</strong>?</p>
-<p>Here are some TekyPro features many students discover <em>too late</em> — don't let that be you:</p>
+<p>Here are some Page Innovation features many students discover <em>too late</em> — don't let that be you:</p>
 <div class="hi"><p><strong>📝 Practice Tests</strong><br>After each module, test your knowledge with AI-generated practice questions. It's the fastest way to identify gaps before the real exam.</p></div>
 <div class="hi"><p><strong>🎥 Live Sessions</strong><br>Your instructor hosts live Q&A sessions. Check the schedule in your course page — these are gold for tricky topics.</p></div>
 <div class="hi"><p><strong>📌 Lesson Bookmarks</strong><br>Bookmark any lesson and add notes. Great for revision before exams.</p></div>
@@ -832,7 +832,7 @@ ${installmentNote}
       ctaText: 'Continue Learning',
       ctaUrl: `${FE}/my-courses`,
     });
-    return this.sendEmail({ to: email, subject: `Did you know TekyPro has these features? (${courseTitle})`, html, text: `Hi ${name}, discover TekyPro's hidden features. Continue at ${FE}/my-courses` });
+    return this.sendEmail({ to: email, subject: `Did you know Page Innovation has these features? (${courseTitle})`, html, text: `Hi ${name}, discover Page Innovation's hidden features. Continue at ${FE}/my-courses` });
   }
 
   async sendOnboardingD7(email, name, { courseTitle }) {
@@ -840,7 +840,7 @@ ${installmentNote}
     const html = this._baseTemplate({
       title: `How's it going, ${name}?`,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>You've been on TekyPro for a week. We just wanted to check in on your progress in <strong>${courseTitle}</strong>.</p>
+<p>You've been on Page Innovation for a week. We just wanted to check in on your progress in <strong>${courseTitle}</strong>.</p>
 <p>If everything's going well — amazing! Keep that momentum going.</p>
 <p>If you've been struggling to find time or hit a confusing topic, that's completely normal. Here's what we suggest:</p>
 <ul>
@@ -849,7 +849,7 @@ ${installmentNote}
 <li><strong>Need motivation?</strong> Look at your progress bar. Every lesson completed is a step closer to that certificate</li>
 </ul>
 <p>Remember why you started. We're here to help you get there.</p>
-<p>— The TekyPro Team</p>`,
+<p>— The Page Innovation Team</p>`,
       ctaText: 'Check My Progress',
       ctaUrl: `${FE}/my-courses`,
     });
@@ -864,14 +864,14 @@ ${installmentNote}
       title: 'Friendly reminder: your balance is due',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Just a friendly heads-up — your TekyPro installment balance of <strong>${amt}</strong> is now due.</p>
+<p>Just a friendly heads-up — your Page Innovation installment balance of <strong>${amt}</strong> is now due.</p>
 <div class="hi"><p><strong>Amount due:</strong> ${amt}<br><strong>Due date:</strong> ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
 <p>Completing this payment takes less than 2 minutes and keeps your full course access uninterrupted.</p>
 <p>No rush — but sooner is better! 😊</p>`,
       ctaText: 'Complete Payment',
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Friendly reminder: your TekyPro balance of ${amt} is due`, html, text: `Hi ${name}, your TekyPro balance of ${amt} is due. Pay at ${payUrl}`, bypassOptOut: true });
+    return this.sendEmail({ to: email, subject: `Friendly reminder: your Page Innovation balance of ${amt} is due`, html, text: `Hi ${name}, your Page Innovation balance of ${amt} is due. Pay at ${payUrl}`, bypassOptOut: true });
   }
 
   async sendInstallmentReminderD24(email, name, { remainingAmount, dueDate, payUrl, currency = 'USD' }) {
@@ -881,13 +881,13 @@ ${installmentNote}
       title: 'Your balance is 3 days overdue',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro installment balance of <strong>${amt}</strong> was due on ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })} and is now 3 days overdue.</p>
+<p>Your Page Innovation installment balance of <strong>${amt}</strong> was due on ${new Date(dueDate).toLocaleDateString('en-US', { dateStyle: 'long' })} and is now 3 days overdue.</p>
 <div class="wa"><p>Your course access is still fully active for now. To avoid any interruptions, please complete your payment as soon as possible.</p></div>
 <p>It only takes a moment to sort this out:</p>`,
       ctaText: `Pay ${amt} Now`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro balance is 3 days overdue — still time to sort it out`, html, text: `Hi ${name}, your TekyPro balance of ${amt} is 3 days overdue. Pay at ${payUrl}`, bypassOptOut: true });
+    return this.sendEmail({ to: email, subject: `Your Page Innovation balance is 3 days overdue — still time to sort it out`, html, text: `Hi ${name}, your Page Innovation balance of ${amt} is 3 days overdue. Pay at ${payUrl}`, bypassOptOut: true });
   }
 
   async sendInstallmentReminderD28(email, name, { remainingAmount, payUrl, lockDate, currency = 'USD' }) {
@@ -897,7 +897,7 @@ ${installmentNote}
       title: 'Action Required: 4 days until access is restricted',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>We need to let you know that your TekyPro account will be <strong>partially restricted on ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</strong> if your balance remains unpaid.</p>
+<p>We need to let you know that your Page Innovation account will be <strong>partially restricted on ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</strong> if your balance remains unpaid.</p>
 <div class="da"><p><strong>⚠️ Balance overdue:</strong> ${amt}<br><strong>Restriction date:</strong> ${new Date(lockDate).toLocaleDateString('en-US', { dateStyle: 'long' })}</p></div>
 <p>After restriction, you will lose access to:</p>
 <ul>
@@ -910,7 +910,7 @@ ${installmentNote}
       ctaText: 'Pay Now to Keep Full Access',
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `URGENT: Your TekyPro account will be restricted in 4 days`, html, text: `URGENT: Your TekyPro balance of ${amt} is overdue. Account restricted on ${lockDate}. Pay at ${payUrl}`, bypassOptOut: true });
+    return this.sendEmail({ to: email, subject: `URGENT: Your Page Innovation account will be restricted in 4 days`, html, text: `URGENT: Your Page Innovation balance of ${amt} is overdue. Account restricted on ${lockDate}. Pay at ${payUrl}`, bypassOptOut: true });
   }
 
   async sendInstallmentReminderD32(email, name, { remainingAmount, payUrl, currency = 'USD' }) {
@@ -920,7 +920,7 @@ ${installmentNote}
       title: 'Your account has been partially restricted',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Because your installment balance of <strong>${amt}</strong> remains unpaid, your TekyPro account has been <strong>partially restricted</strong>.</p>
+<p>Because your installment balance of <strong>${amt}</strong> remains unpaid, your Page Innovation account has been <strong>partially restricted</strong>.</p>
 <div class="da"><p><strong>What you've lost access to:</strong><ul>
 <li>Starting new lessons or modules</li>
 <li>Practice tests and assignments</li>
@@ -932,7 +932,7 @@ ${installmentNote}
       ctaText: `Restore Full Access — ${amt}`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro account has been partially restricted`, html, text: `Hi ${name}, your TekyPro account is partially restricted. Pay ${amt} to restore full access at ${payUrl}`, bypassOptOut: true });
+    return this.sendEmail({ to: email, subject: `Your Page Innovation account has been partially restricted`, html, text: `Hi ${name}, your Page Innovation account is partially restricted. Pay ${amt} to restore full access at ${payUrl}`, bypassOptOut: true });
   }
 
   async sendInstallmentReminderD35(email, name, { remainingAmount, payUrl, currency = 'USD' }) {
@@ -942,14 +942,14 @@ ${installmentNote}
       title: 'Your account is on hold',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro account is now on hold due to an outstanding balance of <strong>${amt}</strong>.</p>
+<p>Your Page Innovation account is now on hold due to an outstanding balance of <strong>${amt}</strong>.</p>
 <p>We know life gets busy. That's why we've kept your account active for as long as possible — all your progress, notes, and bookmarks are completely safe.</p>
 <div class="da"><p>Your account is currently showing a fullscreen payment overlay. You will not be able to access course content until payment is completed.</p></div>
 <p>One click is all it takes to restore everything instantly:</p>`,
       ctaText: `Restore My Account — ${amt}`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro account is on hold — here's how to restore it`, html, text: `Hi ${name}, your TekyPro account is on hold. Pay ${amt} to restore at ${payUrl}`, bypassOptOut: true });
+    return this.sendEmail({ to: email, subject: `Your Page Innovation account is on hold — here's how to restore it`, html, text: `Hi ${name}, your Page Innovation account is on hold. Pay ${amt} to restore at ${payUrl}`, bypassOptOut: true });
   }
 
   async sendInstallmentSuspendedD42(email, name, { remainingAmount, payUrl, currency = 'USD' }) {
@@ -959,13 +959,13 @@ ${installmentNote}
       title: 'Account Suspended',
       transactional: true,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Your TekyPro account has been suspended due to an unpaid balance of <strong>${amt}</strong>.</p>
+<p>Your Page Innovation account has been suspended due to an unpaid balance of <strong>${amt}</strong>.</p>
 <p>We're sorry it came to this. Your account data, progress, and certificates are all still here — waiting for you.</p>
 <p>To reactivate your account and restore full access <em>immediately</em>, complete your payment below:</p>`,
       ctaText: `Reactivate My Account — ${amt}`,
       ctaUrl: payUrl,
     });
-    return this.sendEmail({ to: email, subject: `Your TekyPro account has been suspended`, html, text: `Hi ${name}, your TekyPro account has been suspended. Pay ${amt} to reactivate at ${payUrl}`, bypassOptOut: true });
+    return this.sendEmail({ to: email, subject: `Your Page Innovation account has been suspended`, html, text: `Hi ${name}, your Page Innovation account has been suspended. Pay ${amt} to reactivate at ${payUrl}`, bypassOptOut: true });
   }
 
   /**
@@ -1001,7 +1001,7 @@ ${installmentNote}
       title: type === 'mention' ? '💬 You were mentioned' : '💬 New message',
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>${type === 'mention'
-        ? `<strong>${senderName}</strong> mentioned you in a chat on TekyPro.`
+        ? `<strong>${senderName}</strong> mentioned you in a chat on Page Innovation.`
         : `You have a new direct message from <strong>${senderName}</strong>.`
 }</p>
 ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"${preview}"</p></div>` : ''}
@@ -1018,19 +1018,19 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
       headerColor: 'linear-gradient(135deg,#5865F2,#4752C4)',
       title: 'Your Discord Channel is Ready!',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Welcome to the TekyPro community on Discord! Your private channel for <strong>${courseTitle}</strong> is now ready.</p>
+<p>Welcome to the Page Innovation community on Discord! Your private channel for <strong>${courseTitle}</strong> is now ready.</p>
 <div class="hi">
 <p>Discord is where your class communicates — ask questions, share progress, get help from classmates, and stay connected with your instructor.</p>
 </div>
 <p>Click the button below to join your course channel. This link is for your class only, so keep it private.</p>
 <p style="font-size:13px;color:#888">Or copy this link: <span style="word-break:break-all;color:#5865F2">${inviteLink}</span></p>
-<p>You can also access this link anytime from your course page in the TekyPro app.</p>`,
+<p>You can also access this link anytime from your course page in the Page Innovation app.</p>`,
       ctaText: 'Join Discord Channel',
       ctaUrl: inviteLink,
     });
     return this.sendEmail({
       to: email,
-      subject: `Your Discord channel for ${courseTitle} is ready — TekyPro`,
+      subject: `Your Discord channel for ${courseTitle} is ready — Page Innovation`,
       html,
       text: `Hi ${name}, your Discord channel for ${courseTitle} is ready. Join here: ${inviteLink}`,
       bypassOptOut: true,
@@ -1057,7 +1057,7 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
     });
     return this.sendEmail({
       to: email,
-      subject: `Your TekyPro refund for ${courseTitle} has been processed`,
+      subject: `Your Page Innovation refund for ${courseTitle} has been processed`,
       html,
       text: `Hi ${name}, your refund of ${amt} for ${courseTitle} has been processed. Allow 5-10 business days.`,
       bypassOptOut: true,
@@ -1072,18 +1072,18 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
       headerColor: 'linear-gradient(135deg,#ec4899,#f59e0b)',
       title: `🎉 Happy Birthday, ${firstName}!`,
       body: `<p>Hi <strong>${firstName}</strong>,</p>
-<p>Everyone at TekyPro is rooting for you today. 🎂</p>
+<p>Everyone at Page Innovation is rooting for you today. 🎂</p>
 <p>Thank you for letting us be a small part of your learning journey — the curiosity you bring to every lesson is exactly what makes growth happen.</p>
 <p>Here's to another year of building, breaking, and getting better. We can't wait to see what you create next.</p>
-<p style="font-size:18px">💙 — The TekyPro Team</p>`,
-      ctaText: 'Open TekyPro',
+<p style="font-size:18px">💙 — The Page Innovation Team</p>`,
+      ctaText: 'Open Page Innovation',
       ctaUrl: `${FE}/dashboard`,
     });
     return this.sendEmail({
       to: email,
       subject: `Happy Birthday, ${firstName}! 🎂`,
       html,
-      text: `Happy Birthday, ${firstName}! Everyone at TekyPro is wishing you a great one. — The TekyPro Team`,
+      text: `Happy Birthday, ${firstName}! Everyone at Page Innovation is wishing you a great one. — The Page Innovation Team`,
       recipientKind: 'user',
     });
   }
@@ -1098,7 +1098,7 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
       body: `<p>Hi <strong>${name}</strong>,</p>
 <p>Heads up — <strong>${sessionTitle}</strong>${courseTitle ? ` (${courseTitle})` : ''} starts at <strong>${when}</strong>, in about 15 minutes.</p>
 <div class="hi"><p>Grab a drink, close a tab or two, and get comfortable. We'll see you there!</p></div>`,
-      ctaText: joinUrl ? 'Join Live Session' : 'Open TekyPro',
+      ctaText: joinUrl ? 'Join Live Session' : 'Open Page Innovation',
       ctaUrl: joinUrl || `${FE}/dashboard`,
     });
     return this.sendEmail({
@@ -1140,9 +1140,9 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
       headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
       title: `Still learning, ${firstName}?`,
       body: `<p>Hi <strong>${firstName}</strong>,</p>
-<p>It's been about ${daysInactive} days since we last saw you on TekyPro${courseTitle ? `, and <strong>${courseTitle}</strong> is right where you left it` : ''}.</p>
+<p>It's been about ${daysInactive} days since we last saw you on Page Innovation${courseTitle ? `, and <strong>${courseTitle}</strong> is right where you left it` : ''}.</p>
 <p>We know life gets busy. Here's a small nudge:</p>
-<div class="hi"><p><strong>Just 20 minutes today</strong> — one lesson, one practice question. That's how every certificate on TekyPro gets earned.</p></div>
+<div class="hi"><p><strong>Just 20 minutes today</strong> — one lesson, one practice question. That's how every certificate on Page Innovation gets earned.</p></div>
 <p>Your progress is exactly where you left it. Every lesson you've marked complete is still marked complete. Come back whenever you're ready.</p>
 <p>We're rooting for you.</p>`,
       ctaText: 'Pick up where I left off',
@@ -1150,7 +1150,7 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
     });
     return this.sendEmail({
       to: email,
-      subject: `${firstName}, your TekyPro course is still waiting`,
+      subject: `${firstName}, your Page Innovation course is still waiting`,
       html,
       text: `Hi ${firstName}, it's been ${daysInactive} days. Pick up where you left off: ${FE}/my-courses`,
       recipientKind: 'user',
@@ -1164,7 +1164,7 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
       headerColor: 'linear-gradient(135deg,#059669,#10b981)',
       title: '🎉 Your first course is live!',
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Big moment — <strong>${courseTitle}</strong> is now published and visible to every student on TekyPro. Welcome to the instructor roster!</p>
+<p>Big moment — <strong>${courseTitle}</strong> is now published and visible to every student on Page Innovation. Welcome to the instructor roster!</p>
 <div class="hi"><strong>Next steps to grow your first cohort:</strong><ul>
 <li>Share your course link on LinkedIn, X, and your professional networks</li>
 <li>Post a welcome announcement inside the course so new students see it right away</li>
@@ -1177,7 +1177,7 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
     });
     return this.sendEmail({
       to: email,
-      subject: `Your course "${courseTitle}" is live on TekyPro!`,
+      subject: `Your course "${courseTitle}" is live on Page Innovation!`,
       html,
       text: `Hi ${name}, your first course "${courseTitle}" is now live. See it at ${FE}/instructor/courses/${courseId}`,
       recipientKind: 'user',
@@ -1191,7 +1191,7 @@ ${preview ? `<div class="hi"><p style="margin:0;color:#555;font-style:italic">"$
       headerColor: 'linear-gradient(135deg,#0e2b5c,#059669)',
       title: `Your ${monthLabel} earnings`,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Here's your monthly TekyPro summary for <strong>${monthLabel}</strong>:</p>
+<p>Here's your monthly Page Innovation summary for <strong>${monthLabel}</strong>:</p>
 <div class="hi">
 <p><strong>Gross revenue:</strong> ${fmtMoney(grossRevenue, currency)}</p>
 <p><strong>New enrollments:</strong> ${enrollments}</p>
@@ -1205,9 +1205,9 @@ ${topCourse ? `<p><strong>Top course:</strong> ${topCourse}</p>` : ''}
     });
     return this.sendEmail({
       to: email,
-      subject: `Your ${monthLabel} TekyPro earnings — ${fmtMoney(netRevenue, currency)}`,
+      subject: `Your ${monthLabel} Page Innovation earnings — ${fmtMoney(netRevenue, currency)}`,
       html,
-      text: `Hi ${name}, ${monthLabel} on TekyPro: ${fmtMoney(grossRevenue, currency)} gross, ${enrollments} new enrollments, ${fmtMoney(netRevenue, currency)} net. Details at ${FE}/instructor/dashboard`,
+      text: `Hi ${name}, ${monthLabel} on Page Innovation: ${fmtMoney(grossRevenue, currency)} gross, ${enrollments} new enrollments, ${fmtMoney(netRevenue, currency)} net. Details at ${FE}/instructor/dashboard`,
       recipientKind: 'user',
     });
   }
@@ -1219,7 +1219,7 @@ ${topCourse ? `<p><strong>Top course:</strong> ${topCourse}</p>` : ''}
       headerColor: 'linear-gradient(135deg,#f59e0b,#eb1c22)',
       title: `🏆 ${milestone} student reviews!`,
       body: `<p>Hi <strong>${name}</strong>,</p>
-<p>Big milestone: you just crossed <strong>${milestone} student reviews</strong> on TekyPro${averageRating ? ` at an average rating of <strong>${Number(averageRating).toFixed(2)} / 5.0</strong>` : ''}.</p>
+<p>Big milestone: you just crossed <strong>${milestone} student reviews</strong> on Page Innovation${averageRating ? ` at an average rating of <strong>${Number(averageRating).toFixed(2)} / 5.0</strong>` : ''}.</p>
 <div class="hi"><p>That's ${milestone} students who took the time to tell you what worked. That kind of feedback is gold — read a few, look for the patterns, and use them to sharpen your next lesson.</p></div>
 <p>Keep going. Every great instructor was once a first-course instructor.</p>`,
       ctaText: 'See my reviews',
@@ -1229,7 +1229,7 @@ ${topCourse ? `<p><strong>Top course:</strong> ${topCourse}</p>` : ''}
       to: email,
       subject: `${milestone} student reviews! 🎉`,
       html,
-      text: `Hi ${name}, congrats — you just passed ${milestone} student reviews on TekyPro. See them: ${FE}/instructor/dashboard`,
+      text: `Hi ${name}, congrats — you just passed ${milestone} student reviews on Page Innovation. See them: ${FE}/instructor/dashboard`,
       recipientKind: 'user',
     });
   }
@@ -1237,7 +1237,7 @@ ${topCourse ? `<p><strong>Top course:</strong> ${topCourse}</p>` : ''}
   // ─── Certificate share nudge (3 days after completion) ─────────────────────
   async sendCertificateShareNudge(email, name, { courseTitle, courseId, certificateUrl, suggestedCourseTitle, suggestedCourseId }) {
     const FE = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const linkedInText = encodeURIComponent(`Just completed ${courseTitle} on TekyPro! 🎓`);
+    const linkedInText = encodeURIComponent(`Just completed ${courseTitle} on Page Innovation! 🎓`);
     const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(certificateUrl || `${FE}/certificates`)}&summary=${linkedInText}`;
     const html = this._baseTemplate({
       headerColor: 'linear-gradient(135deg,#0e2b5c,#2e3192)',
@@ -1269,7 +1269,7 @@ ${suggestedCourseTitle ? `<p>And when you're ready for what's next: <strong>${su
   async sendPromotionalEmail(email, name, { subject, title, bodyHtml, ctaText, ctaUrl, recipientKind = 'user', recipientId }) {
     const html = this._baseTemplate({
       headerColor: 'linear-gradient(135deg,#0e2b5c,#eb1c22)',
-      title: title || 'A note from TekyPro',
+      title: title || 'A note from Page Innovation',
       body: bodyHtml,
       ctaText,
       ctaUrl,

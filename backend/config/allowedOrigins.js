@@ -15,11 +15,11 @@ const allowedOrigins = [
   'http://localhost:5174', // Admin app dev
   process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
   // Production URLs - Render
-  'https://tekyprolms.onrender.com',
-  'https://admin-tekyprolms.onrender.com',
+  'https://pageinnovationlms.onrender.com',
+  'https://admin-pageinnovationlms.onrender.com',
   // Production URLs - Railway
-  'https://tekypro-student-production.up.railway.app',
-  'https://tekypro-admin-production.up.railway.app',
+  'https://pageinnovation-student-production.up.railway.app',
+  'https://pageinnovation-admin-production.up.railway.app',
 ];
 
 module.exports = { allowedOrigins };

@@ -1,4 +1,4 @@
-# Performance / DB Audit — TekyPro (2026-07-01)
+# Performance / DB Audit — Page Innovation (2026-07-01)
 
 Audit of query patterns, indexes, N+1 hotspots, admin list-page
 cost, cron memory footprint, connection pooling, and compression.

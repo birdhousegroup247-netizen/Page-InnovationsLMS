@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
 
     // Check if already seeded (prevent duplicate runs)
     const existingAdmin = await User.findOne({
-      where: { email: 'admin@tekypro.com' }
+      where: { email: 'admin@pageinnovation.com' }
     });
 
     if (existingAdmin) {
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
     const hashedPassword = await bcrypt.hash('password123', 10);
     const superAdmin = await User.create({
       full_name: 'Super Admin',
-      email: 'admin@tekypro.com',
+      email: 'admin@pageinnovation.com',
       password_hash: hashedPassword,
       role: 'super_admin',
       is_active: true,
@@ -133,7 +133,7 @@ router.post('/', async (req, res) => {
     // 3. Create Sample Instructor
     const instructor = await User.create({
       full_name: 'John Smith',
-      email: 'instructor@tekypro.com',
+      email: 'instructor@pageinnovation.com',
       password_hash: hashedPassword,
       role: 'instructor',
       instructor_status: 'approved',
@@ -164,12 +164,12 @@ router.post('/', async (req, res) => {
       data: {
         users: {
           superAdmin: {
-            email: 'admin@tekypro.com',
+            email: 'admin@pageinnovation.com',
             password: 'password123',
             role: 'super_admin',
           },
           instructor: {
-            email: 'instructor@tekypro.com',
+            email: 'instructor@pageinnovation.com',
             password: 'password123',
             role: 'instructor',
           },
@@ -177,7 +177,7 @@ router.post('/', async (req, res) => {
         categories: categories.length,
         courses: 1,
       },
-      note: 'You can now login with admin@tekypro.com / password123',
+      note: 'You can now login with admin@pageinnovation.com / password123',
     });
 
   } catch (error) {

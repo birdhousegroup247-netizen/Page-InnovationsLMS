@@ -1,4 +1,4 @@
-# Security Audit — TekyPro (2026-07-01)
+# Security Audit — Page Innovation (2026-07-01)
 
 End-to-end audit of authentication, authorization, session, transport,
 input handling, and secrets management across the 3 apps. Written the

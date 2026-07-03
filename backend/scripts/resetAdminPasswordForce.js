@@ -18,7 +18,7 @@ async function resetAdminPassword() {
         await sequelize.authenticate();
 
         // Find the admin user
-        const email = 'admin@tekypro.com';
+        const email = 'admin@pageinnovation.com';
         const user = await User.findByEmail(email);
 
         if (!user) {

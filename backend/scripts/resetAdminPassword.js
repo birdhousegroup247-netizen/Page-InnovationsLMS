@@ -18,7 +18,7 @@ async function resetAdminPassword() {
     console.log('✓ Database connected\n');
 
     // Find admin user
-    const admin = await User.findByEmail('admin@tekypro.com');
+    const admin = await User.findByEmail('admin@pageinnovation.com');
 
     if (!admin) {
       console.error('✗ Admin user not found!');
@@ -40,7 +40,7 @@ async function resetAdminPassword() {
     console.log('✓ Password reset successfully!\n');
     console.log('Login Credentials:');
     console.log('==================');
-    console.log(`Email: admin@tekypro.com`);
+    console.log(`Email: admin@pageinnovation.com`);
     console.log(`Password: Admin@123456`);
     console.log('');
     console.log('Login at: http://localhost:5174');

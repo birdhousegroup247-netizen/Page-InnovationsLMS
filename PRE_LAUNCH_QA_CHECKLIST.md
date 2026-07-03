@@ -158,7 +158,7 @@ Have two browsers open: one for the **student** journey (incognito), one for the
 
 ## Post-launch (when client domain is live)
 
-- [ ] Swap PayPal webhook URL in Developer Dashboard from Railway URL to `https://api.tekypro.com/api/webhooks/paypal`
+- [ ] Swap PayPal webhook URL in Developer Dashboard from Railway URL to `https://api.pageinnovation.com/api/webhooks/paypal`
 - [ ] Update `FRONTEND_URL`, `ADMIN_FRONTEND_URL`, and Google OAuth callback URLs in Railway env vars
 - [ ] Update CORS allowlist in `backend/server.js` if not already env-driven
 - [ ] Replace temp Cloudinary credentials with client's account

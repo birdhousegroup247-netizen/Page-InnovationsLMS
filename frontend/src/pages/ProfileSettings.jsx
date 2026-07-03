@@ -423,7 +423,7 @@ export default function ProfileSettings() {
 
                 {[
                   { key: 'show_on_leaderboard',  label: 'Show me on leaderboards', desc: 'Hide your row from public ranking pages.' },
-                  { key: 'allow_birthday_wishes', label: 'Allow birthday wishes from classmates', desc: 'When off, only the system note from TekyPro is sent on your birthday.' },
+                  { key: 'allow_birthday_wishes', label: 'Allow birthday wishes from classmates', desc: 'When off, only the system note from Page Innovation is sent on your birthday.' },
                 ].map((row) => (
                   <div key={row.key} className="flex items-start justify-between gap-4 py-2 border-t first:border-t-0 border-gray-100 dark:border-border-dark">
                     <div className="flex-1">
@@ -475,7 +475,7 @@ export default function ProfileSettings() {
                     className="w-full px-4 py-2.5 bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
                   >
                     <option value="public">Public — anyone can view my profile</option>
-                    <option value="members">Members only — only signed-in TekyPro users</option>
+                    <option value="members">Members only — only signed-in Page Innovation users</option>
                     <option value="private">Private — only my instructors / classmates</option>
                   </select>
                 </div>
@@ -530,7 +530,7 @@ export default function ProfileSettings() {
                         maxSizeMB={5}
                         currentFile={avatarPreview}
                         uploadEndpoint="/api/upload/profile-picture"
-                        folder="tekyprolms/avatars"
+                        folder="pageinnovationlms/avatars"
                       />
                     </div>
                   </div>
@@ -828,7 +828,7 @@ export default function ProfileSettings() {
                           <div>
                             <p className="text-green-800 dark:text-green-300 font-medium text-sm">Discord Connected</p>
                             <p className="text-green-700 dark:text-green-400 text-xs mt-0.5">
-                              {discordStatus.in_server ? 'You are in the TekyPro Discord server' : 'Account linked — join any course to get a channel invite'}
+                              {discordStatus.in_server ? 'You are in the Page Innovation Discord server' : 'Account linked — join any course to get a channel invite'}
                             </p>
                           </div>
                         </div>

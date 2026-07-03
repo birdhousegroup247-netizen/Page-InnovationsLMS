@@ -1,4 +1,4 @@
-# Redis Setup Guide for TekyPro LMS
+# Redis Setup Guide for Page Innovation LMS
 
 ## Why Redis is Required
 
@@ -49,10 +49,10 @@ redis-cli ping
 
 ```bash
 # Run Redis in Docker
-docker run -d --name tekypro-redis -p 6379:6379 redis:7-alpine
+docker run -d --name pageinnovation-redis -p 6379:6379 redis:7-alpine
 
 # Verify
-docker exec tekypro-redis redis-cli ping
+docker exec pageinnovation-redis redis-cli ping
 # Should return: PONG
 ```
 
@@ -133,7 +133,7 @@ chmod +x test-cookie-auth.sh
 **Expected Output:**
 ```
 ==========================================
-TekyPro LMS - Cookie Auth Test Script
+Page Innovation LMS - Cookie Auth Test Script
 ==========================================
 
 Step 1: Testing Login (Should set httpOnly cookies)
@@ -195,7 +195,7 @@ npm run dev
 2. **Login:**
    - Navigate to `http://localhost:5174/login` (Admin)
    - Or `http://localhost:5173/login` (Student)
-   - Enter credentials: `admin@tekypro.com` / `Admin@123`
+   - Enter credentials: `admin@pageinnovation.com` / `Admin@123`
 
 3. **Verify Cookies:**
    - Open DevTools → Application → Cookies
@@ -263,7 +263,7 @@ sudo systemctl restart redis
 brew services restart redis
 
 # Docker
-docker restart tekypro-redis
+docker restart pageinnovation-redis
 ```
 
 ### Issue: "Connection refused"
@@ -456,9 +456,9 @@ brew services list           # List all services
 
 **Docker:**
 ```bash
-docker start tekypro-redis   # Start
-docker stop tekypro-redis    # Stop
-docker restart tekypro-redis # Restart
+docker start pageinnovation-redis   # Start
+docker stop pageinnovation-redis    # Stop
+docker restart pageinnovation-redis # Restart
 docker ps                    # List running containers
 ```
 

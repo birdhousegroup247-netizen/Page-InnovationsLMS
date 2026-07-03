@@ -661,7 +661,7 @@ export default function CoursePlayer() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <Link to="/dashboard" className="hidden sm:flex items-center flex-shrink-0">
-              <img src={logo} alt="TekyPro" className="h-8 w-auto object-contain" />
+              <img src={logo} alt="Page Innovation" className="h-8 w-auto object-contain" />
             </Link>
             <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-border-dark flex-shrink-0" />
             <div className="min-w-0">

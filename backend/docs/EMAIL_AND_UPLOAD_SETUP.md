@@ -1,6 +1,6 @@
 # Email & File Upload Setup Guide
 
-This guide will help you configure email sending (Nodemailer) and file uploads (Cloudinary) for TekyPro LMS.
+This guide will help you configure email sending (Nodemailer) and file uploads (Cloudinary) for Page Innovation LMS.
 
 ---
 
@@ -13,7 +13,7 @@ This guide will help you configure email sending (Nodemailer) and file uploads (
 3. Scroll down to **App passwords**
 4. Click **Select app** → Choose **Mail**
 5. Click **Select device** → Choose **Other (Custom name)**
-6. Enter "TekyPro LMS" and click **Generate**
+6. Enter "Page Innovation LMS" and click **Generate**
 7. Copy the 16-character password (e.g., `abcd efgh ijkl mnop`)
 
 ### Step 2: Configure .env File
@@ -27,7 +27,7 @@ EMAIL_PORT=587
 EMAIL_SECURE=false
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-16-char-app-password-here
-EMAIL_FROM_NAME=TekyPro LMS
+EMAIL_FROM_NAME=Page Innovation LMS
 FRONTEND_URL=http://localhost:3000
 ```
 
@@ -155,7 +155,7 @@ curl -X POST http://localhost:5000/api/upload/profile-picture \
   "message": "Profile picture uploaded successfully",
   "data": {
     "url": "https://res.cloudinary.com/...",
-    "public_id": "tekypro-lms/profile-pictures/user_1_...",
+    "public_id": "pageinnovation-lms/profile-pictures/user_1_...",
     "width": 1200,
     "height": 800,
     "format": "jpg",
@@ -355,7 +355,7 @@ await emailService.sendTestAssignmentEmail(
 2. **Limit folder access**
    ```javascript
    // Only upload to specific folders
-   folder: `tekypro-lms/${userRole}/${userId}`
+   folder: `pageinnovation-lms/${userRole}/${userId}`
    ```
 
 3. **Set transformation limits**

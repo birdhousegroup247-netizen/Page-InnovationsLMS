@@ -6,12 +6,12 @@ async function testLogin() {
         console.log('🔍 Testing login credentials...\n');
 
         const testEmails = [
-            'admin@tekypro.com',
-            'jerod.homenick38@tekypro.com',
-            'aliyah_veum@tekypro.com',
+            'admin@pageinnovation.com',
+            'jerod.homenick38@pageinnovation.com',
+            'aliyah_veum@pageinnovation.com',
             'shannon_hayes71@yahoo.com',
             'arnold98@gmail.com',
-            'carlotta_moen@tekypro.com',
+            'carlotta_moen@pageinnovation.com',
             'lela53@yahoo.com',
             'grover.barton@yahoo.com',
             'rene83@yahoo.com'

@@ -112,12 +112,12 @@ export default function BirthdayCelebration({ user }) {
           {isBelated ? (
             <>
               Your birthday was <strong>{daysAgo} day{daysAgo === 1 ? '' : 's'} ago</strong>{' '}
-              — but we didn't want to skip it. Everyone at TekyPro is wishing you a brilliant year
+              — but we didn't want to skip it. Everyone at Page Innovation is wishing you a brilliant year
               ahead. Thanks for being part of this community. 🎂
             </>
           ) : (
             <>
-              The whole TekyPro team is celebrating with you today.
+              The whole Page Innovation team is celebrating with you today.
               Thank you for letting us be a small part of your learning journey —
               the curiosity you bring to every lesson is exactly what makes growth happen.
               Here's to another year of building, breaking, and getting better. 💙

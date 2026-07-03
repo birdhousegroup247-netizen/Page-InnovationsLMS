@@ -123,12 +123,12 @@ module.exports = (data) => {
   </div>
 
   <div class="footer">
-    <p><strong>TekyPro - The Leading Remote DBA Service Provider</strong></p>
+    <p><strong>Page Innovation - The Leading Remote DBA Service Provider</strong></p>
     <p>Keep learning, keep growing! 🚀</p>
     <p style="margin-top: 15px;">
-      <a href="https://www.tekypro.com">Visit Website</a> |
-      <a href="https://www.tekypro.com/courses">Browse Courses</a> |
-      <a href="https://www.tekypro.com/support">Support</a>
+      <a href="https://www.pageinnovation.com">Visit Website</a> |
+      <a href="https://www.pageinnovation.com/courses">Browse Courses</a> |
+      <a href="https://www.pageinnovation.com/support">Support</a>
     </p>
   </div>
 </body>

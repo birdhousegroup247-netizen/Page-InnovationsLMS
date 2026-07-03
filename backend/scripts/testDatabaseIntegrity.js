@@ -44,7 +44,7 @@ function test(name, condition, errorMsg = '') {
 
 async function testDatabaseIntegrity() {
   console.log(`${colors.blue}╔════════════════════════════════════════════════════════════╗${colors.reset}`);
-  console.log(`${colors.blue}║     TekyPro LMS - Database Integrity Test Suite          ║${colors.reset}`);
+  console.log(`${colors.blue}║     Page Innovation LMS - Database Integrity Test Suite          ║${colors.reset}`);
   console.log(`${colors.blue}╚════════════════════════════════════════════════════════════╝${colors.reset}`);
   console.log('');
 

@@ -1,10 +1,10 @@
-# TekyPro LMS - Frontend Setup Complete
+# Page Innovation LMS - Frontend Setup Complete
 
 ## What We Built
 
-A **Modern Dark Mode LMS Frontend** with TekyPro branding that connects to your existing backend.
+A **Modern Dark Mode LMS Frontend** with Page Innovation branding that connects to your existing backend.
 
-### Brand Colors Extracted from tekypro.com
+### Brand Colors Extracted from pageinnovation.com
 
 **Primary Colors:**
 - Brand Blue: `#0e2b5c` - Main brand color
@@ -19,7 +19,7 @@ A **Modern Dark Mode LMS Frontend** with TekyPro branding that connects to your 
 
 **Typography:**
 - Font: Rubik (from Google Fonts)
-- Same font family used on tekypro.com
+- Same font family used on pageinnovation.com
 
 ## Current Status
 
@@ -27,7 +27,7 @@ A **Modern Dark Mode LMS Frontend** with TekyPro branding that connects to your 
 
 **What's Working:**
 - Modern Dark Mode UI with gradient effects
-- Login page with TekyPro branding
+- Login page with Page Innovation branding
 - Dashboard with stats and course cards
 - Authentication context with JWT
 - API integration ready
@@ -52,7 +52,7 @@ Backend should run on: http://localhost:5000
 
 **Test Credentials (from seed data):**
 ```
-Email: student@tekypro.com
+Email: student@pageinnovation.com
 Password: Admin@123
 ```
 
@@ -75,7 +75,7 @@ frontend/
 │   ├── utils/           # Helper functions
 │   └── index.css        # Tailwind + custom components
 ├── .env                 # Environment variables
-├── tailwind.config.js   # TekyPro color palette
+├── tailwind.config.js   # Page Innovation color palette
 └── README.md            # Full documentation
 ```
 
@@ -101,7 +101,7 @@ You mentioned: "the logo is here:asset"
    // In Login.jsx or Dashboard.jsx
    import logo from '../assets/logo.png';
    
-   <img src={logo} alt="TekyPro" className="h-12" />
+   <img src={logo} alt="Page Innovation" className="h-12" />
    ```
 
 **Can you provide the full path to your logo?** I'll integrate it into the design.

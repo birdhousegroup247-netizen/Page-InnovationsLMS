@@ -43,7 +43,7 @@ export default function SuspensionModal() {
           </button>
           <p className="text-xs text-gray-400">
             Need help?{' '}
-            <a href="mailto:support@tekypro.com" className="underline hover:text-gray-600">
+            <a href="mailto:support@pageinnovation.com" className="underline hover:text-gray-600">
               Contact support
             </a>
           </p>

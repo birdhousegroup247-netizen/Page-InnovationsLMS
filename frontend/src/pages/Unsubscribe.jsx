@@ -57,7 +57,7 @@ export default function Unsubscribe() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-border-dark">
         <div className="flex items-center justify-center mb-6">
-          <img src={logo} alt="TekyPro" className="h-10 w-auto" />
+          <img src={logo} alt="Page Innovation" className="h-10 w-auto" />
         </div>
 
         {state === 'checking' && (
@@ -111,7 +111,7 @@ export default function Unsubscribe() {
               <strong>{email}</strong> is not receiving marketing emails. If you'd like to re-subscribe, log in and update your email preferences.
             </p>
             <Link to="/" className="inline-block px-6 py-2.5 text-sm font-medium text-white bg-brand-blue hover:bg-brand-blue-600 rounded-lg transition-colors">
-              Back to TekyPro
+              Back to Page Innovation
             </Link>
           </div>
         )}
@@ -123,10 +123,10 @@ export default function Unsubscribe() {
             </div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">You've been unsubscribed</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              <strong>{email}</strong> will no longer receive marketing, drip, or reminder emails from TekyPro. Sorry to see you go.
+              <strong>{email}</strong> will no longer receive marketing, drip, or reminder emails from Page Innovation. Sorry to see you go.
             </p>
             <Link to="/" className="inline-block px-6 py-2.5 text-sm font-medium text-white bg-brand-blue hover:bg-brand-blue-600 rounded-lg transition-colors">
-              Back to TekyPro
+              Back to Page Innovation
             </Link>
           </div>
         )}
@@ -139,7 +139,7 @@ export default function Unsubscribe() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Something went wrong</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{error}</p>
             <Link to="/" className="inline-block px-6 py-2.5 text-sm font-medium text-white bg-brand-blue hover:bg-brand-blue-600 rounded-lg transition-colors">
-              Back to TekyPro
+              Back to Page Innovation
             </Link>
           </div>
         )}

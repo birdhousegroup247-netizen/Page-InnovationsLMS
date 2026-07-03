@@ -65,7 +65,7 @@ class CloudinaryService {
   static async uploadImage(input, folder = 'lms', fileName = null) {
     try {
       const uploadOptions = {
-        folder: `tekypro-lms/${folder}`,
+        folder: `pageinnovation-lms/${folder}`,
         resource_type: 'image',
         allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
         transformation: [
@@ -118,7 +118,7 @@ class CloudinaryService {
         (fileName || '').toLowerCase().endsWith('.pdf') ||
         (typeof input === 'string' && input.startsWith('data:application/pdf'));
       const uploadOptions = {
-        folder: `tekypro-lms/${folder}`,
+        folder: `pageinnovation-lms/${folder}`,
         resource_type: looksPdf ? 'image' : 'raw',
       };
       if (fileName) uploadOptions.public_id = fileName;
@@ -155,7 +155,7 @@ class CloudinaryService {
   static async uploadVideo(input, folder = 'videos', fileName = null) {
     try {
       const uploadOptions = {
-        folder: `tekypro-lms/${folder}`,
+        folder: `pageinnovation-lms/${folder}`,
         resource_type: 'video',
         allowed_formats: ['mp4', 'mov', 'avi', 'wmv', 'flv'],
         chunk_size: 6000000, // 6MB chunks for large files
@@ -244,7 +244,7 @@ class CloudinaryService {
   static async uploadFromUrl(url, folder = 'lms') {
     try {
       const result = await cloudinary.uploader.upload(url, {
-        folder: `tekypro-lms/${folder}`,
+        folder: `pageinnovation-lms/${folder}`,
       });
 
       logger.info(`File uploaded from URL to Cloudinary: ${result.secure_url}`);

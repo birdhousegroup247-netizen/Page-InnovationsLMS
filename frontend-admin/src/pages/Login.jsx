@@ -73,12 +73,12 @@ export default function Login() {
 
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
           {/* Logo */}
-          <img src={logo} alt="TekyPro" className="h-20 w-auto mb-8 filter brightness-0 invert" />
+          <img src={logo} alt="Page Innovation" className="h-20 w-auto mb-8 filter brightness-0 invert" />
 
           {/* Illustration/Content */}
           <div className="text-center max-w-md">
             <h1 className="text-4xl font-bold mb-4 animate-fade-in">
-              Welcome to TekyPro
+              Welcome to Page Innovation
             </h1>
             <p className="text-xl text-white/90 mb-8 animate-slide-up">
               The Leading Remote DBA Service Provider
@@ -135,7 +135,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8 animate-fade-in">
-            <img src={logo} alt="TekyPro" className="h-12 w-auto mx-auto" />
+            <img src={logo} alt="Page Innovation" className="h-12 w-auto mx-auto" />
           </div>
 
           {/* Form Card */}
@@ -301,7 +301,7 @@ export default function Login() {
 
           {/* Footer */}
           <p className="text-center text-sm text-gray-500 dark:text-text-dark-muted mt-8 transition-colors">
-            © 2025 TekyPro. All rights reserved.
+            © 2025 Page Innovation. All rights reserved.
           </p>
         </div>
       </div>

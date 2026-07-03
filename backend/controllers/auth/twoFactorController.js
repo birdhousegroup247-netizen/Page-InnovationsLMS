@@ -16,7 +16,7 @@ class TwoFactorController {
       if (user.two_factor_enabled) return ApiResponse.error(res, '2FA is already enabled', 400);
 
       const secret = authenticator.generateSecret();
-      const otpauth = authenticator.keyuri(user.email, 'TekyPro', secret);
+      const otpauth = authenticator.keyuri(user.email, 'Page Innovation', secret);
       const qrCode = await QRCode.toDataURL(otpauth);
 
       // Store secret temporarily (not enabled yet)

@@ -3,7 +3,7 @@ const fs = require('fs');
 async function testEndpoints() {
     const loginUrl = 'http://localhost:5000/api/auth/login';
     const credentials = {
-        email: 'admin@tekypro.com',
+        email: 'admin@pageinnovation.com',
         password: 'Admin@123'
     };
 

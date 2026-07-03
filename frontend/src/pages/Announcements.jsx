@@ -60,7 +60,7 @@ export default function Announcements() {
           Announcements
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          Updates from TekyPro and your instructors.
+          Updates from Page Innovation and your instructors.
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export default function Announcements() {
         <div className="flex flex-wrap items-center gap-2 mb-5">
           {[
             { id: 'all',    label: 'All',             count: counts.all },
-            { id: 'admin',  label: 'From TekyPro',    count: counts.admin },
+            { id: 'admin',  label: 'From Page Innovation',    count: counts.admin },
             { id: 'course', label: 'From my courses', count: counts.course },
           ].map((chip) => (
             <button
@@ -103,7 +103,7 @@ export default function Announcements() {
           <Megaphone className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
           <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No announcements yet</p>
           <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-            When TekyPro or your instructors post updates, they'll show up here.
+            When Page Innovation or your instructors post updates, they'll show up here.
           </p>
         </div>
       ) : visible.length === 0 ? (
@@ -126,7 +126,7 @@ export default function Announcements() {
             const sourceBg = isAdminSrc
               ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200/60 dark:border-purple-800/60 text-purple-700 dark:text-purple-400'
               : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-800/60 text-blue-700 dark:text-blue-400';
-            const sourceLabel = isAdminSrc ? 'TekyPro' : 'Instructor';
+            const sourceLabel = isAdminSrc ? 'Page Innovation' : 'Instructor';
             const body = a.message || a.content || '';
             return (
               <div
@@ -187,7 +187,7 @@ export default function Announcements() {
                         {(a.author_name || (isAdminSrc ? 'T' : '?')).charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <span className="truncate">{a.author_name || (isAdminSrc ? 'TekyPro' : 'Instructor')}</span>
+                    <span className="truncate">{a.author_name || (isAdminSrc ? 'Page Innovation' : 'Instructor')}</span>
                     {a.course?.title && (
                       <span className="hidden sm:inline-flex items-center gap-1 ml-2 pl-2 border-l border-gray-200 dark:border-dark-700">
                         <BookOpen className="w-3 h-3" />

@@ -58,7 +58,7 @@ export const NOTIF_TYPES = [
   {
     key: 'birthday',
     label: 'Birthday wishes',
-    description: 'The TekyPro birthday note on your day.',
+    description: 'The Page Innovation birthday note on your day.',
   },
   {
     key: 'marketing',

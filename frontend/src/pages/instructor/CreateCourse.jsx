@@ -420,7 +420,7 @@ export default function CreateCourse() {
                 acceptedTypes="image"
                 maxSizeMB={5}
                 currentFile={thumbnailPreview}
-                folder="tekyprolms/courses"
+                folder="pageinnovationlms/courses"
               />
 
               {validationErrors.thumbnail && (

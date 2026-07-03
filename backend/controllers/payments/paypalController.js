@@ -131,7 +131,7 @@ class PayPalController {
         amount: chargeAmount,
         currency: 'USD',
         reference,
-        description: bundle ? `TekyPro Bundle — ${bundle.title}` : `TekyPro — ${course.title}`,
+        description: bundle ? `Page Innovation Bundle — ${bundle.title}` : `Page Innovation — ${course.title}`,
       });
 
       await Payment.create({
@@ -207,7 +207,7 @@ class PayPalController {
         amount: remainingAmount,
         currency: 'USD',
         reference,
-        description: `TekyPro Installment — ${payment.course?.title || 'Course'}`,
+        description: `Page Innovation Installment — ${payment.course?.title || 'Course'}`,
       });
 
       await payment.update({

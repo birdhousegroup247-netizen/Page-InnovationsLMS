@@ -1,4 +1,4 @@
-# TekyPro LMS — Full End-to-End QA Prompt
+# Page Innovation LMS — Full End-to-End QA Prompt
 
 Copy everything below the `---` line into a fresh Claude / agent session,
 or use it as a manual QA script. Each section has a goal, exact steps,
@@ -10,17 +10,17 @@ expected outcome, and a pass/fail box. Don't skip — order matters
 # Role
 
 You are a QA engineer running a deep end-to-end production smoke test on
-the TekyPro LMS. Your job: exercise every critical user path on the live
+the Page Innovation LMS. Your job: exercise every critical user path on the live
 Railway deployment, capture failures with exact reproduction steps, and
 report a final pass/fail per area.
 
 # Environment under test
 
-- **Backend API:** https://tekyprolms-production.up.railway.app
-- **Student frontend:** https://tekypro-student-production.up.railway.app
-- **Admin frontend:** https://tekypro-admin-production.up.railway.app
+- **Backend API:** https://pageinnovationlms-production.up.railway.app
+- **Student frontend:** https://pageinnovation-student-production.up.railway.app
+- **Admin frontend:** https://pageinnovation-admin-production.up.railway.app
 - **PayPal mode:** sandbox (use sandbox buyer account, NOT a real card)
-- **Email:** noreply@tekypro.com via cPanel SMTP — check the inbox you
+- **Email:** noreply@pageinnovation.com via cPanel SMTP — check the inbox you
   sign up with for real deliveries
 - **Discord:** bot is configured but `GUILD_ID` is missing — Discord
   features should gracefully no-op, NOT crash
@@ -45,9 +45,9 @@ report a final pass/fail per area.
 
 | # | Action | Expected | Result |
 |---|--------|----------|--------|
-| 0.1 | `curl https://tekyprolms-production.up.railway.app/live` | 200, JSON with `alive:true` | |
-| 0.2 | `curl https://tekyprolms-production.up.railway.app/ready` | 200, JSON with `ready:true` | |
-| 0.3 | `curl https://tekyprolms-production.up.railway.app/health` | 200 (or 503 if Redis is intentionally off) | |
+| 0.1 | `curl https://pageinnovationlms-production.up.railway.app/live` | 200, JSON with `alive:true` | |
+| 0.2 | `curl https://pageinnovationlms-production.up.railway.app/ready` | 200, JSON with `ready:true` | |
+| 0.3 | `curl https://pageinnovationlms-production.up.railway.app/health` | 200 (or 503 if Redis is intentionally off) | |
 | 0.4 | Open student URL in browser | App shell loads, no white screen, no 502 | |
 | 0.5 | Open admin URL in browser | App shell loads, no white screen, no 502 | |
 | 0.6 | Open DevTools → Network on both | No CORS errors on initial API calls | |
@@ -267,7 +267,7 @@ admin before going back to the student.
 ## 5.G Certificate
 - Complete all lessons + pass quiz in the free course.
 - **Expected:** certificate generated, downloadable PDF with correct
-  name, course title, issuer (TekyPro), URL.
+  name, course title, issuer (Page Innovation), URL.
 
 ## 5.H Discord linking (will no-op until GUILD_ID arrives)
 - Click "Link Discord". Should either go through OAuth or show a clean
@@ -364,7 +364,7 @@ Switch to the instructor account created in 3.A.
   `Content-Security-Policy`, `Referrer-Policy`.
 
 ## 8.D HTTPS redirect
-- `curl -I http://tekyprolms-production.up.railway.app/api/courses`
+- `curl -I http://pageinnovationlms-production.up.railway.app/api/courses`
 - Expect 301 to https. (But `/live`, `/ready`, `/health` should NOT
   redirect — they're exempt.)
 
@@ -411,7 +411,7 @@ Confirm all of these emails actually arrived during the run:
 - [ ] Course announcement notification (6.D, 3.G) — if email notifications are wired
 
 Check spam folder if any are missing. Note send-from address is
-`noreply@tekypro.com` — flag if anything came from a different sender.
+`noreply@pageinnovation.com` — flag if anything came from a different sender.
 
 ---
 
@@ -420,7 +420,7 @@ Check spam folder if any are missing. Note send-from address is
 Write a summary in this exact shape:
 
 ```
-TekyPro LMS — E2E QA Report
+Page Innovation LMS — E2E QA Report
 Date: YYYY-MM-DD
 Tester: <name>
 
@@ -446,10 +446,10 @@ Recommendation: GO / NO-GO for public launch
 
 # Notes for the tester
 
-- The PayPal migration must be run on `tekypro-db` before Phase 4.G.
+- The PayPal migration must be run on `pageinnovation-db` before Phase 4.G.
   If you get `invalid input value for enum "enum_payments_payment_gateway": "paypal"`,
   the migration didn't run.
-- Cloudinary preset `tekypro_uploads` must exist on cloud `dau8rckpp`
+- Cloudinary preset `pageinnovation_uploads` must exist on cloud `dau8rckpp`
   for image/file uploads in Phase 5.D to work.
 - If any 500 errors appear, check Railway → TekyproLMS → Logs and copy
   the stack trace into the failure note.

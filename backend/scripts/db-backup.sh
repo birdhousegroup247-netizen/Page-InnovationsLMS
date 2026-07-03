@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# TekyPro DB backup
+# Page Innovation DB backup
 # -----------------
 # Dumps the production database, gzips it, and uploads to S3-compatible
 # object storage (AWS S3 or Backblaze B2 via the S3-compat endpoint).
@@ -17,7 +17,7 @@
 #     DB_NAME       database name
 #     DB_USER       database user
 #     DB_PASSWORD   database password
-#     BACKUP_S3_BUCKET   target bucket name (e.g. "tekypro-backups")
+#     BACKUP_S3_BUCKET   target bucket name (e.g. "pageinnovation-backups")
 #   Optional
 #     BACKUP_S3_PREFIX     key prefix inside the bucket (default "db/")
 #     BACKUP_S3_ENDPOINT   custom S3-compatible endpoint URL (set this
@@ -34,8 +34,8 @@
 #   or an attached IAM role. Configure once per host.
 #
 # Cron example (run daily at 03:15 UTC, log to a dated file)
-#   15 3 * * * /opt/tekypro/backend/scripts/db-backup.sh \
-#       >> /var/log/tekypro/db-backup.log 2>&1
+#   15 3 * * * /opt/pageinnovation/backend/scripts/db-backup.sh \
+#       >> /var/log/pageinnovation/db-backup.log 2>&1
 #
 # Retention
 #   Recommend setting a lifecycle rule on the bucket itself rather than
@@ -69,7 +69,7 @@ esac
 
 TS="$(date -u +"%Y%m%dT%H%M%SZ")"
 HOSTNAME_SHORT="$(hostname -s 2>/dev/null || echo unknown)"
-BASENAME="tekypro-${DB_NAME}-${HOSTNAME_SHORT}-${TS}.sql.gz"
+BASENAME="pageinnovation-${DB_NAME}-${HOSTNAME_SHORT}-${TS}.sql.gz"
 LOCAL_PATH="${BACKUP_LOCAL_DIR%/}/${BASENAME}"
 S3_URI="s3://${BACKUP_S3_BUCKET}/${BACKUP_S3_PREFIX}${BASENAME}"
 
@@ -142,7 +142,7 @@ log "Upload OK"
 
 if [ "$BACKUP_RETAIN_LOCAL" -gt 0 ]; then
   # shellcheck disable=SC2012
-  ls -1t "${BACKUP_LOCAL_DIR%/}"/tekypro-${DB_NAME}-*.sql.gz 2>/dev/null \
+  ls -1t "${BACKUP_LOCAL_DIR%/}"/pageinnovation-${DB_NAME}-*.sql.gz 2>/dev/null \
     | tail -n +$((BACKUP_RETAIN_LOCAL + 1)) \
     | while read -r old; do
         log "Removing old local backup: $old"
