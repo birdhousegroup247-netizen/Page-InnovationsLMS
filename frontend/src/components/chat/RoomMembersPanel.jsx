@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, MessageSquare } from 'lucide-react';
 import { chatAPI } from '../../lib/api';
 
 /**
@@ -10,7 +10,7 @@ import { chatAPI } from '../../lib/api';
  * report) stripped out. Students see who's in the room; they don't
  * manage it.
  */
-export default function RoomMembersPanel({ roomId, isOpen, onClose }) {
+export default function RoomMembersPanel({ roomId, isOpen, onClose, onMessageMember, currentUserId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [members, setMembers] = useState([]);
@@ -60,6 +60,19 @@ export default function RoomMembersPanel({ roomId, isOpen, onClose }) {
             )}
           </div>
         </div>
+        {/* One tap to DM a classmate — room membership already makes them
+            reachable, so this is just a shortcut past the + search. */}
+        {onMessageMember && m.id !== currentUserId && (
+          <button
+            type="button"
+            onClick={() => onMessageMember(m)}
+            className="p-2 rounded-lg text-gray-400 hover:text-brand-blue hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex-shrink-0"
+            title={`Message ${m.full_name}`}
+            aria-label={`Message ${m.full_name}`}
+          >
+            <MessageSquare className="w-4 h-4" />
+          </button>
+        )}
       </li>
     );
   };

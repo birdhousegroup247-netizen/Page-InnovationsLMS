@@ -41,6 +41,14 @@ class EmailService {
   constructor() {
     this.resendKey = process.env.RESEND_API_KEY || '';
     this.from = process.env.EMAIL_FROM || `TekyPro LMS <${process.env.EMAIL_USER || 'noreply@tekypro.com'}>`;
+    // Per-purpose senders. Any address @ the Resend-verified domain works
+    // without extra setup; unset vars fall back to the default sender.
+    //   EMAIL_FROM_REGISTRATION → signup verification + welcome
+    //   EMAIL_FROM_PORTAL       → student-portal notifications
+    this.fromByKind = {
+      registration: process.env.EMAIL_FROM_REGISTRATION || null,
+      portal: process.env.EMAIL_FROM_PORTAL || null,
+    };
     // Secret used to sign unsubscribe tokens. Kept separate from the
     // JWT secret so rotating one doesn't break the other. Falls back
     // to JWT_SECRET so setups without a dedicated secret still work.
@@ -171,7 +179,7 @@ class EmailService {
       const res = await axios.post(
         'https://api.resend.com/emails',
         {
-          from: this.from,
+          from: (options.fromKind && this.fromByKind[options.fromKind]) || this.from,
           to: Array.isArray(options.to) ? options.to : [options.to],
           subject: options.subject,
           html: options.html,
@@ -198,7 +206,7 @@ class EmailService {
   async _sendViaSmtp(options) {
     try {
       const mailOptions = {
-        from: this.from,
+        from: (options.fromKind && this.fromByKind[options.fromKind]) || this.from,
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -237,6 +245,7 @@ class EmailService {
       ctaUrl: `${FE}/courses`,
     });
     return this.sendEmail({
+      fromKind: 'registration',
       to: email,
       subject: 'Welcome to TekyPro LMS!',
       html,
@@ -273,6 +282,7 @@ class EmailService {
       ctaUrl: verifyUrl,
     });
     return this.sendEmail({
+      fromKind: 'registration',
       to: email,
       subject: 'Verify your TekyPro email address',
       html,

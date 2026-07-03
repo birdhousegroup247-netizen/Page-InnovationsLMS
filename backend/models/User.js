@@ -153,6 +153,19 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: 0,
     },
+    // Per-ACCOUNT brute-force lockout (complements the per-IP limiter):
+    // 8 wrong passwords → login_locked_until = now + 15 min. Cleared on
+    // a successful login. security-audit §4.14.
+    failed_login_attempts: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    login_locked_until: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+    },
     // Fine-grained admin permission strings for the requirePermission()
     // middleware — parallel to VIREL's admin RBAC pattern. Legacy admins
     // (empty / null) still work via the existing `authorize()`

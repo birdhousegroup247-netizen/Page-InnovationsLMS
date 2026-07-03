@@ -518,18 +518,37 @@ class AuthController {
         throw new UnauthorizedError('Account is deactivated. Please contact support.');
       }
 
+      // Per-ACCOUNT lockout, complementing the per-IP rate limiter: a
+      // distributed guesser rotating IPs still hits this wall. 8 wrong
+      // passwords → 15-minute lock. Counter clears on success.
+      if (user.login_locked_until && new Date(user.login_locked_until) > new Date()) {
+        const mins = Math.ceil((new Date(user.login_locked_until) - Date.now()) / 60000);
+        throw new UnauthorizedError(`Too many failed attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.`);
+      }
+
       // Verify password
       const isPasswordValid = await user.comparePassword(password);
       if (!isPasswordValid) {
+        const attempts = (user.failed_login_attempts || 0) + 1;
+        const lock = attempts >= 8;
+        await user.update({
+          failed_login_attempts: lock ? 0 : attempts,
+          login_locked_until: lock ? new Date(Date.now() + 15 * 60 * 1000) : user.login_locked_until,
+        }).catch(() => {});
         // Log failed login attempt
         await ActivityController.logActivity({
           user_id: user.id,
           action: 'failed_login',
-          metadata: { email, reason: 'Invalid password' },
+          metadata: { email, reason: 'Invalid password', attempts, locked: lock },
           ip_address: req.ip || req.connection.remoteAddress,
           user_agent: req.get('user-agent'),
         });
         throw new UnauthorizedError('Invalid email or password');
+      }
+
+      // Successful password — clear the failure counter
+      if (user.failed_login_attempts || user.login_locked_until) {
+        await user.update({ failed_login_attempts: 0, login_locked_until: null }).catch(() => {});
       }
 
       // Gate: must have verified email before logging in.

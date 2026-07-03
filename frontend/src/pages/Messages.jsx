@@ -4,6 +4,7 @@ import { chatAPI } from '../lib/api';
 import { getSocket, connectSocket } from '../lib/socket';
 import { tokenStorage } from '../utils/tokenStorage';
 import { Spinner } from '../components/ui';
+import { useToast } from '../components/ui/Toast';
 import { cn } from '../utils/cn';
 import RoomSettingsPanel from '../components/chat/RoomSettingsPanel';
 import RoomMembersPanel from '../components/chat/RoomMembersPanel';
@@ -1000,6 +1001,7 @@ function RoomItem({ room, isActive, onClick }) {
 
 export default function Messages() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [rooms, setRooms]               = useState([]);
   const [conversations, setConversations] = useState([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
@@ -1323,6 +1325,22 @@ export default function Messages() {
           roomId={activeChat.id}
           isOpen={showRoomMembers}
           onClose={() => setShowRoomMembers(false)}
+          currentUserId={user?.id}
+          onMessageMember={async (member) => {
+            try {
+              const r = await chatAPI.getOrCreateConversation(member.id);
+              const conv = r.data?.data?.conversation;
+              if (!conv) return;
+              setShowRoomMembers(false);
+              setActiveChat({ type: 'dm', id: conv.id, title: member.full_name, subtitle: member.role });
+              // New thread won't be in the sidebar yet — refresh the list
+              chatAPI.getConversations()
+                .then((res) => setConversations(res.data?.data?.conversations || []))
+                .catch(() => {});
+            } catch (e) {
+              showToast(e.response?.data?.message || 'Could not start conversation', 'error');
+            }
+          }}
         />
       )}
     </div>

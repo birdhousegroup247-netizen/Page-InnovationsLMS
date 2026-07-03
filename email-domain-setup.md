@@ -96,3 +96,46 @@ the client insists.
 | Mail arrives in spam | DKIM TXT value truncated when pasting — re-copy the full `p=…` string |
 | "You can only send testing emails…" error | Domain not verified yet, or `EMAIL_FROM` uses a domain other than the verified one |
 | Nothing sends at all | `RESEND_API_KEY` missing/typo'd on Railway — check boot logs pick the Resend transport (see `email-setup.md`) |
+
+---
+
+# Remaining operator punch list (as of 2026-07-03)
+
+Things only YOU (or the client) can do — everything code-side is done.
+
+## 1. Emails live
+- [ ] `RESEND_API_KEY` on Railway backend (from resend.com → API Keys)
+- [ ] Verify tekypro.com domain (steps above) → then `EMAIL_FROM=TekyPro <noreply@tekypro.com>`
+- [ ] Optional per-purpose senders (already supported in code):
+      `EMAIL_FROM_REGISTRATION=TekyPro <registration@tekypro.com>`
+      `EMAIL_FROM_PORTAL=TekyPro <sportal@tekypro.com>`
+
+## 2. PayPal live
+Set on Railway backend:
+- [ ] `PAYPAL_CLIENT_ID` (live app "tekypro_lms")
+- [ ] `PAYPAL_CLIENT_SECRET`
+- [ ] `PAYPAL_WEBHOOK_ID=1UB32269RB062591G`
+- [ ] `PAYPAL_MODE=live` (only when done testing with sandbox)
+
+## 3. Secrets hygiene
+- [ ] Rotate `SEED_SECRET` on Railway (current one is guessable + was shared in chat)
+- [ ] Regenerate the Discord bot token later (was shared in plain text)
+
+## 4. Chase from the client
+- [ ] Cloudinary **cloud name** (they sent key + secret, but not the cloud
+      name — it's on their Cloudinary dashboard, top-left)
+- [ ] Google OAuth **client secret**
+- [ ] Discord **client secret** (developer portal → OAuth2)
+      — Guild ID already recovered from the invite link: `928124593795915796` (server "TekyPro-DBA")
+- [ ] `registration@tekypro.com` mailbox password (only needed for READING mail)
+
+## 5. Discord env vars (once client secret arrives)
+- [ ] `DISCORD_BOT_TOKEN` (have it), `DISCORD_CLIENT_ID=1508450600831025242`,
+      `DISCORD_GUILD_ID=928124593795915796`, `DISCORD_CLIENT_SECRET` (pending)
+- [ ] Invite the bot to the TekyPro-DBA server with role-manage permissions
+
+## 6. End-to-end business flows (human clicking, together)
+- [ ] Sandbox PayPal payment → enrollment appears → course opens → certificate on completion
+- [ ] 2FA: enable in profile with a real authenticator app → logout → login with code
+- [ ] Live session start-to-finish: schedule → code display → student check-in → end → roster
+- [ ] After that: give the list of features to HIDE and the flags get flipped
