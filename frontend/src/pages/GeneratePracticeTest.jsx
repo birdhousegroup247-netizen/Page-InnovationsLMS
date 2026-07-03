@@ -134,7 +134,7 @@ export default function GeneratePracticeTest() {
         </div>
       </div>
 
-      <Container className="py-8 max-w-4xl">
+      <Container className="py-8">
         {coursesLoading ? (
           <div className="flex flex-col items-center py-20">
             <Spinner size="lg" />
