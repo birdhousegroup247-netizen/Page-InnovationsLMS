@@ -185,8 +185,6 @@ export const categoriesAPI = {
 
 export const enrollmentsAPI = {
   getMyCourses: () => api.get('/api/courses/my/enrollments'),
-  getEnrollment: (courseId) => api.get(`/api/enrollments/${courseId}`),
-  unenroll: (courseId) => api.delete(`/api/enrollments/${courseId}`),
 };
 
 export const progressAPI = {
@@ -223,7 +221,6 @@ export const assignedTestsAPI = {
   addQuestionsToTest: (testId, data) => api.post(`/api/assigned-tests/${testId}/questions`, data),
   assignTestToStudents: (testId, data) => api.post(`/api/assigned-tests/${testId}/assign`, data),
   getTestResults: (testId, params) => api.get(`/api/assigned-tests/${testId}/results`, { params }),
-  getTestAttempts: (testId, params) => api.get(`/api/assigned-tests/${testId}/attempts`, { params }),
   // Quick lifecycle actions from the My Tests row.
   // publishTest takes { assign_to: 'all' | 'selected', student_ids?, due_date? }.
   // archiveTest is a no-body PATCH.
@@ -237,15 +234,12 @@ export const questionsAPI = {
   // swallowed by /api/questions/:id (id="approved") and silently
   // returning nothing. Use the real endpoint with the is_approved filter.
   getApproved: (params) => api.get('/api/questions', { params: { ...params, is_approved: true } }),
-  getByCategory: (categoryId, params) => api.get(`/api/questions/category/${categoryId}`, { params }),
   getAll: (params) => api.get('/api/questions', { params }),
   getById: (id) => api.get(`/api/questions/${id}`),
   create: (payload) => api.post('/api/questions/', payload),
   update: (id, payload) => api.put(`/api/questions/${id}`, payload),
   delete: (id) => api.delete(`/api/questions/${id}`),
   getMyContributions: (params) => api.get('/api/instructor/questions/my', { params }),
-  updateStatus: (id, status) => api.put(`/api/questions/${id}/status`, { status }),
-  bulkImport: (data) => api.post('/api/questions/bulk-import', data),
 };
 
 export const notificationsAPI = {
@@ -262,8 +256,6 @@ export const bookmarksAPI = {
   updateLessonBookmark: (id, data) => api.put(`/api/bookmarks/lessons/${id}`, data),
   deleteLessonBookmark: (id) => api.delete(`/api/bookmarks/lessons/${id}`),
   getArticleBookmarks: (params) => api.get('/api/bookmarks/articles', { params }),
-  createArticleBookmark: (data) => api.post('/api/bookmarks/articles', data),
-  updateArticleBookmark: (id, data) => api.put(`/api/bookmarks/articles/${id}`, data),
   deleteArticleBookmark: (id) => api.delete(`/api/bookmarks/articles/${id}`),
 };
 

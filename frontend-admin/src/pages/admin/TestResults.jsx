@@ -96,7 +96,29 @@ export default function TestResults() {
   const handleViewDetails = async (attempt) => {
     try {
       const response = await adminTestsAPI.getStudentResult(attempt.id);
-      setSelectedAttempt(response.data.data);
+      // Normalize the { results, questions } payload into what the modal
+      // renders — the old endpoint (and its imagined flat shape) never
+      // existed, so this modal had never displayed data.
+      const raw = response.data.data || {};
+      const r = raw.results || {};
+      const questions = raw.questions || [];
+      setSelectedAttempt({
+        student: attempt.student, // name comes from the roster row
+        score: Math.round(parseFloat(r.percentage || 0)),
+        correct_answers: questions.filter((q) => q.is_correct).length,
+        incorrect_answers: questions.filter((q) => !q.is_correct).length,
+        time_taken: r.time_taken_seconds ?? 0,
+        answers: questions.map((q) => ({
+          id: q.id,
+          is_correct: q.is_correct,
+          selected_answer: q.student_answer,
+          question: {
+            question_text: q.question_text,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+          },
+        })),
+      });
       setShowDetailModal(true);
     } catch (error) {
       console.error('Failed to fetch attempt details:', error);

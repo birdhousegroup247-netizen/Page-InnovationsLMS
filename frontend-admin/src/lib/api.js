@@ -109,7 +109,6 @@ export const authAPI = {
   logout: () => api.post('/api/auth/logout'),
   forgotPassword: (email) => api.post('/api/auth/forgot-password', { email }),
   resetPassword: (token, password) => api.post('/api/auth/reset-password', { token, password }),
-  verifyEmail: (token) => api.get(`/api/auth/verify-email/${token}`),
   refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }),
   getProfile: () => api.get('/api/auth/me'),
   updateProfile: (data) => api.put('/api/profile', data),
@@ -141,11 +140,6 @@ export const categoriesAPI = {
   delete: (id) => api.delete(`/api/categories/${id}`),
 };
 
-export const enrollmentsAPI = {
-  getMyCourses: () => api.get('/api/enrollments/my-courses'),
-  getEnrollment: (courseId) => api.get(`/api/enrollments/${courseId}`),
-  unenroll: (courseId) => api.delete(`/api/enrollments/${courseId}`),
-};
 
 export const progressAPI = {
   markComplete: (contentId) => api.post(`/api/courses/contents/${contentId}/complete`),
@@ -153,13 +147,6 @@ export const progressAPI = {
   getProgress: (courseId) => api.get(`/api/courses/${courseId}/progress`),
 };
 
-export const examsAPI = {
-  getPracticeTests: (params) => api.get('/api/exams/practice-tests', { params }),
-  getPracticeTestById: (id) => api.get(`/api/exams/practice-tests/${id}`),
-  submitPracticeTest: (id, data) => api.post(`/api/exams/practice-tests/${id}/submit`, data),
-  getAssignedTests: () => api.get('/api/exams/assigned-tests'),
-  getTestAttempt: (attemptId) => api.get(`/api/exams/attempts/${attemptId}`),
-};
 
 export const notificationsAPI = {
   getAll: (params) => api.get('/api/notifications', { params }),
@@ -169,16 +156,6 @@ export const notificationsAPI = {
   delete: (id) => api.delete(`/api/notifications/${id}`),
 };
 
-export const bookmarksAPI = {
-  getLessonBookmarks: (params) => api.get('/api/bookmarks/lessons', { params }),
-  createLessonBookmark: (data) => api.post('/api/bookmarks/lessons', data),
-  updateLessonBookmark: (id, data) => api.put(`/api/bookmarks/lessons/${id}`, data),
-  deleteLessonBookmark: (id) => api.delete(`/api/bookmarks/lessons/${id}`),
-  getArticleBookmarks: (params) => api.get('/api/bookmarks/articles', { params }),
-  createArticleBookmark: (data) => api.post('/api/bookmarks/articles', data),
-  updateArticleBookmark: (id, data) => api.put(`/api/bookmarks/articles/${id}`, data),
-  deleteArticleBookmark: (id) => api.delete(`/api/bookmarks/articles/${id}`),
-};
 
 // Modules API
 export const modulesAPI = {
@@ -324,7 +301,9 @@ export const adminTestsAPI = {
   addQuestions: (testId, data) => api.post(`/api/assigned-tests/${testId}/questions`, data),
   assignStudents: (testId, data) => api.post(`/api/assigned-tests/${testId}/assign`, data),
   getResults: (testId, params) => api.get(`/api/assigned-tests/${testId}/results`, { params }),
-  getStudentResult: (attemptId) => api.get(`/api/assigned-tests/attempts/${attemptId}`),
+  // Same endpoint students use — the handler grants staff full detail.
+  // (The old /api/assigned-tests/attempts/:id path never existed.)
+  getStudentResult: (attemptId) => api.get(`/api/assigned-tests/student/attempts/${attemptId}/results`),
   publish: (testId, data) => api.patch(`/api/assigned-tests/${testId}/publish`, data),
   archive: (testId) => api.patch(`/api/assigned-tests/${testId}/archive`),
 };
