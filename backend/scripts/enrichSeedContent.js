@@ -387,12 +387,20 @@ async function enrichContent() {
     summary.questions += rows.length;
   }
 
-  // ── 4. enrolled_count from real enrollments ───────────────────────────
-  await sequelize.query(`
-    UPDATE courses c SET enrolled_count = sub.cnt
-    FROM (SELECT course_id, COUNT(*) AS cnt FROM enrollments GROUP BY course_id) sub
-    WHERE sub.course_id = c.id AND c.enrolled_count IS DISTINCT FROM sub.cnt
-  `);
+  // ── 4. enrolled_count from real enrollments. Guarded: a drifted prod
+  // schema (column missing) must not abort the run — everything above
+  // has already been persisted.
+  try {
+    await sequelize.query(`
+      UPDATE courses c SET enrolled_count = sub.cnt
+      FROM (SELECT course_id, COUNT(*) AS cnt FROM enrollments GROUP BY course_id) sub
+      WHERE sub.course_id = c.id AND c.enrolled_count IS DISTINCT FROM sub.cnt
+    `);
+    summary.enrolledCountSynced = true;
+  } catch (e) {
+    summary.enrolledCountSynced = false;
+    summary.enrolledCountError = e.message;
+  }
 
   return summary;
 }

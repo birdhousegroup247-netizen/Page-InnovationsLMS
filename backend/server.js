@@ -600,6 +600,13 @@ const startServer = async () => {
           }
         }
 
+        // courses.enrolled_count proved missing on prod despite the
+        // safety-net sweep (seed enrich failed on it). Explicit and
+        // idempotent — Postgres IF NOT EXISTS.
+        await sequelize.query(
+          'ALTER TABLE courses ADD COLUMN IF NOT EXISTS enrolled_count INTEGER NOT NULL DEFAULT 0'
+        ).catch((e) => logger.warn(`courses.enrolled_count ensure skipped: ${e.message}`));
+
         // chat_rooms.course_id must be nullable for the Instructors'
         // Lounge (a platform room with no course). The safety-net sweep
         // only ADDS missing columns; nullability needs an explicit ALTER.
