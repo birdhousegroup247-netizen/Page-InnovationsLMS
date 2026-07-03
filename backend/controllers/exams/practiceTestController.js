@@ -5,10 +5,13 @@ const {
   QuestionBank,
   Category,
   User,
+  Course,
+  Enrollment,
+  CourseInstructor,
 } = require('../../models');
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
-const { NotFoundError, BadRequestError } = require('../../utils/errors');
+const { NotFoundError, BadRequestError, ForbiddenError } = require('../../utils/errors');
 const { Op } = require('sequelize');
 const { sequelize } = require('../../config/database');
 const BadgesController = require('../badges/badgesController');
@@ -27,17 +30,41 @@ class PracticeTestController {
         time_limit_minutes,
       } = req.body;
 
-      // Filter by course and/or category — questions carry both. The old
-      // contract required categories while the UI labeled them optional
-      // and put courses first; course selections were silently ignored
-      // and students dead-ended on "select at least one category".
-      if (categories.length === 0 && courses.length === 0) {
-        throw new BadRequestError('Select at least one course or category');
+      // Questions are course content, gated like lessons: students draw
+      // only from courses they're enrolled in; instructors from courses
+      // they teach (lead or roster). A category filter narrows WITHIN
+      // that set — it never widens access. Server-side because client
+      // checks are cosmetic.
+      let allowedCourseIds;
+      if (req.user.role === 'instructor') {
+        const [owned, roster] = await Promise.all([
+          Course.findAll({ where: { instructor_id: req.user.id }, attributes: ['id'], raw: true }),
+          CourseInstructor.findAll({ where: { user_id: req.user.id }, attributes: ['course_id'], raw: true }),
+        ]);
+        allowedCourseIds = [...new Set([...owned.map((c) => c.id), ...roster.map((r) => r.course_id)])];
+      } else {
+        const enrollments = await Enrollment.findAll({
+          where: { student_id: req.user.id },
+          attributes: ['course_id'],
+          raw: true,
+        });
+        allowedCourseIds = [...new Set(enrollments.map((e) => e.course_id))];
+      }
+      if (allowedCourseIds.length === 0) {
+        throw new ForbiddenError('Enroll in a course to generate practice tests from its question bank');
       }
 
-      const where = { is_approved: true };
+      // No explicit selection = every enrolled course. Selections outside
+      // the allowed set are dropped; picking ONLY forbidden courses errors.
+      const requestedCourseIds = courses.length > 0
+        ? courses.map(Number).filter((id) => allowedCourseIds.includes(id))
+        : allowedCourseIds;
+      if (courses.length > 0 && requestedCourseIds.length === 0) {
+        throw new ForbiddenError('You can only practice questions from courses you are enrolled in');
+      }
+
+      const where = { is_approved: true, course_id: { [Op.in]: requestedCourseIds } };
       if (categories.length > 0) where.category_id = { [Op.in]: categories };
-      if (courses.length > 0) where.course_id = { [Op.in]: courses };
 
       if (difficulty && difficulty !== 'mixed') {
         where.difficulty = difficulty;

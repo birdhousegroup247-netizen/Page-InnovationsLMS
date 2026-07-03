@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, BookOpen, Clock, Award, ArrowLeft, Play, CheckCircle } from 'lucide-react';
-import { practiceTestsAPI, categoriesAPI, coursesAPI } from '../lib/api';
+import { practiceTestsAPI, categoriesAPI, enrollmentsAPI } from '../lib/api';
 import { Container } from '../components/layout';
 import { Button, Spinner } from '../components/ui';
 import { cn } from '../utils/cn';
@@ -11,6 +11,7 @@ export default function GeneratePracticeTest() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -32,12 +33,22 @@ export default function GeneratePracticeTest() {
     fetchCategories();
   }, []);
 
+  // Enrolled courses only — question banks are course content, gated
+  // like lessons. The server enforces this regardless; listing all
+  // published courses here just set students up for a Forbidden error.
   const fetchCourses = async () => {
     try {
-      const response = await coursesAPI.getAll();
-      setCourses(response.data.data?.courses || []);
+      setCoursesLoading(true);
+      const response = await enrollmentsAPI.getMyCourses();
+      const rows = response.data?.data?.enrollments || response.data?.data?.courses || [];
+      const list = rows
+        .map((e) => ({ id: e.course?.id ?? e.course_id ?? e.id, title: e.course?.title ?? e.title }))
+        .filter((c) => c.id && c.title);
+      setCourses(list);
     } catch (error) {
       console.error('Failed to fetch courses:', error);
+    } finally {
+      setCoursesLoading(false);
     }
   };
 
@@ -88,14 +99,8 @@ export default function GeneratePracticeTest() {
       return;
     }
 
-    // Course and/or category — either narrows the question bank. The old
-    // check demanded a category even though the UI labels them optional,
-    // so students who (reasonably) only ticked courses hit a dead end.
-    if (config.category_ids.length === 0 && config.course_ids.length === 0) {
-      showToast('Select at least one course or category', 'warning');
-      return;
-    }
-
+    // No selection needed — the server scopes to enrolled courses, so
+    // "nothing ticked" simply means "mix from all my courses".
     try {
       setGenerating(true);
 
@@ -214,12 +219,22 @@ export default function GeneratePracticeTest() {
           </div>
         </div>
 
-        {/* Courses */}
+        {/* Courses — enrolled only */}
         <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <BookOpen className="w-5 h-5" />
             Select Courses
           </h2>
+          {!coursesLoading && courses.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Practice questions come from the courses you're enrolled in — enroll in a course to start practicing.
+              </p>
+              <Button variant="primary" onClick={() => navigate('/courses')}>
+                Browse Courses
+              </Button>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {courses.map((course) => (
               <label
@@ -255,9 +270,11 @@ export default function GeneratePracticeTest() {
               </p>
             </div>
           )}
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-            Select one or multiple courses to practice questions from specific topics (MySQL, PostgreSQL, JavaScript, etc.)
-          </p>
+          {courses.length > 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+              Pick which of your enrolled courses to draw questions from. Leave all unticked to mix questions from every course you're enrolled in.
+            </p>
+          )}
         </div>
 
         {/* Categories */}
