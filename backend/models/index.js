@@ -30,6 +30,7 @@ const AssignedTestAttempt = require('./AssignedTestAttempt');
 const AssignedTestAnswer = require('./AssignedTestAnswer');
 const Certificate = require('./Certificate');
 const CourseReview = require('./CourseReview');
+const ReviewHelpfulVote = require('./ReviewHelpfulVote');
 const LessonBookmark = require('./LessonBookmark');
 const ArticleBookmark = require('./ArticleBookmark');
 const LessonQuestion = require('./LessonQuestion');
@@ -173,6 +174,8 @@ CourseReview.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 
 Course.hasMany(CourseReview, { foreignKey: 'course_id', as: 'reviews' });
 User.hasMany(CourseReview, { foreignKey: 'student_id', as: 'reviews' });
+CourseReview.hasMany(ReviewHelpfulVote, { foreignKey: 'review_id', as: 'helpful_votes', onDelete: 'CASCADE' });
+ReviewHelpfulVote.belongsTo(CourseReview, { foreignKey: 'review_id', as: 'review' });
 
 // Lesson Bookmark relationships
 LessonBookmark.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
@@ -435,6 +438,7 @@ module.exports = {
   AssignedTestAnswer,
   Certificate,
   CourseReview,
+  ReviewHelpfulVote,
   LessonBookmark,
   ArticleBookmark,
   LessonQuestion,

@@ -600,6 +600,16 @@ const startServer = async () => {
           }
         }
 
+        // Normalize legacy notification type 'enrollment' (duplicated
+        // course_enrollment; the frontend icon/color/filter maps only
+        // know the canonical name). Removal notices get their own type.
+        await sequelize.query(
+          "UPDATE notifications SET type='course_unenrollment' WHERE type='enrollment' AND title='Removed from course'"
+        ).catch((e) => logger.warn(`notif type normalize (unenroll) skipped: ${e.message}`));
+        await sequelize.query(
+          "UPDATE notifications SET type='course_enrollment' WHERE type='enrollment'"
+        ).catch((e) => logger.warn(`notif type normalize skipped: ${e.message}`));
+
         // courses.enrolled_count proved missing on prod despite the
         // safety-net sweep (seed enrich failed on it). Explicit and
         // idempotent — Postgres IF NOT EXISTS.
@@ -939,7 +949,7 @@ const startServer = async () => {
         // Postgres — Model.sync({ force:false }) is a no-op if they exist.
         Wishlist, Bundle, BundleCourse, Badge, UserBadge, Referral,
         Notification, ActivityLog, LessonBookmark, ArticleBookmark, Certificate,
-        CourseReview, KnowledgeArticle,
+        CourseReview, ReviewHelpfulVote, KnowledgeArticle,
         PracticeTestAttempt, PracticeTestQuestion, PracticeTestAnswer,
         AssignedTest, AssignedTestQuestion, TestAssignment,
         AssignedTestAttempt, AssignedTestAnswer,
@@ -967,6 +977,7 @@ const startServer = async () => {
         [ArticleBookmark, 'article_bookmarks'],
         [Certificate, 'certificates'],
         [CourseReview, 'course_reviews'],
+        [ReviewHelpfulVote, 'review_helpful_votes'],
         [KnowledgeArticle, 'knowledge_articles'],
         [PracticeTestAttempt, 'practice_test_attempts'],
         [PracticeTestQuestion, 'practice_test_questions'],

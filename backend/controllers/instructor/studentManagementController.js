@@ -638,7 +638,7 @@ class StudentManagementController {
           // Notify the student
           await Notification.create({
             user_id: user.id,
-            type: 'enrollment',
+            type: 'course_enrollment',
             title: 'Enrolled in a course',
             message: `You have been enrolled in "${course.title}" by your instructor.`,
             link: `/courses/${courseId}`,
@@ -691,7 +691,7 @@ class StudentManagementController {
       // Notify the student
       await Notification.create({
         user_id: parseInt(studentId),
-        type: 'enrollment',
+        type: 'course_unenrollment',
         title: 'Removed from course',
         message: `You have been removed from "${course.title}".`,
         link: '/my-courses',

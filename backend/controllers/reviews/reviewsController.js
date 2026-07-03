@@ -295,19 +295,40 @@ class ReviewsController {
   static async markHelpful(req, res, next) {
     try {
       const { reviewId } = req.params;
+      const { ReviewHelpfulVote } = require('../../models');
 
       const review = await CourseReview.findByPk(reviewId);
 
       if (!review) {
         throw new NotFoundError('Review not found');
       }
+      if (review.student_id === req.user.id) {
+        throw new BadRequestError("You can't vote on your own review");
+      }
 
-      review.helpful_count += 1;
+      // One vote per user, toggled: second click withdraws it. The old
+      // handler was a bare increment anyone could spam-click.
+      const existing = await ReviewHelpfulVote.findOne({
+        where: { review_id: reviewId, user_id: req.user.id },
+      });
+
+      let voted;
+      if (existing) {
+        await existing.destroy();
+        review.helpful_count = Math.max(0, review.helpful_count - 1);
+        voted = false;
+      } else {
+        await ReviewHelpfulVote.create({ review_id: reviewId, user_id: req.user.id });
+        review.helpful_count += 1;
+        voted = true;
+      }
       await review.save();
 
-      logger.info(`Review ${reviewId} marked as helpful by user ${req.user.id}`);
-
-      return ApiResponse.success(res, { helpful_count: review.helpful_count }, 'Review marked as helpful');
+      return ApiResponse.success(
+        res,
+        { helpful_count: review.helpful_count, voted },
+        voted ? 'Review marked as helpful' : 'Vote withdrawn'
+      );
     } catch (error) {
       next(error);
     }

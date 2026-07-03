@@ -357,25 +357,10 @@ class UploadController {
 
   /**
    * Upload from URL
-   * POST /api/upload/from-url
+   * (uploadFromUrl removed — nothing in either frontend used it, and it
+   * let any authenticated student make Cloudinary ingest arbitrary URLs
+   * into our storage. uploads-audit §4.9.)
    */
-  static async uploadFromUrl(req, res, next) {
-    try {
-      const { url, folder } = req.body;
-
-      if (!url) {
-        throw new BadRequestError('URL is required');
-      }
-
-      const result = await CloudinaryService.uploadFromUrl(url, folder || 'general');
-
-      logger.info(`File uploaded from URL: ${url}`);
-
-      return ApiResponse.success(res, result, 'File uploaded from URL successfully');
-    } catch (error) {
-      next(error);
-    }
-  }
 
   /**
    * Get file details
