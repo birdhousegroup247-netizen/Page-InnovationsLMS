@@ -99,7 +99,7 @@ function initializeSocketIO(server) {
     // Send welcome message — only admins receive the full online user list
     const isAdmin = ['admin', 'super_admin'].includes(socket.user.role);
     socket.emit('connected', {
-      message: 'Connected to Page Innovation LMS',
+      message: 'Connected to Page Innovations LMS',
       user: socket.user,
       onlineUsers: isAdmin ? [...onlineUsers] : [],
     });

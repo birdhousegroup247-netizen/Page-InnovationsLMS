@@ -80,7 +80,7 @@ const createOrder = async ({ amount, currency = 'USD', reference, description })
     application_context: {
       shipping_preference: 'NO_SHIPPING',
       user_action: 'PAY_NOW',
-      brand_name: 'Page Innovation',
+      brand_name: 'Page Innovations',
     },
   };
   const res = await axios.post(`${baseUrl()}/v2/checkout/orders`, body, { headers });

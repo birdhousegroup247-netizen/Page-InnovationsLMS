@@ -1,10 +1,10 @@
 # White-Label Setup — Shipping This Platform for a New Company
 
-How to take this codebase (built as Page Innovation) and ship it for another
-company — Page Innovation or anyone after them — cleanly, without
+How to take this codebase (built as Page Innovations) and ship it for another
+company — Page Innovations or anyone after them — cleanly, without
 touching the original.
 
-**The model:** Page Innovation's repo is the MASTER. Each client gets their own
+**The model:** Page Innovations's repo is the MASTER. Each client gets their own
 copy (fork/duplicate), their own Railway project, and their own set of
 accounts. Bug fixes land in the master first, then get pulled into each
 client copy (see "Keeping clients up to date" at the bottom).
@@ -54,14 +54,14 @@ Send them this list. Nothing can go live until every row is delivered.
 git clone https://github.com/Anointed-Excel/TekyproLMS.git PageInnovationLMS
 cd PageInnovationLMS
 
-# 2. Detach from Page Innovation's GitHub and attach to a NEW private repo
+# 2. Detach from Page Innovations's GitHub and attach to a NEW private repo
 git remote remove origin
 # (create an empty private repo on GitHub first, e.g. PageInnovationLMS)
 git remote add origin https://github.com/YOUR-USER/PageInnovationLMS.git
 
 # 3. Run the rebrand script (replaces the name everywhere, prints
 #    the remaining manual steps)
-./scripts/rebrand.sh "Page Innovation"
+./scripts/rebrand.sh "Page Innovations"
 
 # 4. Manual branding steps the script will remind you of:
 #    a. Replace frontend/src/assets/logo.png        (their logo)
@@ -76,7 +76,7 @@ git remote add origin https://github.com/YOUR-USER/PageInnovationLMS.git
 #       text, feature bullets, footer
 
 # 5. Commit and push
-git add -A && git commit -m "rebrand: Page Innovation" && git push -u origin main
+git add -A && git commit -m "rebrand: Page Innovations" && git push -u origin main
 ```
 
 ---
@@ -101,7 +101,7 @@ DATABASE_URL=<from the Postgres plugin>
 FRONTEND_URL=https://<student-service>.up.railway.app
 ADMIN_FRONTEND_URL=https://<admin-service>.up.railway.app
 
-# Secrets — generate fresh PER CLIENT, never reuse Page Innovation's:
+# Secrets — generate fresh PER CLIENT, never reuse Page Innovations's:
 #   openssl rand -hex 32   (run once per secret)
 JWT_SECRET=<random 64 chars>
 JWT_REFRESH_SECRET=<random 64 chars>
@@ -110,10 +110,10 @@ SEED_SECRET=<random 32 chars>
 
 # Email (Resend)
 RESEND_API_KEY=re_...
-EMAIL_FROM=Page Innovation <noreply@pageinnovation.com>
+EMAIL_FROM=Page Innovations <noreply@pageinnovation.com>
 # optional per-purpose senders:
-# EMAIL_FROM_REGISTRATION=Page Innovation <registration@pageinnovation.com>
-# EMAIL_FROM_PORTAL=Page Innovation <portal@pageinnovation.com>
+# EMAIL_FROM_REGISTRATION=Page Innovations <registration@pageinnovation.com>
+# EMAIL_FROM_PORTAL=Page Innovations <portal@pageinnovation.com>
 
 # Payments (PayPal is the primary gateway)
 PAYPAL_CLIENT_ID=...
@@ -173,7 +173,7 @@ Do these AFTER the Railway URLs exist:
 3. **Resend domain:** verify their domain (see `email-domain-setup.md` —
    same 3-DNS-records dance, in THEIR registrar)
 4. **CORS allowlist:** edit `backend/config/allowedOrigins.js` in their
-   repo — replace the Page Innovation Railway/Render URLs with the new client's
+   repo — replace the Page Innovations Railway/Render URLs with the new client's
    frontend URLs. (Socket.IO and HTTP share this file.)
 
 ---
@@ -197,7 +197,7 @@ Do these AFTER the Railway URLs exist:
 
 ## Part 5 — Keeping clients up to date
 
-Bug fixes go into the Page Innovation master repo first. To pull them into a
+Bug fixes go into the Page Innovations master repo first. To pull them into a
 client copy:
 
 ```bash

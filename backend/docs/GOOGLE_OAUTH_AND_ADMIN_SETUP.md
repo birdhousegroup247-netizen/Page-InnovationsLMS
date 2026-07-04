@@ -1,6 +1,6 @@
 # Google OAuth & Admin Dashboard Setup Guide
 
-Complete guide for setting up Google OAuth authentication and the Admin Dashboard for Page Innovation LMS.
+Complete guide for setting up Google OAuth authentication and the Admin Dashboard for Page Innovations LMS.
 
 ---
 
@@ -30,7 +30,7 @@ Google OAuth allows users to sign in using their Google accounts. When a user au
 
 2. **Create a New Project** (or select existing)
    - Click "Select a project" → "New Project"
-   - Name: "Page Innovation LMS"
+   - Name: "Page Innovations LMS"
    - Click "Create"
 
 3. **Enable Google+ API**
@@ -42,7 +42,7 @@ Google OAuth allows users to sign in using their Google accounts. When a user au
    - Go to: APIs & Services → Credentials
    - Click "Create Credentials" → "OAuth client ID"
    - Application type: "Web application"
-   - Name: "Page Innovation LMS Web"
+   - Name: "Page Innovations LMS Web"
 
 5. **Configure Authorized Origins**
    ```
@@ -184,7 +184,7 @@ You should see:
 ```
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🔧 Page Innovation LMS Admin Dashboard API                     ║
+║   🔧 Page Innovations LMS Admin Dashboard API                     ║
 ║                                                           ║
 ║   Environment: development                                ║
 ║   Port: 5001                                              ║
@@ -192,7 +192,7 @@ You should see:
 ║   Server URL: http://localhost:5001                       ║
 ║   Health Check: http://localhost:5001/health             ║
 ║                                                           ║
-║   Page Innovation - The Leading Remote DBA Service Provider      ║
+║   Page Innovations - The Leading Remote DBA Service Provider      ║
 ║   https://www.pageinnovation.com                                 ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝

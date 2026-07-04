@@ -503,6 +503,6 @@ Content-Type: application/json
 
 ---
 
-**Page Innovation LMS - The Leading Remote DBA Service Provider**
+**Page Innovations LMS - The Leading Remote DBA Service Provider**
 **Documentation Version:** 1.0
 **Last Updated:** December 13, 2025

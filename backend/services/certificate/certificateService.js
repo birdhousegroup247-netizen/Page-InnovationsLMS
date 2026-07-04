@@ -28,7 +28,7 @@ class CertificateService {
         courseName,
         completionDate,
         certificateId,
-        instructorName: instructorName || 'Page Innovation Team',
+        instructorName: instructorName || 'Page Innovations Team',
       });
 
       logger.info(`Certificate generated successfully: ${certificateId}`);

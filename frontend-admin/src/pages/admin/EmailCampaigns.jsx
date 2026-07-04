@@ -308,7 +308,7 @@ export default function EmailCampaigns() {
               className="w-full px-3 py-2 text-sm bg-white dark:bg-dark-700 border border-gray-300 dark:border-border-dark rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
               placeholder="<p>Hi <strong>{{name}}</strong>,</p><p>We just launched…</p>"
             />
-            <p className="text-xs text-gray-500 mt-1">Wrapped in the standard Page Innovation shell at send time — no need to write &lt;html&gt;.</p>
+            <p className="text-xs text-gray-500 mt-1">Wrapped in the standard Page Innovations shell at send time — no need to write &lt;html&gt;.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

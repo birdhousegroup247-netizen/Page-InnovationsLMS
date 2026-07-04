@@ -336,7 +336,7 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">Become an Instructor</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Share what you know — apply to teach on Page Innovation. Same account, no new email.
+                      Share what you know — apply to teach on Page Innovations. Same account, no new email.
                     </p>
                   </div>
                 </div>

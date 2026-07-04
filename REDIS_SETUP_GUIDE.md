@@ -1,4 +1,4 @@
-# Redis Setup Guide for Page Innovation LMS
+# Redis Setup Guide for Page Innovations LMS
 
 ## Why Redis is Required
 
@@ -133,7 +133,7 @@ chmod +x test-cookie-auth.sh
 **Expected Output:**
 ```
 ==========================================
-Page Innovation LMS - Cookie Auth Test Script
+Page Innovations LMS - Cookie Auth Test Script
 ==========================================
 
 Step 1: Testing Login (Should set httpOnly cookies)

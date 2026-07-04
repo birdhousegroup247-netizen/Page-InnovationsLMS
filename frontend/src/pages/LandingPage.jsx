@@ -64,28 +64,28 @@ export default function LandingPage() {
     {
       icon: Users,
       title: 'Expert Instructors',
-      description: 'Learn from industry professionals with 10+ years experience',
+      description: 'Learn from practitioners who build and ship real products every day',
       color: 'from-blue-500 to-cyan-500',
       delay: '0.1s',
     },
     {
       icon: Zap,
       title: 'Hands-On Practice',
-      description: 'Real-world projects with interactive coding environments',
+      description: 'Project-based learning — you graduate with work you can show employers',
       color: 'from-purple-500 to-pink-500',
       delay: '0.2s',
     },
     {
       icon: Award,
-      title: 'Earn Certifications',
-      description: 'Industry-recognized credentials to boost your career',
+      title: 'Earn Certificates',
+      description: 'Complete a program and receive a verifiable Page Innovations certificate',
       color: 'from-orange-500 to-red-500',
       delay: '0.3s',
     },
     {
       icon: Target,
       title: 'Career Support',
-      description: 'Dedicated job placement assistance and mentorship',
+      description: 'Mentorship and guidance from enrollment through to your first role',
       color: 'from-green-500 to-emerald-500',
       delay: '0.4s',
     },
@@ -93,74 +93,74 @@ export default function LandingPage() {
 
   const courseCategories = [
     {
-      icon: Database,
-      title: 'Database Administration',
-      count: '150+ Courses',
+      icon: Code,
+      title: 'Software Development',
+      count: 'Web & Mobile',
       color: 'bg-gradient-to-br from-blue-500 to-blue-600',
     },
     {
-      icon: Cloud,
-      title: 'Cloud Computing',
-      count: '120+ Courses',
+      icon: Sparkles,
+      title: 'UX / Product Design',
+      count: 'Design & Research',
       color: 'bg-gradient-to-br from-purple-500 to-purple-600',
     },
     {
-      icon: Code,
-      title: 'Full Stack Development',
-      count: '200+ Courses',
+      icon: Database,
+      title: 'Data & AI',
+      count: 'Analytics & ML',
       color: 'bg-gradient-to-br from-orange-500 to-red-600',
     },
     {
       icon: Shield,
-      title: 'Cybersecurity',
-      count: '90+ Courses',
+      title: 'Cyber Security',
+      count: 'Defense & Compliance',
       color: 'bg-gradient-to-br from-green-500 to-emerald-600',
     },
   ];
 
   const stats = [
-    { value: '10,000+', label: 'Students Enrolled', icon: Users },
-    { value: '500+', label: 'Expert Courses', icon: BookOpen },
-    { value: '98%', label: 'Success Rate', icon: TrendingUp },
-    { value: '24/7', label: 'Support Available', icon: MessageCircle },
+    { value: '8+', label: 'Career Tracks', icon: BookOpen },
+    { value: 'Live', label: 'On-site & Virtual Classes', icon: Users },
+    { value: '100%', label: 'Hands-On Projects', icon: TrendingUp },
+    { value: '24/7', label: 'Learner Support', icon: MessageCircle },
   ];
 
   const testimonials = [
     {
-      name: 'Sarah Johnson',
-      role: 'Senior Software Engineer @ Google',
+      name: 'Chiamaka Eze',
+      role: 'Product Designer, Lagos fintech',
       image: 'https://randomuser.me/api/portraits/women/44.jpg',
-      quote: 'Page Innovation transformed my career trajectory. The SQL mastery course not only taught me advanced concepts but also prepared me for real-world challenges. Within 3 months, I landed my dream job at Google!',
+      quote: 'Page Innovations gave me structure I could not get learning alone. The product design track was fully hands-on — by the end I had a real portfolio, and my instructor kept mentoring me through my first job interviews.',
       rating: 5,
     },
     {
-      name: 'Michael Chen',
-      role: 'Lead Data Analyst @ Amazon',
+      name: 'Tunde Adeyemi',
+      role: 'Frontend Developer, e-commerce startup',
       image: 'https://randomuser.me/api/portraits/men/32.jpg',
-      quote: 'The hands-on projects were invaluable. Unlike other platforms, Page Innovation focuses on practical skills that employers actually need. I now work at Amazon thanks to the comprehensive training.',
+      quote: 'I joined the software development cohort as a complete beginner. The live classes and projects made everything practical — I was building real applications within weeks, not just watching videos.',
       rating: 5,
     },
     {
-      name: 'Emily Rodriguez',
-      role: 'Full Stack Developer @ Microsoft',
+      name: 'Amina Bello',
+      role: 'Data Analyst, telecoms',
       image: 'https://randomuser.me/api/portraits/women/68.jpg',
-      quote: 'Best investment in my education! The instructors are world-class professionals who genuinely care about your success. The platform is intuitive and the community is incredibly supportive.',
+      quote: 'The instructors genuinely care about your progress. Being able to attend on-site in Lagos and continue virtually when I travelled made it possible to finish the program while working full-time.',
       rating: 5,
     },
   ];
 
   const faqs = [
     {
-      question: 'How long does it take to complete a course?',
-      answer: 'Course duration varies from 4-12 weeks depending on complexity. You can learn at your own pace with lifetime access.',
+      question: 'Are classes on-site or online?',
+      answer: 'Both. You can attend in person at our Lagos training centre (Fagba) or join the same classes live online — and switch between the two whenever you need to.',
     },
     {
       question: 'Do I get a certificate upon completion?',
-      answer: 'Yes! You receive an industry-recognized certificate with a unique verification code after completing each course.',
+      answer: 'Yes! You receive a Page Innovations certificate with a unique verification code after completing each program.',
     },
     {
-      question: 'Is there a money-back guarantee?',
-      answer: '30-day money-back guarantee on all courses. If you\'re not satisfied, we\'ll refund your payment, no questions asked.',
+      question: 'Can I pay in installments?',
+      answer: 'Yes — tuition is in naira (₦) and most programs support installment payment plans at checkout, so you can start learning while spreading the cost.',
     },
   ];
 
@@ -193,7 +193,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo - Fixed Alignment */}
             <div className="flex items-center gap-3 cursor-pointer select-none">
-              <img src={logo} alt="Page Innovation" className="h-12 w-auto" />
+              <img src={logo} alt="Page Innovations" className="h-12 w-auto" />
             </div>
 
             {/* Auth Buttons */}
@@ -230,7 +230,7 @@ export default function LandingPage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-blue"></span>
               </span>
               <span className="text-sm font-medium text-brand-blue dark:text-brand-blue-300">
-                #1 Remote DBA Training Platform
+                Practical Tech Training — On-site in Lagos & Live Online
               </span>
             </div>
 
@@ -240,9 +240,9 @@ export default function LandingPage() {
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
             >
-              Transform Your Career with <br className="hidden lg:block" />
+              Launch Your Tech Career with <br className="hidden lg:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue via-brand-purple to-brand-red animate-gradient-x">
-                Expert Training
+                Practical Training
               </span>
             </h1>
 
@@ -252,7 +252,7 @@ export default function LandingPage() {
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
               }`}
             >
-              Master database administration, cloud technologies, and more with <span className="text-brand-blue dark:text-cyan-400 font-bold">hands-on courses</span> from <span className="text-brand-purple dark:text-purple-400 font-bold">industry experts</span>.
+              Master software development, product design, data &amp; AI, and cyber security with <span className="text-brand-blue dark:text-cyan-400 font-bold">hands-on programs</span> taught by <span className="text-brand-purple dark:text-purple-400 font-bold">industry practitioners</span> — from concept to launch, and beyond.
             </p>
 
             {/* Role Selection — modern bento with gradient border + bullets */}
@@ -294,9 +294,9 @@ export default function LandingPage() {
                     {/* Benefits */}
                     <ul className="space-y-2 mb-6">
                       {[
-                        'Access 200+ expert-led courses',
-                        'Live Q&A and community support',
-                        'Certificate on completion',
+                        'Learn on-site in Lagos or live online',
+                        'Real projects, live Q&A and community',
+                        'Verifiable certificate on completion',
                       ].map((item) => (
                         <li key={item} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                           <CheckCircle className="w-4 h-4 text-brand-blue dark:text-cyan-400 flex-shrink-0" />
@@ -375,12 +375,12 @@ export default function LandingPage() {
             {/* Trust Indicators */}
             <div className="mt-20 pt-10 border-t border-gray-200/50 dark:border-gray-800/50">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-8 uppercase tracking-wider">
-                Trusted by professionals at
+                Our learners build careers across
               </p>
               <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-                {['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple'].map((company) => (
-                  <span key={company} className="text-xl font-bold text-gray-800 dark:text-white">
-                    {company}
+                {['Fintech', 'E-Commerce', 'Telecoms', 'EdTech', 'HealthTech'].map((sector) => (
+                  <span key={sector} className="text-xl font-bold text-gray-800 dark:text-white">
+                    {sector}
                   </span>
                 ))}
               </div>
@@ -458,7 +458,7 @@ export default function LandingPage() {
           <div className="max-w-full mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Why Choose Page Innovation?
+              Why Choose Page Innovations?
             </h2>
             <p className="text-lg text-gray-700 dark:text-gray-300">
               Everything you need to succeed in your tech career.
@@ -494,10 +494,10 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                Loved by students worldwide
+                Loved by our learners
               </h2>
               <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
-                Join thousands of professionals who transformed their careers with Page Innovation.
+                Join the professionals who launched and grew their tech careers with Page Innovations.
               </p>
               
               <div className="flex gap-4 mb-8">
@@ -581,7 +581,7 @@ export default function LandingPage() {
                 Ready to start learning?
               </h2>
               <p className="text-xl text-blue-100 mb-10">
-                Join 10,000+ students and start your journey to becoming a tech professional today.
+                Pick a track, join a cohort, and start your journey to becoming a tech professional today.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
@@ -610,10 +610,11 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
-                <img src={logo} alt="Page Innovation" className="h-8 w-auto" />
+                <img src={logo} alt="Page Innovations" className="h-8 w-auto" />
               </div>
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed font-medium">
-                The leading platform for database administration and cloud technology training.
+                Practical tech training that upskills people and teams — from
+                concept to launch, and beyond. On-site in Lagos and live online.
               </p>
             </div>
             
@@ -629,9 +630,9 @@ export default function LandingPage() {
             <div>
               <h4 className="font-bold text-gray-900 dark:text-white mb-6 text-lg">Company</h4>
               <ul className="space-y-4 text-sm text-gray-700 dark:text-gray-300 font-medium">
-                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Contact</a></li>
+                <li><a href="https://pageinnovations.com.ng/" target="_blank" rel="noopener noreferrer" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">About Us</a></li>
+                <li><a href="https://pageinnovations.com.ng/" target="_blank" rel="noopener noreferrer" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Our Services</a></li>
+                <li><a href="mailto:enquiries@pageinnovations.com.ng" className="hover:text-brand-blue dark:hover:text-cyan-400 transition-colors">Contact</a></li>
               </ul>
             </div>
 
@@ -646,7 +647,7 @@ export default function LandingPage() {
           </div>
           
           <div className="border-t border-gray-200 dark:border-gray-800 pt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            © {new Date().getFullYear()} Page Innovation. All rights reserved.
+            © {new Date().getFullYear()} Page Innovations. All rights reserved.
           </div>
           </div>
         </div>

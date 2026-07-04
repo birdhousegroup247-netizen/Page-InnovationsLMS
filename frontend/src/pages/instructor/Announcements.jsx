@@ -311,7 +311,7 @@ export default function Announcements() {
               <div className="flex flex-wrap items-center gap-2">
                 {[
                   { id: 'all',   label: 'All',                count: counts.all },
-                  { id: 'admin', label: 'From Page Innovation',       count: counts.admin },
+                  { id: 'admin', label: 'From Page Innovations',       count: counts.admin },
                   { id: 'mine',  label: 'My announcements',   count: counts.mine },
                 ].map((chip) => (
                   <button
@@ -386,7 +386,7 @@ export default function Announcements() {
                       : a.source === 'mine'
                       ? 'bg-green-50 dark:bg-green-900/20 border-green-200/60 dark:border-green-800/60 text-green-700 dark:text-green-400'
                       : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200/60 dark:border-blue-800/60 text-blue-700 dark:text-blue-400';
-                  const sourceLabel = isAdminSrc ? 'Page Innovation' : (a.source === 'mine' ? 'You posted this' : 'Course');
+                  const sourceLabel = isAdminSrc ? 'Page Innovations' : (a.source === 'mine' ? 'You posted this' : 'Course');
                   const body = a.message || a.content || '';
                   return (
                     <div

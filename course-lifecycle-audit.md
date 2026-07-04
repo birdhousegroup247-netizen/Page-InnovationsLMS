@@ -1,4 +1,4 @@
-# Course Lifecycle Audit — Page Innovation (2026-07-01)
+# Course Lifecycle Audit — Page Innovations (2026-07-01)
 
 End-to-end audit of a course's journey: **create → publish → enroll →
 progress → completion → certificate**. Also covers drip content,

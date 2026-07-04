@@ -640,7 +640,7 @@ user:stopped_typing { userId }
 
 
 
-● Here's what's left that would meaningfully improve Page Innovation:                      
+● Here's what's left that would meaningfully improve Page Innovations:                      
                     
   Core LMS gaps                                                                    
   1. Auto-issue certificates — trigger certificate generation automatically when a

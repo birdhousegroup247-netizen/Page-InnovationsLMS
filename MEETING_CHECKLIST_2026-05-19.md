@@ -14,7 +14,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 >
 > **b) Create an app in PayPal Developer Dashboard**
 > Go to https://developer.paypal.com/dashboard/applications
-> Create a new app called "Page Innovation LMS".
+> Create a new app called "Page Innovations LMS".
 > You'll see two tabs: **Sandbox** (for testing) and **Live** (for real payments).
 > From each tab, copy and send me:
 >  - Client ID
@@ -48,7 +48,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 > Sir, for the "Sign in with Google" button, please create a project in the Google Cloud Console:
 >
 > 1. Go to https://console.cloud.google.com
-> 2. Create a new project called "Page Innovation"
+> 2. Create a new project called "Page Innovations"
 > 3. Go to **APIs & Services → OAuth consent screen** → set it up with your business email
 > 4. Then go to **Credentials → Create Credentials → OAuth Client ID** → choose "Web Application"
 > 5. Send me the **Client ID** and **Client Secret** it gives you
@@ -89,7 +89,7 @@ Plain-English messages you can copy-paste to BAO are in the boxes below. The "Ma
 > Sir, for Discord we'll need to do a quick screen share — about 10 minutes — to set up the bot together. I'll guide you through:
 >
 > 1. Going to https://discord.com/developers/applications
-> 2. Creating a "New Application" called Page Innovation
+> 2. Creating a "New Application" called Page Innovations
 > 3. Adding a Bot to it
 > 4. Copying the Bot Token
 > 5. Inviting the bot to your Discord server

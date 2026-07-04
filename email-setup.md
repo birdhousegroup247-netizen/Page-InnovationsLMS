@@ -1,4 +1,4 @@
-# Email Setup — Page Innovation (2026-07-01)
+# Email Setup — Page Innovations (2026-07-01)
 
 Operator handoff for turning the new email system on in production.
 Everything in code is shipped (commits `7cb1c6d` → `20350e3` → `cab5193`).
@@ -15,7 +15,7 @@ Open Railway → backend service → **Variables** tab → add these:
 | Env var | Required? | Value | Where to get it |
 |---|---|---|---|
 | `RESEND_API_KEY` | **YES — P0** | `re_...` | resend.com → API Keys → Create |
-| `EMAIL_FROM` | Recommended | `Page Innovation <hello@pageinnovation.com>` (must live on a verified Resend sender domain) | Whatever verified sender you pick |
+| `EMAIL_FROM` | Recommended | `Page Innovations <hello@pageinnovation.com>` (must live on a verified Resend sender domain) | Whatever verified sender you pick |
 | `EMAIL_UNSUB_SECRET` | Recommended | Any long random string, e.g. `openssl rand -hex 32` | Anything; kept secret. Falls back to `JWT_SECRET` if unset — works, but rotating `JWT_SECRET` later would invalidate all pending unsubscribe links |
 | `FRONTEND_URL` | Should already exist | Student frontend origin | Used for CTA + unsubscribe link URLs |
 

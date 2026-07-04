@@ -67,6 +67,9 @@ export default function Checkout() {
 
   const paypalButtonsRef = useRef(null);
   const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+  // Page Innovations charges through Paystack; Stripe stays available
+  // behind a flag for a future international checkout.
+  const stripeEnabled = import.meta.env.VITE_STRIPE_ENABLED === 'true';
 
   // Load PayPal SDK once on mount (only if configured)
   useEffect(() => {
@@ -741,26 +744,11 @@ export default function Checkout() {
           <div className="space-y-3">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 text-center">Choose your payment method</p>
 
-            {/* Stripe — International */}
-            <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading || paystackLoading}
-              className="w-full py-3.5 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-between px-5 shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <span className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                {checkoutLoading
-                  ? 'Redirecting...'
-                  : `Pay ${paymentPlan === 'installment' ? `${formatPrice(dueNow)} Now` : `${formatPrice(priceAfterCoupon)}`}`}
-              </span>
-              <span className="text-xs opacity-75 font-normal">International (Stripe)</span>
-            </button>
-
-            {/* Paystack — Nigeria */}
+            {/* Paystack — primary gateway */}
             <button
               onClick={handlePaystackCheckout}
               disabled={checkoutLoading || paystackLoading}
-              className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-between px-5 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-3.5 bg-brand-red hover:bg-brand-red-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-between px-5 shadow-lg shadow-brand-red/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
@@ -768,8 +756,25 @@ export default function Checkout() {
                   ? 'Loading...'
                   : `Pay ${paymentPlan === 'installment' ? `${formatPrice(dueNow)} Now` : `${formatPrice(priceAfterCoupon)}`}`}
               </span>
-              <span className="text-xs opacity-75 font-normal">Nigeria (Paystack)</span>
+              <span className="text-xs opacity-75 font-normal">Card / Transfer / USSD (Paystack)</span>
             </button>
+
+            {/* Stripe — hidden unless VITE_STRIPE_ENABLED=true */}
+            {stripeEnabled && (
+              <button
+                onClick={handleCheckout}
+                disabled={checkoutLoading || paystackLoading}
+                className="w-full py-3.5 bg-brand-blue hover:bg-brand-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-between px-5 shadow-lg shadow-brand-blue/20 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <span className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  {checkoutLoading
+                    ? 'Redirecting...'
+                    : `Pay ${paymentPlan === 'installment' ? `${formatPrice(dueNow)} Now` : `${formatPrice(priceAfterCoupon)}`}`}
+                </span>
+                <span className="text-xs opacity-75 font-normal">International (Stripe)</span>
+              </button>
+            )}
 
             {/* PayPal — only rendered if VITE_PAYPAL_CLIENT_ID is configured */}
             {paypalClientId && (

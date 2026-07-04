@@ -117,7 +117,7 @@ module.exports = (data) => {
   </div>
 
   <div class="footer">
-    <p><strong>Page Innovation - The Leading Remote DBA Service Provider</strong></p>
+    <p><strong>Page Innovations - The Leading Remote DBA Service Provider</strong></p>
     <p>Stay updated with your courses 📚</p>
     <p style="margin-top: 15px;">
       <a href="https://www.pageinnovation.com">Visit Website</a> |

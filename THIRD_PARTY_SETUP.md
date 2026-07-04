@@ -12,7 +12,7 @@ instructor confirmed that he or she is truly and instructor, cause a student can
 
 
 
-This guide will help you configure the three external services required for Page Innovation LMS:
+This guide will help you configure the three external services required for Page Innovations LMS:
 
 1. **Email Service** (Gmail SMTP) - For password resets, notifications, certificates
 2. **Cloudinary** - For file uploads (images, documents, PDFs)
@@ -37,7 +37,7 @@ This guide will help you configure the three external services required for Page
 4. Click "App passwords"
 5. Select:
    - App: "Mail"
-   - Device: "Other (Custom name)" → Type "Page Innovation LMS"
+   - Device: "Other (Custom name)" → Type "Page Innovations LMS"
    `xsbx qmuy tlrr afmo`
 
 6. Click "Generate"
@@ -48,7 +48,7 @@ This guide will help you configure the three external services required for Page
 ```bash
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=abcdefghijklmnop  # Remove spaces from the app password
-EMAIL_FROM=Page Innovation LMS <your-email@gmail.com>
+EMAIL_FROM=Page Innovations LMS <your-email@gmail.com>
 ```
 
 ### Alternative: Use Other SMTP Services
@@ -115,7 +115,7 @@ CLOUDINARY_API_SECRET=your-api-secret
 
 1. Go to https://console.cloud.google.com/
 2. Click "Select a project" → "New Project"
-3. Project name: "Page Innovation LMS"
+3. Project name: "Page Innovations LMS"
 4. Click "Create"
 
 ### Step 2: Enable Google+ API
@@ -130,13 +130,13 @@ CLOUDINARY_API_SECRET=your-api-secret
 2. Click "Create Credentials" → "OAuth client ID"
 3. If prompted, configure the OAuth consent screen:
    - User Type: "External"
-   - App name: "Page Innovation LMS"
+   - App name: "Page Innovations LMS"
    - User support email: your email
    - Developer contact: your email
    - Click "Save and Continue"
 4. Click "Create Credentials" again → "OAuth client ID"
 5. Application type: "Web application"
-6. Name: "Page Innovation LMS Web"
+6. Name: "Page Innovations LMS Web"
 7. Authorized redirect URIs:
    - Add: `http://localhost:5000/api/auth/google/callback`
    - For production, also add: `https://your-domain.com/api/auth/google/callback`
@@ -235,7 +235,7 @@ EMAIL_PORT=587
 EMAIL_SECURE=false
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-16-char-app-password
-EMAIL_FROM=Page Innovation LMS <your-email@gmail.com>
+EMAIL_FROM=Page Innovations LMS <your-email@gmail.com>
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your-cloud-name
@@ -292,4 +292,4 @@ tail -f backend/logs/combined.log
 
 ---
 
-**Page Innovation LMS** - The Leading Remote DBA Training Platform
+**Page Innovations LMS** - The Leading Remote DBA Training Platform

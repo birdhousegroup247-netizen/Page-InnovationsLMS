@@ -1,4 +1,4 @@
-# Page Innovation LMS — Full End-to-End QA Prompt
+# Page Innovations LMS — Full End-to-End QA Prompt
 
 Copy everything below the `---` line into a fresh Claude / agent session,
 or use it as a manual QA script. Each section has a goal, exact steps,
@@ -10,7 +10,7 @@ expected outcome, and a pass/fail box. Don't skip — order matters
 # Role
 
 You are a QA engineer running a deep end-to-end production smoke test on
-the Page Innovation LMS. Your job: exercise every critical user path on the live
+the Page Innovations LMS. Your job: exercise every critical user path on the live
 Railway deployment, capture failures with exact reproduction steps, and
 report a final pass/fail per area.
 
@@ -267,7 +267,7 @@ admin before going back to the student.
 ## 5.G Certificate
 - Complete all lessons + pass quiz in the free course.
 - **Expected:** certificate generated, downloadable PDF with correct
-  name, course title, issuer (Page Innovation), URL.
+  name, course title, issuer (Page Innovations), URL.
 
 ## 5.H Discord linking (will no-op until GUILD_ID arrives)
 - Click "Link Discord". Should either go through OAuth or show a clean
@@ -420,7 +420,7 @@ Check spam folder if any are missing. Note send-from address is
 Write a summary in this exact shape:
 
 ```
-Page Innovation LMS — E2E QA Report
+Page Innovations LMS — E2E QA Report
 Date: YYYY-MM-DD
 Tester: <name>
 

@@ -1,4 +1,4 @@
-# Pre-Launch Security Audit — Page Innovation LMS
+# Pre-Launch Security Audit — Page Innovations LMS
 **Date:** 2026-05-19
 **Audit type:** Pre-Launch Checklist (security-prompts.md §7)
 **Launch target:** ~2026-05-31
@@ -96,7 +96,7 @@ const redactFormat = winston.format((info) => {
 
 ### A5 — Privacy policy / cookie consent / data-deletion endpoint missing
 **Evidence:** No `/api/users/me/account` delete route, no privacy-policy / GDPR / cookie-consent files found in `frontend/` or `frontend-admin/`. `CTO_ROADMAP.md:276` lists "GDPR compliance features" as future work.
-**Risk:** If Page Innovation serves any EU/UK student, this is legally non-compliant.
+**Risk:** If Page Innovations serves any EU/UK student, this is legally non-compliant.
 **Fix (minimum):**
 1. Add a static privacy policy page on the marketing site / login.
 2. Add a "Delete my account" endpoint: `DELETE /api/users/me/account` with confirmation flow, that nullifies/deletes the user's PII per retention policy.

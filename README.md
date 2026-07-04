@@ -1,10 +1,10 @@
-# Page Innovation Learning Management System (LMS)
+# Page Innovations Learning Management System (LMS)
 
 > **⚠️ SECURITY NOTICE:** This repository contains sensitive information. Always keep `.env` files secure and never commit them to version control.
 
 ## 🎓 Project Overview
 
-Page Innovation LMS is a comprehensive Learning Management System built for database training excellence, specifically designed for MSSQL Server training with scalability for PostgreSQL, MySQL, and other technologies.
+Page Innovations LMS is a comprehensive Learning Management System built for database training excellence, specifically designed for MSSQL Server training with scalability for PostgreSQL, MySQL, and other technologies.
 
 ### Key Features
 
@@ -238,7 +238,7 @@ For production, use a managed MySQL service:
 
 ## 📄 License
 
-Proprietary - Page Innovation - The Leading Remote DBA Service Provider
+Proprietary - Page Innovations - The Leading Remote DBA Service Provider
 
 ## 🆘 Support
 
@@ -259,4 +259,4 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ by Page Innovation**
+**Built with ❤️ by Page Innovations**

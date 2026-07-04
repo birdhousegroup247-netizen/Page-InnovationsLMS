@@ -8,11 +8,11 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Page Innovation LMS API',
+      title: 'Page Innovations LMS API',
       version: '1.0.0',
-      description: 'Complete API documentation for Page Innovation Learning Management System',
+      description: 'Complete API documentation for Page Innovations Learning Management System',
       contact: {
-        name: 'Page Innovation Support',
+        name: 'Page Innovations Support',
         url: 'https://www.pageinnovation.com',
         email: 'support@pageinnovation.com',
       },

@@ -26,7 +26,7 @@ const log = {
 
 async function testServices() {
   console.log('\n' + '='.repeat(60));
-  console.log('  🧪 Page Innovation LMS - Service Testing');
+  console.log('  🧪 Page Innovations LMS - Service Testing');
   console.log('='.repeat(60) + '\n');
 
   let emailOk = false;

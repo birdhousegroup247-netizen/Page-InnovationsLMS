@@ -140,7 +140,7 @@ class StripeController {
               const stripeCoupon = await stripeService.createStripeCoupon({
                 discountType: coupon.discount_type,
                 discountValue: parseFloat(coupon.discount_value),
-                name: `Page Innovation - ${coupon.code}`,
+                name: `Page Innovations - ${coupon.code}`,
               });
               stripeCouponId = stripeCoupon.id;
             }
@@ -530,8 +530,8 @@ class StripeController {
         if (student) {
           await emailSvc.sendEmail({
             to: student.email,
-            subject: 'Page Innovation — Your payment could not be processed',
-            html: `<p>Hi ${student.full_name},</p><p>Your payment for <strong>${payment.course?.title || 'your course'}</strong> could not be processed. Please <a href="${process.env.FRONTEND_URL}/checkout?course_id=${payment.course_id}">try again</a> or contact support if the issue persists.</p><p>The Page Innovation Team</p>`,
+            subject: 'Page Innovations — Your payment could not be processed',
+            html: `<p>Hi ${student.full_name},</p><p>Your payment for <strong>${payment.course?.title || 'your course'}</strong> could not be processed. Please <a href="${process.env.FRONTEND_URL}/checkout?course_id=${payment.course_id}">try again</a> or contact support if the issue persists.</p><p>The Page Innovations Team</p>`,
             text: `Hi ${student.full_name}, your payment could not be processed. Please try again at ${process.env.FRONTEND_URL}/checkout?course_id=${payment.course_id}`,
           });
         }

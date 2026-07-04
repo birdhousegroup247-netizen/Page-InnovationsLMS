@@ -12,7 +12,7 @@ const generateCertificate = async (data) => {
     courseName,
     completionDate,
     certificateId,
-    instructorName = 'Page Innovation Team',
+    instructorName = 'Page Innovations Team',
   } = data;
 
   return new Promise(async (resolve, reject) => {
@@ -141,10 +141,10 @@ const generateCertificate = async (data) => {
            align: 'center',
          });
 
-      // Page Innovation branding
+      // Page Innovations branding
       doc.fontSize(10)
          .fillColor('#3b82f6')
-         .text('Page Innovation LMS - www.pageinnovation.com', 0, doc.page.height - 40, {
+         .text('Page Innovations LMS - www.pageinnovation.com', 0, doc.page.height - 40, {
            align: 'center',
            width: doc.page.width,
          });

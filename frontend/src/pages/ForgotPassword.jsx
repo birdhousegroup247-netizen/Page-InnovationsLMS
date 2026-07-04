@@ -54,7 +54,7 @@ export default function ForgotPassword() {
           <div className="text-center mb-8 animate-fade-in">
             <img
               src={logo}
-              alt="Page Innovation"
+              alt="Page Innovations"
               className="h-12 sm:h-16 w-auto mx-auto mb-6"
             />
           </div>
@@ -127,7 +127,7 @@ export default function ForgotPassword() {
         <div className="text-center mb-8 animate-fade-in">
           <img
             src={logo}
-            alt="Page Innovation"
+            alt="Page Innovations"
             className="h-12 sm:h-16 w-auto mx-auto mb-6"
           />
           <h2 className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">

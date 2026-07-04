@@ -6,7 +6,7 @@
  * the version so every prior token becomes invalid.
  *
  * Written after the VIREL comparison audit — pattern stolen from
- * VIREL's `user.tokenVersion` invalidation, adapted to Page Innovation's
+ * VIREL's `user.tokenVersion` invalidation, adapted to Page Innovations's
  * Sequelize + PostgreSQL stack.
  */
 

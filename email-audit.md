@@ -1,4 +1,4 @@
-# Email Audit — Page Innovation (2026-07-01)
+# Email Audit — Page Innovations (2026-07-01)
 
 End-to-end audit of every automated email the platform sends (or should
 be sending) across the 3 apps. Covers transports, trigger paths,

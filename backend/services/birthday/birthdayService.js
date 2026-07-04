@@ -1,7 +1,7 @@
 /**
  * Birthday Service
  *
- * - Daily cron at 06:05 UTC fires a "Happy Birthday from Page Innovation"
+ * - Daily cron at 06:05 UTC fires a "Happy Birthday from Page Innovations"
  *   notification for every user whose date_of_birth matches today
  *   (month + day, year-agnostic). Idempotent — guarded by the
  *   user.birthday_celebrated_year field so re-runs in the same day
@@ -63,14 +63,14 @@ async function runDailyBirthdayJob() {
     if (daysSinceThisYearBirthday(u.date_of_birth) !== 0) continue;
     if (u.birthday_celebrated_year === year) continue; // already wished this year
     try {
-      // Personalized birthday note, written like a human at Page Innovation
+      // Personalized birthday note, written like a human at Page Innovations
       // would draft it. Keeps a steady warmth, names them by their
       // first name, and ends on the learning journey so the message
       // doubles as encouragement rather than a generic ping.
       const firstName = (u.full_name?.split(' ')[0] || 'there').trim();
       const message =
         `Happy Birthday, ${firstName}! 🎂 ` +
-        `Everyone at Page Innovation is rooting for you today. ` +
+        `Everyone at Page Innovations is rooting for you today. ` +
         `Thank you for letting us be a small part of your learning journey — ` +
         `the curiosity you bring to every lesson is exactly what makes growth happen. ` +
         `Here's to another year of building, breaking, and getting better. We can't wait to see what you create next. 💙`;

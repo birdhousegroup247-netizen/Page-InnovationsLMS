@@ -1,8 +1,8 @@
-# Page Innovation LMS - Testing Guide
+# Page Innovations LMS - Testing Guide
 
 ## Overview
 
-This directory contains all tests for the Page Innovation LMS backend.
+This directory contains all tests for the Page Innovations LMS backend.
 
 ## Test Structure
 

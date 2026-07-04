@@ -1,4 +1,4 @@
-# Page Innovation LMS - Authentication API Documentation
+# Page Innovations LMS - Authentication API Documentation
 
 ## 🔐 Authentication System
 
@@ -526,4 +526,4 @@ Authorization: Bearer {{accessToken}}
 
 ---
 
-**Page Innovation - The Leading Remote DBA Service Provider**
+**Page Innovations - The Leading Remote DBA Service Provider**

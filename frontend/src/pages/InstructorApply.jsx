@@ -232,7 +232,7 @@ export default function InstructorApply() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-900 p-4">
         <div className="w-full max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 text-center">
-          <img src={logo} alt="Page Innovation" className="h-12 mx-auto mb-6" />
+          <img src={logo} alt="Page Innovations" className="h-12 mx-auto mb-6" />
           <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
@@ -242,9 +242,9 @@ export default function InstructorApply() {
           {isAuthenticated ? (
             <>
               <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
-                Thanks for applying to teach on Page Innovation. Our team reviews instructor
+                Thanks for applying to teach on Page Innovations. Our team reviews instructor
                 applications within 2–3 business days. You'll get an email once a
-                decision is made, and you can keep using Page Innovation as a student in
+                decision is made, and you can keep using Page Innovations as a student in
                 the meantime.
               </p>
               <div className="flex gap-3">
@@ -259,7 +259,7 @@ export default function InstructorApply() {
           ) : (
             <>
               <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
-                Thanks for applying to teach on Page Innovation. Two things to do now:
+                Thanks for applying to teach on Page Innovations. Two things to do now:
               </p>
               <div className="text-left bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4 mb-6">
                 <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>1. Verify your email</strong></p>
@@ -328,7 +328,7 @@ export default function InstructorApply() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Page Innovation" className="h-9 w-auto filter brightness-0 invert" />
+            <img src={logo} alt="Page Innovations" className="h-9 w-auto filter brightness-0 invert" />
             <span className="text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">
               · Teach. Earn. Inspire.
             </span>
@@ -350,7 +350,7 @@ export default function InstructorApply() {
             <div className="relative rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-md p-5">
               <div className="absolute -top-2.5 left-5 text-fuchsia-300 text-3xl leading-none font-serif">"</div>
               <p className="text-sm text-white/90 leading-relaxed pt-1">
-                I made $14k in my first six months teaching Oracle on Page Innovation. The drip tools and live sessions make it easy to scale.
+                I made $14k in my first six months teaching Oracle on Page Innovations. The drip tools and live sessions make it easy to scale.
               </p>
               <div className="mt-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-400 to-brand-purple flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
@@ -385,7 +385,7 @@ export default function InstructorApply() {
         <div className="w-full max-w-xl">
           {/* Mobile-only logo + title */}
           <div className="lg:hidden text-center mb-5">
-            <img src={logo} alt="Page Innovation" className="h-9 mx-auto mb-3" />
+            <img src={logo} alt="Page Innovations" className="h-9 mx-auto mb-3" />
           </div>
 
           <div className="mb-6 text-center lg:text-left">
@@ -393,7 +393,7 @@ export default function InstructorApply() {
               Instructor application
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-dark-primary tracking-tight">
-              Apply to teach on Page Innovation
+              Apply to teach on Page Innovations
             </h1>
             <p className="text-sm text-gray-600 dark:text-text-dark-secondary mt-1.5">
               Tell us about yourself — we review every application personally.
@@ -484,7 +484,7 @@ export default function InstructorApply() {
               <div>
                 <label className={labelClass}>About you <span className="text-red-500">*</span></label>
                 <textarea value={formData.bio} onChange={(e) => update('bio', e.target.value)} className={textareaClass}
-                  placeholder="Briefly introduce yourself and why you want to teach on Page Innovation." />
+                  placeholder="Briefly introduce yourself and why you want to teach on Page Innovations." />
                 <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/5000 characters (min 20)</p>
               </div>
               <div>

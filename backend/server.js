@@ -26,7 +26,7 @@ const { preventRateLimitBypass } = require('./middleware/requestValidator');
 const { smartSanitizer } = require('./middleware/smartSanitizer');
 const CSRF = require('./utils/csrf');
 
-logger.info('🚀 Starting Page Innovation LMS server...');
+logger.info('🚀 Starting Page Innovations LMS server...');
 
 // Initialize Express app
 const app = express();
@@ -247,7 +247,7 @@ app.use(metricsMiddleware);
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Page Innovation LMS API Documentation',
+    customSiteTitle: 'Page Innovations LMS API Documentation',
   }));
 
   // Swagger JSON endpoint
@@ -390,7 +390,7 @@ app.use('/api/admin/announcements', require('./routes/api/admin/announcements'))
 app.get('/api', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Welcome to Page Innovation LMS API',
+    message: 'Welcome to Page Innovations LMS API',
     version: '1.0.0',
     endpoints: {
       health: '/health',
@@ -1186,7 +1186,7 @@ const startServer = async () => {
     }
 
     // Start birthday scheduler — fires the daily "Happy Birthday from
-    // Page Innovation" notification at 06:05 UTC.
+    // Page Innovations" notification at 06:05 UTC.
     try {
       const { startBirthdayScheduler } = require('./services/birthday/birthdayService');
       startBirthdayScheduler();
@@ -1536,7 +1536,7 @@ const startServer = async () => {
     // second call, which is what was crashing every deploy.
     logger.info(`
 ╔═══════════════════════════════════════════════════════════╗
-║   🚀 Page Innovation LMS API — all startup tasks complete         ║
+║   🚀 Page Innovations LMS API — all startup tasks complete         ║
 ║   Port: ${PORT.toString().padEnd(50)}║
 ║   Environment: ${process.env.NODE_ENV?.padEnd(42) || 'development'.padEnd(42)}║
 ╚═══════════════════════════════════════════════════════════╝`);

@@ -275,7 +275,7 @@ export default function PaymentModal({ isOpen, onClose, course, onSuccess }) {
                       {course.title}
                     </h4>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      by {course.instructor?.full_name || 'Page Innovation'}
+                      by {course.instructor?.full_name || 'Page Innovations'}
                     </p>
                   </div>
                 </div>

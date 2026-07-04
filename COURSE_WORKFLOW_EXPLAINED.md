@@ -364,7 +364,7 @@ This is typically a separate section like:
 ```
 Course: "MSSQL Server Fundamentals" (ID: 1)
 ├── Status: published
-├── Instructor: Page Innovation Admin
+├── Instructor: Page Innovations Admin
 ├── Price: $0.00
 └── Modules:
     ├── Module 1: "Introduction to MSSQL Server"

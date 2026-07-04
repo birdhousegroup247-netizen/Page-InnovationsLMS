@@ -10,7 +10,7 @@ Estimated time: **15 minutes** if BAO already has a Discord account and a server
 
 BAO should already have:
 - [ ] A Discord account (free)
-- [ ] A Discord server (we call it a "guild") that the LMS will use. If not, create one in Discord: top-left **`+`** → **Create My Own** → name it `Page Innovation Community` (or whatever the brand is)
+- [ ] A Discord server (we call it a "guild") that the LMS will use. If not, create one in Discord: top-left **`+`** → **Create My Own** → name it `Page Innovations Community` (or whatever the brand is)
 - [ ] Be logged into both **discord.com** (the regular app) AND **discord.com/developers/applications** in another tab
 
 ---
@@ -19,7 +19,7 @@ BAO should already have:
 
 1. Go to https://discord.com/developers/applications
 2. Click **New Application** (top right)
-3. Name it `Page Innovation LMS`. Accept the terms. Click **Create**.
+3. Name it `Page Innovations LMS`. Accept the terms. Click **Create**.
 4. You're now on the application's **General Information** page
 
 ### Capture: `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`
@@ -70,7 +70,7 @@ On the **General Information** page:
    - [x] **Kick Members** — bot removes students who unenroll
    - [x] **View Channels**
 4. Scroll down. Copy the **Generated URL** at the bottom.
-5. Open that URL in a new tab. Discord asks which server to add the bot to. Pick the `Page Innovation Community` server. Click **Authorise**, complete the captcha.
+5. Open that URL in a new tab. Discord asks which server to add the bot to. Pick the `Page Innovations Community` server. Click **Authorise**, complete the captcha.
 6. Back in the Discord app, you should now see the bot in the server's member list (offline at first — it'll come online once Railway is up).
 
 ---
@@ -78,7 +78,7 @@ On the **General Information** page:
 ## 4. Get the server (guild) ID
 
 1. In the regular Discord app: **User Settings** (gear, bottom-left) → **Advanced** → turn ON **Developer Mode**
-2. Close settings. Right-click the `Page Innovation Community` server icon in the left sidebar.
+2. Close settings. Right-click the `Page Innovations Community` server icon in the left sidebar.
 3. Click **Copy Server ID** → this is `DISCORD_GUILD_ID`
 
 ---
@@ -95,7 +95,7 @@ This is a special role that students get after completing prep prerequisites. Th
 6. Save
 7. With Developer Mode still ON, right-click the new role → **Copy Role ID** → this is `DISCORD_INTERVIEW_PREP_ROLE_ID`
 
-> Tip: the bot will need to be placed **above** the Interview Prep role in the Roles list, or it can't assign it. Drag the `Page Innovation LMS` bot role above `Interview Prep`. Then drag both above `@everyone`. Save.
+> Tip: the bot will need to be placed **above** the Interview Prep role in the Roles list, or it can't assign it. Drag the `Page Innovations LMS` bot role above `Interview Prep`. Then drag both above `@everyone`. Save.
 
   4 tasks (2 done, 1 in progress, 1 open)
 ---
@@ -128,8 +128,8 @@ By now we have **everything**. Put these into Railway env vars (and a copy in `b
 
 ## 8. Smoke test (after Railway is up)
 
-1. Have a test student account: profile → **Connect Discord** → OAuth flow opens → approve → return to Page Innovation
-2. The user gets auto-added to the `Page Innovation Community` server (you'll see them in the member list)
+1. Have a test student account: profile → **Connect Discord** → OAuth flow opens → approve → return to Page Innovations
+2. The user gets auto-added to the `Page Innovations Community` server (you'll see them in the member list)
 3. Enrol the test student in a paid course (or have the admin enrol them manually)
 4. Within 60 seconds:
    - A new private channel `#course-<slug>` appears in the server

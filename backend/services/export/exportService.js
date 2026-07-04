@@ -186,7 +186,7 @@ class ExportService {
         doc.moveDown(2);
 
         // Footer
-        doc.fontSize(10).text('Page Innovation - The Leading Remote DBA Service Provider', {
+        doc.fontSize(10).text('Page Innovations - The Leading Remote DBA Service Provider', {
           align: 'center',
         });
         doc.text('https://www.pageinnovation.com', { align: 'center' });
