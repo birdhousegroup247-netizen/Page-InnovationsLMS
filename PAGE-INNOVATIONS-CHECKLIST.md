@@ -1,11 +1,7 @@
 # Page Innovations — Everything You Need to Provide
 
 This is the complete list of accounts, keys and assets Page Innovations
-must hand over before the app can go live. Hosting runs on Birdhouse's
-Railway account, so there is nothing to pay for or set up on the hosting
-side. Send each item as soon as it's ready — nothing goes live until
-every required row is delivered.
-
+must hand over before the app can go live.
 ---
 
 ## 1. Required from Page Innovations
@@ -42,36 +38,10 @@ through Resend once the domain is verified.
 
 | Item | Status |
 |------|--------|
-| Company name ("Page Innovations") | ✅ done — applied everywhere |
-| Brand colors (red #DF0D0D, ink #191C1E, brown #5E3F3A from your designs) | ✅ done — applied to both apps |
-| **Official logo** — PNG, transparent background, wide format (roughly 4:1 wordmark) | ⚠️ NEEDED — a temporary generated logo is in place; send the real one to replace it |
+| **Official logo** — PNG, transparent background, wide format | ⚠️ NEEDED — a temporary logo is in place until you send the real one |
 | Tagline (one line — shown on the login page and certificates) | ⚠️ NEEDED |
-| Selling currency (NGN or USD) | ⚠️ NEEDED — confirm which one |
-| Landing page copy (hero text, feature bullets, footer) — or approve ours | ⚠️ NEEDED |
 
-## 5. What we do once everything arrives
+Already settled: company name, brand colors, and **selling currency —
+NGN (₦)**. 
 
-1. Deploy on Birdhouse's Railway: PostgreSQL database + backend +
-   student app + admin app (the database sets itself up on first boot).
-2. Plug in all the keys above as environment variables.
-3. Register the payment webhook (Paystack or Stripe) and the Google
-   login redirect against the live URLs; verify the domain in Resend;
-   point your domain at the app.
-4. Create the first admin account, set up course categories.
-5. Smoke-test everything: signup email, login, enrollment, test
-   payment, a Google Meet live session, and the Onboarding Center.
-6. Switch payments from test to live. Launch.
 
-## Monthly running cost
-
-| Item | Cost |
-|------|------|
-| Hosting (Birdhouse Railway) | covered by Birdhouse |
-| Resend | $0 until 3k emails/month |
-| Cloudinary | $0 on free tier |
-| Paystack / Stripe | per-transaction fees only |
-| **Total for Page Innovations** | **$0/month + payment fees** |
-
----
-*Full technical detail (exact env var lists, webhook URLs, DNS steps)
-lives in `WHITE-LABEL-SETUP.md` in this repo.*

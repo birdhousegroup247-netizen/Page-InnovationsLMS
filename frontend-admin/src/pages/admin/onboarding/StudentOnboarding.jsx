@@ -16,7 +16,7 @@ import { Container, PageHeader } from '../../../components/layout';
 import { Button, Input, Select, Spinner } from '../../../components/ui';
 import { useToast } from '../../../components/ui/Toast';
 import { onboardingAPI, adminCoursesAPI } from '../../../lib/api';
-import { formatCurrency } from '../../../utils/currency';
+import { formatPrice } from '../../../utils/currency';
 import { cn } from '../../../utils/cn';
 import WizardStepper from './WizardStepper';
 
@@ -439,7 +439,7 @@ export default function StudentOnboarding() {
                     placeholder="Select your preferred program"
                     options={courses.map((c) => ({
                       value: String(c.id),
-                      label: c.price > 0 ? `${c.title} — ${formatCurrency(c.price)}` : c.title,
+                      label: c.price > 0 ? `${c.title} — ${formatPrice(c.price)}` : c.title,
                     }))}
                     value={form.academic.course_id}
                     onChange={set('academic', 'course_id')}
@@ -498,7 +498,7 @@ export default function StudentOnboarding() {
                   <SectionCard title="Financial Details" onEdit={() => setStep(2)}>
                     <ReviewRow
                       label="Total Enrollment Value"
-                      value={formatCurrency(selectedCourse.price || 0)}
+                      value={formatPrice(selectedCourse.price || 0)}
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Onboarding registers the student with complimentary

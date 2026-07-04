@@ -40,3 +40,16 @@ export function formatCurrency(value, currency = 'USD') {
 export function formatPaymentAmount(payment, field = 'amount') {
   return formatCurrency(payment?.[field], payment?.currency || 'USD');
 }
+
+/**
+ * The store's selling currency — what course/bundle prices are listed in
+ * and what checkout charges. Course rows don't carry a currency column;
+ * this env var is the single source of truth (mirrors the student app's
+ * utils/currency.js). Page Innovations sells in NGN.
+ */
+export const SITE_CURRENCY = import.meta.env.VITE_PAYMENT_CURRENCY || 'NGN';
+
+/** Format a course/bundle price in the site currency. */
+export function formatPrice(value) {
+  return formatCurrency(value, SITE_CURRENCY);
+}

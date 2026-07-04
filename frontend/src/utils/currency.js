@@ -55,7 +55,7 @@ export function formatPaymentAmount(payment, field = 'amount') {
  * this env var is the single source of truth (same one Checkout sends to
  * the payment gateway).
  */
-export const SITE_CURRENCY = import.meta.env.VITE_PAYMENT_CURRENCY || 'USD';
+export const SITE_CURRENCY = import.meta.env.VITE_PAYMENT_CURRENCY || 'NGN';
 
 /** Format a course/bundle price in the site currency. */
 export function formatPrice(value) {
