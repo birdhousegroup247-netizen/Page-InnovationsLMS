@@ -1,34 +1,44 @@
 # Page Innovations — Everything You Need to Provide
 
 This is the complete list of accounts, keys and assets Page Innovations
-must hand over before the app can go live. Every account has a free tier
-unless noted. Send each item as soon as it's ready — nothing goes live
-until every required row is delivered.
+must hand over before the app can go live. Hosting runs on Birdhouse's
+Railway account, so there is nothing to pay for or set up on the hosting
+side. Send each item as soon as it's ready — nothing goes live until
+every required row is delivered.
 
 ---
 
-## 1. Required accounts & credentials
+## 1. Required from Page Innovations
 
-| # | Account | What to send us | Where to get it |
-|---|---------|-----------------|-----------------|
-| 1 | **Domain** | Your domain name (e.g. pageinnovations.com) + access to its DNS settings | Namecheap or any registrar (~$10–15/year) |
-| 2 | **Railway** (hosting) | An account with billing enabled (~$5–20/month), or add us to your team | railway.app |
-| 3 | **Resend** (email sending) | API key; later we'll add 3 DNS records to your domain so emails send as @pageinnovations.com | resend.com — free up to 3,000 emails/month |
-| 4 | **PayPal Business** (payments) | Live Client ID + Secret from developer.paypal.com (app type "Merchant"); we'll register the webhook and get the Webhook ID together | paypal.com business account |
-| 5 | **Cloudinary** (image/file storage) | Cloud name + API key + API secret + an unsigned upload preset | cloudinary.com — free tier |
-| 6 | **Google Cloud** (Google login) | OAuth Client ID + Client Secret | console.cloud.google.com |
-| 7 | **Cloudflare Turnstile** (bot protection) | Site key + Secret key | cloudflare.com — free |
+| # | Item | What to send us | Notes |
+|---|------|-----------------|-------|
+| 1 | **Domain** | DNS access to your existing domain (or add the records we send you) | You already have the domain — we only need to add a few DNS records (email + pointing the app to your domain) |
+| 2 | **Resend** (email sending) | API key | resend.com — free up to 3,000 emails/month. We'll verify your domain with 3 DNS records so emails send as @your-domain |
+| 3 | **Payments — Paystack or Stripe** | Confirm WHICH one you use, then send: Paystack → Secret key + Public key, or Stripe → Secret key + Publishable key | Both are supported by the platform; we just need to know which account you have |
+| 4 | **Cloudinary** (image/file storage) | Cloud name + API key + API secret + an unsigned upload preset | cloudinary.com — free tier |
+| 5 | **Google Cloud** (Google login) | OAuth Client ID + Client Secret | console.cloud.google.com |
+| 6 | **Cloudflare Turnstile** (bot protection) | Site key + Secret key | cloudflare.com — free |
 
-## 2. Optional accounts (only if you want the feature)
+## 2. Live classes — Google Meet
 
-| Account | Feature it powers |
-|---------|-------------------|
-| **Discord** (bot app + your server) | Course community channels, automatic role assignment. Need: bot token, client ID + secret, server (guild) ID, invite link |
-| **Zoom** | Live class meetings created automatically |
-| **Redis** (Railway plugin) | Faster caching — the app works fine without it |
-| **Stripe / Paystack** | Extra payment options beyond PayPal |
+Live sessions run on **Google Meet**: instructors simply paste the Meet
+link when scheduling a class — **no account keys or setup needed from
+you**. (If you ever switch to Zoom, that needs Zoom API credentials —
+tell us and we'll send the steps.)
 
-## 3. Branding assets
+## 3. Email addresses — create these in your cPanel
+
+Create these mailboxes in your **cPanel** (where your domain email is
+hosted) and send us the addresses:
+
+- `noreply@your-domain.com` — general notifications
+- `registration@your-domain.com` — signup/verification emails (optional)
+- `support@your-domain.com` — shown to students as the contact address
+
+The mailboxes receive replies in cPanel as normal; the platform sends
+through Resend once the domain is verified.
+
+## 4. Branding assets
 
 | Item | Status |
 |------|--------|
@@ -36,41 +46,31 @@ until every required row is delivered.
 | Brand colors (red #DF0D0D, ink #191C1E, brown #5E3F3A from your designs) | ✅ done — applied to both apps |
 | **Official logo** — PNG, transparent background, wide format (roughly 4:1 wordmark) | ⚠️ NEEDED — a temporary generated logo is in place; send the real one to replace it |
 | Tagline (one line — shown on the login page and certificates) | ⚠️ NEEDED |
-| Support email address (e.g. support@pageinnovations.com) | ⚠️ NEEDED |
 | Selling currency (NGN or USD) | ⚠️ NEEDED — confirm which one |
 | Landing page copy (hero text, feature bullets, footer) — or approve ours | ⚠️ NEEDED |
 
-## 4. Email mailboxes (on your domain)
-
-Decide which addresses the platform sends from, e.g.:
-- `noreply@pageinnovations.com` — general notifications
-- `registration@pageinnovations.com` — signup/verification emails (optional)
-
-The mailboxes live wherever your domain email is hosted; sending goes
-through Resend after we verify the domain (3 DNS records).
-
 ## 5. What we do once everything arrives
 
-1. Create the Railway project: PostgreSQL database + backend + student
-   app + admin app (the database sets itself up on first boot).
+1. Deploy on Birdhouse's Railway: PostgreSQL database + backend +
+   student app + admin app (the database sets itself up on first boot).
 2. Plug in all the keys above as environment variables.
-3. Register the PayPal webhook and Google login redirect against the
-   live URLs; verify the domain in Resend.
+3. Register the payment webhook (Paystack or Stripe) and the Google
+   login redirect against the live URLs; verify the domain in Resend;
+   point your domain at the app.
 4. Create the first admin account, set up course categories.
-5. Smoke-test everything: signup email, login, enrollment, sandbox
-   payment, live session, and the new Onboarding Center.
-6. Flip PayPal from sandbox to live. Launch.
+5. Smoke-test everything: signup email, login, enrollment, test
+   payment, a Google Meet live session, and the Onboarding Center.
+6. Switch payments from test to live. Launch.
 
 ## Monthly running cost
 
 | Item | Cost |
 |------|------|
-| Railway (all 4 services) | ~$5–20 |
+| Hosting (Birdhouse Railway) | covered by Birdhouse |
 | Resend | $0 until 3k emails/month |
 | Cloudinary | $0 on free tier |
-| PayPal | per-transaction fees only |
-| Domain | ~$10–15/YEAR |
-| **Total** | **~$5–20/month + payment fees** |
+| Paystack / Stripe | per-transaction fees only |
+| **Total for Page Innovations** | **$0/month + payment fees** |
 
 ---
 *Full technical detail (exact env var lists, webhook URLs, DNS steps)
