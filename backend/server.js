@@ -382,6 +382,7 @@ app.use('/api/admin/email-campaigns', require('./routes/api/admin/email-campaign
 app.use('/api/admin/bundles', require('./routes/api/admin/bundles'));
 app.use('/api/admin/referrals', require('./routes/api/admin/referrals'));
 app.use('/api/admin/enrollments', require('./routes/api/admin/enrollments'));
+app.use('/api/admin/onboarding', require('./routes/api/admin/onboarding'));
 app.use('/api/admin/payments', require('./routes/api/admin/payments'));
 app.use('/api/admin/announcements', require('./routes/api/admin/announcements'));
 
@@ -584,6 +585,9 @@ const startServer = async () => {
           last_reengagement_sent_at: { type: Sequelize.DATE,    allowNull: true,  defaultValue: null },
           last_earnings_summary_at:  { type: Sequelize.DATE,    allowNull: true,  defaultValue: null },
           last_review_milestone:     { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+          // Onboarding Center wizard record (next-of-kin / academic for
+          // students; employment / compensation for staff).
+          onboarding_profile:        { type: Sequelize.JSON,    allowNull: true,  defaultValue: null },
         };
 
         // Grandfather existing users: anyone who has successfully logged in before

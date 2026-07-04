@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120" viewBox="0 0 600 120">
+  <!-- Page Innovations wordmark — brand red #DF0D0D, ink #191C1E, warm brown #5E3F3A -->
+  <g>
+    <!-- Layered "pages" mark -->
+    <rect x="14" y="30" width="64" height="76" rx="10" fill="#5E3F3A" opacity="0.25" transform="rotate(-8 46 68)"/>
+    <rect x="18" y="24" width="64" height="80" rx="10" fill="#DF0D0D" opacity="0.55" transform="rotate(-4 50 64)"/>
+    <rect x="22" y="18" width="64" height="86" rx="10" fill="#DF0D0D"/>
+    <!-- Folded corner -->
+    <path d="M66 18 L86 38 L66 38 Z" fill="#B80A0A"/>
+    <!-- Text lines on the page -->
+    <rect x="34" y="46" width="40" height="6" rx="3" fill="#FFFFFF" opacity="0.95"/>
+    <rect x="34" y="60" width="40" height="6" rx="3" fill="#FFFFFF" opacity="0.75"/>
+    <rect x="34" y="74" width="26" height="6" rx="3" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+  <text x="106" y="72" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="800" letter-spacing="1" fill="#191C1E">PAGE&#160;<tspan fill="#DF0D0D">INNOVATIONS</tspan></text>
+  <text x="108" y="98" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="600" letter-spacing="6" fill="#5E3F3A">ENTERPRISE MANAGEMENT</text>
+</svg>

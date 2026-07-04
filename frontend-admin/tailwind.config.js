@@ -27,53 +27,56 @@ export default {
           500: '#2f3654',  // Interactive elements
         },
 
-        // TekyPro brand colors
+        // Page Innovations brand colors (token names kept for white-label
+        // compatibility — see WHITE-LABEL-SETUP.md; only hexes change).
+        // 'brand-blue' = brand ink (deep charcoal) from the PI design system.
         'brand-blue': {
-          DEFAULT: '#0e2b5c',  // Primary brand color
-          light: '#1a3d7a',
-          dark: '#081b3d',
-          50: '#f0f5fa',
-          100: '#d9e5f2',
-          200: '#a8c5e3',
-          300: '#6f9dd1',
-          400: '#3b74bc',
-          500: '#0e2b5c',
-          600: '#0b2249',
-          700: '#081b3d',
-          800: '#051430',
-          900: '#030d1f',
+          DEFAULT: '#191c1e',  // Primary brand color (ink)
+          light: '#2e3438',
+          dark: '#0e1011',
+          50: '#f7f9fb',
+          100: '#e6e8ea',
+          200: '#cdd2d6',
+          300: '#9aa3aa',
+          400: '#5c666e',
+          500: '#191c1e',
+          600: '#141719',
+          700: '#0f1214',
+          800: '#0b0d0e',
+          900: '#060708',
         },
 
         'brand-red': {
-          DEFAULT: '#eb1c22',  // Accent/CTA color
-          light: '#ff3940',
-          dark: '#c21419',
+          DEFAULT: '#df0d0d',  // Accent/CTA color
+          light: '#f52e2e',
+          dark: '#b80a0a',
           50: '#fef2f2',
-          100: '#fee2e2',
-          200: '#fecaca',
-          300: '#fca5a5',
-          400: '#f87171',
-          500: '#eb1c22',
-          600: '#c21419',
-          700: '#991014',
-          800: '#7f0d11',
-          900: '#65090d',
+          100: '#fde3e3',
+          200: '#fac5c5',
+          300: '#f59b9b',
+          400: '#ec5252',
+          500: '#df0d0d',
+          600: '#b80a0a',
+          700: '#920808',
+          800: '#6d0606',
+          900: '#4a0404',
         },
 
+        // 'brand-purple' = PI warm brown (secondary text / supporting accents).
         'brand-purple': {
-          DEFAULT: '#2e3192',  // Secondary actions
-          light: '#4548b8',
-          dark: '#1f2267',
-          50: '#f5f5ff',
-          100: '#ebebff',
-          200: '#d4d4ff',
-          300: '#a8a9ff',
-          400: '#7b7dff',
-          500: '#2e3192',
-          600: '#1f2267',
-          700: '#18194d',
-          800: '#111338',
-          900: '#0a0b1f',
+          DEFAULT: '#5e3f3a',  // Secondary actions
+          light: '#7a554f',
+          dark: '#462e2a',
+          50: '#faf6f5',
+          100: '#f2e9e8',
+          200: '#e0cdca',
+          300: '#c4a29d',
+          400: '#8f6b64',
+          500: '#5e3f3a',
+          600: '#4c322e',
+          700: '#3b2723',
+          800: '#2b1c19',
+          900: '#1c1210',
         },
 
         // Text colors (works for both light and dark mode)
@@ -119,9 +122,9 @@ export default {
       },
 
       fontFamily: {
-        sans: ['Rubik', 'system-ui', 'sans-serif'],
-        heading: ['Rubik', 'system-ui', 'sans-serif'],
-        body: ['Rubik', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['Inter', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'system-ui', 'sans-serif'],
       },
 
       fontSize: {

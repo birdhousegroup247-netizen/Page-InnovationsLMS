@@ -47,6 +47,7 @@ export const FEATURES = {
   instructorApplications: true,
   leads: true,
   enrollments: true,
+  onboarding: true,       // Onboarding Center (student + staff wizards)
 
   // Learning catalog
   categories: true,

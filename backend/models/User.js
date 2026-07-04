@@ -223,6 +223,14 @@ const User = sequelize.define(
       allowNull: true,
       comment: 'Links user back to their original lead record before registration',
     },
+    // Structured record captured by the admin Onboarding Center wizards.
+    // Students: { next_of_kin, academic }. Staff: { staff_id, employment,
+    // compensation }. Admin-only — never exposed through non-admin routes.
+    onboarding_profile: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+    },
     referral_code: {
       type: DataTypes.STRING(12),
       allowNull: true,

@@ -205,6 +205,12 @@ export const adminUsersAPI = {
   getAttendance: (userId) => api.get(`/api/admin/users/${userId}/attendance`),
 };
 
+// Admin: Onboarding Center wizards (student + staff registration)
+export const onboardingAPI = {
+  createStudent: (data) => api.post('/api/admin/onboarding/student', data),
+  createStaff: (data) => api.post('/api/admin/onboarding/staff', data),
+};
+
 // Admin: Course Management
 export const adminCoursesAPI = {
   getAll: (params) => api.get('/api/admin/courses', { params }),

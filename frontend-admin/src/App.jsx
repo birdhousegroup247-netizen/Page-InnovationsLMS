@@ -91,6 +91,9 @@ const Inbox = lazyWithReload(() => import('./pages/admin/Inbox'));
 const AdminProfile = lazyWithReload(() => import('./pages/admin/AdminProfile'));
 const AdminSettings = lazyWithReload(() => import('./pages/admin/AdminSettings'));
 const AdminUserDetail = lazyWithReload(() => import('./pages/admin/AdminUserDetail'));
+const OnboardingCenter = lazyWithReload(() => import('./pages/admin/onboarding/OnboardingCenter'));
+const StudentOnboarding = lazyWithReload(() => import('./pages/admin/onboarding/StudentOnboarding'));
+const StaffOnboarding = lazyWithReload(() => import('./pages/admin/onboarding/StaffOnboarding'));
 
 // Root redirect honors the admin's saved default_landing preference
 // (set on AdminSettings). Falls back to /dashboard for new admins.
@@ -260,6 +263,37 @@ function App() {
                 <AdminRoute>
                   <AdminUserDetail />
                 </AdminRoute>
+              }
+            />
+            {/* Onboarding Center — student + staff registration wizards */}
+            <Route
+              path="/onboarding"
+              element={
+                <FeatureGate flag="onboarding">
+                  <AdminRoute>
+                    <OnboardingCenter />
+                  </AdminRoute>
+                </FeatureGate>
+              }
+            />
+            <Route
+              path="/onboarding/student"
+              element={
+                <FeatureGate flag="onboarding">
+                  <AdminRoute>
+                    <StudentOnboarding />
+                  </AdminRoute>
+                </FeatureGate>
+              }
+            />
+            <Route
+              path="/onboarding/staff"
+              element={
+                <FeatureGate flag="onboarding">
+                  <AdminRoute>
+                    <StaffOnboarding />
+                  </AdminRoute>
+                </FeatureGate>
               }
             />
             <Route

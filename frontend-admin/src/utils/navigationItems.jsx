@@ -58,6 +58,13 @@ const adminNavigation = [
   },
   {
     type: 'item',
+    label: 'Onboarding',
+    path: '/onboarding',
+    icon: <UserPlus className="w-5 h-5" />,
+    feature: 'onboarding',
+  },
+  {
+    type: 'item',
     label: 'Courses',
     path: '/courses',
     icon: <BookOpen className="w-5 h-5" />,
