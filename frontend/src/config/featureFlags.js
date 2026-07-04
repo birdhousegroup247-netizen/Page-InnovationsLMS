@@ -34,6 +34,9 @@
  */
 
 export const FEATURES = {
+  // Page Innovations tier (decided with client rep 2026-07-04):
+  // core learning stays on; growth/gamification/self-serve extras off.
+
   // ─── Shared (controls both student + instructor tab when relevant) ──────
   announcements: true,
   attendance: true,
@@ -41,23 +44,23 @@ export const FEATURES = {
   tests: true,          // student "My Assigned Tests" + instructor "My Tests"
 
   // ─── Student-only ───────────────────────────────────────────────────────
-  practiceTests: true,
-  generateTest: true,
-  wishlist: true,
-  bookmarks: true,
+  practiceTests: false,
+  generateTest: false,
+  wishlist: false,
+  bookmarks: false,
   myNotes: true,
-  certificates: true,
-  leaderboard: true,
-  bundles: true,
-  referrals: true,
-  billing: true,
-  knowledgeBase: true,
+  certificates: false,
+  leaderboard: false,
+  bundles: false,
+  referrals: false,
+  billing: false,       // current cohort has already paid
+  knowledgeBase: false,
 
   // ─── Instructor-only ────────────────────────────────────────────────────
   liveSessions: true,
   myStudents: true,
-  contributeQuestions: true,
-  createCourse: true,   // kept as a flag in case we re-add it to nav later
+  contributeQuestions: false,
+  createCourse: false,  // academy model — admin curates the catalog
 };
 
 /**

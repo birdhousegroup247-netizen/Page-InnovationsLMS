@@ -38,28 +38,31 @@
  */
 
 export const FEATURES = {
+  // Page Innovations tier (decided with client rep 2026-07-04):
+  // core ops stay on; growth tools + public applications off.
+
   // Communication
   inbox: true,            // admin DMs to instructors / students
   chatModeration: true,   // course chat-room moderation
   announcements: true,    // broadcast announcements
 
   // People
-  instructorApplications: true,
-  leads: true,
+  instructorApplications: false, // staff join via the Onboarding wizard
+  leads: false,
   enrollments: true,
   onboarding: true,       // Onboarding Center (student + staff wizards)
 
   // Learning catalog
   categories: true,
-  bundles: true,
+  bundles: false,
   questionBank: true,
   tests: true,
 
   // Growth tools
-  coupons: true,
-  referrals: true,
-  badges: true,
-  emailCampaigns: true,   // admin promotional broadcast composer
+  coupons: false,
+  referrals: false,
+  badges: false,
+  emailCampaigns: false,  // admin promotional broadcast composer
 
   // Finance & reporting
   payments: true,
