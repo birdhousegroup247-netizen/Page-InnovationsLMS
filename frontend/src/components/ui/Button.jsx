@@ -38,17 +38,20 @@ const Button = forwardRef(
       primary:
         'bg-brand-blue text-white hover:bg-brand-blue-600 active:bg-brand-blue-700 focus:ring-brand-blue-500 shadow-sm hover:shadow-md',
       secondary:
-        'bg-gray-200 text-text-primary hover:bg-gray-300 active:bg-gray-400 focus:ring-gray-400 shadow-sm hover:shadow-md dark:bg-dark-600 dark:text-white dark:hover:bg-dark-500',
+        'bg-gray-200 text-text-primary hover:bg-gray-300 active:bg-gray-400 focus:ring-gray-400 shadow-sm hover:shadow-md',
       danger:
         'bg-brand-red text-white hover:bg-brand-red-600 active:bg-brand-red-700 focus:ring-brand-red-500 shadow-sm hover:shadow-md',
       success:
         'bg-success text-white hover:bg-success-dark active:bg-success-dark focus:ring-success shadow-sm hover:shadow-md',
+      // NOTE: no dark:* here on purpose. The glass hero buttons across the
+      // app pass their own `text-white border-white/20` overrides; adding a
+      // dark:text/-border color to this variant would beat those in dark
+      // mode and tint every hero button blue. Card-context outline buttons
+      // that need dark contrast set it locally (see MyCourses "Details").
       outline:
-        // brand-blue is a very dark navy — it disappears against dark
-        // surfaces, so dark mode pairs a light tint of the same hue.
-        'bg-transparent border-2 border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white active:bg-brand-blue-700 focus:ring-brand-blue-500 dark:border-brand-blue-300 dark:text-brand-blue-200 dark:hover:bg-brand-blue-300 dark:hover:text-dark-900',
+        'bg-transparent border-2 border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white active:bg-brand-blue-700 focus:ring-brand-blue-500',
       ghost:
-        'bg-transparent text-brand-blue hover:bg-brand-blue-50 active:bg-brand-blue-100 focus:ring-brand-blue-500 dark:text-brand-blue-200 dark:hover:bg-brand-blue-300/20',
+        'bg-transparent text-brand-blue hover:bg-brand-blue-50 active:bg-brand-blue-100 focus:ring-brand-blue-500',
     };
 
     // Slimmer scale to match the admin Button — see admin/components/ui/Button.jsx.
