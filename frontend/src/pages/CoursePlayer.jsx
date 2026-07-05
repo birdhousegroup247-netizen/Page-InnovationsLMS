@@ -374,36 +374,65 @@ export default function CoursePlayer() {
     };
   }, [ytApiLoaded, currentContent?.id]);
 
-  // Article read tracking — observe sentinel at bottom of article + auto-complete
+  // Article read tracking — observe sentinel at bottom of article + auto-complete.
+  //
+  // A short article's end sits on-screen from the moment it opens, so a naked
+  // "sentinel visible → complete" fires instantly and marks the lesson done
+  // before the student has read (or even started) it. Gate completion behind a
+  // minimum reading dwell: the sentinel must be visible AND the lesson must
+  // have been open for at least MIN_ARTICLE_READ_MS. Long articles clear the
+  // dwell naturally by the time the reader scrolls to the bottom; short ones
+  // get a few seconds first. The manual "Mark as Complete" button is always
+  // available for anyone who wants to finish sooner.
   useEffect(() => {
     if (!currentContent || currentContent.content_type !== 'article') return;
     const contentId = currentContent.id;
+    const MIN_ARTICLE_READ_MS = 5000;
+    const openedAt = Date.now();
     let observer;
+    let completeTimer;
+
+    const complete = () => {
+      if (autoCompletedRef.current.has(contentId)) return;
+      autoCompletedRef.current.add(contentId);
+      setArticleRead(true);
+      progressAPI.markComplete(contentId).then(() => {
+        setProgress((prev) => ({
+          ...prev,
+          [contentId]: { completed: true, completed_at: new Date().toISOString() },
+        }));
+        showToast('Lesson completed!', 'success');
+      }).catch((err) => {
+        console.error('Article auto-complete failed:', err);
+        autoCompletedRef.current.delete(contentId);
+      });
+    };
+
     const timer = setTimeout(() => {
       if (!articleEndRef.current) return;
       observer = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) {
-          setArticleRead(true);
-          // Auto-complete — contentId captured in closure
-          if (!autoCompletedRef.current.has(contentId)) {
-            autoCompletedRef.current.add(contentId);
-            progressAPI.markComplete(contentId).then(() => {
-              setProgress((prev) => ({
-                ...prev,
-                [contentId]: { completed: true, completed_at: new Date().toISOString() },
-              }));
-              showToast('Lesson completed!', 'success');
-            }).catch((err) => {
-              console.error('Article auto-complete failed:', err);
-              autoCompletedRef.current.delete(contentId);
-            });
+          const remaining = MIN_ARTICLE_READ_MS - (Date.now() - openedAt);
+          if (remaining <= 0) {
+            complete();
+          } else {
+            setArticleRead(true); // "completing…" hint while the dwell counts down
+            // End is visible but the reader just arrived — wait out the dwell,
+            // then complete (unless they navigated away, handled by cleanup).
+            clearTimeout(completeTimer);
+            completeTimer = setTimeout(complete, remaining);
           }
+        } else {
+          // Scrolled back up before the dwell elapsed — cancel the pending complete.
+          clearTimeout(completeTimer);
         }
       }, { threshold: 0.5 });
       observer.observe(articleEndRef.current);
     }, 200);
+
     return () => {
       clearTimeout(timer);
+      clearTimeout(completeTimer);
       if (observer) observer.disconnect();
     };
   }, [currentContent?.id]);
