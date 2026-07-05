@@ -4,6 +4,7 @@ import { ArrowLeft, FileCheck, Save, Trash2 } from 'lucide-react';
 import { assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
 import { Button, Spinner } from '../../components/ui';
+import { toLocalInput, toUTCISO } from '../../utils/datetimeLocal';
 
 // Focused edit page: lets an instructor update the high-level
 // settings on an existing test (name, description, dates, time
@@ -43,22 +44,14 @@ export default function EditTest() {
         const t = res?.data?.data?.test;
         if (!t) throw new Error('Test not found');
         if (!alive) return;
-        const toLocal = (v) => {
-          if (!v) return '';
-          // YYYY-MM-DDTHH:mm for <input type="datetime-local">
-          const d = new Date(v);
-          if (Number.isNaN(d.getTime())) return '';
-          const pad = (n) => String(n).padStart(2, '0');
-          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        };
         setForm({
           test_name: t.test_name || t.title || '',
           description: t.description || '',
           time_limit_minutes: t.time_limit_minutes || 60,
           passing_score: t.passing_score || 70,
           max_attempts: t.max_attempts || 1,
-          start_date: toLocal(t.start_date),
-          end_date: toLocal(t.end_date || t.due_date),
+          start_date: toLocalInput(t.start_date),
+          end_date: toLocalInput(t.end_date || t.due_date),
           status: t.status || 'draft',
           randomize_questions: t.randomize_questions ?? true,
           randomize_options: t.randomize_options ?? true,
@@ -88,8 +81,8 @@ export default function EditTest() {
         time_limit_minutes: parseInt(form.time_limit_minutes) || 60,
         passing_score: parseInt(form.passing_score) || 70,
         max_attempts: parseInt(form.max_attempts) || 1,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
+        start_date: toUTCISO(form.start_date),
+        end_date: toUTCISO(form.end_date),
         status: form.status,
         randomize_questions: !!form.randomize_questions,
         randomize_options: !!form.randomize_options,

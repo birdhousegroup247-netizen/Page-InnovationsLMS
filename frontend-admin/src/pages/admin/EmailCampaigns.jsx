@@ -5,6 +5,7 @@ import {
   Users, GraduationCap, User, Package, UserPlus, AlertCircle,
 } from 'lucide-react';
 import { Button, Input, Select, Badge, Spinner, Modal } from '../../components/ui';
+import { toLocalInput, toUTCISO } from '../../utils/datetimeLocal';
 import Container from '../../components/layout/Container';
 import { PageHeader } from '../../components/layout';
 import { useToast } from '../../components/ui/Toast';
@@ -87,7 +88,7 @@ export default function EmailCampaigns() {
       cta_url: c.cta_url || '',
       segment: c.segment || 'all_students',
       segment_course_id: c.segment_course_id || '',
-      scheduled_at: c.scheduled_at ? new Date(c.scheduled_at).toISOString().slice(0, 16) : '',
+      scheduled_at: toLocalInput(c.scheduled_at),
     });
     setShowModal(true);
   };
@@ -106,7 +107,7 @@ export default function EmailCampaigns() {
       const payload = {
         ...form,
         segment_course_id: form.segment === 'enrolled_in_course' ? parseInt(form.segment_course_id) : null,
-        scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
+        scheduled_at: toUTCISO(form.scheduled_at),
       };
       if (editing) {
         await adminEmailCampaignsAPI.update(editing.id, payload);

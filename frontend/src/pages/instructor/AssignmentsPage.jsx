@@ -7,6 +7,7 @@ import { instructorAPI, coursesAPI, assignmentsAPI, assignedTestsAPI } from '../
 import { Container } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import { toUTCISO } from '../../utils/datetimeLocal';
 
 // Same component, three URLs:
 //   /instructor/assignments
@@ -306,6 +307,7 @@ function AssignmentForm({ courses, tests, lockedCourseId, onCancel, onCreated, o
       const { course_id, is_published: _ignored, ...payload } = form;
       payload.linked_test_id = form.linked_test_id || null;
       payload.is_published = publish;
+      payload.due_date = toUTCISO(form.due_date);
       await assignmentsAPI.createAssignment(course_id, payload);
       onCreated();
     } catch (err) {

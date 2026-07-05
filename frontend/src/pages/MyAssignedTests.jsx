@@ -23,7 +23,7 @@ export default function MyAssignedTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [startingTest, setStartingTest] = useState(null); // Track which test is being started
+
   const [filter, setFilter] = useState('all'); // all, not_started, in_progress, completed
 
   useEffect(() => {
@@ -47,8 +47,10 @@ export default function MyAssignedTests() {
       return 'not_started';
     }
 
-    const lastAttempt = test.attempts[test.attempts.length - 1];
-    if (lastAttempt.status === 'completed') {
+    // Attempts have no status column — completion is completed_at.
+    // Attempts arrive newest-first from the API, so [0] is the latest.
+    const lastAttempt = test.attempts[0];
+    if (lastAttempt.completed_at) {
       return 'completed';
     }
 
@@ -91,6 +93,9 @@ export default function MyAssignedTests() {
     });
   };
 
+  // Progress status only — urgency (Overdue / Due Soon) is a separate
+  // chip rendered next to this one, so putting it here too showed
+  // "Overdue" twice on the same card.
   const getStatusBadge = (test) => {
     const status = getTestStatus(test);
 
@@ -98,41 +103,23 @@ export default function MyAssignedTests() {
       return <Badge color="green">Completed</Badge>;
     } else if (status === 'in_progress') {
       return <Badge color="yellow">In Progress</Badge>;
-    } else if (isOverdue(test.due_date)) {
-      return <Badge color="red">Overdue</Badge>;
-    } else if (isDueSoon(test.due_date)) {
-      return <Badge color="orange">Due Soon</Badge>;
     } else {
       return <Badge color="blue">Not Started</Badge>;
     }
   };
 
-  const handleStartTest = async (test) => {
-    if (startingTest) return; // Prevent multiple simultaneous starts
-
-    try {
-      setStartingTest(test.id);
-      const status = getTestStatus(test);
-
-      if (status === 'in_progress') {
-        // Continue existing attempt
-        const lastAttempt = test.attempts[test.attempts.length - 1];
-        navigate(`/assigned-tests/${test.id}/take?attemptId=${lastAttempt.id}`);
-      } else {
-        // Start new attempt
-        const response = await assignedTestsAPI.startAttempt(test.id);
-        const attemptId = response.data.data.attempt_id;
-        navigate(`/assigned-tests/${test.id}/take?attemptId=${attemptId}`);
-      }
-    } catch (error) {
-      console.error('Failed to start test:', error);
-      showToast(error.response?.data?.message || 'Failed to start test', 'error');
-      setStartingTest(null); // Reset loading state on error
-    }
+  // Both Start and Continue just navigate — TakeTest owns the start
+  // call, and the backend resumes an unfinished attempt instead of
+  // creating a new one. The old flow started an attempt HERE and then
+  // TakeTest started a second one, which tripped the max-attempts gate
+  // ("Failed to load test") before the student saw a single question.
+  const handleStartTest = (test) => {
+    navigate(`/assigned-tests/${test.id}/take`);
   };
 
   const handleViewResults = (test) => {
-    const lastAttempt = test.attempts[test.attempts.length - 1];
+    // attempts arrive newest-first — [0] is the latest attempt
+    const lastAttempt = test.attempts[0];
     navigate(`/test-results/${lastAttempt.id}`);
   };
 
@@ -290,7 +277,7 @@ export default function MyAssignedTests() {
               const status = getTestStatus(test);
               const attemptCount = test.attempts?.length || 0;
               const maxAttempts = test.max_attempts || 1;
-              const lastAttempt = test.attempts?.[test.attempts.length - 1];
+              const lastAttempt = test.attempts?.[0]; // newest-first
               const overdue = isOverdue(test.due_date);
               const dueSoon = isDueSoon(test.due_date);
 
@@ -307,7 +294,7 @@ export default function MyAssignedTests() {
                       {/* Title and Status */}
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {test.title}
+                          {test.test_name || test.title}
                         </h3>
                         {getStatusBadge(test)}
                         {overdue && status !== 'completed' && (
@@ -339,7 +326,7 @@ export default function MyAssignedTests() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-4 h-4" />
-                          <span>{test.time_limit_seconds ? `${Math.floor(test.time_limit_seconds / 60)} min` : 'No limit'}</span>
+                          <span>{test.time_limit_minutes ? `${test.time_limit_minutes} min` : 'No limit'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-4 h-4" />
@@ -347,10 +334,10 @@ export default function MyAssignedTests() {
                             Due: {formatDate(test.due_date)}
                           </span>
                         </div>
-                        {test.assigned_by && (
+                        {test.instructor && (
                           <div className="flex items-center gap-1.5">
                             <User className="w-4 h-4" />
-                            <span>By: {test.assigned_by.name}</span>
+                            <span>By: {test.instructor.full_name}</span>
                           </div>
                         )}
                       </div>
@@ -374,7 +361,7 @@ export default function MyAssignedTests() {
                                 ? 'text-green-600 dark:text-green-400'
                                 : 'text-red-600 dark:text-red-400'
                             )}>
-                              Score: {lastAttempt.score}%
+                              Score: {Math.round(lastAttempt.percentage ?? lastAttempt.score ?? 0)}%
                             </span>
                           </div>
                         )}
@@ -386,19 +373,10 @@ export default function MyAssignedTests() {
                       {canTakeTest(test) ? (
                         <Button
                           onClick={() => handleStartTest(test)}
-                          disabled={(overdue && status === 'not_started') || startingTest === test.id}
+                          disabled={overdue && status === 'not_started'}
                         >
-                          {startingTest === test.id ? (
-                            <>
-                              <Spinner className="w-4 h-4 mr-2" />
-                              Starting...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4 mr-2" />
-                              {status === 'in_progress' ? 'Continue' : status === 'completed' ? 'Retake' : 'Start Test'}
-                            </>
-                          )}
+                          <Play className="w-4 h-4 mr-2" />
+                          {status === 'in_progress' ? 'Continue' : status === 'completed' ? 'Retake' : 'Start Test'}
                         </Button>
                       ) : (
                         <Button variant="outline" disabled>

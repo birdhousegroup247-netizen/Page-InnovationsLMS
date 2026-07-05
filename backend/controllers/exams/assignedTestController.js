@@ -293,6 +293,10 @@ class AssignedTestController {
             include: [
               { model: User, as: 'instructor', attributes: ['id', 'full_name'] },
               { model: Course, as: 'course', attributes: ['id', 'title'] },
+              // Real question count for the card — total_questions on the
+              // test row goes stale (set at create, before questions are
+              // attached), which is why cards used to say "0 questions".
+              { model: AssignedTestQuestion, as: 'test_questions', attributes: ['id'], separate: true },
             ],
           },
           {
@@ -317,12 +321,14 @@ class AssignedTestController {
         passing_score: a.test.passing_score,
         max_attempts: a.test.max_attempts,
         allow_retake: a.test.allow_retake,
+        show_results_immediately: a.test.show_results_immediately,
         start_date: a.test.start_date,
         end_date: a.test.end_date,
         due_date: a.due_date,
         status: a.status,
         assigned_date: a.assigned_date,
         attempts: a.attempts || [],
+        question_count: a.test.test_questions?.length || a.test.total_questions || 0,
       }));
 
       return ApiResponse.success(res, { tests });
@@ -420,30 +426,41 @@ class AssignedTestController {
 
       const test = assignment.test;
 
-      if (test.start_date && new Date() < new Date(test.start_date))
-        throw new BadRequestError('Test has not started yet');
-      if (test.end_date && new Date() > new Date(test.end_date))
-        throw new BadRequestError('Test has ended');
+      // Resume an unfinished attempt instead of creating a new one.
+      // Without this, "Continue" (or a page refresh mid-test) burned a
+      // fresh attempt and max_attempts=1 students got locked out with
+      // "Maximum attempts reached" before ever answering a question.
+      const openAttempt = assignment.attempts.find((at) => !at.completed_at);
+      let attempt;
+      if (openAttempt) {
+        attempt = openAttempt;
+        await t.commit();
+      } else {
+        if (test.start_date && new Date() < new Date(test.start_date))
+          throw new BadRequestError('This test has not opened yet — check the start time.');
+        if (test.end_date && new Date() > new Date(test.end_date))
+          throw new BadRequestError('This test has ended.');
 
-      const attemptCount = assignment.attempts.length;
-      if (!test.allow_retake && attemptCount > 0)
-        throw new BadRequestError('You have already attempted this test');
-      if (attemptCount >= test.max_attempts)
-        throw new BadRequestError(`Maximum attempts (${test.max_attempts}) reached`);
+        const attemptCount = assignment.attempts.length;
+        if (!test.allow_retake && attemptCount > 0)
+          throw new BadRequestError('You have already attempted this test');
+        if (attemptCount >= test.max_attempts)
+          throw new BadRequestError(`Maximum attempts (${test.max_attempts}) reached`);
 
-      const attempt = await AssignedTestAttempt.create(
-        {
-          assignment_id: assignment.id,
-          student_id: req.user.id,
-          test_id: test.id,
-          attempt_number: attemptCount + 1,
-          total_marks: test.total_marks,
-        },
-        { transaction: t }
-      );
+        attempt = await AssignedTestAttempt.create(
+          {
+            assignment_id: assignment.id,
+            student_id: req.user.id,
+            test_id: test.id,
+            attempt_number: attemptCount + 1,
+            total_marks: test.total_marks,
+          },
+          { transaction: t }
+        );
 
-      await assignment.update({ status: 'in_progress' }, { transaction: t });
-      await t.commit();
+        await assignment.update({ status: 'in_progress' }, { transaction: t });
+        await t.commit();
+      }
 
       let questions = test.test_questions.map((tq) => tq.question);
       if (test.randomize_questions) questions = questions.sort(() => Math.random() - 0.5);

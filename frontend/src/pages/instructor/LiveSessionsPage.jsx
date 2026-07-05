@@ -8,6 +8,7 @@ import { Container } from '../../components/layout';
 import { Button, Spinner, Alert, Modal, Tooltip } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import { ensureAbsoluteUrl as absUrl } from '../../utils/videoEmbed';
+import { toLocalInput, toUTCISO } from '../../utils/datetimeLocal';
 
 // One unified page for live sessions, served at three URLs:
 //
@@ -208,6 +209,7 @@ export default function LiveSessionsPage() {
     try {
       const targetCourse = scopedCourseId || parseInt(form.course_id, 10);
       const { course_id, ...payload } = form;
+      payload.scheduled_at = toUTCISO(payload.scheduled_at);
       await liveSessionsAPI.create(targetCourse, payload);
       setShowCreate(false);
       await fetchSessions();
@@ -222,6 +224,7 @@ export default function LiveSessionsPage() {
     setSubmitting(true);
     try {
       const { course_id, ...payload } = form;
+      payload.scheduled_at = toUTCISO(payload.scheduled_at);
       await liveSessionsAPI.update(editSession.id, payload);
       setEditSession(null);
       await fetchSessions();
@@ -512,9 +515,7 @@ export default function LiveSessionsPage() {
           <SessionForm
             initial={{
               ...editSession,
-              scheduled_at: editSession.scheduled_at
-                ? new Date(editSession.scheduled_at).toISOString().slice(0, 16)
-                : '',
+              scheduled_at: toLocalInput(editSession.scheduled_at),
               course_id: editSession.course_id,
             }}
             onSubmit={handleUpdate}

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { announcementsAPI, coursesAPI } from '../../lib/api';
 import { Container, EmptyState } from '../../components/layout';
+import { toLocalInput, toUTCISO } from '../../utils/datetimeLocal';
 import { Button, Spinner, Alert, Modal } from '../../components/ui';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
 import ReactionsBar from '../../components/announcements/ReactionsBar';
@@ -108,9 +109,7 @@ export default function Announcements() {
         title: announcement.title,
         content: announcement.message || announcement.content || '',
         course_id: announcement.course_id,
-        scheduled_at: announcement.scheduled_at
-          ? new Date(announcement.scheduled_at).toISOString().slice(0, 16)
-          : '',
+        scheduled_at: toLocalInput(announcement.scheduled_at),
         is_important: !!announcement.is_important,
         is_pinned: !!announcement.is_pinned,
         attachment_url: announcement.attachment_url || '',
@@ -156,7 +155,7 @@ export default function Announcements() {
       const payload = {
         title: formData.title,
         message: formData.content,
-        scheduled_at: formData.scheduled_at || null,
+        scheduled_at: toUTCISO(formData.scheduled_at),
         is_important: !!formData.is_important,
         is_pinned: !!formData.is_pinned,
         attachment_url:  formData.attachment_url  || null,

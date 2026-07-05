@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Container, PageHeader } from '../../components/layout';
 import { Button, Input, Select, Badge, Spinner, Modal } from '../../components/ui';
+import { toUTCISO } from '../../utils/datetimeLocal';
 
 const TARGET_OPTIONS = [
   { value: 'all_users', label: 'All Users', icon: Globe, description: 'Every active user on the platform' },
@@ -169,7 +170,10 @@ export default function Announcements() {
   const confirmSend = async () => {
     try {
       setSendLoading(true);
-      const response = await adminAnnouncementsAPI.send(form);
+      const response = await adminAnnouncementsAPI.send({
+        ...form,
+        scheduled_at: toUTCISO(form.scheduled_at),
+      });
       const msg = response.data.message || 'Announcement sent';
       showToast(msg, 'success');
       setForm({

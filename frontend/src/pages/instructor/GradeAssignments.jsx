@@ -8,6 +8,7 @@ import {
 import { Container } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import { toLocalInput, toUTCISO } from '../../utils/datetimeLocal';
 
 const STATUS_BADGE = {
   pending: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400',
@@ -157,7 +158,7 @@ export default function GradeAssignments() {
             </div>
             {a && (
               <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="text-white border-white/30 hover:bg-white/10">
+                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="!text-white !border-white/30 hover:!bg-white/10">
                   <Edit3 className="w-4 h-4 mr-1.5" /> Edit
                 </Button>
                 <Button
@@ -165,7 +166,7 @@ export default function GradeAssignments() {
                   size="sm"
                   onClick={handleTogglePublish}
                   loading={acting}
-                  className="text-white border-white/30 hover:bg-white/10"
+                  className="!text-white !border-white/30 hover:!bg-white/10"
                 >
                   {isDraft
                     ? <><Eye className="w-4 h-4 mr-1.5" /> Publish</>
@@ -175,7 +176,7 @@ export default function GradeAssignments() {
                   variant="outline"
                   size="sm"
                   onClick={() => setConfirmDelete(true)}
-                  className="text-white border-red-300/50 hover:bg-red-500/20"
+                  className="!text-white !border-red-300/50 hover:!bg-red-500/20"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -390,7 +391,7 @@ function EditAssignmentModal({ assignment, onClose, onSaved, onError }) {
   const [form, setForm] = useState({
     title: assignment.title || '',
     description: assignment.description || '',
-    due_date: assignment.due_date ? new Date(assignment.due_date).toISOString().slice(0, 16) : '',
+    due_date: toLocalInput(assignment.due_date),
     max_score: assignment.max_score ?? 100,
     allow_file_upload: !!assignment.allow_file_upload,
     allow_text_submission: !!assignment.allow_text_submission,
@@ -409,7 +410,10 @@ function EditAssignmentModal({ assignment, onClose, onSaved, onError }) {
     if (saving) return;
     setSaving(true);
     try {
-      await assignmentsAPI.updateAssignment(assignment.id, form);
+      await assignmentsAPI.updateAssignment(assignment.id, {
+        ...form,
+        due_date: toUTCISO(form.due_date),
+      });
       onSaved();
     } catch (err) {
       onError(err.response?.data?.message || 'Failed to update assignment');

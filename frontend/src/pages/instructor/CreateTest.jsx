@@ -27,6 +27,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
+import { toUTCISO } from '../../utils/datetimeLocal';
 import { Button, Spinner } from '../../components/ui';
 import { cn } from '../../utils/cn';
 import { useToast } from '../../components/ui/Toast';
@@ -418,8 +419,8 @@ export default function CreateTest() {
         passing_score: parseInt(testData.passing_score),
         max_attempts: parseInt(testData.max_attempts),
         total_questions: selectedQuestions.length,
-        start_date: testData.start_date || null,
-        end_date: testData.due_date || null,
+        start_date: toUTCISO(testData.start_date),
+        end_date: toUTCISO(testData.due_date),
         randomize_questions: !!testData.randomize_questions,
         randomize_options: !!testData.randomize_options,
         show_results_immediately: !!testData.show_results_immediately,
@@ -446,7 +447,7 @@ export default function CreateTest() {
       if (status === 'published' && selectedStudents.length > 0) {
         await assignedTestsAPI.assignTestToStudents(testId, {
           student_ids: selectedStudents,
-          due_date: testData.due_date,
+          due_date: toUTCISO(testData.due_date),
         });
       }
 
