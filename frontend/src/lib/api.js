@@ -291,6 +291,8 @@ export const profileAPI = {
   changePassword: (data) => api.put('/api/profile/password', data),
   getStats: () => api.get('/api/profile/stats'),
   getActivity: (params) => api.get('/api/profile/activity', { params }),
+  // Student self-completes enrollment profile (next-of-kin + academic)
+  completeOnboarding: (data) => api.put('/api/profile/onboarding', data),
 };
 
 // Admin: User Management

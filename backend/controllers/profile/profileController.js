@@ -102,6 +102,44 @@ class ProfileController {
   }
 
   /**
+   * Student self-completes their enrollment profile after signup.
+   * PUT /api/profile/onboarding
+   *
+   * Writes into the SAME users.onboarding_profile JSON the admin
+   * Onboarding wizard uses, so the admin sees one consistent record
+   * whether the student self-completed or staff entered it. Merges into
+   * any existing profile (never clobbers admin-entered fields) and stamps
+   * self_completed_at. Deliberately does NOT touch enrollment/courses —
+   * this only collects next-of-kin + academic background.
+   */
+  static async completeOnboarding(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const { personal, next_of_kin, academic } = req.body || {};
+
+      const user = await User.findByPk(userId);
+      if (!user) throw new NotFoundError('User not found');
+
+      const existing = user.onboarding_profile || {};
+      user.onboarding_profile = {
+        ...existing,
+        self_completed_at: new Date().toISOString(),
+        personal: { ...(existing.personal || {}), ...(personal || {}) },
+        next_of_kin: { ...(existing.next_of_kin || {}), ...(next_of_kin || {}) },
+        academic: { ...(existing.academic || {}), ...(academic || {}) },
+      };
+      // JSON change detection can miss nested mutations — mark it dirty.
+      user.changed('onboarding_profile', true);
+      await user.save();
+
+      logger.info(`User ${userId} self-completed their onboarding profile`);
+      return ApiResponse.success(res, { user }, 'Profile completed successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update profile picture
    * PUT /api/profile/avatar
    */

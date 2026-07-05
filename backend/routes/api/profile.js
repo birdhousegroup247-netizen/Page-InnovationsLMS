@@ -21,6 +21,9 @@ router.get('/', ProfileController.getProfile);
 // Update profile
 router.put('/', ProfileController.updateProfile);
 
+// Student self-completes enrollment profile (next-of-kin + academic)
+router.put('/onboarding', ProfileController.completeOnboarding);
+
 // Update profile picture
 router.put('/avatar', ProfileController.updateAvatar);
 

@@ -67,6 +67,7 @@ const VerifyEmail = lazyWithReload(() => import('./pages/VerifyEmail'));
 const Unsubscribe = lazyWithReload(() => import('./pages/Unsubscribe'));
 const InstructorApply = lazyWithReload(() => import('./pages/InstructorApply'));
 const ProfileSettings = lazyWithReload(() => import('./pages/ProfileSettings'));
+const CompleteProfile = lazyWithReload(() => import('./pages/CompleteProfile'));
 const Notifications = lazyWithReload(() => import('./pages/Notifications'));
 const Bookmarks = lazyWithReload(() => import('./pages/Bookmarks'));
 const PracticeTests = lazyWithReload(() => import('./pages/PracticeTests'));
@@ -635,6 +636,16 @@ function App() {
           {/* Profile + Settings — same component, two distinct routes.
               The component picks header copy + default tab from the
               pathname. /profile/settings kept as a legacy alias. */}
+          {/* Post-signup enrollment profile (next-of-kin + academic).
+              Own chrome, so no sidebar layout. */}
+          <Route
+            path="/complete-profile"
+            element={
+              <ProtectedRouteNoLayout>
+                <CompleteProfile />
+              </ProtectedRouteNoLayout>
+            }
+          />
           <Route
             path="/profile"
             element={

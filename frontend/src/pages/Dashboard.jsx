@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   Award,
@@ -25,14 +25,33 @@ import emptyCourses from '../assets/empty-courses.svg';
 import emptyRecommendations from '../assets/empty-recommendations.svg';
 import { cn } from '../utils/cn';
 import { formatPrice } from '../utils/currency';
+import { isFeatureOn } from '../config/featureFlags';
+import { ClipboardCheck } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState([]);
   const [recentCourses, setRecentCourses] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Post-signup enrollment profile nudge (Page Innovations). Complete when
+  // next-of-kin name exists (works whether the student self-completed or an
+  // admin entered it). Students only.
+  const needsProfile =
+    isFeatureOn('completeProfile') &&
+    user?.role === 'student' &&
+    !user?.onboarding_profile?.next_of_kin?.full_name;
+
+  // Send a brand-new student to the form once per session (they can Skip).
+  useEffect(() => {
+    if (needsProfile && !sessionStorage.getItem('pi_profile_prompted')) {
+      sessionStorage.setItem('pi_profile_prompted', '1');
+      navigate('/complete-profile');
+    }
+  }, [needsProfile, navigate]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -309,6 +328,25 @@ export default function Dashboard() {
       </div>
 
       <Container className="py-8">
+        {/* Complete-profile nudge — persists until the student finishes */}
+        {needsProfile && (
+          <button
+            onClick={() => navigate('/complete-profile')}
+            className="w-full mb-6 group flex items-center justify-between gap-4 p-5 rounded-xl bg-brand-red/10 border border-brand-red/30 hover:border-brand-red/50 transition-colors text-left"
+          >
+            <span className="flex items-center gap-3">
+              <span className="w-10 h-10 rounded-lg bg-brand-red/15 flex items-center justify-center flex-shrink-0">
+                <ClipboardCheck className="w-5 h-5 text-brand-red" />
+              </span>
+              <span>
+                <span className="block font-semibold text-gray-900 dark:text-white">Complete your enrollment profile</span>
+                <span className="block text-sm text-gray-600 dark:text-gray-400">Add your next-of-kin and academic details to finish setting up.</span>
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-brand-red whitespace-nowrap">Complete now →</span>
+          </button>
+        )}
+
         {/* Error State */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">

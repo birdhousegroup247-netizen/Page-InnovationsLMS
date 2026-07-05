@@ -44,6 +44,9 @@ export const FEATURES = {
   tests: true,          // student "My Assigned Tests" + instructor "My Tests"
 
   // ─── Student-only ───────────────────────────────────────────────────────
+  // After signup, prompt students to complete their enrollment profile
+  // (next-of-kin + academic) — Page Innovations onboarding workflow.
+  completeProfile: true,
   practiceTests: false,
   generateTest: false,
   wishlist: false,
