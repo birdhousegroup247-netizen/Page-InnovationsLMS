@@ -29,7 +29,6 @@ import { cn } from '../utils/cn';
 import { formatPrice } from '../utils/currency';
 import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import CourseReviews from '../components/course/CourseReviews';
-import PaymentModal from '../components/payment/PaymentModal';
 import { useToast } from '../components/ui/Toast';
 
 export default function CourseDetail() {
@@ -42,7 +41,6 @@ export default function CourseDetail() {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [expandedModules, setExpandedModules] = useState({});
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [enrollmentSuccess, setEnrollmentSuccess] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -151,31 +149,29 @@ export default function CourseDetail() {
     }
   };
 
-  const handleEnrollClick = () => {
+  const handleEnrollClick = async () => {
+    // Paid courses go to the real checkout (Paystack / PayPal).
     if (course.price > 0) {
-      // Redirect to Stripe checkout for paid courses
       navigate(`/checkout?course_id=${id}`);
-    } else {
-      // Free enrollment via modal
-      setShowPaymentModal(true);
+      return;
     }
-  };
 
-  const handleEnrollmentSuccess = async () => {
-    // Called after successful payment or free enrollment
+    // Free courses enroll in one click — no payment UI, no card form.
+    // (This is how Udemy/Coursera handle free enrollment.)
     try {
+      setEnrolling(true);
       await coursesAPI.enroll(id);
-      setShowPaymentModal(false);
       setEnrollmentSuccess(true);
       setIsEnrolled(true);
-
-      // Show success message briefly then redirect
+      showToast('Enrolled! Opening your course…', 'success');
       setTimeout(() => {
         navigate(`/courses/${id}/learn`);
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error('Enrollment error:', error);
       showToast(error.response?.data?.message || 'Failed to enroll', 'error');
+    } finally {
+      setEnrolling(false);
     }
   };
 
@@ -744,14 +740,6 @@ export default function CourseDetail() {
             </div>
           </div>
         </Container>
-
-      {/* Payment Modal */}
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        course={course}
-        onSuccess={handleEnrollmentSuccess}
-      />
 
       {/* Rate Instructor Modal */}
       {showReviewModal && (

@@ -43,15 +43,15 @@ const Button = forwardRef(
         'bg-brand-red text-white hover:bg-brand-red-600 active:bg-brand-red-700 focus:ring-brand-red-500 shadow-sm hover:shadow-md',
       success:
         'bg-success text-white hover:bg-success-dark active:bg-success-dark focus:ring-success shadow-sm hover:shadow-md',
-      // NOTE: no dark:* here on purpose. The glass hero buttons across the
-      // app pass their own `text-white border-white/20` overrides; adding a
-      // dark:text/-border color to this variant would beat those in dark
-      // mode and tint every hero button blue. Card-context outline buttons
-      // that need dark contrast set it locally (see MyCourses "Details").
+      // Dark mode uses a WHITE glass treatment (not a blue tint): navy
+      // outline is invisible on dark cards, and glassmorphism-white reads
+      // cleanly on every dark surface. Hero buttons that pass their own
+      // `text-white border-white/…` still render white in dark mode too,
+      // so this stays consistent instead of fighting them.
       outline:
-        'bg-transparent border-2 border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white active:bg-brand-blue-700 focus:ring-brand-blue-500',
+        'bg-transparent border-2 border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white active:bg-brand-blue-700 focus:ring-brand-blue-500 dark:border-white/30 dark:text-white dark:hover:bg-white/10 dark:hover:text-white dark:hover:border-white/40',
       ghost:
-        'bg-transparent text-brand-blue hover:bg-brand-blue-50 active:bg-brand-blue-100 focus:ring-brand-blue-500',
+        'bg-transparent text-brand-blue hover:bg-brand-blue-50 active:bg-brand-blue-100 focus:ring-brand-blue-500 dark:text-white dark:hover:bg-white/10',
     };
 
     // Slimmer scale to match the admin Button — see admin/components/ui/Button.jsx.

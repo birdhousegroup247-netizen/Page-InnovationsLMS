@@ -375,12 +375,7 @@ function CourseCard({ enrollment, onContinue, onViewDetails, delay }) {
               <Button variant="secondary" size="sm" onClick={onContinue} className="flex-1">
                 Review
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onViewDetails}
-                className="flex-1 dark:border-brand-blue-300 dark:text-brand-blue-200 dark:hover:bg-brand-blue-300 dark:hover:text-dark-900"
-              >
+              <Button variant="outline" size="sm" onClick={onViewDetails} className="flex-1">
                 Details
               </Button>
             </>
@@ -395,12 +390,7 @@ function CourseCard({ enrollment, onContinue, onViewDetails, delay }) {
               >
                 {progress > 0 ? 'Continue' : 'Start'}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onViewDetails}
-                className="flex-1 dark:border-brand-blue-300 dark:text-brand-blue-200 dark:hover:bg-brand-blue-300 dark:hover:text-dark-900"
-              >
+              <Button variant="outline" size="sm" onClick={onViewDetails} className="flex-1">
                 Details
               </Button>
             </>
