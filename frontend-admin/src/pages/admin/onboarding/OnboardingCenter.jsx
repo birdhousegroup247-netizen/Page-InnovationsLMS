@@ -54,29 +54,29 @@ export default function OnboardingCenter() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-light-100 dark:bg-dark-900">
+    <>
       <PageHeader
         icon={UserPlus}
         title="Onboarding Center"
         subtitle="Register new users into the Page Innovations ecosystem"
       />
 
-      <Container className="py-10">
-        <div className="text-center mb-10">
+      <Container className="py-8">
+        <div className="mb-8">
           <span className="inline-block px-4 py-1 rounded-xl bg-brand-red-50 dark:bg-brand-red-900/30 text-brand-red dark:text-brand-red-300 text-xs font-bold uppercase tracking-wider">
             Onboarding Wizard
           </span>
-          <h2 className="mt-4 text-3xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
             Who would you like to add?
           </h2>
-          <p className="mt-3 max-w-xl mx-auto text-gray-600 dark:text-gray-400">
+          <p className="mt-2 max-w-2xl text-gray-600 dark:text-gray-400">
             Select the appropriate workflow to register a new user into the
             Page Innovations ecosystem. Each path offers specialized
             configuration for specific roles.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
           {PATHS.map(({ key, icon: Icon, title, description, chips, cta, to, featured }) => (
             <div
               key={key}
@@ -118,7 +118,7 @@ export default function OnboardingCenter() {
           ))}
         </div>
 
-        <div className="max-w-4xl mx-auto mt-10 bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-5xl mt-8 bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="w-6 h-6 text-brand-red flex-shrink-0" />
             <div>
@@ -136,6 +136,6 @@ export default function OnboardingCenter() {
           </Button>
         </div>
       </Container>
-    </div>
+    </>
   );
 }

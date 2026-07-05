@@ -21,7 +21,7 @@ import WizardStepper from './WizardStepper';
  * Review. Submits to POST /api/admin/onboarding/staff which creates an
  * approved instructor account with the HR record stored in
  * users.onboarding_profile, and returns the generated staff ID
- * (PI-STF-<year>-<seq>).
+ * (TK-STF-<year>-<seq>).
  *
  * Compensation data is sensitive: it is only ever readable through
  * admin-only endpoints. Draft autosaves to localStorage.
@@ -220,7 +220,7 @@ export default function StaffOnboarding() {
   // ── Success screen ─────────────────────────────────────────────────────
   if (result) {
     return (
-      <div className="min-h-screen bg-light-100 dark:bg-dark-900">
+      <>
         <PageHeader icon={Briefcase} title="Staff Onboarding" />
         <Container size="sm" className="py-12">
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
@@ -284,13 +284,13 @@ export default function StaffOnboarding() {
             </div>
           </div>
         </Container>
-      </div>
+      </>
     );
   }
 
   // ── Wizard ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-light-100 dark:bg-dark-900">
+    <>
       <PageHeader
         icon={Briefcase}
         title="Staff Onboarding"
@@ -596,6 +596,6 @@ export default function StaffOnboarding() {
           ))}
         </div>
       </Container>
-    </div>
+    </>
   );
 }

@@ -22,7 +22,7 @@ import WizardStepper from './WizardStepper';
 
 /**
  * Student Onboarding wizard — Personal Info → Next of Kin → Academic →
- * Review. Mirrors the Page Innovations onboarding design; submits to
+ * Review. Page Innovations admin registration wizard; submits to
  * POST /api/admin/onboarding/student which creates the student and
  * (when a program is selected) comp-enrolls them with full side-effects.
  *
@@ -208,7 +208,7 @@ export default function StudentOnboarding() {
   // ── Success screen ─────────────────────────────────────────────────────
   if (result) {
     return (
-      <div className="min-h-screen bg-light-100 dark:bg-dark-900">
+      <>
         <PageHeader icon={GraduationCap} title="Student Onboarding" />
         <Container size="sm" className="py-12">
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center">
@@ -262,13 +262,13 @@ export default function StudentOnboarding() {
             </div>
           </div>
         </Container>
-      </div>
+      </>
     );
   }
 
   // ── Wizard ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-light-100 dark:bg-dark-900">
+    <>
       <PageHeader
         icon={GraduationCap}
         title="Student Onboarding"
@@ -558,6 +558,6 @@ export default function StudentOnboarding() {
           ))}
         </div>
       </Container>
-    </div>
+    </>
   );
 }
