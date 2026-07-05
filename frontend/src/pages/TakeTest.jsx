@@ -230,12 +230,13 @@ export default function TakeTest() {
               </p>
             </div>
 
-            {/* Timer */}
+            {/* Timer — white glassmorphism in dark mode so it stays legible
+                on the dark header (navy-on-dark was invisible). */}
             <div className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-bold',
+              'flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-bold border',
               timeRemaining < 300
-                ? 'bg-red-100 dark:bg-red-900/20 text-red-600'
-                : 'bg-blue-100 dark:bg-blue-900/20 text-brand-blue'
+                ? 'bg-red-100 border-red-200 text-red-600 dark:bg-red-500/15 dark:border-red-400/30 dark:text-red-300'
+                : 'bg-blue-100 border-blue-200 text-brand-blue dark:bg-white/10 dark:border-white/20 dark:text-white dark:backdrop-blur-md'
             )}>
               <Clock className="w-5 h-5" />
               {formatTime(timeRemaining)}
@@ -257,7 +258,7 @@ export default function TakeTest() {
           <div className="pb-4">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="bg-brand-blue h-2 rounded-full transition-all duration-300"
+                className="bg-brand-blue dark:bg-white/80 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
@@ -328,8 +329,8 @@ export default function TakeTest() {
                         className={cn(
                           'flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all',
                           answers[currentQuestion.id] === option
-                            ? 'border-brand-blue bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                            ? 'border-brand-blue bg-blue-50 dark:border-white/60 dark:bg-white/10 dark:backdrop-blur-md'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'
                         )}
                       >
                         <input
@@ -337,7 +338,7 @@ export default function TakeTest() {
                           name={`question-${currentQuestion.id}`}
                           checked={answers[currentQuestion.id] === option}
                           onChange={() => handleAnswerChange(currentQuestion.id, option)}
-                          className="mt-1 w-4 h-4 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+                          className="mt-1 w-4 h-4 accent-brand-blue dark:accent-white focus:ring-2 focus:ring-brand-blue"
                         />
                         <span className="text-gray-900 dark:text-white">
                           {String.fromCharCode(65 + index)}. {option}
@@ -355,8 +356,8 @@ export default function TakeTest() {
                         className={cn(
                           'flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all',
                           answers[currentQuestion.id] === option
-                            ? 'border-brand-blue bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                            ? 'border-brand-blue bg-blue-50 dark:border-white/60 dark:bg-white/10 dark:backdrop-blur-md'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'
                         )}
                       >
                         <input
@@ -364,7 +365,7 @@ export default function TakeTest() {
                           name={`question-${currentQuestion.id}`}
                           checked={answers[currentQuestion.id] === option}
                           onChange={() => handleAnswerChange(currentQuestion.id, option)}
-                          className="mt-1 w-4 h-4 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+                          className="mt-1 w-4 h-4 accent-brand-blue dark:accent-white focus:ring-2 focus:ring-brand-blue"
                         />
                         <span className="text-gray-900 dark:text-white">{option}</span>
                       </label>
