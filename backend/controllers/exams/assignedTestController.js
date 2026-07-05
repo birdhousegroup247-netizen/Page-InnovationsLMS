@@ -322,6 +322,7 @@ class AssignedTestController {
         max_attempts: a.test.max_attempts,
         allow_retake: a.test.allow_retake,
         show_results_immediately: a.test.show_results_immediately,
+        results_released: a.results_released,
         start_date: a.test.start_date,
         end_date: a.test.end_date,
         due_date: a.due_date,
@@ -842,8 +843,17 @@ class AssignedTestController {
 
       const test = attempt.test;
 
-      // Check if results should be shown immediately
-      if (!test.show_results_immediately && attempt.student_id === req.user.id) {
+      // Results are visible to a student when the test shows them
+      // immediately OR the instructor has released this student's results.
+      // (Instructors/admins always see them.)
+      let resultsReleased = false;
+      if (attempt.assignment_id) {
+        const assignment = await TestAssignment.findByPk(attempt.assignment_id, { attributes: ['results_released'] });
+        resultsReleased = !!(assignment && assignment.results_released);
+      }
+
+      // Withhold only when not shown immediately AND not yet released.
+      if (!test.show_results_immediately && !resultsReleased && attempt.student_id === req.user.id) {
         return ApiResponse.success(res, {
           message: 'Test submitted successfully. Results will be available later.',
           results: {
@@ -968,13 +978,123 @@ class AssignedTestController {
         order,
       });
 
+      // Per-attempt release status so the instructor UI can show
+      // Released / Release per student. Map assignment → released.
+      const assignmentIds = [...new Set(rows.map((r) => r.assignment_id).filter(Boolean))];
+      const assignments = assignmentIds.length
+        ? await TestAssignment.findAll({ where: { id: assignmentIds }, attributes: ['id', 'results_released', 'results_released_at'] })
+        : [];
+      const releasedByAssignment = Object.fromEntries(
+        assignments.map((a) => [a.id, { results_released: a.results_released, results_released_at: a.results_released_at }])
+      );
+
       const attempts = rows.map((a) => {
         const plain = a.toJSON();
         plain.status = plain.completed_at ? 'completed' : 'in_progress';
+        const rel = releasedByAssignment[plain.assignment_id] || {};
+        plain.results_released = !!rel.results_released;
+        plain.results_released_at = rel.results_released_at || null;
         return plain;
       });
 
-      return ApiResponse.success(res, { attempts });
+      // Test-level flag so the UI only shows release controls when results
+      // are actually being withheld.
+      const testRow = await AssignedTest.findByPk(testId, { attributes: ['show_results_immediately'] });
+
+      return ApiResponse.success(res, {
+        attempts,
+        show_results_immediately: testRow ? testRow.show_results_immediately : true,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Release withheld results to students (instructor/admin).
+  // POST /api/assigned-tests/:testId/release-results
+  // Body: { assignment_ids?: number[] } — omit to release ALL submitted
+  // assignments (bulk "release all"); pass ids to drip to specific students.
+  // Only students who have actually submitted are released + notified, and
+  // already-released assignments are skipped (idempotent, no double-notify).
+  static async releaseResults(req, res, next) {
+    try {
+      const { testId } = req.params;
+      const { assignment_ids } = req.body || {};
+
+      const test = await AssignedTest.findByPk(testId);
+      if (!test) throw new NotFoundError('Test not found');
+
+      if (test.instructor_id !== req.user.id && !['admin', 'super_admin'].includes(req.user.role)) {
+        throw new ForbiddenError('You can only release results for your own tests');
+      }
+
+      const where = { test_id: testId, results_released: false };
+      if (Array.isArray(assignment_ids) && assignment_ids.length) {
+        where.id = assignment_ids;
+      }
+
+      const candidates = await TestAssignment.findAll({
+        where,
+        include: [{ model: AssignedTestAttempt, as: 'attempts', required: false, attributes: ['id', 'completed_at'] }],
+      });
+
+      // Only release to students who have submitted (a completed attempt).
+      const toRelease = candidates.filter((a) => (a.attempts || []).some((at) => at.completed_at));
+
+      if (toRelease.length === 0) {
+        return ApiResponse.success(res, { released: 0 }, 'No new results to release — the selected students have not submitted yet.');
+      }
+
+      const now = new Date();
+      const ids = toRelease.map((a) => a.id);
+      const studentIds = toRelease.map((a) => a.student_id);
+
+      await TestAssignment.update(
+        { results_released: true, results_released_at: now },
+        { where: { id: ids } }
+      );
+
+      // In-app notifications (bell).
+      NotificationsController.createBulkNotifications(
+        studentIds.map((sid) => ({
+          user_id: sid,
+          type: 'test_result_released',
+          title: 'Test Results Available',
+          message: `Your results for "${test.test_name}" are now available.`,
+          link: `/tests/${test.id}`,
+          priority: 'normal',
+        }))
+      ).catch((e) => logger.warn(`release-results notifications skipped: ${e.message}`));
+
+      // Email (fire-and-forget per student).
+      (async () => {
+        try {
+          const emailSvc = require('../../services/email/emailService');
+          const students = await User.findAll({
+            where: { id: studentIds, is_active: true },
+            attributes: ['id', 'email', 'full_name'],
+          });
+          for (const s of students) {
+            emailSvc.sendEmail({
+              to: s.email,
+              subject: `Your results for "${test.test_name}" are ready`,
+              html: `<p>Hi ${s.full_name || 'there'},</p><p>Your results for <strong>${test.test_name}</strong> are now available. Log in to view your score and feedback.</p>`,
+            }).catch(() => {});
+          }
+        } catch (e) {
+          logger.warn(`release-results emails skipped: ${e.message}`);
+        }
+      })();
+
+      await ActivityController.logFromRequest(req, 'test_results_released', 'test', test.id, {
+        title: test.test_name, count: ids.length,
+      }).catch(() => {});
+
+      return ApiResponse.success(
+        res,
+        { released: ids.length, released_at: now, assignment_ids: ids },
+        `Released results to ${ids.length} student${ids.length === 1 ? '' : 's'}.`
+      );
     } catch (error) {
       next(error);
     }

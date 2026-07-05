@@ -673,6 +673,26 @@ const startServer = async () => {
         logger.info('  ✓ Added share_nudge_sent_at column to certificates');
       }
 
+      // test_assignments: results release. When a test withholds results
+      // (show_results_immediately = false), the instructor flips these to
+      // reveal a student's results — per-assignment so release can be
+      // whole-test (bulk) or per-student.
+      const testAssignDesc = await qi.describeTable('test_assignments').catch(() => null);
+      if (testAssignDesc) {
+        const taCols = {
+          results_released:    { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+          results_released_at: { type: Sequelize.DATE,    allowNull: true,  defaultValue: null },
+        };
+        for (const [colName, colDef] of Object.entries(taCols)) {
+          if (!testAssignDesc[colName]) {
+            await qi.addColumn('test_assignments', colName, colDef).catch((e) => {
+              logger.warn(`  ⚠ Could not add ${colName} to test_assignments: ${e.message}`);
+            });
+            logger.info(`  ✓ Added ${colName} column to test_assignments`);
+          }
+        }
+      }
+
       // notifications.type: was an ENUM('course_enrollment', ...) with
       // only 8 values, but controllers insert 20+ distinct type strings
       // (birthday, payment_confirmed, live_session, ...). Every insert

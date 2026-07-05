@@ -65,4 +65,8 @@ router.post('/:testId/assign', authenticate, authorize('instructor', 'admin', 's
 // Per-test results list (instructor/admin view) — used by /test-results/:testId
 router.get('/:testId/results', authenticate, authorize('instructor', 'admin', 'super_admin'), AssignedTestController.getTestAttempts);
 
+// Release withheld results to students — bulk (no body) or per-student
+// ({ assignment_ids }). Instructor/admin only.
+router.post('/:testId/release-results', authenticate, authorize('instructor', 'admin', 'super_admin'), AssignedTestController.releaseResults);
+
 module.exports = router;

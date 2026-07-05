@@ -348,7 +348,7 @@ export default function MyAssignedTests() {
                           <TrendingUp className="w-4 h-4" />
                           <span>Attempts: {attemptCount} / {maxAttempts === 999 ? '∞' : maxAttempts}</span>
                         </div>
-                        {status === 'completed' && lastAttempt?.score !== undefined && test.show_results_immediately && (
+                        {status === 'completed' && lastAttempt?.score !== undefined && (test.show_results_immediately || test.results_released) && (
                           <div className="flex items-center gap-1.5">
                             {lastAttempt.passed ? (
                               <CheckCircle className="w-4 h-4 text-green-600" />
@@ -384,7 +384,7 @@ export default function MyAssignedTests() {
                         </Button>
                       )}
 
-                      {status === 'completed' && test.show_results_immediately && (
+                      {status === 'completed' && (test.show_results_immediately || test.results_released) && (
                         <Button
                           variant="outline"
                           onClick={() => handleViewResults(test)}

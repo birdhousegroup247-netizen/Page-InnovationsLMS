@@ -11,18 +11,24 @@ import {
   Clock,
   BarChart3,
   Eye,
+  Unlock,
+  Lock,
 } from 'lucide-react';
-import { instructorAPI } from '../../lib/api';
+import { instructorAPI, assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
 import { Button, Spinner, Alert } from '../../components/ui';
 import { cn } from '../../utils/cn';
+import { useToast } from '../../components/ui/Toast';
 
 export default function TestAnalytics() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [analytics, setAnalytics] = useState(null);
   const [studentResults, setStudentResults] = useState([]);
+  const [showResultsImmediately, setShowResultsImmediately] = useState(true);
+  const [releasing, setReleasing] = useState(null); // 'all' | assignment_id
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState('score');
@@ -44,6 +50,9 @@ export default function TestAnalytics() {
 
       setAnalytics(analyticsResponse.data.data);
       setStudentResults(resultsResponse.data.data.results || []);
+      // Defaults to true so the release UI stays hidden unless the backend
+      // explicitly reports the test withholds results.
+      setShowResultsImmediately(resultsResponse.data.data.show_results_immediately !== false);
     } catch (err) {
       console.error('Error fetching test data:', err);
       setError(err.response?.data?.message || 'Failed to load test analytics');
@@ -51,6 +60,26 @@ export default function TestAnalytics() {
       setLoading(false);
     }
   };
+
+  // Release results. No arg = release all who submitted; pass an
+  // assignment_id to release a single student.
+  const handleRelease = async (assignmentId = null) => {
+    const isAll = assignmentId == null;
+    if (isAll && !window.confirm('Release results to every student who has submitted? They will be notified.')) return;
+    setReleasing(isAll ? 'all' : assignmentId);
+    try {
+      const res = await assignedTestsAPI.releaseResults(testId, isAll ? {} : { assignment_ids: [assignmentId] });
+      const n = res?.data?.data?.released ?? 0;
+      showToast(n > 0 ? `Results released to ${n} student${n === 1 ? '' : 's'}.` : 'No new results to release.', n > 0 ? 'success' : 'info');
+      await fetchTestData();
+    } catch (err) {
+      showToast(err?.response?.data?.message || 'Failed to release results', 'error');
+    } finally {
+      setReleasing(null);
+    }
+  };
+
+  const anyWithheld = studentResults.some((r) => !r.results_released);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Never';
@@ -346,8 +375,19 @@ export default function TestAnalytics() {
               Student Results ({sortedResults.length})
             </h2>
 
-            {/* Sort Controls */}
+            {/* Sort Controls + Release-all (only when this test withholds results) */}
             <div className="flex items-center gap-2">
+              {!showResultsImmediately && sortedResults.length > 0 && anyWithheld && (
+                <Button
+                  size="sm"
+                  leftIcon={<Unlock className="w-4 h-4" />}
+                  loading={releasing === 'all'}
+                  disabled={!!releasing}
+                  onClick={() => handleRelease()}
+                >
+                  Release all results
+                </Button>
+              )}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -466,6 +506,25 @@ export default function TestAnalytics() {
                         {passed ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                         {passed ? 'Passed' : 'Failed'}
                       </span>
+                      {/* Per-student release — only when the test withholds results */}
+                      {!showResultsImmediately && (
+                        result.results_released ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                            <Unlock className="w-3 h-3" /> Released
+                          </span>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<Lock className="w-4 h-4" />}
+                            loading={releasing === result.assignment_id}
+                            disabled={!!releasing || !result.assignment_id}
+                            onClick={() => handleRelease(result.assignment_id)}
+                          >
+                            Release
+                          </Button>
+                        )
+                      )}
                       <Button
                         variant="outline"
                         size="sm"

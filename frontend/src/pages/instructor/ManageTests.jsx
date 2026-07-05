@@ -12,6 +12,7 @@ import {
   Archive,
   Send,
   RotateCcw,
+  Unlock,
 } from 'lucide-react';
 import { assignedTestsAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
@@ -78,6 +79,24 @@ export default function ManageTests() {
       await fetchTests();
     } catch (e) {
       showToast(e?.response?.data?.message || 'Failed to archive test', 'error');
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  // Release withheld results to every student who submitted (bulk). Per-
+  // student release lives on the results page. Only shown when the test
+  // withholds results (show_results_immediately === false).
+  const handleReleaseResults = async (test) => {
+    if (!window.confirm(`Release results for "${test.test_name}" to all students who have submitted? They'll be notified and able to see their scores.`)) return;
+    setActingOn(test.id);
+    try {
+      const res = await assignedTestsAPI.releaseResults(test.id);
+      const n = res?.data?.data?.released ?? 0;
+      showToast(n > 0 ? `Results released to ${n} student${n === 1 ? '' : 's'}.` : 'No submitted results to release yet.', n > 0 ? 'success' : 'info');
+      await fetchTests();
+    } catch (e) {
+      showToast(e?.response?.data?.message || 'Failed to release results', 'error');
     } finally {
       setActingOn(null);
     }
@@ -295,6 +314,7 @@ export default function ManageTests() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
+                    {/* Primary lifecycle action first */}
                     {test.status === 'draft' && (
                       <Tooltip content="Publish (and assign to enrolled students)">
                         <Button
@@ -308,19 +328,6 @@ export default function ManageTests() {
                         </Button>
                       </Tooltip>
                     )}
-                    {test.status === 'published' && (
-                      <Tooltip content="Archive test">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          aria-label="Archive test"
-                          disabled={actingOn === test.id}
-                          onClick={() => handleArchive(test)}
-                        >
-                          <Archive className="w-4 h-4" />
-                        </Button>
-                      </Tooltip>
-                    )}
                     {test.status === 'archived' && (
                       <Tooltip content="Move back to drafts">
                         <Button
@@ -331,6 +338,20 @@ export default function ManageTests() {
                           onClick={() => handleRestore(test)}
                         >
                           <RotateCcw className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {/* Release results — only when published AND results are withheld */}
+                    {test.status === 'published' && test.show_results_immediately === false && (
+                      <Tooltip content="Release results to students">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Release results to students"
+                          disabled={actingOn === test.id}
+                          onClick={() => handleReleaseResults(test)}
+                        >
+                          <Unlock className="w-4 h-4" />
                         </Button>
                       </Tooltip>
                     )}
@@ -354,6 +375,20 @@ export default function ManageTests() {
                         <Edit className="w-4 h-4" />
                       </Button>
                     </Tooltip>
+                    {/* Archive last — destructive / least frequent */}
+                    {test.status === 'published' && (
+                      <Tooltip content="Archive test">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          aria-label="Archive test"
+                          disabled={actingOn === test.id}
+                          onClick={() => handleArchive(test)}
+                        >
+                          <Archive className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
               </div>

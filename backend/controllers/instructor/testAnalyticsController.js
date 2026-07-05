@@ -166,28 +166,44 @@ class TestAnalyticsController {
         order: [['completed_at', 'DESC']]
       });
 
-      const results = attempts.map(attempt => ({
-        attempt_id: attempt.id,
-        student: {
-          id: attempt.student?.id,
-          name: attempt.student?.full_name,
-          email: attempt.student?.email,
-          avatar: attempt.student?.profile_picture
-        },
-        attempt_number: attempt.attempt_number,
-        score: attempt.score,
-        total_marks: attempt.total_marks,
-        percentage: parseFloat(attempt.percentage || 0),
-        passed: attempt.passed,
-        correct_answers: attempt.answers?.filter(a => a.is_correct).length || 0,
-        total_questions: test.total_questions,
-        time_spent_seconds: attempt.time_taken_seconds,
-        completed_at: attempt.completed_at
-      }));
+      // Per-assignment release status so each row can show Released / Release.
+      const assignmentIds = [...new Set(attempts.map(a => a.assignment_id).filter(Boolean))];
+      const assignments = assignmentIds.length
+        ? await TestAssignment.findAll({ where: { id: assignmentIds }, attributes: ['id', 'results_released', 'results_released_at'] })
+        : [];
+      const releasedByAssignment = Object.fromEntries(
+        assignments.map(a => [a.id, { results_released: a.results_released, results_released_at: a.results_released_at }])
+      );
+
+      const results = attempts.map(attempt => {
+        const rel = releasedByAssignment[attempt.assignment_id] || {};
+        return {
+          attempt_id: attempt.id,
+          assignment_id: attempt.assignment_id,
+          results_released: !!rel.results_released,
+          results_released_at: rel.results_released_at || null,
+          student: {
+            id: attempt.student?.id,
+            name: attempt.student?.full_name,
+            email: attempt.student?.email,
+            avatar: attempt.student?.profile_picture
+          },
+          attempt_number: attempt.attempt_number,
+          score: attempt.score,
+          total_marks: attempt.total_marks,
+          percentage: parseFloat(attempt.percentage || 0),
+          passed: attempt.passed,
+          correct_answers: attempt.answers?.filter(a => a.is_correct).length || 0,
+          total_questions: test.total_questions,
+          time_spent_seconds: attempt.time_taken_seconds,
+          completed_at: attempt.completed_at
+        };
+      });
 
       return ApiResponse.success(res, {
         test_id: testId,
         test_title: test.test_name,
+        show_results_immediately: test.show_results_immediately,
         results,
         pagination: {
           total: count,

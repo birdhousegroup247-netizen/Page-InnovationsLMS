@@ -226,6 +226,9 @@ export const assignedTestsAPI = {
   // archiveTest is a no-body PATCH.
   publishTest: (testId, data) => api.patch(`/api/assigned-tests/${testId}/publish`, data || {}),
   archiveTest: (testId) => api.patch(`/api/assigned-tests/${testId}/archive`),
+  // Release withheld results. No body = release all who submitted;
+  // { assignment_ids } = release those specific students.
+  releaseResults: (testId, data) => api.post(`/api/assigned-tests/${testId}/release-results`, data || {}),
 };
 
 // Questions API (for practice test generation & instructor contributions)
