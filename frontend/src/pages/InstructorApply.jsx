@@ -322,9 +322,11 @@ export default function InstructorApply() {
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/92 via-fuchsia-700/85 to-brand-purple/92" />
-        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-fuchsia-400/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-cyan-400/15 blur-[120px]" />
+        {/* Dark on-brand overlay so white text stays readable over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/92 via-brand-purple/88 to-brand-blue/95" />
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-red/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-brand-red/10 blur-[120px]" />
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
@@ -335,25 +337,25 @@ export default function InstructorApply() {
           </div>
 
           <div className="max-w-md">
-            <span className="inline-block text-xs uppercase tracking-[0.18em] text-fuchsia-200 font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-red-300 font-semibold mb-4">
               For expert practitioners
             </span>
             <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-white">
               Share what<br />
               you know.<br />
-              <span className="text-fuchsia-300">Earn doing it.</span>
+              <span className="text-red-400">Earn doing it.</span>
             </h1>
             <p className="text-base text-white/80 leading-relaxed mb-10 max-w-sm">
               Turn your expertise into a real income stream. Reach global learners with our pro instructor tools.
             </p>
 
             <div className="relative rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-md p-5">
-              <div className="absolute -top-2.5 left-5 text-fuchsia-300 text-3xl leading-none font-serif">"</div>
+              <div className="absolute -top-2.5 left-5 text-red-400 text-3xl leading-none font-serif">"</div>
               <p className="text-sm text-white/90 leading-relaxed pt-1">
                 I made $14k in my first six months teaching Oracle on Page Innovations. The drip tools and live sessions make it easy to scale.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-fuchsia-400 to-brand-purple flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-red-400 to-brand-purple flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
                   CN
                 </div>
                 <div>

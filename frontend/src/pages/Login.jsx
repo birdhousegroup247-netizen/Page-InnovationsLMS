@@ -172,8 +172,9 @@ export default function Login() {
           alt="Learning Background"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/90 via-brand-purple/90 to-brand-blue/90 dark:from-brand-blue/95 dark:via-brand-purple/95 dark:to-brand-blue/95 transition-colors"></div>
+        {/* Dark on-brand overlay so white text stays readable over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/92 via-brand-purple/88 to-brand-blue/95"></div>
+        <div className="absolute inset-0 bg-black/30"></div>
 
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
           {/* Logo */}
@@ -185,7 +186,7 @@ export default function Login() {
               Welcome to Page Innovations
             </h1>
             <p className="text-xl text-white/90 mb-8 animate-slide-up">
-              The Leading Remote DBA Service Provider
+              Building Technology, Building People.
             </p>
 
             {/* Feature Points */}
@@ -474,7 +475,7 @@ export default function Login() {
               ) : (
                 <>
                   Don't have an account?{' '}
-                  <Link to="/signup" className="text-brand-blue dark:text-cyan-400 hover:underline font-semibold">
+                  <Link to="/signup" className="text-brand-blue dark:text-red-400 hover:underline font-semibold">
                     Sign up
                   </Link>
                 </>

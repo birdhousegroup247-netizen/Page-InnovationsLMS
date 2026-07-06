@@ -204,10 +204,12 @@ export default function Register() {
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/90 via-brand-purple/85 to-brand-blue/90" />
+        {/* Dark on-brand overlay so white text stays readable over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-blue/92 via-brand-purple/88 to-brand-blue/95" />
+        <div className="absolute inset-0 bg-black/30" />
         {/* Subtle accent glows over the gradient */}
-        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-cyan-400/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-fuchsia-400/15 blur-[120px]" />
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-red/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] rounded-full bg-brand-red/10 blur-[120px]" />
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
@@ -218,25 +220,25 @@ export default function Register() {
           </div>
 
           <div className="max-w-md">
-            <span className="inline-block text-xs uppercase tracking-[0.18em] text-cyan-200 font-semibold mb-4">
+            <span className="inline-block text-xs uppercase tracking-[0.18em] text-red-300 font-semibold mb-4">
               For ambitious learners
             </span>
             <h1 className="text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight mb-5 text-white">
               Real skills.<br />
               Real instructors.<br />
-              <span className="text-cyan-300">Real careers.</span>
+              <span className="text-red-400">Real careers.</span>
             </h1>
             <p className="text-base text-white/80 leading-relaxed mb-10 max-w-sm">
               Sign up free, preview every course, and pay only when you're ready to enroll.
             </p>
 
             <div className="relative rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-md p-5">
-              <div className="absolute -top-2.5 left-5 text-cyan-300 text-3xl leading-none font-serif">"</div>
+              <div className="absolute -top-2.5 left-5 text-red-400 text-3xl leading-none font-serif">"</div>
               <p className="text-sm text-white/90 leading-relaxed pt-1">
                 I went from junior to senior DBA in 8 months. The hands-on labs and live sessions made the difference.
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-brand-blue flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-red-400 to-brand-blue flex items-center justify-center font-bold text-sm text-white ring-2 ring-white/20">
                   AO
                 </div>
                 <div>
@@ -689,7 +691,7 @@ export default function Register() {
             {/* Sign In Link */}
             <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
               Already have an account?{' '}
-              <Link to="/login" className="text-brand-blue dark:text-cyan-400 hover:underline font-semibold">
+              <Link to="/login" className="text-brand-blue dark:text-red-400 hover:underline font-semibold">
                 Sign in
               </Link>
             </p>
