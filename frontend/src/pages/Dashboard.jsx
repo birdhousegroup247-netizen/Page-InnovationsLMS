@@ -53,6 +53,29 @@ export default function Dashboard() {
     }
   }, [needsProfile, navigate]);
 
+  // Cohort mode: a student with NO enrollment (e.g. a Google sign-up that
+  // skipped the register-form course picker) needs to claim the course they
+  // paid for. Send them to the picker once per session; a banner keeps
+  // nudging afterwards. Takes priority over the profile nudge.
+  const cohortMode = isFeatureOn('cohortMode');
+  const [needsCourse, setNeedsCourse] = useState(false);
+  useEffect(() => {
+    if (!cohortMode || user?.role !== 'student') return;
+    let active = true;
+    enrollmentsAPI.getMyCourses()
+      .then((res) => {
+        const list = res.data?.data?.enrollments || res.data?.data?.courses || [];
+        if (!active || list.length > 0) return;
+        setNeedsCourse(true);
+        if (!sessionStorage.getItem('pi_course_prompted')) {
+          sessionStorage.setItem('pi_course_prompted', '1');
+          navigate('/select-course');
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [cohortMode, user, navigate]);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -328,6 +351,25 @@ export default function Dashboard() {
       </div>
 
       <Container className="py-8">
+        {/* Cohort: no course yet — nudge to pick the one they paid for. */}
+        {needsCourse && (
+          <button
+            onClick={() => navigate('/select-course')}
+            className="w-full mb-6 group flex items-center justify-between gap-4 p-5 rounded-xl bg-brand-red/10 border border-brand-red/30 hover:border-brand-red/50 transition-colors text-left"
+          >
+            <span className="flex items-center gap-3">
+              <span className="w-10 h-10 rounded-lg bg-brand-red/15 flex items-center justify-center flex-shrink-0">
+                <GraduationCap className="w-5 h-5 text-brand-red" />
+              </span>
+              <span>
+                <span className="block font-semibold text-gray-900 dark:text-white">Select the course you enrolled in</span>
+                <span className="block text-sm text-gray-600 dark:text-gray-400">Choose your course to unlock your lessons and get started.</span>
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-brand-red whitespace-nowrap">Select course →</span>
+          </button>
+        )}
+
         {/* Complete-profile nudge — persists until the student finishes */}
         {needsProfile && (
           <button

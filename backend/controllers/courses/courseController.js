@@ -9,6 +9,7 @@ const ActivityController = require('../activity/activityController');
 const cache = require('../../utils/cache');
 const emailService = require('../../services/email/emailService');
 const BadgesController = require('../badges/badgesController');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 
 class CourseController {
   // Get all courses (public) with advanced filtering
@@ -602,6 +603,51 @@ class CourseController {
       logger.info(`User ${req.user.email} enrolled in course: ${course.title} (comp payment ${compPayment.id})`);
 
       return ApiResponse.created(res, { enrollment, payment_id: compPayment.id }, 'Successfully enrolled in course');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cohort self-claim: a student who paid OFFLINE claims the ONE course they
+   * enrolled in (used by the signup picker and the post-login "select your
+   * course" gate — the latter is how Google sign-ups, which skip the register
+   * form, get their course).
+   *
+   * Guards, so this can't be abused as a free-course faucet:
+   *   - only active while COHORT_MODE=true (turn off when online sales resume)
+   *   - only if the student has ZERO existing enrollments (one claim, ever)
+   *   - course must be published
+   *
+   * POST /api/courses/:id/cohort-claim
+   */
+  static async cohortClaimCourse(req, res, next) {
+    try {
+      if (String(process.env.COHORT_MODE).toLowerCase() !== 'true') {
+        throw new ForbiddenError('Self-enrollment is not available.');
+      }
+
+      const { id } = req.params;
+      const course = await Course.findByPk(id);
+      if (!course) throw new NotFoundError('Course not found');
+      if (course.status !== 'published') throw new BadRequestError('Cannot enroll in unpublished course');
+
+      // One claim only — if they already have any enrollment, they can't grab another.
+      const existingCount = await Enrollment.count({ where: { student_id: req.user.id } });
+      if (existingCount > 0) {
+        throw new BadRequestError('You already have a course. Contact Page Innovations to take another.');
+      }
+
+      const { enrollment, created } = await enrollmentSvc.compEnrollStudent({
+        studentId: req.user.id,
+        courseId: id,
+        reason: 'Cohort self-claim (paid offline)',
+        metadata: { source: 'cohort_claim' },
+        sendEmails: true,
+      });
+
+      logger.info(`Cohort claim: ${req.user.email} → course ${id} (${created ? 'new' : 'existing'})`);
+      return ApiResponse.created(res, { enrollment }, `You're enrolled in ${course.title}.`);
     } catch (error) {
       next(error);
     }

@@ -132,6 +132,7 @@ export const coursesAPI = {
   update: (id, data) => api.put(`/api/courses/${id}`, data),
   delete: (id) => api.delete(`/api/courses/${id}`),
   enroll: (id) => api.post(`/api/courses/${id}/enroll`),
+  cohortClaim: (id) => api.post(`/api/courses/${id}/cohort-claim`),
   getProgress: (id) => api.get(`/api/courses/${id}/progress`),
   getReviews: (id, params) => api.get(`/api/courses/${id}/reviews`, { params }),
   getReviewStats: (id) => api.get(`/api/courses/${id}/reviews/stats`),

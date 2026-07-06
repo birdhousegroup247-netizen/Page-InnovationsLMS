@@ -68,6 +68,7 @@ const Unsubscribe = lazyWithReload(() => import('./pages/Unsubscribe'));
 const InstructorApply = lazyWithReload(() => import('./pages/InstructorApply'));
 const ProfileSettings = lazyWithReload(() => import('./pages/ProfileSettings'));
 const CompleteProfile = lazyWithReload(() => import('./pages/CompleteProfile'));
+const SelectCourse = lazyWithReload(() => import('./pages/SelectCourse'));
 const Notifications = lazyWithReload(() => import('./pages/Notifications'));
 const Bookmarks = lazyWithReload(() => import('./pages/Bookmarks'));
 const PracticeTests = lazyWithReload(() => import('./pages/PracticeTests'));
@@ -643,6 +644,16 @@ function App() {
             element={
               <ProtectedRouteNoLayout>
                 <CompleteProfile />
+              </ProtectedRouteNoLayout>
+            }
+          />
+          {/* Cohort-mode: students with no enrollment (esp. Google sign-ups)
+              pick the course they paid for here. Own chrome, no sidebar. */}
+          <Route
+            path="/select-course"
+            element={
+              <ProtectedRouteNoLayout>
+                <SelectCourse />
               </ProtectedRouteNoLayout>
             }
           />
