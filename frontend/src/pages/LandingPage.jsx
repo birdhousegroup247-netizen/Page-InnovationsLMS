@@ -25,7 +25,7 @@ import {
   MessageCircle,
   ChevronDown,
 } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -193,7 +193,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo - Fixed Alignment */}
             <div className="flex items-center gap-3 cursor-pointer select-none">
-              <img src={logo} alt="Page Innovations" className="h-12 w-auto" />
+              <Logo className="h-12 w-auto" />
             </div>
 
             {/* Auth Buttons */}
@@ -610,7 +610,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
-                <img src={logo} alt="Page Innovations" className="h-8 w-auto" />
+                <Logo className="h-8 w-auto" />
               </div>
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed font-medium">
                 Practical tech training that upskills people and teams — from

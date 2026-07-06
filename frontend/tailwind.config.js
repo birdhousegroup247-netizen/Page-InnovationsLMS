@@ -18,13 +18,14 @@ export default {
           500: '#ced4da',  // Dividers
         },
 
-        // Background colors for dark mode
+        // Background colors for dark mode — NEUTRAL near-black (Page
+        // Innovations is black/white/red, not navy). No blue tint.
         dark: {
-          900: '#0a0e1a',  // Main background (deepest)
-          800: '#0f1425',  // Card background
-          700: '#1a1f35',  // Elevated elements
-          600: '#242b45',  // Hover states
-          500: '#2f3654',  // Interactive elements
+          900: '#0c0c0d',  // Main background (deepest)
+          800: '#151517',  // Card background
+          700: '#1f1f22',  // Elevated elements
+          600: '#2a2a2e',  // Hover states
+          500: '#37373c',  // Interactive elements
         },
 
         // Page Innovations brand colors (token names kept for white-label
@@ -62,21 +63,23 @@ export default {
           900: '#4a0404',
         },
 
-        // 'brand-purple' = PI warm brown (secondary text / supporting accents).
+        // 'brand-purple' = deep maroon (red family) so gradients that mix
+        // brand-blue → brand-purple → brand-red read as a clean black→red
+        // sweep instead of an off-brand brown/navy muddle.
         'brand-purple': {
-          DEFAULT: '#5e3f3a',  // Secondary actions
-          light: '#7a554f',
-          dark: '#462e2a',
-          50: '#faf6f5',
-          100: '#f2e9e8',
-          200: '#e0cdca',
-          300: '#c4a29d',
-          400: '#8f6b64',
-          500: '#5e3f3a',
-          600: '#4c322e',
-          700: '#3b2723',
-          800: '#2b1c19',
-          900: '#1c1210',
+          DEFAULT: '#9a1420',  // Secondary / gradient mid
+          light: '#c01a2a',
+          dark: '#6d0e16',
+          50: '#fdf2f3',
+          100: '#fbe0e3',
+          200: '#f4b8bf',
+          300: '#e8828f',
+          400: '#cf3a49',
+          500: '#9a1420',
+          600: '#7c0f1a',
+          700: '#600b14',
+          800: '#45080e',
+          900: '#2b0509',
         },
 
         // Text colors (works for both light and dark mode)
@@ -89,13 +92,13 @@ export default {
           'dark-muted': '#6b7280',      // Muted text for dark mode
         },
 
-        // Border colors
+        // Border colors — dark side is neutral gray (no navy/slate tint).
         border: {
           DEFAULT: '#e5e7eb',    // Light mode border
           light: '#f3f4f6',      // Lighter border
-          dark: '#1e293b',       // Dark mode border
-          'dark-light': '#334155',
-          'dark-lighter': '#475569',
+          dark: '#26262a',       // Dark mode border
+          'dark-light': '#333338',
+          'dark-lighter': '#44444a',
         },
 
         // Semantic colors

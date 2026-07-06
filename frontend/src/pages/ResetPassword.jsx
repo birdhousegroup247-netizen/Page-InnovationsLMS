@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Check, X } from 'lucide-react';
 import { authAPI } from '../lib/api';
 import { Button, Alert } from '../components/ui';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -156,11 +156,7 @@ export default function ResetPassword() {
       <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors">
         <div className="max-w-md w-full">
           <div className="text-center mb-8 animate-fade-in">
-            <img
-              src={logo}
-              alt="Page Innovations"
-              className="h-12 sm:h-16 w-auto mx-auto mb-6"
-            />
+            <Logo className="h-12 sm:h-16 w-auto mx-auto mb-6" />
           </div>
 
           <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg dark:shadow-elevated p-8 animate-scale-in transition-colors">
@@ -192,11 +188,7 @@ export default function ResetPassword() {
       <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 transition-colors">
         <div className="max-w-md w-full">
           <div className="text-center mb-8 animate-fade-in">
-            <img
-              src={logo}
-              alt="Page Innovations"
-              className="h-12 sm:h-16 w-auto mx-auto mb-6"
-            />
+            <Logo className="h-12 sm:h-16 w-auto mx-auto mb-6" />
           </div>
 
           <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg dark:shadow-elevated p-8 animate-scale-in transition-colors">
@@ -238,11 +230,7 @@ export default function ResetPassword() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8 animate-fade-in">
-          <img
-            src={logo}
-            alt="Page Innovations"
-            className="h-12 sm:h-16 w-auto mx-auto mb-6"
-          />
+          <Logo className="h-12 sm:h-16 w-auto mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
             Reset Password
           </h2>

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Users, LogOut, ArrowRight } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function RoleSelector() {
   const navigate = useNavigate();
@@ -67,11 +67,7 @@ export default function RoleSelector() {
       <div className="max-w-5xl w-full relative z-10">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
-          <img
-            src={logo}
-            alt="Page Innovations"
-            className="h-16 sm:h-20 mx-auto mb-6 drop-shadow-lg"
-          />
+          <Logo className="h-16 sm:h-20 mx-auto mb-6 drop-shadow-lg" />
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
             {user?.full_name}! 👋
           </h1>

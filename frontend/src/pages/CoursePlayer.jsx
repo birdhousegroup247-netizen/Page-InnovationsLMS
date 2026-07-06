@@ -39,7 +39,7 @@ import LockOverlay from '../components/ui/LockOverlay';
 import RecordingPlayer from '../components/live-sessions/RecordingPlayer';
 import { ensureAbsoluteUrl as absUrl, describeDocument } from '../utils/videoEmbed';
 import SuspensionModal from '../components/ui/SuspensionModal';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 // Decode HTML entities that may be stored escaped in the DB
 function decodeEntities(text) {
@@ -690,7 +690,7 @@ export default function CoursePlayer() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <Link to="/dashboard" className="hidden sm:flex items-center flex-shrink-0">
-              <img src={logo} alt="Page Innovations" className="h-8 w-auto object-contain" />
+              <Logo className="h-8 w-auto object-contain" />
             </Link>
             <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-border-dark flex-shrink-0" />
             <div className="min-w-0">

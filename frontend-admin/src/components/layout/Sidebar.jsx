@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import logo from '../../assets/logo.png';
+import Logo from '../ui/Logo';
 import { isFeatureOn } from '../../config/featureFlags';
 
 /**
@@ -196,7 +196,7 @@ const Sidebar = ({ items = [], className, isOpen = false, onClose }) => {
         {/* Logo */}
         <div className="px-6 py-6">
           <Link to="/" className="flex items-center">
-            <img src={logo} alt="Page Innovations" className="h-8 w-auto" />
+            <Logo className="h-8 w-auto" />
           </Link>
         </div>
 

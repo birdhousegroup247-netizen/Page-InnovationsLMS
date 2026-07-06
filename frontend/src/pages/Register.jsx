@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 import {
   inputClass as fInput,
   inputClassWithRightAction as fInputAction,
@@ -211,7 +211,7 @@ export default function Register() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Page Innovations" className="h-9 w-auto filter brightness-0 invert" />
+            <Logo variant="white" className="h-9 w-auto" />
             <span className="text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">
               · Learn. Build. Ship.
             </span>
@@ -269,7 +269,7 @@ export default function Register() {
         <div className="w-full max-w-xl">
           {/* Mobile-only logo */}
           <div className="lg:hidden text-center mb-5 animate-fade-in">
-            <img src={logo} alt="Page Innovations" className="h-9 w-auto mx-auto" />
+            <Logo className="h-9 w-auto mx-auto" />
           </div>
 
           <div className={formCardClass}>

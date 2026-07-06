@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Mail, Lock, Eye, EyeOff, Sun, Moon } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export default function Login() {
 
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-12 w-full">
           {/* Logo */}
-          <img src={logo} alt="Page Innovations" className="h-20 w-auto mb-8 filter brightness-0 invert" />
+          <Logo variant="white" className="h-16 w-auto mb-8" />
 
           {/* Illustration/Content */}
           <div className="text-center max-w-md">
@@ -81,7 +81,7 @@ export default function Login() {
               Welcome to Page Innovations
             </h1>
             <p className="text-xl text-white/90 mb-8 animate-slide-up">
-              The Leading Remote DBA Service Provider
+              Building Technology, Building People.
             </p>
 
             {/* Feature Points */}
@@ -135,7 +135,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8 animate-fade-in">
-            <img src={logo} alt="Page Innovations" className="h-12 w-auto mx-auto" />
+            <Logo className="h-12 w-auto mx-auto" />
           </div>
 
           {/* Form Card */}
@@ -243,7 +243,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-brand-red hover:bg-brand-red-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-red focus:ring-offset-2 dark:focus:ring-offset-dark-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>

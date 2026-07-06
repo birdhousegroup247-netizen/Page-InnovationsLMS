@@ -26,25 +26,27 @@ export const labelClass =
   'block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5 ' +
   'uppercase tracking-wider';
 
-// Primary CTA — gradient, slight shadow, arrow micro-interaction.
+// Primary CTA — red brand gradient (Page Innovations' signature colour),
+// high contrast on both white and near-black backgrounds.
 export const primaryButtonClass =
-  'group relative w-full py-3.5 px-4 bg-gradient-to-r from-brand-blue ' +
-  'to-cyan-600 hover:from-brand-blue-600 hover:to-cyan-700 text-white ' +
-  'font-semibold text-sm rounded-xl shadow-lg shadow-brand-blue/30 ' +
-  'hover:shadow-xl hover:shadow-brand-blue/40 transition-all focus:outline-none ' +
-  'focus:ring-2 focus:ring-brand-blue/60 focus:ring-offset-2 ' +
+  'group relative w-full py-3.5 px-4 bg-gradient-to-r from-brand-red ' +
+  'to-brand-red-700 hover:from-brand-red-600 hover:to-brand-red-800 text-white ' +
+  'font-semibold text-sm rounded-xl shadow-lg shadow-brand-red/30 ' +
+  'hover:shadow-xl hover:shadow-brand-red/40 transition-all focus:outline-none ' +
+  'focus:ring-2 focus:ring-brand-red/60 focus:ring-offset-2 ' +
   'dark:focus:ring-offset-dark-800 disabled:opacity-50 ' +
   'disabled:cursor-not-allowed flex items-center justify-center gap-2';
 
-// Purple variant — used on the instructor flow.
+// Secondary red-family variant — kept for the instructor flow. Uses the
+// maroon brand-purple so it's distinct from the brighter primary red.
 export const primaryButtonClassPurple = primaryButtonClass
-  .replace(/from-brand-blue\b/g, 'from-brand-purple')
-  .replace(/to-cyan-600/g, 'to-fuchsia-600')
-  .replace(/hover:from-brand-blue-600/g, 'hover:from-brand-purple/90')
-  .replace(/hover:to-cyan-700/g, 'hover:to-fuchsia-700')
-  .replace(/shadow-brand-blue\/30/g, 'shadow-brand-purple/30')
-  .replace(/shadow-brand-blue\/40/g, 'shadow-brand-purple/40')
-  .replace(/ring-brand-blue\/60/g, 'ring-brand-purple/60');
+  .replace(/from-brand-red\b/g, 'from-brand-purple')
+  .replace(/to-brand-red-700/g, 'to-brand-purple-700')
+  .replace(/hover:from-brand-red-600/g, 'hover:from-brand-purple-600')
+  .replace(/hover:to-brand-red-800/g, 'hover:to-brand-purple-800')
+  .replace(/shadow-brand-red\/30/g, 'shadow-brand-purple/30')
+  .replace(/shadow-brand-red\/40/g, 'shadow-brand-purple/40')
+  .replace(/ring-brand-red\/60/g, 'ring-brand-purple/60');
 
 // Secondary (outline / Google) — neutral, hover-border accent.
 export const secondaryButtonClass =

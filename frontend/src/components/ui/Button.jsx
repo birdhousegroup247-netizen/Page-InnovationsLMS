@@ -35,8 +35,11 @@ const Button = forwardRef(
       'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants = {
+      // Light: ink (black) button on white. Dark: brand red on near-black —
+      // an ink button would vanish on the neutral-dark surfaces, and red is
+      // the Page Innovations signature CTA colour.
       primary:
-        'bg-brand-blue text-white hover:bg-brand-blue-600 active:bg-brand-blue-700 focus:ring-brand-blue-500 shadow-sm hover:shadow-md',
+        'bg-brand-blue text-white hover:bg-brand-blue-600 active:bg-brand-blue-700 focus:ring-brand-blue-500 shadow-sm hover:shadow-md dark:bg-brand-red dark:hover:bg-brand-red-600 dark:active:bg-brand-red-700 dark:focus:ring-brand-red-500',
       secondary:
         'bg-gray-200 text-text-primary hover:bg-gray-300 active:bg-gray-400 focus:ring-gray-400 shadow-sm hover:shadow-md',
       danger:

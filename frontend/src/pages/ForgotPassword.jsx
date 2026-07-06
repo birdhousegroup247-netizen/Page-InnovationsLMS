@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, Send } from 'lucide-react';
 import { authAPI } from '../lib/api';
 import { Button, Alert } from '../components/ui';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -52,11 +52,7 @@ export default function ForgotPassword() {
         <div className="max-w-md w-full">
           {/* Logo */}
           <div className="text-center mb-8 animate-fade-in">
-            <img
-              src={logo}
-              alt="Page Innovations"
-              className="h-12 sm:h-16 w-auto mx-auto mb-6"
-            />
+            <Logo className="h-12 sm:h-16 w-auto mx-auto mb-6" />
           </div>
 
           {/* Success Card */}
@@ -125,11 +121,7 @@ export default function ForgotPassword() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8 animate-fade-in">
-          <img
-            src={logo}
-            alt="Page Innovations"
-            className="h-12 sm:h-16 w-auto mx-auto mb-6"
-          />
+          <Logo className="h-12 sm:h-16 w-auto mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-gray-900 dark:text-text-dark-primary mb-2 transition-colors">
             Forgot Password?
           </h2>

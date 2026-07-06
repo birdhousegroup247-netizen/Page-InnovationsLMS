@@ -1,6 +1,6 @@
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { XCircle, RotateCcw, BookOpen } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function PaymentCancelled() {
   const [searchParams] = useSearchParams();
@@ -10,7 +10,7 @@ export default function PaymentCancelled() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col items-center justify-center p-4">
       <div className="mb-8">
-        <img src={logo} alt="Page Innovations" className="h-10 w-auto mx-auto" />
+        <Logo className="h-10 w-auto mx-auto" />
       </div>
 
       <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 max-w-md w-full text-center">

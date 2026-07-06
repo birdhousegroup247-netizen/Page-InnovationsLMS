@@ -38,19 +38,24 @@ const Button = forwardRef(
     const baseStyles =
       'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed';
 
+    // Page Innovations = black / white / red. No literal blue-* here.
     const variants = {
+      // Light: ink (black) button. Dark: brand red (ink vanishes on the
+      // neutral-dark surfaces; red is the signature CTA).
       primary:
-        'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 focus:ring-blue-500 dark:focus:ring-blue-400 shadow-sm hover:shadow-md',
+        'bg-brand-blue text-white hover:bg-brand-blue-600 active:bg-brand-blue-700 focus:ring-brand-blue-500 shadow-sm hover:shadow-md dark:bg-brand-red dark:hover:bg-brand-red-600 dark:active:bg-brand-red-700 dark:focus:ring-brand-red-500',
       secondary:
         'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500 focus:ring-gray-400 dark:focus:ring-gray-500 shadow-sm hover:shadow-md',
       danger:
-        'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 active:bg-red-800 dark:active:bg-red-700 focus:ring-red-500 dark:focus:ring-red-400 shadow-sm hover:shadow-md',
+        'bg-brand-red text-white hover:bg-brand-red-600 active:bg-brand-red-700 focus:ring-brand-red-500 shadow-sm hover:shadow-md',
       success:
         'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 active:bg-green-800 dark:active:bg-green-700 focus:ring-green-500 dark:focus:ring-green-400 shadow-sm hover:shadow-md',
+      // Ink outline in light; white glassmorphism in dark (navy/blue would
+      // vanish on the near-black surfaces).
       outline:
-        'bg-transparent border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white active:bg-blue-700 dark:active:bg-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400',
+        'bg-transparent border-2 border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white active:bg-brand-blue-700 focus:ring-brand-blue-500 dark:border-white/30 dark:text-white dark:hover:bg-white/10 dark:hover:border-white/40',
       ghost:
-        'bg-transparent text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 active:bg-blue-100 dark:active:bg-blue-900/30 focus:ring-blue-500 dark:focus:ring-blue-400',
+        'bg-transparent text-brand-blue hover:bg-gray-100 active:bg-gray-200 focus:ring-brand-blue-500 dark:text-white dark:hover:bg-white/10',
     };
 
     // Slimmer scale across the board — the old md was 44px+ chunky which

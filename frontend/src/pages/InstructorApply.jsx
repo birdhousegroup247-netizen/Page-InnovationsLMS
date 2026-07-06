@@ -7,7 +7,7 @@ import {
   Sun, Moon, ArrowLeft, ArrowRight, Upload, FileText, X, CheckCircle2,
   AlertCircle, GraduationCap, Briefcase, FilePlus2, ClipboardCheck,
 } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 import {
   inputClassNoIcon as fInput,
   selectClass as fSelect,
@@ -232,7 +232,7 @@ export default function InstructorApply() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-900 p-4">
         <div className="w-full max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 text-center">
-          <img src={logo} alt="Page Innovations" className="h-12 mx-auto mb-6" />
+          <Logo className="h-12 mx-auto mb-6" />
           <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
@@ -328,7 +328,7 @@ export default function InstructorApply() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full text-white">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Page Innovations" className="h-9 w-auto filter brightness-0 invert" />
+            <Logo variant="white" className="h-9 w-auto" />
             <span className="text-xs uppercase tracking-[0.18em] text-white/50 font-semibold">
               · Teach. Earn. Inspire.
             </span>
@@ -385,7 +385,7 @@ export default function InstructorApply() {
         <div className="w-full max-w-xl">
           {/* Mobile-only logo + title */}
           <div className="lg:hidden text-center mb-5">
-            <img src={logo} alt="Page Innovations" className="h-9 mx-auto mb-3" />
+            <Logo className="h-9 mx-auto mb-3" />
           </div>
 
           <div className="mb-6 text-center lg:text-left">

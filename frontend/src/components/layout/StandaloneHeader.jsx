@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import logo from '../../assets/logo.png';
+import Logo from '../ui/Logo';
 
 /**
  * Top bar for pages that render outside AppLayout (checkout, players,
@@ -33,7 +33,7 @@ export default function StandaloneHeader({ backTo, title, subtitle, right }) {
             </button>
           )}
           <Link to="/dashboard" className="hidden sm:flex items-center flex-shrink-0">
-            <img src={logo} alt="Page Innovations" className="h-8 w-auto object-contain" />
+            <Logo className="h-8 w-auto" />
           </Link>
           <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-border-dark flex-shrink-0" />
           <div className="min-w-0">

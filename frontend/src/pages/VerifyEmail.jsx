@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../lib/api';
 import { tokenStorage } from '../utils/tokenStorage';
 import { Sun, Moon, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -134,7 +134,7 @@ export default function VerifyEmail() {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <img src={logo} alt="Page Innovations" className="h-12 w-auto mx-auto mb-4" />
+          <Logo className="h-12 w-auto mx-auto mb-4" />
         </div>
 
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8">

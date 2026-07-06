@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../lib/api';
 import { CheckCircle, Mail, XCircle, Loader } from 'lucide-react';
-import logo from '../assets/logo.png';
+import Logo from '../components/ui/Logo';
 
 /**
  * Public unsubscribe page. The link in every non-transactional email
@@ -57,7 +57,7 @@ export default function Unsubscribe() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white dark:bg-dark-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-border-dark">
         <div className="flex items-center justify-center mb-6">
-          <img src={logo} alt="Page Innovations" className="h-10 w-auto" />
+          <Logo className="h-10 w-auto" />
         </div>
 
         {state === 'checking' && (
