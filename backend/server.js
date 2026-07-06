@@ -476,16 +476,23 @@ const startServer = async () => {
       logger.info(`🚀 Server listening on 0.0.0.0:${PORT} — running migrations in background…`);
     });
 
-    // Create missing tables on startup only outside production.
-    // In production, schema changes must go through explicit SQL migrations.
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        logger.info('🔄 Ensuring all tables exist (non-production)...');
-        await sequelize.sync({ force: false });
-        logger.info('✓ All tables ensured');
-      } catch (initSyncErr) {
-        logger.warn('⚠ Initial table sync failed (continuing):', initSyncErr.message);
-      }
+    // Create missing tables on startup — in ALL environments.
+    //
+    // `sync({ force: false })` only CREATES tables that don't exist yet; it
+    // never alters or drops existing ones, so it is safe in production and
+    // is exactly what a fresh client database needs on first boot. On an
+    // already-provisioned DB (e.g. an existing deploy) it's a no-op.
+    // Sequelize resolves foreign-key ordering across all models, so the
+    // base tables (users, courses, categories) are created before their
+    // dependents — which the piecemeal per-model loop below cannot
+    // guarantee on an empty DB. (Destructive `alter` still stays gated to
+    // non-production further down.)
+    try {
+      logger.info('🔄 Ensuring all tables exist...');
+      await sequelize.sync({ force: false });
+      logger.info('✓ All tables ensured');
+    } catch (initSyncErr) {
+      logger.warn('⚠ Initial table sync failed (continuing):', initSyncErr.message);
     }
 
     // Auto-migration: ensure critical columns exist (dialect-agnostic, runs every startup)
