@@ -37,6 +37,14 @@ const schemas = {
     utm_medium: Joi.string().max(100).allow('', null).optional(),
     utm_campaign: Joi.string().max(100).allow('', null).optional(),
     ref: Joi.string().max(50).allow('', null).optional(),
+    // Fields the controller reads that must survive stripUnknown:true.
+    // (Without these they were silently dropped — critically, turnstile_token,
+    // which would make captcha verification fail once Turnstile is enabled.)
+    turnstile_token: Joi.string().allow('', null).optional(),
+    profile_picture: Joi.string().max(1000).allow('', null).optional(),
+    date_of_birth: Joi.date().iso().allow('', null).optional(),
+    // Cohort self-registration: the course the student paid for (auto-enroll).
+    enroll_course_id: Joi.number().integer().positive().allow('', null).optional(),
   }),
 
   // Email verification (6-digit code)
