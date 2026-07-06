@@ -7,6 +7,7 @@ const ActivityController = require('../activity/activityController');
 const TokenBlacklist = require('../../utils/tokenBlacklist');
 const CSRF = require('../../utils/csrf');
 const emailService = require('../../services/email/emailService');
+const enrollmentSvc = require('../../services/enrollment/enrollmentService');
 const { verifyTurnstile } = require('../../utils/turnstile');
 
 /**
@@ -93,7 +94,7 @@ class AuthController {
    */
   static async register(req, res, next) {
     try {
-      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token, profile_picture, date_of_birth } = req.body;
+      const { full_name, email, password, role, phone, country, experience_level, referral_source, utm_source, utm_medium, utm_campaign, ref, turnstile_token, profile_picture, date_of_birth, enroll_course_id } = req.body;
 
       // Bot check — only enforced when TURNSTILE_SECRET_KEY is configured.
       // A bot scripting against /api/auth/register without solving the
@@ -160,6 +161,25 @@ class AuthController {
           }
         } catch (refErr) {
           logger.warn(`Failed to create referral record for ref=${ref}: ${refErr.message}`);
+        }
+      }
+
+      // Cohort self-registration: students pay OFFLINE and pick the course
+      // they paid for at signup — auto-enroll them (comp, no checkout).
+      // Fire-and-forget: a failed enrollment must never block account
+      // creation; the enrollment persists so it's ready once they verify.
+      if (enroll_course_id) {
+        try {
+          await enrollmentSvc.compEnrollStudent({
+            studentId: user.id,
+            courseId: enroll_course_id,
+            reason: 'Cohort self-registration (paid offline)',
+            metadata: { source: 'self_register' },
+            sendEmails: false, // they haven't verified their email yet
+          });
+          logger.info(`Auto-enrolled ${email} into course ${enroll_course_id} at registration`);
+        } catch (enrollErr) {
+          logger.warn(`Auto-enroll at registration failed for ${email}: ${enrollErr.message}`);
         }
       }
 

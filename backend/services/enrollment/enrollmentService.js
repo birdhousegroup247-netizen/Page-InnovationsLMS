@@ -18,6 +18,7 @@
  */
 
 const {
+  sequelize,
   User, Course, Payment, Enrollment, CouponCode, CouponRedemption, Bundle,
   ChatRoom, ChatRoomMember, AssignedTest, TestAssignment,
 } = require('../../models');
@@ -294,8 +295,87 @@ async function resolveBundleCourseIds(bundleId) {
   return bundle.courses.map((c) => c.id);
 }
 
+/**
+ * Comp-enroll a student into a single course (no payment taken).
+ *
+ * Used by (a) the admin manual-enroll path and (b) cohort self-registration
+ * where students have paid OFFLINE and pick their course at signup. Creates
+ * a ₦0 comp Payment then fans out through the shared side-effect helpers so
+ * the student gets chat access, test assignments, notifications, etc. —
+ * exactly like a real enrollment.
+ *
+ * Idempotent: if the student is already enrolled in the course it returns
+ * `{ enrollment: existing, created: false }` without creating a duplicate.
+ *
+ * @param {object} opts
+ * @param {number} opts.studentId
+ * @param {number} opts.courseId
+ * @param {string} [opts.reason]        Free-text audit note stored on the comp payment
+ * @param {object} [opts.metadata]      Extra metadata merged onto the comp payment
+ * @param {boolean} [opts.sendEmails]   Send the enrollment-confirmation email (default true)
+ * @returns {Promise<{ enrollment: Enrollment, created: boolean }>}
+ */
+async function compEnrollStudent({ studentId, courseId, reason = null, metadata = {}, sendEmails = true }) {
+  const cid = parseInt(courseId);
+  const course = await Course.findByPk(cid);
+  if (!course) throw new Error(`Course ${courseId} not found`);
+
+  const existing = await Enrollment.findOne({ where: { student_id: studentId, course_id: cid } });
+  if (existing) return { enrollment: existing, created: false };
+
+  let compPayment;
+  let enrollment;
+  await sequelize.transaction(async (transaction) => {
+    compPayment = await Payment.create({
+      student_id: studentId,
+      course_id: cid,
+      amount: 0,
+      intended_amount: 0,
+      original_amount: course.price || 0,
+      discount_amount: course.price || 0,
+      currency: 'USD', // enum requires a value; comp rows are ₦0 and never charged
+      payment_method: 'comp',
+      payment_status: 'completed',
+      payment_plan: 'full',
+      payment_gateway: 'stripe', // enum requires a value; not actually used
+      payment_date: new Date(),
+      installment_status: 'not_applicable',
+      transaction_id: `COMP-${studentId}-${cid}-${Date.now()}`,
+      metadata: { comp_reason: reason, ...metadata },
+    }, { transaction });
+
+    const { enrollments } = await runTransactionalSideEffects({
+      payment: compPayment,
+      studentId,
+      courseIds: [cid],
+      transaction,
+    });
+    enrollment = enrollments[0];
+  });
+
+  // Best-effort, post-commit: notification / congrats / referral / badge.
+  runPostCommitSideEffects({
+    studentId,
+    courseIds: [cid],
+    payment: compPayment,
+    gateway: 'comp',
+    sendEmails: false,
+  }).catch((e) => logger.warn(`comp post-commit failed (non-critical): ${e.message}`));
+
+  if (sendEmails) {
+    const student = await User.findByPk(studentId);
+    if (student) {
+      emailSvc.sendEnrollmentConfirmation(student.email, student.full_name, course)
+        .catch((e) => logger.warn(`comp enroll email failed for ${student.email}: ${e.message}`));
+    }
+  }
+
+  return { enrollment, created: true };
+}
+
 module.exports = {
   runTransactionalSideEffects,
   runPostCommitSideEffects,
   resolveBundleCourseIds,
+  compEnrollStudent,
 };

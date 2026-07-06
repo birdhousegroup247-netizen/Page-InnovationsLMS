@@ -13,6 +13,7 @@ import {
   List,
   ChevronDown,
   AlertCircle,
+  Lock,
 } from 'lucide-react';
 import { Container, EmptyState } from '../components/layout';
 import { Badge, Button, Spinner } from '../components/ui';
@@ -20,7 +21,12 @@ import WishlistButton from '../components/ui/WishlistButton';
 import emptyCourses from '../assets/empty-courses.svg';
 import { cn } from '../utils/cn';
 import { formatPrice } from '../utils/currency';
+import { isFeatureOn } from '../config/featureFlags';
 import { useToast } from '../components/ui/Toast';
+
+// Cohort mode: prices hidden, self-enroll disabled (students are enrolled by
+// picking their paid course at signup). Flip `cohortMode` off for normal sales.
+const COHORT_MODE = isFeatureOn('cohortMode');
 
 // Discounted price if a discount is set, else list price. null = free.
 function effectivePrice(course) {
@@ -354,6 +360,8 @@ export default function Courses() {
 // Price line shared by both card layouts: bold current price, strikethrough
 // list price when discounted, green "Free" when the course costs nothing.
 function CoursePrice({ course, className }) {
+  // Cohort mode hides prices entirely (payment is handled offline).
+  if (COHORT_MODE) return null;
   const price = effectivePrice(course);
   const hasDiscount = price !== null && parseFloat(course.discount_percentage || 0) > 0;
 
@@ -465,6 +473,10 @@ function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
                       Continue learning
                     </Button>
                   </Link>
+                ) : COHORT_MODE ? (
+                  <Button variant="outline" size="sm" disabled className="gap-1.5 opacity-70">
+                    <Lock className="w-3.5 h-3.5" /> Locked
+                  </Button>
                 ) : (
                   <Button
                     variant="primary"
@@ -548,6 +560,10 @@ function CourseCard({ course, viewMode, onEnroll, isEnrolled, delay }) {
                 Continue
               </Button>
             </Link>
+          ) : COHORT_MODE ? (
+            <Button variant="outline" size="sm" fullWidth disabled className="flex-1 gap-1.5 opacity-70">
+              <Lock className="w-3.5 h-3.5" /> Locked
+            </Button>
           ) : (
             <Button
               variant="primary"

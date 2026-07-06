@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sun, Moon, Phone, Globe, ChevronDown, BarChart3, Sparkles, CheckCircle2, ArrowRight, ArrowLeft, GraduationCap } from 'lucide-react';
 import Logo from '../components/ui/Logo';
+import { coursesAPI } from '../lib/api';
+import { isFeatureOn } from '../config/featureFlags';
 import {
   inputClass as fInput,
   inputClassWithRightAction as fInputAction,
@@ -43,7 +45,19 @@ export default function Register() {
     role: 'student',
     profile_picture: '',
     date_of_birth: '',
+    enroll_course_id: '',
   });
+  // Cohort mode: students pick the course they paid for (offline) at signup
+  // and get auto-enrolled. Fetch the published catalog for the picker.
+  const cohortMode = isFeatureOn('cohortMode');
+  const [courses, setCourses] = useState([]);
+  useEffect(() => {
+    if (!cohortMode) return;
+    coursesAPI
+      .getAll({ limit: 100, status: 'published' })
+      .then((res) => setCourses(res.data?.data?.courses || []))
+      .catch(() => setCourses([]));
+  }, [cohortMode]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
@@ -92,6 +106,10 @@ export default function Register() {
       errors.confirmPassword = 'Passwords do not match';
     }
 
+    if (cohortMode && !formData.enroll_course_id) {
+      errors.enroll_course_id = 'Please select the course you enrolled in';
+    }
+
     if (!agreedToTerms) {
       errors.terms = 'You must agree to the Terms of Service and Privacy Policy';
     }
@@ -122,6 +140,7 @@ export default function Register() {
         referral_source: formData.referral_source || undefined,
         profile_picture: formData.profile_picture || undefined,
         date_of_birth: formData.date_of_birth || undefined,
+        enroll_course_id: (cohortMode && formData.enroll_course_id) ? formData.enroll_course_id : undefined,
       });
 
       if (result.success) {
@@ -407,6 +426,39 @@ export default function Register() {
                   <p className="text-red-600 dark:text-red-400 text-xs mt-1">{validationErrors.email}</p>
                 )}
               </div>
+
+              {/* Cohort mode: pick the course you paid for → auto-enrolled */}
+              {cohortMode && (
+                <div>
+                  <label htmlFor="enroll_course_id" className={labelClass}>
+                    Which course did you enroll in? <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <GraduationCap className="h-4 w-4 text-gray-400 dark:text-text-dark-muted transition-colors" />
+                    </div>
+                    <select
+                      id="enroll_course_id"
+                      name="enroll_course_id"
+                      value={formData.enroll_course_id}
+                      onChange={handleChange}
+                      required
+                      className={selectClass}
+                    >
+                      <option value="">Select your course…</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>{c.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="text-gray-500 dark:text-text-dark-muted text-xs mt-1">
+                    Choose the course you paid for — you'll be enrolled in it automatically.
+                  </p>
+                  {validationErrors.enroll_course_id && (
+                    <p className="text-red-600 dark:text-red-400 text-xs mt-1">{validationErrors.enroll_course_id}</p>
+                  )}
+                </div>
+              )}
 
               {/* Password */}
               <div>

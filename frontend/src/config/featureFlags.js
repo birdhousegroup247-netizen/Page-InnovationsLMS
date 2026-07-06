@@ -57,6 +57,14 @@ export const FEATURES = {
   bundles: false,
   referrals: false,
   billing: false,       // current cohort has already paid
+
+  // Cohort mode (2026-07 launch): students pay OFFLINE, then pick the course
+  // they paid for at signup and are auto-enrolled — no online checkout.
+  // Effects when ON: (1) signup shows a required "which course did you enroll
+  // in?" picker; (2) prices are hidden everywhere; (3) other courses show as
+  // locked (visible but not enrollable). Flip to false when Paystack goes
+  // live and normal self-serve checkout resumes.
+  cohortMode: true,
   knowledgeBase: false,
 
   // ─── Instructor-only ────────────────────────────────────────────────────

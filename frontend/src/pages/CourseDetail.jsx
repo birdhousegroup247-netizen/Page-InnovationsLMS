@@ -27,6 +27,11 @@ import { Container } from '../components/layout';
 import { Card, Badge, Button, Spinner, Avatar } from '../components/ui';
 import { cn } from '../utils/cn';
 import { formatPrice } from '../utils/currency';
+import { isFeatureOn } from '../config/featureFlags';
+
+// Cohort mode: prices hidden + self-enroll disabled (enrolment happens at
+// signup by picking the paid course). Flip `cohortMode` off to resume sales.
+const COHORT_MODE = isFeatureOn('cohortMode');
 import { ensureAbsoluteUrl as absUrl } from '../utils/videoEmbed';
 import CourseReviews from '../components/course/CourseReviews';
 import { useToast } from '../components/ui/Toast';
@@ -547,8 +552,9 @@ export default function CourseDetail() {
             {/* Right Column - Enrollment Card */}
             <div className="lg:col-span-1">
               <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm dark:shadow-card p-6 sticky top-24 animate-scale-in transition-colors">
-                {/* Price — hidden for owners (they don't buy their own course) */}
-                {!isOwner && (
+                {/* Price — hidden for owners (they don't buy their own course)
+                    and in cohort mode (payment is handled offline). */}
+                {!isOwner && !COHORT_MODE && (
                 <div className="mb-6">
                   <p className="text-gray-500 dark:text-text-dark-muted text-sm mb-2 transition-colors">
                     Course Price
@@ -666,6 +672,22 @@ export default function CourseDetail() {
                       >
                         {shareCopied ? 'Link copied!' : 'Share Course'}
                       </Button>
+                    </>
+                  ) : COHORT_MODE ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        fullWidth
+                        disabled
+                        leftIcon={<Lock className="h-5 w-5" />}
+                        className="opacity-70 cursor-not-allowed"
+                      >
+                        Locked
+                      </Button>
+                      <p className="text-xs text-center text-gray-500 dark:text-text-dark-muted">
+                        You're enrolled in the course you registered for. To take another course, contact Page Innovations.
+                      </p>
                     </>
                   ) : (
                     <>
