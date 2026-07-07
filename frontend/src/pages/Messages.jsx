@@ -9,7 +9,7 @@ import { cn } from '../utils/cn';
 import RoomSettingsPanel from '../components/chat/RoomSettingsPanel';
 import RoomMembersPanel from '../components/chat/RoomMembersPanel';
 import {
-  MessageSquare, Send, BookOpen, User, Clock, Users, ChevronRight,
+  MessageSquare, Send, BookOpen, User, Clock, Users, ChevronRight, ChevronLeft,
   AlertCircle, Reply, X, AtSign, Paperclip, FileText, Search,
   SmilePlus, Smile, Pin, Forward, BellOff, Bell, CheckCheck, Settings,
 } from 'lucide-react';
@@ -1148,8 +1148,13 @@ export default function Messages() {
 
   return (
     <div className="h-[calc(100vh-64px)] flex bg-gray-50 dark:bg-dark-900">
-      {/* Sidebar */}
-      <div className="w-72 flex-shrink-0 bg-white dark:bg-dark-800 border-r border-gray-100 dark:border-border-dark flex flex-col">
+      {/* Sidebar — conversation list. On mobile it's the whole screen; once a
+          chat is open it hides so the thread gets full width (tap Back to
+          return). On lg+ both panels always show side by side. */}
+      <div className={cn(
+        'w-full lg:w-72 flex-shrink-0 bg-white dark:bg-dark-800 border-r border-gray-100 dark:border-border-dark flex-col',
+        activeChat ? 'hidden lg:flex' : 'flex'
+      )}>
         <div className="px-6 py-5 border-b border-gray-100 dark:border-border-dark">
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -1256,10 +1261,21 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Right panel — the thread. Hidden on mobile until a chat is picked
+          (the list occupies the screen first); full width once open. */}
+      <div className={cn(
+        'flex-1 flex-col overflow-hidden',
+        activeChat ? 'flex' : 'hidden lg:flex'
+      )}>
         {activeChat ? (
           <>
+            {/* Mobile-only back button to return to the conversation list. */}
+            <button
+              onClick={() => setActiveChat(null)}
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-border-dark text-sm font-semibold text-brand-blue dark:text-cyan-400 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back to messages
+            </button>
             {activeChat.canManage && activeChat.type === 'room' && (
               <button
                 onClick={() => setShowRoomSettings(true)}
