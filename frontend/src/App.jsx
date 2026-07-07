@@ -199,7 +199,7 @@ function AlreadySignedIn() {
 
   const selectedRole = localStorage.getItem('selectedRole');
   const dashboardPath =
-    selectedRole === 'instructor' && (user.role === 'instructor' || user.instructor_status === 'approved')
+    selectedRole !== 'student' && (user.role === 'instructor' || user.instructor_status === 'approved')
       ? '/instructor/dashboard'
       : '/dashboard';
 
@@ -320,10 +320,10 @@ function RoleBasedRedirect() {
   }
 
   // Redirect based on selectedRole from landing page or user's actual role.
-  // Dual-role: an approved instructor (role still 'student') can pick the
-  // instructor dashboard, so key off teaching capability, not role alone.
+  // Dual-role: an approved instructor (role still 'student') defaults to the
+  // instructor dashboard unless they explicitly chose the student view.
   const selectedRole = localStorage.getItem('selectedRole');
-  if (selectedRole === 'instructor' && (user.role === 'instructor' || user.instructor_status === 'approved')) {
+  if (selectedRole !== 'student' && (user.role === 'instructor' || user.instructor_status === 'approved')) {
     return <Navigate to="/instructor/dashboard" replace />;
   }
   // Default to student dashboard

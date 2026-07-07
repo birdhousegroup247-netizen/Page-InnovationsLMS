@@ -65,7 +65,9 @@ export default function Login() {
         return;
       }
       navigate('/instructor/dashboard');
-    } else if (user.role === 'instructor') {
+    } else if (user.role === 'instructor' || user.instructor_status === 'approved') {
+      // Dual-role: an approved instructor (role still 'student') defaults to
+      // the instructor dashboard on login — not the student one.
       localStorage.setItem('selectedRole', 'instructor');
       navigate('/instructor/dashboard');
     } else {
