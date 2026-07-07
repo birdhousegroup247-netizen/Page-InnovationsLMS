@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../ui/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { getNavigationItems } from '../../utils/navigationItems.jsx';
+import { getActiveView, canTeach } from '../../utils/authz';
 import { chatAPI, notificationsAPI } from '../../lib/api';
 import { tokenStorage } from '../../utils/tokenStorage';
 import { connectSocket, getSocket } from '../../lib/socket';
@@ -27,16 +28,12 @@ export default function AppLayout({ children }) {
   const [notifCount, setNotifCount] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const actualUserRole = user?.role || 'student';
-  const storedRole = localStorage.getItem('selectedRole');
-
-  const selectedRole = (actualUserRole === 'instructor' && storedRole === 'instructor')
-    ? 'instructor'
-    : 'student';
-
-  if (storedRole === 'instructor' && actualUserRole !== 'instructor') {
-    localStorage.removeItem('selectedRole');
-  }
+  // Which nav to show is driven by the active VIEW + teaching capability —
+  // not the primary role (dual-role approved instructors keep role='student').
+  // The old code checked role==='instructor' here and even DELETED the
+  // instructor view for them, which broke the instructor sidebar entirely.
+  const activeView = getActiveView(user);
+  const selectedRole = (activeView === 'instructor' && canTeach(user)) ? 'instructor' : 'student';
 
   const location = useLocation();
   const { showToast } = useToast();

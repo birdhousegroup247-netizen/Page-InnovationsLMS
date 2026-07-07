@@ -1,5 +1,6 @@
 import { Bell, User, ChevronDown, Sun, Moon, Menu, Settings, RefreshCw, MessageSquare } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { canTeach } from '../../utils/authz';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import { useState } from 'react';
@@ -134,14 +135,16 @@ const Topbar = ({ user, notifications = 0, messages = 0, onLogout, onMenuToggle,
                   <Settings className="w-4 h-4" />
                   Settings
                 </Link>
-                <Link
-                  to="/role-selector"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Switch Role
-                </Link>
+                {canTeach(user) && (
+                  <Link
+                    to="/role-selector"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-text-dark-secondary hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Switch to student / teaching
+                  </Link>
+                )}
                 <hr className="my-1 border-gray-200 dark:border-border-dark transition-colors" />
                 <button
                   onClick={() => {

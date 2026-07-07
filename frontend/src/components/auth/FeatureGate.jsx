@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { isFeatureOn } from '../../config/featureFlags';
+import { homePathFor } from '../../utils/authz';
 
 /**
  * Route-level feature gate.
@@ -28,14 +29,7 @@ export default function FeatureGate({ flag, children, fallback }) {
 
   if (isFeatureOn(flag)) return children;
 
-  // Pick the right home for this user. `selectedRole` is set in localStorage
-  // when an instructor switches into instructor mode (see AppLayout).
-  let target = fallback;
-  if (!target) {
-    const actualUserRole = user?.role || 'student';
-    const storedRole = typeof window !== 'undefined' ? localStorage.getItem('selectedRole') : null;
-    const inInstructorMode = actualUserRole === 'instructor' && storedRole === 'instructor';
-    target = inInstructorMode ? '/instructor/dashboard' : '/dashboard';
-  }
-  return <Navigate to={target} replace />;
+  // One routing decision for everyone (utils/authz.js) — respects the user's
+  // active view + teaching capability.
+  return <Navigate to={fallback || homePathFor(user)} replace />;
 }

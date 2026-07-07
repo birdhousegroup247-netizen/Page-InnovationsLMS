@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { tokenStorage } from '../utils/tokenStorage';
+import { postAuthPath, clearActiveView } from '../utils/authz';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -16,8 +17,9 @@ export default function AuthCallback() {
       // Google OAuth callback — treat as Remember me so the session
       // survives a browser restart (matches Gmail/standard OAuth UX).
       tokenStorage.setTokens({ accessToken, refreshToken }, { rememberMe: true });
-      checkAuth().then(() => {
-        navigate('/dashboard', { replace: true });
+      clearActiveView(); // ask fresh each login (dual-role users get the chooser)
+      checkAuth().then((u) => {
+        navigate(postAuthPath(u), { replace: true });
       });
     } else {
       navigate('/login?error=google_auth_failed', { replace: true });

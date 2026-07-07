@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI, paymentsAPI, twoFactorAPI } from '../lib/api';
 import { tokenStorage } from '../utils/tokenStorage';
+import { clearActiveView } from '../utils/authz';
 
 const AuthContext = createContext(null);
 
@@ -44,14 +45,17 @@ export const AuthProvider = ({ children }) => {
     try {
       // Try to get user profile - if accessToken cookie exists and is valid, this will succeed
       const response = await authAPI.getProfile();
-      setUser(response.data.data.user);
+      const u = response.data.data.user;
+      setUser(u);
       setIsAuthenticated(true);
+      return u;
     } catch (error) {
       // Silently fail - don't log errors to console on mount
       // This is expected when user is not logged in or has expired tokens
       // If profile fetch fails, user is not authenticated
       setIsAuthenticated(false);
       setUser(null);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -154,7 +158,7 @@ export const AuthProvider = ({ children }) => {
       // Clear every piece of auth state we control. Anything left behind here
       // is exactly what causes "reopen browser and you're logged back in".
       tokenStorage.clearAll();
-      try { localStorage.removeItem('selectedRole'); } catch (_) {}
+      clearActiveView(); // removes activeView + legacy selectedRole
       try { sessionStorage.clear(); } catch (_) {}
 
       // The httpOnly auth cookies are owned by the server (cleared via clearCookie).

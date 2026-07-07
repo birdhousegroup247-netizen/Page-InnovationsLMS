@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './components/ui';
 import AppLayout from './components/layout/AppLayout';
+import { canTeach, isAdmin, homePathFor } from './utils/authz';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import FeatureGate from './components/auth/FeatureGate';
 
@@ -146,19 +147,6 @@ function ProtectedRoute({ children }) {
 
 // Admin Route Component removed - admins should use the separate admin app
 
-// Dual-role model: an approved instructor keeps role='student' and gains
-// teaching access via instructor_status (mirror of the backend authorize()
-// rule). Admins can view instructor routes too. Checking role==='instructor'
-// alone wrongly bounced approved student-instructors off /instructor/*.
-function canTeach(user) {
-  return (
-    user?.role === 'instructor' ||
-    user?.instructor_status === 'approved' ||
-    user?.role === 'admin' ||
-    user?.role === 'super_admin'
-  );
-}
-
 // Instructor Route Component
 // Redirects non-instructors to landing page - keeps instructor/student apps separate
 function InstructorRoute({ children }) {
@@ -179,10 +167,9 @@ function InstructorRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Only users with teaching access can reach instructor routes. Dual-role:
-  // approved instructors keep role='student', so check the capability, not
-  // just the primary role (this was why "switch to instructor" bounced back).
-  if (!canTeach(user)) {
+  // Teaching capability (or admin) required — dual-role approved instructors
+  // keep role='student', so key off canTeach(), not the primary role.
+  if (!canTeach(user) && !isAdmin(user)) {
     return <Navigate to="/" replace />;
   }
 
@@ -197,11 +184,7 @@ function AlreadySignedIn() {
   const { user, logout } = useAuth();
   const [switching, setSwitching] = useState(false);
 
-  const selectedRole = localStorage.getItem('selectedRole');
-  const dashboardPath =
-    selectedRole !== 'student' && (user.role === 'instructor' || user.instructor_status === 'approved')
-      ? '/instructor/dashboard'
-      : '/dashboard';
+  const dashboardPath = homePathFor(user);
 
   const handleSwitchAccount = async () => {
     setSwitching(true);
@@ -319,15 +302,9 @@ function RoleBasedRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect based on selectedRole from landing page or user's actual role.
-  // Dual-role: an approved instructor (role still 'student') defaults to the
-  // instructor dashboard unless they explicitly chose the student view.
-  const selectedRole = localStorage.getItem('selectedRole');
-  if (selectedRole !== 'student' && (user.role === 'instructor' || user.instructor_status === 'approved')) {
-    return <Navigate to="/instructor/dashboard" replace />;
-  }
-  // Default to student dashboard
-  return <Navigate to="/dashboard" replace />;
+  // One routing decision for everyone (see utils/authz.js). Uses the user's
+  // current active view; defaults sensibly for their capability.
+  return <Navigate to={homePathFor(user)} replace />;
 }
 
 function App() {

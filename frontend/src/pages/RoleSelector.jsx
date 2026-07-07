@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Users, LogOut, ArrowRight } from 'lucide-react';
 import Logo from '../components/ui/Logo';
+import { canTeach, isAdmin, setActiveView, homePathFor } from '../utils/authz';
 
 export default function RoleSelector() {
   const navigate = useNavigate();
@@ -28,28 +29,29 @@ export default function RoleSelector() {
       color: 'from-brand-purple to-purple-600',
       hoverColor: 'hover:from-purple-600 hover:to-purple-700',
       route: '/instructor/dashboard',
-      available: user?.role === 'instructor' || user?.instructor_status === 'approved' || user?.role === 'admin' || user?.role === 'super_admin',
+      available: canTeach(user) || isAdmin(user),
     },
   ];
 
   const availableRoles = roles.filter(role => role.available);
 
-  // If only one role, auto-redirect after 1.5 seconds
+  // Only one option (pure student) — no choice to make, go straight home.
   useEffect(() => {
     if (availableRoles.length === 1) {
+      const only = availableRoles[0];
       const timer = setTimeout(() => {
-        navigate(availableRoles[0].route);
-      }, 1500);
+        setActiveView(only.name);
+        navigate(homePathFor(user, only.name));
+      }, 800);
       return () => clearTimeout(timer);
     }
-  }, [availableRoles, navigate]);
+  }, [availableRoles, navigate, user]);
 
   const handleRoleSelect = (role) => {
-    // Store selected role in localStorage for analytics
-    localStorage.setItem('selectedRole', role.name);
-    localStorage.setItem('lastRoleSelection', new Date().toISOString());
-
-    navigate(role.route);
+    // Set the active view (which "hat" they're wearing) and route via the one
+    // shared routing function so login / root / toggle can never disagree.
+    setActiveView(role.name);
+    navigate(homePathFor(user, role.name));
   };
 
   const handleLogout = () => {

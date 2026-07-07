@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { homePathFor } from '../utils/authz';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   BookOpen,
@@ -29,7 +30,7 @@ import Logo from '../components/ui/Logo';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
@@ -39,17 +40,9 @@ export default function LandingPage() {
 
     console.log('[LandingPage] useEffect - isAuthenticated:', isAuthenticated);
 
-    // Redirect if already logged in - go to appropriate dashboard
+    // Redirect if already logged in — one shared routing decision.
     if (isAuthenticated) {
-      const selectedRole = localStorage.getItem('selectedRole');
-      console.log('[LandingPage] User is authenticated, selectedRole:', selectedRole);
-      if (selectedRole === 'instructor') {
-        console.log('[LandingPage] Redirecting to /instructor/dashboard');
-        navigate('/instructor/dashboard');
-      } else {
-        console.log('[LandingPage] Redirecting to /dashboard');
-        navigate('/dashboard');
-      }
+      navigate(homePathFor(user));
     }
 
     // Auto-rotate testimonials
@@ -58,7 +51,7 @@ export default function LandingPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const features = [
     {

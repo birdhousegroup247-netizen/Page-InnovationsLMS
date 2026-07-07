@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { isAdmin, postAuthPath, clearActiveView } from '../utils/authz';
 import { Mail, Lock, Eye, EyeOff, Sun, Moon, ArrowLeft, ArrowRight, KeyRound } from 'lucide-react';
 import Logo from '../components/ui/Logo';
 import {
@@ -38,42 +39,19 @@ export default function Login() {
 
   // Shared post-auth routing — used by both the plain-login path and
   // the 2FA-verified path. Keeps the role gating rules in one place.
+  // No pre-login role gate. We authenticate first, THEN route by capability —
+  // which kills the whole "this login is for X only" error class. Dual-role
+  // users are asked which view to open each login (postAuthPath → chooser);
+  // pure students go straight to their dashboard. See utils/authz.js.
   const routeAuthedUser = async (user) => {
-    const selectedRole = localStorage.getItem('selectedRole');
-
-    // redirect:false — logout()'s default hard reload would wipe the error
-    // message before the user ever saw it.
-    if (user.role === 'admin' || user.role === 'super_admin') {
+    // redirect:false — logout()'s default hard reload would wipe the error.
+    if (isAdmin(user)) {
       await logout({ redirect: false });
       setError('Administrators should use the admin portal.');
       return;
     }
-
-    if (selectedRole === 'student') {
-      if (user.role !== 'student') {
-        await logout({ redirect: false });
-        setError('This login is for students only. If you are an instructor, please go back and select "I\'m an Instructor".');
-        return;
-      }
-      navigate('/dashboard');
-    } else if (selectedRole === 'instructor') {
-      // Dual-role: approved instructors keep role='student' and gain teaching
-      // access via instructor_status, so allow either here.
-      if (user.role !== 'instructor' && user.instructor_status !== 'approved') {
-        await logout({ redirect: false });
-        setError('This login is for approved instructors only. If your application is still under review, please sign in as a student. If you are a student, go back and select "I\'m a Student".');
-        return;
-      }
-      navigate('/instructor/dashboard');
-    } else if (user.role === 'instructor' || user.instructor_status === 'approved') {
-      // Dual-role: an approved instructor (role still 'student') defaults to
-      // the instructor dashboard on login — not the student one.
-      localStorage.setItem('selectedRole', 'instructor');
-      navigate('/instructor/dashboard');
-    } else {
-      localStorage.setItem('selectedRole', 'student');
-      navigate('/dashboard');
-    }
+    clearActiveView(); // ask fresh each login
+    navigate(postAuthPath(user));
   };
 
   const handleSubmit = async (e) => {
