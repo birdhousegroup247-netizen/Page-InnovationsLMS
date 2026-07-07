@@ -15,6 +15,12 @@ import {
   ArrowLeft,
   Shield,
   Sparkles,
+  FileText,
+  MapPin,
+  Phone,
+  ExternalLink,
+  Eye,
+  ChevronRight,
 } from 'lucide-react';
 import { Container, EmptyState, PageHeader } from '../../components/layout';
 import { Button, Spinner, Alert, Badge, Modal, Input } from '../../components/ui';
@@ -34,6 +40,7 @@ export default function InstructorApplications() {
   const [error, setError] = useState('');
   const [actionModal, setActionModal] = useState({ open: false, type: '', userId: null, userName: '', reason: '' });
   const [successMessage, setSuccessMessage] = useState('');
+  const [detailApp, setDetailApp] = useState(null); // application shown in the detail modal
 
   useEffect(() => {
     fetchData();
@@ -278,155 +285,56 @@ export default function InstructorApplications() {
 
         {/* Applications List */}
         {!loading && applications.length > 0 && (
-          <div className="space-y-4">
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl divide-y divide-gray-100 dark:divide-border-dark overflow-hidden transition-colors">
             {applications.map((app) => {
               const user = app.user || {};
               return (
-                <div key={app.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark rounded-xl p-6 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    {/* User Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start gap-4">
-                        {/* Avatar */}
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-medium text-lg flex-shrink-0">
-                          {(user.full_name || 'U').charAt(0).toUpperCase()}
-                        </div>
+                <div
+                  key={app.id}
+                  onClick={() => setDetailApp(app)}
+                  className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-dark-700/50 cursor-pointer transition-colors"
+                >
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-medium flex-shrink-0">
+                    {(user.full_name || 'U').charAt(0).toUpperCase()}
+                  </div>
 
-                        {/* Details */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 transition-colors">
-                            {user.full_name || 'Unknown User'}
-                          </h3>
+                  {/* Name + email */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-white truncate">{user.full_name || 'Unknown User'}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user.email || 'No email'}</p>
+                  </div>
 
-                          <div className="flex flex-wrap items-center gap-2 mb-3">
-                            <Badge variant={getStatusVariant(app.status)}>
-                              {app.status}
-                            </Badge>
-                            {user.role === 'instructor' && (
-                              <Badge variant="primary">Instructor</Badge>
-                            )}
-                          </div>
+                  {/* Status + date */}
+                  <div className="hidden sm:flex flex-col items-end gap-1 flex-shrink-0">
+                    <Badge variant={getStatusVariant(app.status)}>{app.status}</Badge>
+                    <span className="text-xs text-gray-400">{formatDate(app.applied_at || app.created_at)}</span>
+                  </div>
 
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 transition-colors">
-                              <Mail className="w-4 h-4" />
-                              <span>{user.email || 'No email'}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 transition-colors">
-                              <Calendar className="w-4 h-4" />
-                              <span>Applied: {formatDate(app.applied_at || app.created_at)}</span>
-                            </div>
-                            {app.reviewed_at && (
-                              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 transition-colors">
-                                <CheckCircle className="w-4 h-4" />
-                                <span>Reviewed: {formatDate(app.reviewed_at)}</span>
-                                {app.reviewer && <span className="text-xs">by {app.reviewer.full_name}</span>}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Application Details */}
-                          {(app.bio || app.qualifications || app.teaching_experience || app.subject_expertise) && (
-                            <div className="mt-4 space-y-2 text-sm">
-                              {app.bio && (
-                                <div>
-                                  <span className="font-medium text-gray-700 dark:text-white">Bio:</span>
-                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.bio}</p>
-                                </div>
-                              )}
-                              {app.qualifications && (
-                                <div>
-                                  <span className="font-medium text-gray-700 dark:text-white">Qualifications:</span>
-                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.qualifications}</p>
-                                </div>
-                              )}
-                              {app.teaching_experience && (
-                                <div>
-                                  <span className="font-medium text-gray-700 dark:text-white">Teaching Experience:</span>
-                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.teaching_experience}</p>
-                                </div>
-                              )}
-                              {app.subject_expertise && (
-                                <div>
-                                  <span className="font-medium text-gray-700 dark:text-white">Subject Expertise:</span>
-                                  <p className="text-gray-600 dark:text-gray-400 mt-1">{app.subject_expertise}</p>
-                                </div>
-                              )}
-                              {app.portfolio_url && (
-                                <div>
-                                  <span className="font-medium text-gray-700 dark:text-white">Portfolio:</span>
-                                  <a
-                                    href={app.portfolio_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-brand-blue hover:underline ml-2"
-                                  >
-                                    {app.portfolio_url}
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Rejection Reason */}
-                          {app.rejection_reason && (
-                            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                              <span className="font-medium text-red-700 dark:text-red-400 text-sm">Rejection Reason:</span>
-                              <p className="text-red-600 dark:text-red-300 text-sm mt-1">{app.rejection_reason}</p>
-                            </div>
-                          )}
-
-                          {/* Admin Notes */}
-                          {app.admin_notes && (
-                            <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                              <span className="font-medium text-yellow-700 dark:text-yellow-400 text-sm">Admin Notes:</span>
-                              <p className="text-yellow-600 dark:text-yellow-300 text-sm mt-1">{app.admin_notes}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
-                      {app.status === 'pending' && (
-                        <>
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => handleApprove(app.id, user.full_name)}
-                            disabled={processingId === app.id}
-                            loading={processingId === app.id}
-                            leftIcon={!processingId && <UserCheck className="w-4 h-4" />}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleReject(app.id, user.full_name)}
-                            disabled={processingId === app.id}
-                            loading={processingId === app.id}
-                            leftIcon={!processingId && <UserX className="w-4 h-4" />}
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
-
-                      {app.status === 'approved' && user.role === 'instructor' && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleRevoke(app.id, user.full_name)}
-                          disabled={processingId === app.id}
-                          loading={processingId === app.id}
-                          leftIcon={!processingId && <UserX className="w-4 h-4" />}
-                        >
-                          Revoke
+                  {/* Quick actions (pending) + chevron */}
+                  <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {app.status === 'pending' && (
+                      <>
+                        <Button variant="success" size="sm" onClick={() => handleApprove(app.id, user.full_name)}
+                          disabled={processingId === app.id} loading={processingId === app.id}
+                          leftIcon={!processingId && <UserCheck className="w-4 h-4" />}>
+                          Approve
                         </Button>
-                      )}
-                    </div>
+                        <Button variant="danger" size="sm" onClick={() => handleReject(app.id, user.full_name)}
+                          disabled={processingId === app.id} loading={processingId === app.id}
+                          leftIcon={!processingId && <UserX className="w-4 h-4" />}>
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                    {app.status === 'approved' && user.role === 'instructor' && (
+                      <Button variant="danger" size="sm" onClick={() => handleRevoke(app.id, user.full_name)}
+                        disabled={processingId === app.id} loading={processingId === app.id}
+                        leftIcon={!processingId && <UserX className="w-4 h-4" />}>
+                        Revoke
+                      </Button>
+                    )}
+                    <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                   </div>
                 </div>
               );
@@ -434,6 +342,89 @@ export default function InstructorApplications() {
           </div>
         )}
       </Container>
+
+      {/* Application detail modal — everything about the applicant */}
+      <Modal isOpen={!!detailApp} onClose={() => setDetailApp(null)} title="Instructor application" size="lg">
+        {detailApp && (() => {
+          const u = detailApp.user || {};
+          const Row = ({ icon: Icon, label, children }) => (
+            <div className="py-3 border-b border-gray-100 dark:border-border-dark last:border-0">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                {Icon && <Icon className="w-3.5 h-3.5" />}{label}
+              </div>
+              <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{children || '—'}</div>
+            </div>
+          );
+          return (
+            <div>
+              {/* Header */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white font-semibold text-xl">
+                  {(u.full_name || 'U').charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">{u.full_name || 'Unknown'}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant={getStatusVariant(detailApp.status)}>{detailApp.status}</Badge>
+                    <span className="text-xs text-gray-400">Applied {formatDate(detailApp.applied_at || detailApp.created_at)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-h-[55vh] overflow-y-auto pr-1">
+                <Row icon={Mail} label="Email">{u.email}</Row>
+                <Row icon={Phone} label="Phone">{u.phone}</Row>
+                <Row icon={MapPin} label="Address">{detailApp.address}</Row>
+                <Row label="Bio">{detailApp.bio}</Row>
+                <Row label="Qualifications">{detailApp.qualifications}</Row>
+                <Row label="Teaching experience">{detailApp.teaching_experience}</Row>
+                <Row label="Subjects / expertise">{detailApp.subject_expertise}</Row>
+                <Row icon={ExternalLink} label="Portfolio">
+                  {detailApp.portfolio_url
+                    ? <a href={detailApp.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-brand-blue hover:underline break-all">{detailApp.portfolio_url}</a>
+                    : null}
+                </Row>
+                <Row icon={FileText} label="CV / Resume">
+                  {detailApp.cv_url
+                    ? <a href={detailApp.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-brand-blue hover:underline"><FileText className="w-4 h-4" /> View / download CV</a>
+                    : null}
+                </Row>
+                <Row icon={FileText} label={`Certificates / credentials (${(detailApp.credential_urls || []).length})`}>
+                  {(detailApp.credential_urls || []).length > 0 ? (
+                    <ul className="space-y-1">
+                      {detailApp.credential_urls.map((url, i) => (
+                        <li key={i}>
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-brand-blue hover:underline"><FileText className="w-4 h-4" /> Document {i + 1}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </Row>
+                {detailApp.rejection_reason && (
+                  <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <span className="font-medium text-red-700 dark:text-red-400 text-sm">Rejection reason:</span>
+                    <p className="text-red-600 dark:text-red-300 text-sm mt-1">{detailApp.rejection_reason}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              {detailApp.status === 'pending' && (
+                <div className="flex gap-2 mt-5 pt-4 border-t border-gray-100 dark:border-border-dark">
+                  <Button variant="success" fullWidth leftIcon={<UserCheck className="w-4 h-4" />}
+                    onClick={() => { setDetailApp(null); handleApprove(detailApp.id, u.full_name); }}>
+                    Approve
+                  </Button>
+                  <Button variant="danger" fullWidth leftIcon={<UserX className="w-4 h-4" />}
+                    onClick={() => { setDetailApp(null); handleReject(detailApp.id, u.full_name); }}>
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </Modal>
 
       {/* Approve / Reject / Revoke Confirmation Modal */}
       <Modal

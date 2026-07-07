@@ -734,6 +734,10 @@ const startServer = async () => {
           await qi.addColumn('instructor_applications', 'credential_urls', { type: Sequelize.JSON, allowNull: true, defaultValue: [] });
           logger.info('  ✓ Added credential_urls column to instructor_applications');
         }
+        if (!iaDesc.address) {
+          await qi.addColumn('instructor_applications', 'address', { type: Sequelize.TEXT, allowNull: true, defaultValue: null });
+          logger.info('  ✓ Added address column to instructor_applications');
+        }
       }
 
       // payments: PayPal support from 20260519_add_paypal_to_payments.postgres.sql.

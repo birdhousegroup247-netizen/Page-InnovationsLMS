@@ -67,6 +67,7 @@ const schemas = {
     qualifications: Joi.string().min(10).max(5000).required(),
     teaching_experience: Joi.string().min(10).max(5000).required(),
     subject_expertise: Joi.string().min(5).max(2000).required(),
+    address: Joi.string().max(1000).allow('', null).optional(),
     portfolio_url: Joi.string().uri().allow('', null).optional(),
     cv_url: Joi.string().uri().required().messages({
       'any.required': 'A CV / resume document is required',
@@ -96,6 +97,7 @@ const schemas = {
       'string.min': 'Teaching experience must be at least 10 characters',
     }),
     subject_expertise: Joi.string().min(5).max(2000).required(),
+    address: Joi.string().max(1000).allow('', null).optional(),
     portfolio_url: Joi.string().uri().allow('', null).optional(),
     cv_url: Joi.string().uri().required().messages({
       'any.required': 'A CV / resume document is required',

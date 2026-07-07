@@ -228,7 +228,7 @@ class AuthController {
     try {
       const {
         full_name, email, password, phone, country,
-        bio, qualifications, teaching_experience, subject_expertise,
+        bio, qualifications, teaching_experience, subject_expertise, address,
         portfolio_url, cv_url, credential_urls, turnstile_token,
       } = req.body;
 
@@ -253,6 +253,10 @@ class AuthController {
         throw new BadRequestError('An account with this email already exists. Please log in and apply to teach from your dashboard — your student and instructor access share one account.');
       }
 
+      // Instructor applicants are vetted by a human (admin review) — that IS
+      // the verification — so we skip the email-code step entirely and mark
+      // the email verified up front. No verification email is sent; the
+      // applicant just waits for the admin decision.
       const user = await User.createUser({
         full_name,
         email,
@@ -260,6 +264,7 @@ class AuthController {
         role: 'student',
         instructor_status: 'pending',
         phone: phone || null,
+        email_verified: true,
       });
 
       const application = await InstructorApplication.createApplication({
@@ -269,6 +274,7 @@ class AuthController {
         qualifications,
         teaching_experience,
         subject_expertise,
+        address: address || null,
         portfolio_url: portfolio_url || null,
         cv_url,
         credential_urls: Array.isArray(credential_urls) ? credential_urls : [],
@@ -282,15 +288,8 @@ class AuthController {
         user_agent: req.get('user-agent'),
       });
 
-      // Issue verification token + send verification email
-      const { token, code } = await EmailVerification.createForUser(user.id);
-      try {
-        await emailService.sendVerificationEmail(email, full_name, token, code);
-      } catch (e) {
-        logger.error(`Verification email failed for ${email}: ${e.message}`);
-      }
-
-      // Application-received confirmation
+      // No email-verification step for instructors (admin review is the gate).
+      // Application-received confirmation only.
       emailService.sendInstructorApplicationReceived(email, full_name).catch((e) =>
         logger.warn(`Application-received email failed for ${email}: ${e.message}`)
       );
@@ -312,13 +311,12 @@ class AuthController {
         }
       })();
 
-      logger.info(`New instructor application from ${email} (unverified)`);
+      logger.info(`New instructor application from ${email}`);
 
       return ApiResponse.created(res, {
-        verification_required: true,
         application_submitted: true,
         email,
-      }, 'Application submitted. Check your inbox to verify your email — the admin team will review your application after verification.');
+      }, 'Application submitted. Our team will review it and email you a decision within 2–3 business days.');
     } catch (error) {
       next(error);
     }
@@ -351,7 +349,7 @@ class AuthController {
       }
 
       const {
-        bio, qualifications, teaching_experience, subject_expertise,
+        bio, qualifications, teaching_experience, subject_expertise, address,
         portfolio_url, cv_url, credential_urls,
       } = req.body;
 
@@ -362,6 +360,7 @@ class AuthController {
         qualifications,
         teaching_experience,
         subject_expertise,
+        address: address || null,
         portfolio_url: portfolio_url || null,
         cv_url,
         credential_urls: Array.isArray(credential_urls) ? credential_urls : [],

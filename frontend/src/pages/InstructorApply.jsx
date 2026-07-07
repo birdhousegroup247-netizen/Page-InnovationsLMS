@@ -78,7 +78,7 @@ export default function InstructorApply() {
     password: '', confirmPassword: '',
     phone: user?.phone || '', country: '',
     bio: '', qualifications: '', teaching_experience: '',
-    subject_expertise: '', portfolio_url: '',
+    subject_expertise: '', address: '', portfolio_url: '',
     cv_url: '', credential_urls: [],
     agreed: false,
   });
@@ -114,6 +114,7 @@ export default function InstructorApply() {
       if (formData.qualifications.length < 10) return 'Please describe your qualifications (at least 10 characters).';
       if (formData.teaching_experience.length < 10) return 'Please describe your teaching experience.';
       if (formData.subject_expertise.length < 5) return 'Please list your subject expertise.';
+      if (!formData.address || formData.address.trim().length < 5) return 'Please enter your address.';
       if (formData.portfolio_url && !/^https?:\/\//.test(formData.portfolio_url)) return 'Portfolio URL must start with http:// or https://';
     }
     if (key === 'documents') {
@@ -188,6 +189,7 @@ export default function InstructorApply() {
           qualifications: formData.qualifications,
           teaching_experience: formData.teaching_experience,
           subject_expertise: formData.subject_expertise,
+          address: formData.address || undefined,
           portfolio_url: formData.portfolio_url || undefined,
           cv_url: formData.cv_url,
           credential_urls: formData.credential_urls,
@@ -205,6 +207,7 @@ export default function InstructorApply() {
         qualifications: formData.qualifications,
         teaching_experience: formData.teaching_experience,
         subject_expertise: formData.subject_expertise,
+        address: formData.address || undefined,
         portfolio_url: formData.portfolio_url || undefined,
         cv_url: formData.cv_url,
         credential_urls: formData.credential_urls,
@@ -259,26 +262,17 @@ export default function InstructorApply() {
           ) : (
             <>
               <p className="text-gray-600 dark:text-text-dark-secondary mb-6">
-                Thanks for applying to teach on Page Innovations. Two things to do now:
+                Thanks for applying to teach on Page Innovations. Our team reviews
+                every instructor application personally within 2–3 business days —
+                we'll email you at <strong>{formData.email}</strong> once a
+                decision is made. There's nothing else you need to do right now.
               </p>
-              <div className="text-left bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4 mb-6">
-                <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>1. Verify your email</strong></p>
-                <p className="text-sm text-blue-900 dark:text-blue-300 mb-3">We sent a verification link and 6-digit code to <strong>{formData.email}</strong>. You'll need to verify before you can sign in.</p>
-                <p className="text-sm text-blue-900 dark:text-blue-300 mb-2"><strong>2. Wait for admin review</strong></p>
-                <p className="text-sm text-blue-900 dark:text-blue-300">Our team reviews instructor applications within 2–3 business days. You'll get an email once a decision is made.</p>
-              </div>
               <div className="flex gap-3">
                 <Link
-                  to={`/verify-email?email=${encodeURIComponent(formData.email)}`}
+                  to="/"
                   className="flex-1 py-3 px-4 bg-brand-blue hover:bg-brand-blue-600 text-white font-medium rounded-lg text-center"
                 >
-                  Verify Email
-                </Link>
-                <Link
-                  to="/login"
-                  className="flex-1 py-3 px-4 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 text-gray-900 dark:text-text-dark-primary font-medium rounded-lg text-center"
-                >
-                  Back to Sign In
+                  Back to Home
                 </Link>
               </div>
             </>
@@ -505,6 +499,11 @@ export default function InstructorApply() {
                   placeholder="E.g. PostgreSQL administration, Oracle performance tuning, MongoDB sharding..." />
               </div>
               <div>
+                <label className={labelClass}>Address <span className="text-red-500">*</span></label>
+                <textarea value={formData.address} onChange={(e) => update('address', e.target.value)} className={inputClass + ' min-h-[64px] resize-y'}
+                  placeholder="Street, city, state / country" />
+              </div>
+              <div>
                 <label className={labelClass}>Portfolio URL <span className="text-gray-400 text-xs">(optional)</span></label>
                 <input type="url" value={formData.portfolio_url} onChange={(e) => update('portfolio_url', e.target.value)} className={inputClass}
                   placeholder="https://yourwebsite.com" />
@@ -615,6 +614,7 @@ export default function InstructorApply() {
                   <p><strong>Qualifications:</strong> {formData.qualifications}</p>
                   <p><strong>Teaching experience:</strong> {formData.teaching_experience}</p>
                   <p><strong>Subjects:</strong> {formData.subject_expertise}</p>
+                  <p><strong>Address:</strong> {formData.address}</p>
                   {formData.portfolio_url && <p><strong>Portfolio:</strong> <a href={formData.portfolio_url} className="text-brand-blue" target="_blank" rel="noreferrer">{formData.portfolio_url}</a></p>}
                 </div>
               </div>

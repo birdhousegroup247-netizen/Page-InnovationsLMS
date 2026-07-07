@@ -45,6 +45,11 @@ const InstructorApplication = sequelize.define(
       allowNull: true,
       comment: 'What subjects/topics they can teach',
     },
+    address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Applicant contact/residential address',
+    },
     portfolio_url: {
       type: DataTypes.STRING(500),
       allowNull: true,
