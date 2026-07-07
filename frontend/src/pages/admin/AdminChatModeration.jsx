@@ -213,6 +213,7 @@ export default function AdminChatModeration() {
         {loading ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-dark-700">
               <tr>
@@ -233,6 +234,7 @@ export default function AdminChatModeration() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
