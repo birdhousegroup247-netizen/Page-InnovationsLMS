@@ -146,6 +146,19 @@ function ProtectedRoute({ children }) {
 
 // Admin Route Component removed - admins should use the separate admin app
 
+// Dual-role model: an approved instructor keeps role='student' and gains
+// teaching access via instructor_status (mirror of the backend authorize()
+// rule). Admins can view instructor routes too. Checking role==='instructor'
+// alone wrongly bounced approved student-instructors off /instructor/*.
+function canTeach(user) {
+  return (
+    user?.role === 'instructor' ||
+    user?.instructor_status === 'approved' ||
+    user?.role === 'admin' ||
+    user?.role === 'super_admin'
+  );
+}
+
 // Instructor Route Component
 // Redirects non-instructors to landing page - keeps instructor/student apps separate
 function InstructorRoute({ children }) {
@@ -166,9 +179,10 @@ function InstructorRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Only instructors can access instructor routes
-  // Non-instructors are redirected to landing page (separate apps concept)
-  if (user?.role !== 'instructor') {
+  // Only users with teaching access can reach instructor routes. Dual-role:
+  // approved instructors keep role='student', so check the capability, not
+  // just the primary role (this was why "switch to instructor" bounced back).
+  if (!canTeach(user)) {
     return <Navigate to="/" replace />;
   }
 
@@ -185,7 +199,7 @@ function AlreadySignedIn() {
 
   const selectedRole = localStorage.getItem('selectedRole');
   const dashboardPath =
-    selectedRole === 'instructor' && user.role === 'instructor'
+    selectedRole === 'instructor' && (user.role === 'instructor' || user.instructor_status === 'approved')
       ? '/instructor/dashboard'
       : '/dashboard';
 
@@ -305,9 +319,11 @@ function RoleBasedRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect based on selectedRole from landing page or user's actual role
+  // Redirect based on selectedRole from landing page or user's actual role.
+  // Dual-role: an approved instructor (role still 'student') can pick the
+  // instructor dashboard, so key off teaching capability, not role alone.
   const selectedRole = localStorage.getItem('selectedRole');
-  if (selectedRole === 'instructor' && user.role === 'instructor') {
+  if (selectedRole === 'instructor' && (user.role === 'instructor' || user.instructor_status === 'approved')) {
     return <Navigate to="/instructor/dashboard" replace />;
   }
   // Default to student dashboard

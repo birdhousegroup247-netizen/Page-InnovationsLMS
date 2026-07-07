@@ -57,9 +57,11 @@ export default function Login() {
       }
       navigate('/dashboard');
     } else if (selectedRole === 'instructor') {
-      if (user.role !== 'instructor') {
+      // Dual-role: approved instructors keep role='student' and gain teaching
+      // access via instructor_status, so allow either here.
+      if (user.role !== 'instructor' && user.instructor_status !== 'approved') {
         await logout({ redirect: false });
-        setError('This login is for instructors only. If you are a student, please go back and select "I\'m a Student".');
+        setError('This login is for approved instructors only. If your application is still under review, please sign in as a student. If you are a student, go back and select "I\'m a Student".');
         return;
       }
       navigate('/instructor/dashboard');

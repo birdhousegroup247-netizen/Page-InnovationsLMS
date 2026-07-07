@@ -601,7 +601,7 @@ export default function InstructorApply() {
             <div className="space-y-5 text-sm">
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-2">Account</h3>
-                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 space-y-1">
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 space-y-1 text-gray-700 dark:text-text-dark-secondary">
                   <p><strong>Name:</strong> {formData.full_name}</p>
                   <p><strong>Email:</strong> {formData.email}</p>
                   {formData.phone && <p><strong>Phone:</strong> {formData.phone}</p>}
@@ -610,7 +610,7 @@ export default function InstructorApply() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-2">Expertise</h3>
-                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 space-y-2">
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 space-y-2 text-gray-700 dark:text-text-dark-secondary">
                   <p><strong>Bio:</strong> {formData.bio}</p>
                   <p><strong>Qualifications:</strong> {formData.qualifications}</p>
                   <p><strong>Teaching experience:</strong> {formData.teaching_experience}</p>
@@ -620,7 +620,7 @@ export default function InstructorApply() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-text-dark-primary mb-2">Documents</h3>
-                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 space-y-1">
+                <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-3 space-y-1 text-gray-700 dark:text-text-dark-secondary">
                   <p><strong>CV:</strong> <a href={formData.cv_url} className="text-brand-blue" target="_blank" rel="noreferrer">View uploaded CV</a></p>
                   <p><strong>Credentials:</strong> {formData.credential_urls.length} document{formData.credential_urls.length === 1 ? '' : 's'}</p>
                 </div>

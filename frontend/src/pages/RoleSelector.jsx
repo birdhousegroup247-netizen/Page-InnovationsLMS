@@ -28,7 +28,7 @@ export default function RoleSelector() {
       color: 'from-brand-purple to-purple-600',
       hoverColor: 'hover:from-purple-600 hover:to-purple-700',
       route: '/instructor/dashboard',
-      available: user?.role === 'instructor' || user?.role === 'admin' || user?.role === 'super_admin',
+      available: user?.role === 'instructor' || user?.instructor_status === 'approved' || user?.role === 'admin' || user?.role === 'super_admin',
     },
   ];
 

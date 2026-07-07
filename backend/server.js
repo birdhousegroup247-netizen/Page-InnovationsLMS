@@ -217,6 +217,7 @@ const CSRF_EXEMPT_PATHS = new Set([
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
   '/api/auth/2fa/authenticate',
+  '/api/upload/signup-avatar', // public: profile pic uploaded during signup, before any session/CSRF cookie exists
 ]);
 app.use((req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();

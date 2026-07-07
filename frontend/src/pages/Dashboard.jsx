@@ -439,6 +439,7 @@ export default function Dashboard() {
             {user.instructor_status === 'approved' && (
               <Link
                 to="/instructor/dashboard"
+                onClick={() => localStorage.setItem('selectedRole', 'instructor')}
                 className="mb-6 group flex items-center justify-between gap-4 p-5 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 hover:border-green-400 transition-colors"
               >
                 <div className="flex items-center gap-4">

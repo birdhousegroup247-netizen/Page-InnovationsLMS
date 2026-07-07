@@ -238,9 +238,19 @@ class AuthController {
         throw new BadRequestError('Captcha verification failed — please refresh and try again.');
       }
 
+      // Dual-role: student and instructor access share ONE account. If this
+      // email already exists, the correct path is to log in and apply to teach
+      // (apply-to-teach) — not to create a second account. Give an actionable
+      // message instead of a dead-end "already registered".
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
-        throw new BadRequestError('Email already registered');
+        if (existingUser.instructor_status === 'pending') {
+          throw new BadRequestError('You already have an instructor application under review for this email. Please log in to check its status.');
+        }
+        if (existingUser.instructor_status === 'approved') {
+          throw new BadRequestError('This email is already an approved instructor. Please log in to reach your instructor dashboard.');
+        }
+        throw new BadRequestError('An account with this email already exists. Please log in and apply to teach from your dashboard — your student and instructor access share one account.');
       }
 
       const user = await User.createUser({
