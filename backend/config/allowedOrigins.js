@@ -14,12 +14,12 @@ const allowedOrigins = [
   'http://localhost:5173', // Main app dev
   'http://localhost:5174', // Admin app dev
   process.env.ADMIN_FRONTEND_URL || 'http://localhost:5174',
-  // Production URLs - Render
-  'https://pageinnovationlms.onrender.com',
-  'https://admin-pageinnovationlms.onrender.com',
-  // Production URLs - Railway
-  'https://pageinnovation-student-production.up.railway.app',
-  'https://pageinnovation-admin-production.up.railway.app',
+  // Production URLs - custom domains
+  'https://learn.pageinnovations.com.ng',
+  'https://admin.pageinnovations.com.ng',
+  // Production URLs - Railway (kept as fallback)
+  'https://student-lms-production-13d4.up.railway.app',
+  'https://admin-lms-production.up.railway.app',
 ];
 
 module.exports = { allowedOrigins };
