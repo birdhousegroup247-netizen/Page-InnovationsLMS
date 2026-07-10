@@ -302,7 +302,10 @@ export default function Dashboard() {
 
         {/* Price & Action */}
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-brand-purple">{course.price}</span>
+          {/* Cohort mode pays offline — hide the amount (see featureFlags cohortMode) */}
+          {cohortMode ? <span /> : (
+            <span className="text-lg font-bold text-brand-purple">{course.price}</span>
+          )}
           <Link
             to={`/courses/${course.id}`}
             className="inline-flex items-center gap-1 text-sm font-medium text-brand-purple hover:text-brand-purple-600 transition-colors"
