@@ -931,6 +931,12 @@ export default function CoursePlayer() {
                       // anything else public.
                       const doc = describeDocument(url);
                       const isDrive = doc?.provider === 'drive';
+                      // A native PDF is rendered by Chrome's built-in PDF
+                      // viewer, which behaves like a plugin — a `sandbox`
+                      // attribute BLOCKS it ("This page has been blocked
+                      // by Chrome"). So sandbox only the JS-based viewers
+                      // (Google Docs / Drive), never the raw PDF embed.
+                      const isPdf = doc?.kind === 'pdf';
                       return (
                         <>
                           <iframe
@@ -942,7 +948,7 @@ export default function CoursePlayer() {
                             // control; leaving allowFullScreen off
                             // keeps the embed locked to its viewer.
                             allowFullScreen={!isDrive}
-                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                            {...(isPdf ? {} : { sandbox: 'allow-same-origin allow-scripts allow-popups allow-forms' })}
                           ></iframe>
                           <div className="px-4 py-2 bg-gray-800 dark:bg-dark-700 text-center">
                             <a
