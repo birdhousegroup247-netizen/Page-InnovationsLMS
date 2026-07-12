@@ -42,6 +42,11 @@ export default function QuestionsByCategory() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  // Bulk selection (approve/delete many at once)
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
   // ── Initial / category fetch ─────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +80,7 @@ export default function QuestionsByCategory() {
 
   const fetchQuestions = async (page = 1) => {
     setLoading(true);
+    setSelectedIds([]); // avoid carrying a selection across pages/filters
     try {
       const params = {
         page,
@@ -125,6 +131,46 @@ export default function QuestionsByCategory() {
       fetchQuestions(pagination.page);
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to delete', 'error');
+    }
+  };
+
+  // ── Bulk selection helpers ───────────────────────────────────────────────
+  const toggleSelect = (id, e) => {
+    e?.stopPropagation();
+    setSelectedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  };
+  const allOnPageSelected = questions.length > 0 && questions.every((q) => selectedIds.includes(q.id));
+  const toggleSelectAll = () =>
+    setSelectedIds(allOnPageSelected ? [] : questions.map((q) => q.id));
+
+  const handleBulkApprove = async () => {
+    if (!selectedIds.length) return;
+    setBulkLoading(true);
+    try {
+      const res = await adminQuestionsAPI.bulkApprove(selectedIds);
+      showToast(`${res.data?.data?.updatedCount ?? selectedIds.length} question(s) approved`, 'success');
+      setSelectedIds([]);
+      fetchQuestions(pagination.page);
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to approve', 'error');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    setBulkLoading(true);
+    try {
+      await adminQuestionsAPI.bulkDelete(selectedIds);
+      showToast(`${selectedIds.length} question(s) deleted`, 'success');
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
+      fetchQuestions(pagination.page);
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to delete', 'error');
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -203,6 +249,46 @@ export default function QuestionsByCategory() {
           </div>
         </div>
 
+        {/* Bulk action bar — appears once rows load */}
+        {!loading && questions.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={allOnPageSelected}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+              />
+              {selectedIds.length > 0 ? `${selectedIds.length} selected` : 'Select all on page'}
+            </label>
+
+            {selectedIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleBulkApprove}
+                  disabled={bulkLoading}
+                  leftIcon={<CheckCircle className="w-4 h-4" />}
+                >
+                  {bulkLoading ? 'Working…' : `Approve ${selectedIds.length}`}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={bulkLoading}
+                  leftIcon={<Trash2 className="w-4 h-4" />}
+                >
+                  Delete
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])} disabled={bulkLoading}>
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -229,12 +315,30 @@ export default function QuestionsByCategory() {
         ) : (
           <div className="space-y-3">
             {questions.map((q) => (
-              <button
+              <div
                 key={q.id}
-                type="button"
-                onClick={() => navigate(`/questions/${q.id}`)}
-                className="w-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-border-dark hover:border-brand-blue hover:shadow-md rounded-xl p-4 text-left transition-all group"
+                className={`flex items-stretch rounded-xl border transition-all ${
+                  selectedIds.includes(q.id)
+                    ? 'border-brand-blue bg-brand-blue/5'
+                    : 'border-gray-200 dark:border-border-dark bg-white dark:bg-dark-800 hover:border-brand-blue hover:shadow-md'
+                }`}
               >
+                <label
+                  className="flex items-center pl-4 cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(q.id)}
+                    onChange={(e) => toggleSelect(q.id, e)}
+                    className="w-4 h-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/questions/${q.id}`)}
+                  className="flex-1 min-w-0 p-4 text-left group"
+                >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-brand-blue line-clamp-2">
@@ -280,7 +384,8 @@ export default function QuestionsByCategory() {
                     </Button>
                   </div>
                 </div>
-              </button>
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -310,6 +415,24 @@ export default function QuestionsByCategory() {
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
           <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        title={`Delete ${selectedIds.length} Question${selectedIds.length === 1 ? '' : 's'}`}
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {selectedIds.length} selected question{selectedIds.length === 1 ? '' : 's'} will be
+          permanently removed. This action can't be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={bulkLoading}>Cancel</Button>
+          <Button variant="danger" onClick={handleBulkDelete} disabled={bulkLoading}>
+            {bulkLoading ? 'Deleting…' : 'Delete'}
+          </Button>
         </div>
       </Modal>
     </>

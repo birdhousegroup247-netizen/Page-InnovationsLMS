@@ -10,12 +10,14 @@ import {
   Clock,
   XCircle,
   Eye,
+  Upload,
 } from 'lucide-react';
 import { questionsAPI, categoriesAPI, coursesAPI } from '../../lib/api';
 import { Container } from '../../components/layout';
 import { Button, Spinner, Tooltip } from '../../components/ui';
 import QuestionModal from '../../components/questions/QuestionModal';
 import QuestionViewModal from '../../components/questions/QuestionViewModal';
+import BulkImportQuestions from '../../components/questions/BulkImportQuestions';
 
 export default function ContributeQuestions() {
   const [questions, setQuestions] = useState([]);
@@ -26,6 +28,7 @@ export default function ContributeQuestions() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
 
   useEffect(() => {
@@ -107,17 +110,27 @@ export default function ContributeQuestions() {
                   </div>
                 </div>
               </div>
-              <Button
-                onClick={() => {
-                  setSelectedQuestion(null);
-                  setShowModal(true);
-                }}
-                variant="outline"
-                leftIcon={<Plus className="h-4 w-4" />}
-                className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
-              >
-                Add Question
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => setShowBulkImport(true)}
+                  variant="outline"
+                  leftIcon={<Upload className="h-4 w-4" />}
+                  className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
+                >
+                  Import CSV
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelectedQuestion(null);
+                    setShowModal(true);
+                  }}
+                  variant="outline"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 animate-scale-in"
+                >
+                  Add Question
+                </Button>
+              </div>
             </div>
           </Container>
         </div>
@@ -393,6 +406,16 @@ export default function ContributeQuestions() {
           }}
         />
       )}
+
+      {/* Bulk CSV import — submissions land as pending admin approval */}
+      <BulkImportQuestions
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onSuccess={() => {
+          fetchQuestions();
+          setShowBulkImport(false);
+        }}
+      />
     </>
   );
 }

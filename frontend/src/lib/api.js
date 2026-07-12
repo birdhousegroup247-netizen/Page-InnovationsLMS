@@ -244,6 +244,8 @@ export const questionsAPI = {
   update: (id, payload) => api.put(`/api/questions/${id}`, payload),
   delete: (id) => api.delete(`/api/questions/${id}`),
   getMyContributions: (params) => api.get('/api/instructor/questions/my', { params }),
+  // Bulk CSV import — instructor submissions land as pending admin approval
+  bulkImport: (data) => api.post('/api/questions/bulk', data),
 };
 
 export const notificationsAPI = {
