@@ -2,7 +2,7 @@ const { Course, User, Category, Enrollment, CourseModule, ModuleContent, ChatRoo
 const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError, ForbiddenError } = require('../../utils/errors');
-const { Op, fn, col, literal } = require('sequelize');
+const { Op, fn, col, literal, where: sqWhere } = require('sequelize');
 const ActivityController = require('../activity/activityController');
 
 class AdminCoursesController {
@@ -616,7 +616,8 @@ class AdminCoursesController {
                 const key = String(name || '').trim().toLowerCase();
                 if (!key) return null;
                 if (categoryCache.has(key)) return categoryCache.get(key);
-                let cat = await Category.findOne({ where: { name: { [Op.iLike]: key } } });
+                // case-insensitive exact match that works on both MySQL & Postgres
+                let cat = await Category.findOne({ where: sqWhere(fn('lower', col('name')), key) });
                 if (!cat) cat = await Category.create({ name: String(name).trim() });
                 categoryCache.set(key, cat.id);
                 return cat.id;
@@ -642,7 +643,7 @@ class AdminCoursesController {
                     let instructor_id = req.user.id;
                     const instrEmail = String(row.instructor_email || '').trim().toLowerCase();
                     if (instrEmail) {
-                        const instr = await User.findOne({ where: { email: { [Op.iLike]: instrEmail } }, attributes: ['id'] });
+                        const instr = await User.findOne({ where: sqWhere(fn('lower', col('email')), instrEmail), attributes: ['id'] });
                         if (!instr) {
                             results.errors.push({ row: rowNo, message: `Instructor not found: ${instrEmail}` });
                             continue;

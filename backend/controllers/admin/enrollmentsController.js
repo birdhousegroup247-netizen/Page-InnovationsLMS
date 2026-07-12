@@ -209,7 +209,8 @@ class AdminEnrollmentsController {
 
       for (const email of emails) {
         try {
-          const student = await User.findOne({ where: { email: { [Op.iLike]: email } } });
+          // case-insensitive exact match that works on both MySQL & Postgres
+          const student = await User.findOne({ where: sequelize.where(fn('lower', col('email')), email) });
           if (!student) {
             results.not_found.push(email);
             continue;
