@@ -8,6 +8,7 @@ router.use(authenticate);
 router.use(authorize('admin', 'super_admin'));
 
 // Bulk operations (must come before /:id routes)
+router.post('/import', AdminCoursesController.bulkImportCourses);
 router.post('/bulk/status', AdminCoursesController.bulkUpdateStatus);
 router.post('/bulk/delete', AdminCoursesController.bulkDelete);
 router.post('/bulk/update-field', AdminCoursesController.bulkUpdateField);

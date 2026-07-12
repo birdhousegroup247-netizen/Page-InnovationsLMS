@@ -182,6 +182,111 @@ class AdminEnrollmentsController {
     }
   }
 
+  // POST /api/admin/enrollments/bulk — enroll many students into ONE course
+  // from a list of emails (CSV import). Each student is comped exactly like
+  // createEnrollment (same side-effects), one transaction per student so a
+  // single bad row never rolls back the whole batch. Returns a per-outcome
+  // summary the UI shows back to the admin.
+  static async bulkEnroll(req, res, next) {
+    try {
+      const { course_id } = req.body;
+      let { emails } = req.body;
+
+      if (!course_id || !Array.isArray(emails) || emails.length === 0) {
+        throw new BadRequestError('course_id and a non-empty emails array are required');
+      }
+
+      // Normalise + de-dupe
+      emails = [...new Set(emails.map((e) => String(e || '').trim().toLowerCase()).filter(Boolean))];
+      if (emails.length > 500) {
+        throw new BadRequestError('Maximum 500 students per import');
+      }
+
+      const course = await Course.findByPk(course_id);
+      if (!course) throw new NotFoundError('Course not found');
+
+      const results = { enrolled: 0, already_enrolled: 0, not_found: [], errors: [] };
+
+      for (const email of emails) {
+        try {
+          const student = await User.findOne({ where: { email: { [Op.iLike]: email } } });
+          if (!student) {
+            results.not_found.push(email);
+            continue;
+          }
+
+          const existing = await Enrollment.findOne({ where: { student_id: student.id, course_id } });
+          if (existing) {
+            results.already_enrolled += 1;
+            continue;
+          }
+
+          let compPayment;
+          await sequelize.transaction(async (transaction) => {
+            compPayment = await Payment.create({
+              student_id: student.id,
+              course_id,
+              amount: 0,
+              intended_amount: 0,
+              original_amount: course.price || 0,
+              discount_amount: course.price || 0,
+              currency: 'USD',
+              payment_method: 'comp',
+              payment_status: 'completed',
+              payment_plan: 'full',
+              payment_gateway: 'stripe', // enum requires a value; not actually used
+              payment_date: new Date(),
+              installment_status: 'not_applicable',
+              transaction_id: `COMP-${student.id}-${course_id}-${Date.now()}`,
+              metadata: {
+                comped_by_admin_id: req.user.id,
+                comped_by_admin_email: req.user.email,
+                comp_reason: req.body.reason || 'bulk CSV enroll',
+                bulk_import: true,
+              },
+            }, { transaction });
+
+            await enrollmentSvc.runTransactionalSideEffects({
+              payment: compPayment,
+              studentId: student.id,
+              courseIds: [parseInt(course_id)],
+              transaction,
+            });
+          });
+
+          // Fire-and-forget post-commit (notification/badge/referral); skip
+          // per-student emails to avoid blasting a whole cohort on import.
+          enrollmentSvc.runPostCommitSideEffects({
+            studentId: student.id,
+            courseIds: [parseInt(course_id)],
+            payment: compPayment,
+            gateway: 'comp',
+            sendEmails: false,
+          }).catch((e) => logger.warn(`bulk enroll post-commit failed (non-critical): ${e.message}`));
+
+          results.enrolled += 1;
+        } catch (rowErr) {
+          results.errors.push({ email, message: rowErr.message });
+        }
+      }
+
+      logger.info(
+        `Admin ${req.user.email} bulk-enrolled ${results.enrolled} student(s) into course ${course_id} ` +
+        `(${results.already_enrolled} already, ${results.not_found.length} not found, ${results.errors.length} errors)`
+      );
+      await ActivityController.logFromRequest(req, 'enrollment_bulk_create', 'course', course_id, {
+        course_title: course.title,
+        enrolled: results.enrolled,
+        already_enrolled: results.already_enrolled,
+        not_found: results.not_found.length,
+      }).catch(() => {});
+
+      return ApiResponse.success(res, results, `Enrolled ${results.enrolled} student(s)`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // DELETE /api/admin/enrollments/:id — revoke access.
   //
   // Removes enrollment + chat membership. If there's a Payment row for

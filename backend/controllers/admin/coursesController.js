@@ -575,6 +575,118 @@ class AdminCoursesController {
             next(error);
         }
     }
+
+    // POST /api/admin/courses/import — create many courses from a CSV.
+    // Body: { courses: [{ title, description, price, level, category,
+    //         instructor_email, duration_hours, status }] }.
+    // Category is resolved by name (created if missing). Instructor is
+    // resolved by email, defaulting to the importing admin. Slug is derived
+    // from the title with a numeric suffix on collision.
+    static async bulkImportCourses(req, res, next) {
+        try {
+            const { courses } = req.body;
+            if (!Array.isArray(courses) || courses.length === 0) {
+                throw new BadRequestError('A non-empty courses array is required');
+            }
+            if (courses.length > 500) {
+                throw new BadRequestError('Maximum 500 courses per import');
+            }
+
+            const validLevels = ['beginner', 'intermediate', 'advanced'];
+            const validStatuses = ['draft', 'published', 'archived', 'pending'];
+            const results = { created: 0, errors: [] };
+            const categoryCache = new Map(); // lowercased name -> id
+
+            const slugify = (t) =>
+                t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+            const uniqueSlug = async (title) => {
+                const base = slugify(title) || `course-${Date.now()}`;
+                let slug = base;
+                let n = 1;
+                // eslint-disable-next-line no-await-in-loop
+                while (await Course.findOne({ where: { slug }, attributes: ['id'] })) {
+                    n += 1;
+                    slug = `${base}-${n}`;
+                }
+                return slug;
+            };
+
+            const resolveCategory = async (name) => {
+                const key = String(name || '').trim().toLowerCase();
+                if (!key) return null;
+                if (categoryCache.has(key)) return categoryCache.get(key);
+                let cat = await Category.findOne({ where: { name: { [Op.iLike]: key } } });
+                if (!cat) cat = await Category.create({ name: String(name).trim() });
+                categoryCache.set(key, cat.id);
+                return cat.id;
+            };
+
+            for (let i = 0; i < courses.length; i += 1) {
+                const row = courses[i] || {};
+                const rowNo = i + 1;
+                try {
+                    const title = String(row.title || '').trim();
+                    if (title.length < 3) {
+                        results.errors.push({ row: rowNo, message: 'Title is required (min 3 chars)' });
+                        continue;
+                    }
+
+                    const category_id = await resolveCategory(row.category);
+                    if (!category_id) {
+                        results.errors.push({ row: rowNo, message: 'Category is required' });
+                        continue;
+                    }
+
+                    // Instructor: by email if given, else the importing admin
+                    let instructor_id = req.user.id;
+                    const instrEmail = String(row.instructor_email || '').trim().toLowerCase();
+                    if (instrEmail) {
+                        const instr = await User.findOne({ where: { email: { [Op.iLike]: instrEmail } }, attributes: ['id'] });
+                        if (!instr) {
+                            results.errors.push({ row: rowNo, message: `Instructor not found: ${instrEmail}` });
+                            continue;
+                        }
+                        instructor_id = instr.id;
+                    }
+
+                    const level = validLevels.includes(String(row.level || '').toLowerCase())
+                        ? String(row.level).toLowerCase()
+                        : 'beginner';
+                    const status = validStatuses.includes(String(row.status || '').toLowerCase())
+                        ? String(row.status).toLowerCase()
+                        : 'draft';
+                    const price = parseFloat(row.price) >= 0 ? parseFloat(row.price) : 0;
+                    const duration_hours = parseInt(row.duration_hours) || null;
+
+                    await Course.create({
+                        title,
+                        description: row.description || null,
+                        category_id,
+                        instructor_id,
+                        level,
+                        status,
+                        price,
+                        duration_hours,
+                        slug: await uniqueSlug(title),
+                        published_at: status === 'published' ? new Date() : null,
+                    });
+                    results.created += 1;
+                } catch (rowErr) {
+                    results.errors.push({ row: rowNo, message: rowErr.message });
+                }
+            }
+
+            logger.info(`Admin ${req.user.email} imported ${results.created} course(s) (${results.errors.length} errors)`);
+            await ActivityController.logFromRequest(req, 'course_bulk_import', 'course', null, {
+                created: results.created, errors: results.errors.length,
+            }).catch(() => {});
+
+            return ApiResponse.success(res, results, `Created ${results.created} course(s)`);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = AdminCoursesController;

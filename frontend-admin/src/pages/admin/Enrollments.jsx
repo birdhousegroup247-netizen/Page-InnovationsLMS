@@ -13,10 +13,12 @@ import {
   TrendingUp,
   UserCheck,
   RefreshCw,
+  Upload,
 } from 'lucide-react';
 import { Container, PageHeader } from '../../components/layout';
 import { Button, Input, Select, Badge, Spinner, Modal } from '../../components/ui';
 import { SimplePagination } from '../../components/ui/Pagination';
+import BulkEnroll from '../../components/enrollments/BulkEnroll';
 
 export default function Enrollments() {
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ export default function Enrollments() {
 
   // For the enroll modal
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [enrollForm, setEnrollForm] = useState({ student_id: '', course_id: '' });
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [students, setStudents] = useState([]);
@@ -59,10 +62,10 @@ export default function Enrollments() {
   }, [filters.search]);
 
   useEffect(() => {
-    if (isEnrollModalOpen) {
+    if (isEnrollModalOpen || isBulkOpen) {
       fetchStudentsAndCourses();
     }
-  }, [isEnrollModalOpen]);
+  }, [isEnrollModalOpen, isBulkOpen]);
 
   const fetchEnrollments = async () => {
     try {
@@ -149,15 +152,26 @@ export default function Enrollments() {
         title="Enrollment Management"
         subtitle="View, manage, and manually create student enrollments"
         actions={
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEnrollModalOpen(true)}
-            leftIcon={<Plus className="h-4 w-4" />}
-            className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
-          >
-            Enroll Student
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsBulkOpen(true)}
+              leftIcon={<Upload className="h-4 w-4" />}
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              Bulk Enroll
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEnrollModalOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              Enroll Student
+            </Button>
+          </>
         }
       />
       <Container className="py-8">
@@ -384,6 +398,13 @@ export default function Enrollments() {
           <Button variant="danger" onClick={handleRemove} isLoading={removeLoading}>Remove Enrollment</Button>
         </div>
       </Modal>
+
+      <BulkEnroll
+        isOpen={isBulkOpen}
+        onClose={() => setIsBulkOpen(false)}
+        onSuccess={() => { fetchEnrollments(); fetchStats(); }}
+        courses={courses}
+      />
     </>
   );
 }

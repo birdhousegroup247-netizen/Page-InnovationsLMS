@@ -30,6 +30,7 @@ import {
   UserPlus,
   Crown,
   X,
+  Upload,
 } from 'lucide-react';
 import { Container } from '../../components/layout';
 import {
@@ -45,6 +46,7 @@ import {
 import { SimplePagination } from '../../components/ui/Pagination';
 import { EmptyState, PageHeader } from '../../components/layout';
 import CloudinaryUpload from '../../components/common/CloudinaryUpload';
+import BulkImportCourses from '../../components/courses/BulkImportCourses';
 import emptyCourses from '../../assets/empty-courses.svg';
 import { cn } from '../../utils/cn';
 import { validateCourseForm, formatErrors } from '../../utils/validation';
@@ -80,6 +82,7 @@ export default function AdminCourses() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -744,6 +747,15 @@ export default function AdminCourses() {
             >
               <Download className="w-4 h-4 mr-2" />
               Export
+            </Button>
+            <Button
+              onClick={() => setIsImportOpen(true)}
+              variant="ghost"
+              size="sm"
+              className="!bg-white/10 !backdrop-blur-md !text-white !border !border-white/20 hover:!bg-white/20 !shadow-none"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import CSV
             </Button>
             <Button
               onClick={() => {
@@ -1992,6 +2004,12 @@ export default function AdminCourses() {
           </div>
         </div>
       </Modal>
+
+      <BulkImportCourses
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onSuccess={() => { fetchCourses(); fetchStats(); }}
+      />
     </>
   );
 }

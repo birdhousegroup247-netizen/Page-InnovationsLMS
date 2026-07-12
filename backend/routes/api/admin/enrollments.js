@@ -15,6 +15,9 @@ router.get('/', AdminEnrollmentsController.getAllEnrollments);
 // Manually enroll a student
 router.post('/', AdminEnrollmentsController.createEnrollment);
 
+// Bulk enroll many students into one course (CSV import — { course_id, emails })
+router.post('/bulk', AdminEnrollmentsController.bulkEnroll);
+
 // Remove an enrollment
 router.delete('/:id', AdminEnrollmentsController.deleteEnrollment);
 

@@ -227,6 +227,7 @@ export const adminCoursesAPI = {
   bulkUpdateStatus: (courseIds, status) => api.post('/api/admin/courses/bulk/status', { courseIds, status }),
   bulkDelete: (courseIds) => api.post('/api/admin/courses/bulk/delete', { courseIds }),
   bulkUpdateField: (courseIds, field, value) => api.post('/api/admin/courses/bulk/update-field', { courseIds, field, value }),
+  bulkImport: (data) => api.post('/api/admin/courses/import', data),
   // Instructor assignment
   assignInstructor: (courseId, instructor_id) => api.patch(`/api/admin/courses/${courseId}/instructor`, { instructor_id }),
   // Multi-instructor roster
@@ -389,6 +390,7 @@ export const adminEnrollmentsAPI = {
   getAll: (params) => api.get('/api/admin/enrollments', { params }),
   getStats: () => api.get('/api/admin/enrollments/stats'),
   create: (data) => api.post('/api/admin/enrollments', data),
+  bulkEnroll: (data) => api.post('/api/admin/enrollments/bulk', data),
   remove: (id) => api.delete(`/api/admin/enrollments/${id}`),
   updateProgress: (id, progress_percentage) => api.patch(`/api/admin/enrollments/${id}/progress`, { progress_percentage }),
 };
