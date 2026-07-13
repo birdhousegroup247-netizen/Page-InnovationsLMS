@@ -1333,11 +1333,12 @@ export default function Users() {
                     {selectedUser.status}
                   </Badge>
                 </div>
-                {/* Dual-role breakdown: everyone signs up as a student; the
-                    instructor role is layered on via application + approval. */}
-                {selectedUser.instructor_status === 'approved' && selectedUser.role === 'student' && (
+                {/* Dual-role breakdown. A teacher is only shown as "also a
+                    Student" once they've ACTUALLY enrolled in a course — an
+                    instructor with 0 enrollments reads as Instructor only. */}
+                {selectedUser.instructor_status === 'approved' && Number(selectedUser.enrollment_count) > 0 && (
                   <p className="text-xs text-gray-500 dark:text-text-dark-secondary mt-1.5">
-                    Instructor (approved) · also a Student <span className="opacity-70">(signup default)</span>
+                    Instructor (approved) · also a Student <span className="opacity-70">({selectedUser.enrollment_count} enrolled)</span>
                   </p>
                 )}
                 {selectedUser.instructor_status === 'pending' && (

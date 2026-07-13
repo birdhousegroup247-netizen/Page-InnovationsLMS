@@ -3,7 +3,7 @@ const ApiResponse = require('../../utils/response');
 const logger = require('../../utils/logger');
 const { NotFoundError, BadRequestError } = require('../../utils/errors');
 const { getPaginationParams, getPaginationMeta } = require('../../utils/pagination');
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const bcrypt = require('bcrypt');
 const emailService = require('../../services/email/emailService');
 const ActivityController = require('../activity/activityController');
@@ -37,6 +37,22 @@ class UsersController {
         offset,
         order: [['created_at', 'DESC']],
       });
+
+      // Attach a real enrollment count so the UI can treat "student" as
+      // "actually enrolled" — a teacher with 0 enrollments is not shown as a
+      // student. One grouped query, dialect-safe.
+      const ids = rows.map((u) => u.id);
+      if (ids.length) {
+        const counts = await Enrollment.findAll({
+          attributes: ['student_id', [fn('COUNT', col('id')), 'c']],
+          where: { student_id: ids },
+          group: ['student_id'],
+          raw: true,
+        });
+        const map = {};
+        counts.forEach((r) => { map[r.student_id] = Number(r.c); });
+        rows.forEach((u) => u.setDataValue('enrollment_count', map[u.id] || 0));
+      }
 
       return ApiResponse.success(res, {
         users: rows,

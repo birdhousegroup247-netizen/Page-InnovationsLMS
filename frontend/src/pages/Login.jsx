@@ -406,6 +406,11 @@ export default function Login() {
                 the code entry, not alternative sign-in options. */}
             {!twoFactor && (
             <>
+            {/* Google is hidden in the instructor context: Google sign-in only
+                ever creates a STUDENT account, so it's misleading for teachers.
+                Instructors use "Apply to teach" (email) instead. */}
+            {!(typeof window !== 'undefined' && localStorage.getItem('selectedRole') === 'instructor') && (
+            <>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-border-dark transition-colors" />
@@ -443,6 +448,8 @@ export default function Login() {
               </svg>
               Sign in with Google
             </button>
+            </>
+            )}
 
             {/* Sign Up / Apply Link — role-aware. Instructors apply (with
                 documents), students sign up directly. */}
