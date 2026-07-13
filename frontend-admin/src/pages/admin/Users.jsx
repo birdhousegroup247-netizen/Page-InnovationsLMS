@@ -657,6 +657,16 @@ export default function Users() {
     }
   };
 
+  // Dual-role: approved instructors keep role='student' in the DB (everyone
+  // signs up as a student — see backend authController + authz canTeach()).
+  // Derive the badge from instructor_status so the list shows their earned
+  // role instead of the bare signup role.
+  const getEffectiveRole = (user) => {
+    if (user.role === 'super_admin' || user.role === 'admin') return user.role;
+    if (user.role === 'instructor' || user.instructor_status === 'approved') return 'instructor';
+    return 'student';
+  };
+
   const getStatusBadgeColor = (status) => {
     switch (status) {
       case 'active': return 'success';
@@ -998,7 +1008,7 @@ export default function Users() {
                           </button>
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap hidden md:table-cell">
-                          <Badge variant={getRoleBadgeColor(user.role)}>{user.role.replace('_', ' ')}</Badge>
+                          <Badge variant={getRoleBadgeColor(getEffectiveRole(user))}>{getEffectiveRole(user).replace('_', ' ')}</Badge>
                         </td>
                         <td className="px-3 py-4 whitespace-nowrap">
                           <Badge variant={getStatusBadgeColor(user.status)}>{user.status}</Badge>
@@ -1316,13 +1326,25 @@ export default function Users() {
                   {selectedUser.email}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant={getRoleBadgeColor(selectedUser.role)}>
-                    {selectedUser.role.replace('_', ' ')}
+                  <Badge variant={getRoleBadgeColor(getEffectiveRole(selectedUser))}>
+                    {getEffectiveRole(selectedUser).replace('_', ' ')}
                   </Badge>
                   <Badge variant={getStatusBadgeColor(selectedUser.status)}>
                     {selectedUser.status}
                   </Badge>
                 </div>
+                {/* Dual-role breakdown: everyone signs up as a student; the
+                    instructor role is layered on via application + approval. */}
+                {selectedUser.instructor_status === 'approved' && selectedUser.role === 'student' && (
+                  <p className="text-xs text-gray-500 dark:text-text-dark-secondary mt-1.5">
+                    Instructor (approved) · also a Student <span className="opacity-70">(signup default)</span>
+                  </p>
+                )}
+                {selectedUser.instructor_status === 'pending' && (
+                  <p className="text-xs text-gray-500 dark:text-text-dark-secondary mt-1.5">
+                    Student <span className="opacity-70">(signup default)</span> · Instructor application pending
+                  </p>
+                )}
               </div>
             </div>
 

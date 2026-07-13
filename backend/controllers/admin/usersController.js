@@ -283,10 +283,23 @@ class UsersController {
   // Get user roles distribution
   static async getRolesDistribution(req, res, next) {
     try {
-      const students = await User.count({ where: { role: 'student' } });
-      const instructors = await User.count({ where: { role: 'instructor' } });
+      // Dual-role: approved instructors keep role='student' (everyone signs
+      // up as a student). Count by EFFECTIVE role so the tallies match the
+      // badges in the Users list — an approved instructor counts as an
+      // instructor, not a student.
       const admins = await User.count({ where: { role: 'admin' } });
       const superAdmins = await User.count({ where: { role: 'super_admin' } });
+      const instructors = await User.count({
+        where: {
+          [Op.and]: [
+            { [Op.or]: [{ role: 'instructor' }, { instructor_status: 'approved' }] },
+            { role: { [Op.notIn]: ['admin', 'super_admin'] } },
+          ],
+        },
+      });
+      const students = await User.count({
+        where: { role: 'student', instructor_status: { [Op.ne]: 'approved' } },
+      });
 
       return ApiResponse.success(res, {
         roles: {

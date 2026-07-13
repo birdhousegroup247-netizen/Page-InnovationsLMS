@@ -47,7 +47,7 @@ export const FEATURES = {
   announcements: true,    // broadcast announcements
 
   // People
-  instructorApplications: false, // staff join via the Onboarding wizard
+  instructorApplications: true, // People → Instructor Applications approval tab (apply→pending→approve loop)
   leads: false,
   enrollments: true,
   onboarding: true,       // Onboarding Center (student + staff wizards)
