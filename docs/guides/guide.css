@@ -1,0 +1,196 @@
+/* Page Innovations — printed guide stylesheet.
+   Shared by all three role guides. Tuned for Chrome headless --print-to-pdf
+   (A4, no browser headers/footers). Brand: #DF0D0D red, #191C1E ink. */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+}
+
+:root {
+  --pi-red: #DF0D0D;
+  --pi-ink: #191C1E;
+  --pi-brown: #5E3F3A;
+  --rule: #E3E3E6;
+  --muted: #5C6066;
+  --soft: #F7F7F8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: var(--pi-ink);
+  margin: 0;
+}
+
+/* ─── Cover ───────────────────────────────────────────────────────────── */
+.cover {
+  page-break-after: always;
+  padding-top: 38mm;
+  text-align: left;
+  border-top: 10px solid var(--pi-red);
+}
+.cover .logo {
+  height: 24mm;
+  width: auto;
+  max-width: 70mm;
+  display: block;
+  margin-bottom: 8mm;
+}
+.cover .brand {
+  font-size: 11pt;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--pi-red);
+  font-weight: 700;
+  margin-bottom: 6mm;
+}
+.cover h1 {
+  font-size: 32pt;
+  line-height: 1.12;
+  margin: 0 0 5mm 0;
+  border: none;
+  padding: 0;
+}
+.cover .sub {
+  font-size: 13pt;
+  color: var(--muted);
+  margin-bottom: 22mm;
+  max-width: 135mm;
+}
+.cover .meta {
+  font-size: 9.5pt;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+  padding-top: 4mm;
+}
+.cover .meta strong { color: var(--pi-ink); }
+
+/* ─── Headings ────────────────────────────────────────────────────────── */
+h1, h2, h3, h4 { page-break-after: avoid; }
+
+h2 {
+  font-size: 17pt;
+  margin: 11mm 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 2.5px solid var(--pi-red);
+  page-break-before: always;
+}
+h2.cont { page-break-before: auto; }
+
+h3 {
+  font-size: 12.5pt;
+  margin: 7mm 0 2mm;
+  color: var(--pi-brown);
+}
+
+h4 {
+  font-size: 10.5pt;
+  margin: 5mm 0 1.5mm;
+  color: var(--pi-ink);
+}
+
+p { margin: 0 0 3mm; }
+
+/* ─── Table of contents ───────────────────────────────────────────────── */
+.toc { page-break-after: always; }
+.toc h2 { page-break-before: auto; margin-top: 0; }
+.toc ol { padding-left: 6mm; }
+.toc li { margin-bottom: 1.6mm; }
+.toc .note {
+  background: var(--soft);
+  border-left: 3px solid var(--pi-red);
+  padding: 3mm 4mm;
+  margin-top: 6mm;
+  font-size: 9.5pt;
+}
+
+/* ─── Lists & steps ───────────────────────────────────────────────────── */
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; }
+
+ol.steps { counter-reset: step; list-style: none; padding-left: 0; }
+ol.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 9mm;
+  margin-bottom: 2.6mm;
+  page-break-inside: avoid;
+}
+ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.2mm;
+  width: 6mm;
+  height: 6mm;
+  background: var(--pi-red);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 8.5pt;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Callouts ────────────────────────────────────────────────────────── */
+.note, .warn, .tip {
+  padding: 3mm 4mm;
+  margin: 3mm 0 4mm;
+  font-size: 9.8pt;
+  page-break-inside: avoid;
+  border-radius: 1.5mm;
+}
+.note { background: var(--soft); border-left: 3px solid var(--pi-brown); }
+.warn { background: #FDF0F0; border-left: 3px solid var(--pi-red); }
+.tip  { background: #F1F7F2; border-left: 3px solid #2E7D46; }
+
+/* ─── Tables ──────────────────────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 3mm 0 5mm;
+  font-size: 9.6pt;
+  page-break-inside: avoid;
+}
+th {
+  background: var(--pi-ink);
+  color: #fff;
+  text-align: left;
+  padding: 2.2mm 3mm;
+  font-weight: 600;
+}
+td {
+  padding: 2.2mm 3mm;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: #FAFAFB; }
+
+/* ─── Inline bits ─────────────────────────────────────────────────────── */
+code {
+  font-family: "Consolas", "Courier New", monospace;
+  background: var(--soft);
+  padding: 0.4mm 1.4mm;
+  border-radius: 1mm;
+  font-size: 9.3pt;
+  color: var(--pi-brown);
+}
+.ui {
+  font-weight: 600;
+  color: var(--pi-ink);
+  background: #EFEFF1;
+  padding: 0.3mm 1.5mm;
+  border-radius: 1mm;
+  font-size: 9.7pt;
+  white-space: nowrap;
+}
+.path { color: var(--muted); font-size: 9.5pt; }
+
+/* ─── FAQ ─────────────────────────────────────────────────────────────── */
+.faq { page-break-inside: avoid; margin-bottom: 4mm; }
+.faq .q { font-weight: 700; color: var(--pi-brown); margin-bottom: 1mm; }

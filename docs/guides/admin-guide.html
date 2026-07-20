@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How to Administer Page Innovations — Administrator Guide</title>
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<section class="cover">
+  <img class="logo" src="logo.png" alt="">  <h1>How to Administer the Page&nbsp;Innovations Platform</h1>
+  <div class="sub">A complete, step-by-step guide for administrators — onboarding students and staff, curating the catalogue, approving instructors, managing enrollments and payments, and running the platform day to day.</div>
+  <div class="meta">
+    <strong>Audience:</strong> Administrators and office staff<br>
+    <strong>Admin panel:</strong> admin.pageinnovations.com.ng<br>
+    <strong>Document version:</strong> 1.0
+  </div>
+</section>
+
+<section class="toc">
+  <h2 class="cont">What's in this guide</h2>
+  <ol>
+    <li>How to log in to the admin panel</li>
+    <li>How to read the admin dashboard</li>
+    <li>How to find your way around — the sidebar</li>
+    <li>How to manage users</li>
+    <li>How to onboard a student through the Onboarding Centre</li>
+    <li>How to onboard a staff member</li>
+    <li>How to approve, reject, or revoke an instructor</li>
+    <li>How to build and publish a course</li>
+    <li>How to manage categories</li>
+    <li>How to assign an instructor to a course</li>
+    <li>How to manage enrollments, individually and in bulk</li>
+    <li>How to manage the question bank</li>
+    <li>How to oversee tests and results</li>
+    <li>How to review payments</li>
+    <li>How to publish a platform-wide announcement</li>
+    <li>How to use the Inbox and moderate chat</li>
+    <li>How to read analytics and activity logs</li>
+    <li>How to configure platform settings</li>
+    <li>How to show and hide features</li>
+    <li>Security, data protection, and routine housekeeping</li>
+    <li>Troubleshooting and frequently asked questions</li>
+  </ol>
+  <div class="note">
+    <strong>Who this is for.</strong> The admin panel is a separate application from the student and
+    instructor portal, at its own address. Only administrator accounts can sign in. Everything in
+    this guide affects real student records, so read section 20 before you begin.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2 class="cont">1. How to log in to the admin panel</h2>
+
+<ol class="steps">
+  <li>Go to <code>admin.pageinnovations.com.ng</code>. This is a different address from the student portal — bookmark it separately.</li>
+  <li>Enter your administrator email address and password.</li>
+  <li>If two-factor authentication is enabled, enter the current 6-digit code from your authenticator app.</li>
+  <li>You arrive at the admin dashboard.</li>
+</ol>
+
+<div class="warn">
+  <strong>Administrator accounts are the most sensitive on the platform.</strong> They can read and
+  change every student record. Use a strong, unique password, enable two-factor authentication, never
+  share the login, and always sign out on shared machines. After eight failed attempts an account is
+  temporarily locked for about 15 minutes.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>2. How to read the admin dashboard</h2>
+
+<p>The dashboard is your daily overview of the platform: how many users and students there are,
+enrollment and course activity, revenue, and recent events. Use it to spot what needs attention —
+applications waiting for review, new enrollments, and unusual drops in activity.</p>
+
+<p>Treat it as a starting point rather than a report. For real analysis, use <em>Analytics</em>
+(section 17).</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>3. How to find your way around</h2>
+
+<p>The sidebar mixes single links for frequent work with collapsible groups for the rest. Click a
+group heading to expand or collapse it; the panel remembers your choices.</p>
+
+<table>
+  <tr><th style="width:26%">Menu item</th><th style="width:16%">Group</th><th>What it is for</th></tr>
+  <tr><td>Dashboard</td><td>—</td><td>Platform overview and recent activity.</td></tr>
+  <tr><td>Users</td><td>—</td><td>Every account on the platform: search, review, and manage.</td></tr>
+  <tr><td>Onboarding</td><td>—</td><td>The Onboarding Centre: register students and staff with full records.</td></tr>
+  <tr><td>Courses</td><td>—</td><td>The course catalogue and the course builder.</td></tr>
+  <tr><td>Inbox</td><td>Messages</td><td>Direct messages between you and instructors or students.</td></tr>
+  <tr><td>Chat Moderation</td><td>Messages</td><td>Oversight of course chat rooms.</td></tr>
+  <tr><td>Announcements</td><td>—</td><td>Platform-wide and targeted notices.</td></tr>
+  <tr><td>Payments</td><td>—</td><td>Payment and revenue records.</td></tr>
+  <tr><td>Enrollments</td><td>—</td><td>Who is enrolled in what; manual and bulk enrollment.</td></tr>
+  <tr><td>Instructor Applications</td><td>People</td><td>Review and decide teaching applications.</td></tr>
+  <tr><td>Categories</td><td>Learning</td><td>The subject categories courses are filed under.</td></tr>
+  <tr><td>Question Bank</td><td>Learning</td><td>The central pool of test questions.</td></tr>
+  <tr><td>Tests</td><td>Learning</td><td>Tests across the platform and their results.</td></tr>
+  <tr><td>Analytics</td><td>Reports</td><td>Platform reporting.</td></tr>
+  <tr><td>Activity Logs</td><td>Reports</td><td>An audit trail of actions taken.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Switched off for Page Innovations:</strong> Leads, Bundles, Coupons, Referrals, Badges, and
+  Email Campaigns. These are commercial and gamification tools that do not fit the academy model. They
+  can be switched back on at any time — see section 19.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>4. How to manage users</h2>
+
+<ol class="steps">
+  <li>Click <span class="ui">Users</span> in the sidebar.</li>
+  <li>Use the search box to find someone by name or email, and the filters to narrow by role or status.</li>
+  <li>Click a row to open that person's profile.</li>
+</ol>
+
+<h3>Understanding the role badge</h3>
+<p>The list shows each person's <strong>effective role</strong> — the role that actually reflects
+what they can do:</p>
+
+<table>
+  <tr><th style="width:26%">Badge</th><th>What it means</th></tr>
+  <tr><td><strong>Super Admin</strong> / <strong>Admin</strong></td><td>Administrator accounts.</td></tr>
+  <tr><td><strong>Instructor</strong></td><td>Approved to teach. They may also hold a student capability underneath.</td></tr>
+  <tr><td><strong>Student</strong></td><td>A learner with no teaching approval.</td></tr>
+</table>
+
+<p>Opening a profile reveals the detail behind the badge. An approved instructor who has also
+enrolled in a course reads as <em>Instructor (approved) · also a Student (N enrolled)</em>. An
+instructor with no enrollments simply reads as an instructor. Someone whose application is pending
+shows as a student with an application under review.</p>
+
+<div class="note">
+  <strong>Why every account starts as a student.</strong> Nobody can sign up as an instructor. Both
+  the registration form and Google sign-in create student accounts, and teaching access is only ever
+  granted through the application and approval process, or through staff onboarding. This is a
+  deliberate safeguard — a person cannot promote themselves.
+</div>
+
+<h3>What you can do from a user profile</h3>
+<ul>
+  <li>Review their details, enrollments, and activity.</li>
+  <li>Correct their name or email if it was entered wrongly.</li>
+  <li>Manage their account status.</li>
+  <li>Review their instructor status if they have one.</li>
+</ul>
+
+<div class="warn">
+  <strong>Deleting a user is not a routine action.</strong> Removing an account takes their
+  enrollments, progress, submissions, and grades with it. If someone has simply left the programme,
+  deactivate rather than delete, so the academic record survives.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>5. How to onboard a student</h2>
+
+<p>The Onboarding Centre is how Page Innovations registers a student properly from the office, with a
+complete record — the same information a college registry keeps. It creates the account, captures
+personal, next-of-kin, and academic details, and enrolls the student in their programme in one pass.</p>
+
+<ol class="steps">
+  <li>Click <span class="ui">Onboarding</span> in the sidebar.</li>
+  <li>Choose <span class="ui">Add Student</span>.</li>
+  <li>Work through the four steps of the wizard, described below. The stepper at the top shows where you are.</li>
+  <li>Use <span class="ui">Next</span> and <span class="ui">Back</span> to move between steps.</li>
+  <li>Check the Review step carefully, then submit.</li>
+</ol>
+
+<h3>Step 1 — Personal Info</h3>
+<table>
+  <tr><th style="width:34%">Field</th><th>Notes</th></tr>
+  <tr><td>Full Name</td><td>As it should appear on official records and certificates.</td></tr>
+  <tr><td>Email Address</td><td>Must be correct and unique — this becomes their login and receives their credentials.</td></tr>
+  <tr><td>Date of Birth</td><td>From the date picker.</td></tr>
+  <tr><td>Gender</td><td>From the list.</td></tr>
+  <tr><td>Nationality</td><td>—</td></tr>
+  <tr><td>Phone Number</td><td>Include the country code.</td></tr>
+  <tr><td>Home Address</td><td>House number, street, LGA, state.</td></tr>
+</table>
+
+<h3>Step 2 — Next of Kin</h3>
+<p>The student's emergency contact: full name, relationship, contact number, and residential address.
+Get the contact number right — this is the number that gets called in an emergency.</p>
+
+<h3>Step 3 — Academic</h3>
+<table>
+  <tr><th style="width:34%">Field</th><th>Notes</th></tr>
+  <tr><td>Enrollment Type</td><td><strong>On-site</strong> for in-person learning at a Page Innovations campus, or <strong>Virtual Class</strong> for live online sessions with remote access to materials.</td></tr>
+  <tr><td>Course / Program Selection</td><td>The programme they are joining. This drives their actual enrollment.</td></tr>
+  <tr><td>Preferred Start Date</td><td>When they begin.</td></tr>
+  <tr><td>Highest Qualification</td><td>Their highest completed level of education.</td></tr>
+</table>
+
+<h3>Step 4 — Review and submit</h3>
+<ol class="steps">
+  <li>Read every row on the review screen. Check the email address character by character — a wrong address means the student never receives their credentials.</li>
+  <li>Confirm the programme is the one they paid for.</li>
+  <li>Submit.</li>
+  <li>The account is created and a <strong>temporary password</strong> is displayed. Use the copy button next to it.</li>
+  <li>Give the student their email address and temporary password, and tell them to change it at first login.</li>
+</ol>
+
+<div class="warn">
+  <strong>The temporary password is shown once.</strong> Copy it before you leave the screen. If it is
+  lost, the student must use the "Forgot password" flow on the portal instead.
+</div>
+
+<div class="tip">
+  <strong>Which route should a student take?</strong> Use the Onboarding Centre when the office is
+  registering someone with their full record — walk-ins, campus intakes, corporate cohorts. Let
+  students self-register on the portal when they can complete their own details; they pick their
+  course during signup and are enrolled automatically.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>6. How to onboard a staff member</h2>
+
+<p>The staff wizard creates an employee record — personal details, employment terms, and payroll
+information — alongside the platform account.</p>
+
+<ol class="steps">
+  <li>Click <span class="ui">Onboarding</span>, then <span class="ui">Add Staff</span>.</li>
+  <li>Work through the four steps.</li>
+  <li>Review and submit.</li>
+  <li>Copy the temporary password and hand it to the staff member securely.</li>
+</ol>
+
+<h3>Step 1 — Personal Info</h3>
+<p>Full name, email address, phone number, date of birth, and residential address.</p>
+
+<h3>Step 2 — Employment</h3>
+<table>
+  <tr><th style="width:34%">Field</th><th>Notes</th></tr>
+  <tr><td>Job Title</td><td>Their designation, for example <em>Senior Instructor</em>.</td></tr>
+  <tr><td>Department</td><td>—</td></tr>
+  <tr><td>Employment Type</td><td>Full-time, part-time, contract, and so on.</td></tr>
+  <tr><td>Start Date</td><td>Their first day.</td></tr>
+  <tr><td>Manager / Supervisor</td><td>Who they report to.</td></tr>
+</table>
+
+<h3>Step 3 — Compensation</h3>
+<table>
+  <tr><th style="width:34%">Field</th><th>Notes</th></tr>
+  <tr><td>Monthly Base Salary (₦)</td><td>Gross monthly salary.</td></tr>
+  <tr><td>Bank Name and Account Number (NUBAN)</td><td>For salary payment. Verify the 10-digit NUBAN against the staff member's own record.</td></tr>
+  <tr><td>Tax Identification Number (TIN)</td><td>—</td></tr>
+  <tr><td>PFA Name and RSA PIN</td><td>Pension fund administrator and retirement savings account details.</td></tr>
+  <tr><td>HMO Provider and Dependent Coverage</td><td>Health cover arrangements.</td></tr>
+</table>
+
+<div class="warn">
+  <strong>Payroll and bank details are highly sensitive personal data.</strong> Enter them only from
+  documents the staff member has provided, never from memory or from a message. Do not photograph or
+  forward this screen. Access it only on a machine you control.
+</div>
+
+<h3>Step 4 — Review and submit</h3>
+<p>Check every value, especially the bank account number and salary figure, then submit and copy the
+temporary password.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>7. How to approve an instructor</h2>
+
+<p>This is where teaching access is granted. It is the platform's main safeguard, so treat it as a
+genuine review rather than a formality.</p>
+
+<ol class="steps">
+  <li>Expand the <strong>People</strong> group and click <span class="ui">Instructor Applications</span>.</li>
+  <li>The page shows counts by status and a list of applications with the applicant's name, status, and submission date.</li>
+  <li>Click an application row to open the full detail.</li>
+  <li>Review everything: biography, qualifications, experience, subjects, phone, address, portfolio link, CV, and each uploaded credential document. Open the documents — do not approve on the summary alone.</li>
+  <li>Decide, using the buttons on the application.</li>
+</ol>
+
+<h3>The three decisions</h3>
+<table>
+  <tr><th style="width:20%">Action</th><th>Effect</th><th style="width:20%">Reason required?</th></tr>
+  <tr>
+    <td><strong>Approve</strong></td>
+    <td>Teaching access is switched on for their existing account. They can reach the instructor portal after signing out and back in. In the Users list they now read as <strong>Instructor</strong>.</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td><strong>Reject</strong></td>
+    <td>The application is declined and the applicant keeps their ordinary account.</td>
+    <td>Recommended</td>
+  </tr>
+  <tr>
+    <td><strong>Revoke</strong></td>
+    <td>Withdraws teaching access from someone previously approved.</td>
+    <td><strong>Yes — required</strong></td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>Revoking is serious.</strong> It removes access to courses, grading, and student records.
+  Record a clear reason — the field is compulsory precisely so there is an accountable trail. Check
+  first whether their courses need reassigning to another instructor.
+</div>
+
+<h3>What to check before approving</h3>
+<ul>
+  <li>Do the qualifications actually match the subjects they want to teach?</li>
+  <li>Do the uploaded documents open, and do they belong to this applicant?</li>
+  <li>Does the experience stand up — real roles, real durations?</li>
+  <li>Does the portfolio link work?</li>
+  <li>Has Page Innovations verified this person by its normal recruitment process?</li>
+</ul>
+
+<div class="note">
+  <strong>Instructor applicants skip email verification</strong> by design — your review is the
+  identity check that replaces it. That makes the thoroughness of this review important.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>8. How to build and publish a course</h2>
+
+<p>Page Innovations curates its catalogue centrally: administrators create courses, and instructors
+teach the ones assigned to them.</p>
+
+<h3>Creating the course</h3>
+<ol class="steps">
+  <li>Click <span class="ui">Courses</span> in the sidebar.</li>
+  <li>Click <span class="ui">Create course</span>.</li>
+  <li>Enter the title, description, category, and price, and upload a cover image.</li>
+  <li>Save it. New courses start as drafts, invisible to students.</li>
+</ol>
+
+<h3>Adding modules and lessons</h3>
+<ol class="steps">
+  <li>Open the course and go to its builder.</li>
+  <li>Click <span class="ui">Add Module</span>, give it a title — required — and a description, then save. Modules are the major units of the course.</li>
+  <li>Expand a module and click <span class="ui">Add Lesson</span> inside it.</li>
+  <li>Give the lesson a title and add its content — video, article, or attached file.</li>
+  <li>Save, and use the preview to check it renders as a student will see it.</li>
+  <li>Repeat until the outline is complete, then arrange modules and lessons in teaching order.</li>
+</ol>
+
+<h3>Publishing</h3>
+<ol class="steps">
+  <li>Review the whole outline for gaps, wrong ordering, and broken uploads.</li>
+  <li>Confirm the category, description, and price are right.</li>
+  <li>Change the course status to <strong>published</strong>.</li>
+</ol>
+
+<div class="warn">
+  <strong>Publishing has a side effect worth knowing.</strong> Published courses appear in the course
+  picker on the student registration form. Publishing a half-built course means students can select
+  it and enrol into empty material. Publish only when it is genuinely ready.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>9. How to manage categories</h2>
+
+<ol class="steps">
+  <li>Expand the <strong>Learning</strong> group and click <span class="ui">Categories</span>.</li>
+  <li>Add, rename, or remove categories as needed.</li>
+</ol>
+<p>Categories organise the catalogue and help students browse. Keep the list short and meaningful — a
+handful of broad subjects beats dozens of overlapping ones. Check what a category contains before
+deleting it, so you do not orphan courses.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>10. How to assign an instructor to a course</h2>
+
+<p>Instructors cannot assign themselves — this is always an administrator action, and it is what makes
+a course appear in an instructor's <em>My Courses</em>.</p>
+
+<ol class="steps">
+  <li>Open <span class="ui">Courses</span> and select the course.</li>
+  <li>Find its instructor setting.</li>
+  <li>Choose the instructor. Only approved instructors appear in the list — if someone is missing, their application has not been approved yet (see section 7).</li>
+  <li>Save.</li>
+  <li>Tell the instructor. The course now appears in their portal with its enrolled students, and they can manage its content, sessions, assignments, and tests.</li>
+</ol>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>11. How to manage enrollments</h2>
+
+<p>Enrollment is what connects a student to a course. Most enrollments happen automatically — at
+signup, when the student picks their programme, or through the Onboarding Centre. Use this page for
+corrections and for cohorts.</p>
+
+<h3>Reviewing enrollments</h3>
+<ol class="steps">
+  <li>Click <span class="ui">Enrollments</span> in the sidebar.</li>
+  <li>Search and filter to find the records you need. The list shows the student, the course, and the status.</li>
+</ol>
+
+<h3>Enrolling one student</h3>
+<ol class="steps">
+  <li>Click <span class="ui">Enroll student</span>.</li>
+  <li>Select the student.</li>
+  <li>Select the course.</li>
+  <li>Confirm. The student now sees the course in their portal, is added to its chat room, and receives the usual notifications.</li>
+</ol>
+
+<h3>Enrolling a whole cohort at once</h3>
+<ol class="steps">
+  <li>Click the <span class="ui">Bulk enroll</span> option.</li>
+  <li>Follow the on-screen instructions to supply your list of students and the target course.</li>
+  <li>Review what the screen reports before confirming — check the number of rows matches what you expected.</li>
+  <li>Confirm, then spot-check a few students in the list to be sure it worked.</li>
+</ol>
+
+<div class="tip">
+  <strong>Bulk enrollment is the fastest way to make a big mess.</strong> Verify the course and the
+  student list before confirming. Run one small batch first if you are unsure of the format.
+</div>
+
+<div class="warn">
+  <strong>Removing an enrollment removes the student's access to that course</strong> and their
+  progress within it. Confirm you have the right student and the right course before you unenroll.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>12. How to manage the question bank</h2>
+
+<p>The question bank is the shared pool instructors draw on when building tests. It is administered
+centrally at Page Innovations.</p>
+
+<ol class="steps">
+  <li>Expand the <strong>Learning</strong> group and click <span class="ui">Question Bank</span>.</li>
+  <li>Browse by category, or search for a specific question.</li>
+  <li>Add a question, or open an existing one to edit it.</li>
+  <li>When adding, set the question text, the answer options, the correct answer, the course or category it belongs to, and its difficulty.</li>
+  <li>Save.</li>
+</ol>
+
+<h3>Importing questions in bulk</h3>
+<p>Questions can be imported from a CSV file rather than typed one at a time. Follow the on-screen
+format instructions exactly, and import a small test batch first to confirm your file is right before
+loading hundreds of rows.</p>
+
+<div class="warn">
+  <strong>Check the answer key.</strong> A question with the wrong correct answer marked will
+  penalise every student who answers it properly — and it is usually discovered only after a test has
+  been sat. Review new questions before they go into circulation.
+</div>
+
+<div class="note">
+  <strong>Access is gated by enrollment.</strong> Students only ever see questions belonging to
+  courses they are enrolled in, and instructors only those for courses they teach. This is enforced
+  by the platform, not by convention.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>13. How to oversee tests and results</h2>
+
+<ol class="steps">
+  <li>Expand the <strong>Learning</strong> group and click <span class="ui">Tests</span>.</li>
+  <li>Review the tests that exist across the platform, their courses, and their settings.</li>
+  <li>Open a test's results to see attempts and scores.</li>
+</ol>
+
+<p>Day-to-day test creation and result release belong to instructors. Use this view for oversight —
+checking that assessment is actually happening, investigating a disputed result, or helping an
+instructor who is stuck.</p>
+
+<div class="note">
+  <strong>If students report missing scores,</strong> the test is almost certainly set to withhold
+  results and the instructor has not released them yet. Point the instructor to the release control
+  rather than changing anything yourself.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>14. How to review payments</h2>
+
+<ol class="steps">
+  <li>Click <span class="ui">Payments</span> in the sidebar.</li>
+  <li>Review transactions and revenue records, and search for a specific student's payment.</li>
+</ol>
+
+<div class="warn">
+  <strong>Payment records are the Payments page's business alone.</strong> Never try to correct a
+  payment by editing an enrollment, a user, or a course — those actions must not write payment state.
+  If a payment record looks wrong, resolve it here, and escalate anything you cannot explain rather
+  than patching around it.
+</div>
+
+<p>Where fees are collected at the Page Innovations office rather than online, this page may show
+little activity. That is expected — the student portal's billing page is switched off for exactly
+this reason.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>15. How to publish an announcement</h2>
+
+<ol class="steps">
+  <li>Click <span class="ui">Announcements</span> in the sidebar.</li>
+  <li>Click <span class="ui">Create</span>.</li>
+  <li>Write a specific title and a clear body.</li>
+  <li>Choose the audience — the whole platform, or a particular course.</li>
+  <li>Publish. Recipients see it in their portal and receive a notification.</li>
+</ol>
+
+<div class="tip">
+  <strong>Reserve platform-wide announcements for things that genuinely affect everyone</strong> —
+  closures, system maintenance, policy changes. Course-level notices are the instructor's job. Broadcast
+  too often and people stop reading.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>16. How to use the Inbox and moderate chat</h2>
+
+<h3>Inbox</h3>
+<ol class="steps">
+  <li>Expand the <strong>Messages</strong> group and click <span class="ui">Inbox</span>.</li>
+  <li>Read and reply to direct conversations with instructors and students.</li>
+</ol>
+
+<h3>Chat Moderation</h3>
+<ol class="steps">
+  <li>Expand the <strong>Messages</strong> group and click <span class="ui">Chat Moderation</span>.</li>
+  <li>Review course chat rooms and their activity.</li>
+  <li>Remove inappropriate content where Page Innovations policy requires it.</li>
+</ol>
+
+<div class="note">
+  <strong>Moderate with a light touch.</strong> Course chat is a teaching space. Intervene for
+  conduct breaches, harassment, or leaked assessment answers — not for ordinary disagreement or
+  off-topic chatter, which the instructor can handle.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>17. How to read analytics and activity logs</h2>
+
+<h3>Analytics</h3>
+<ol class="steps">
+  <li>Expand the <strong>Reports</strong> group and click <span class="ui">Analytics</span>.</li>
+  <li>Review enrollment trends, course performance, completion rates, and revenue.</li>
+</ol>
+<p>Useful questions to bring to this page: which programmes fill and which do not; where students
+stop completing lessons; whether attendance holds up through a cohort.</p>
+
+<h3>Activity Logs</h3>
+<ol class="steps">
+  <li>Expand the <strong>Reports</strong> group and click <span class="ui">Activity Logs</span>.</li>
+  <li>Review the record of actions taken on the platform.</li>
+</ol>
+<p>This is your audit trail. Consult it when you need to establish who changed what and when — a
+disputed grade, an unexpected enrollment change, or a revoked access.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>18. How to configure platform settings</h2>
+
+<ol class="steps">
+  <li>Open <span class="ui">Settings</span> from the sidebar or your account menu.</li>
+  <li>Review the platform configuration available to you.</li>
+  <li>Change one thing at a time, save, and verify the effect on the student or instructor portal before moving on.</li>
+</ol>
+
+<div class="warn">
+  <strong>Settings apply to everyone immediately.</strong> There is no preview and no draft. Make
+  changes deliberately, ideally outside teaching hours, and note what you changed in case it needs
+  reverting.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>19. How to show and hide features</h2>
+
+<p>Several features are deliberately hidden for the Page Innovations academy model. Hiding is
+centrally controlled rather than done by deleting code, so anything switched off can be switched back
+on without rebuilding it.</p>
+
+<h3>Currently hidden — student portal</h3>
+<p>Practice Tests, Generate Test, Wishlist, Saved Lessons, Certificates, Leaderboard, Bundles,
+Billing, Refer &amp; Earn, and Knowledge Base. Billing is off because fees are handled at the office.</p>
+
+<h3>Currently hidden — instructor portal</h3>
+<p>Create Course and Contribute Questions, because the catalogue and question bank are curated
+centrally.</p>
+
+<h3>Currently hidden — admin panel</h3>
+<p>Leads, Bundles, Coupons, Referrals, Badges, and Email Campaigns.</p>
+
+<h3>Currently switched on and specific to Page Innovations</h3>
+<p>The Onboarding Centre, cohort mode — which asks students to select their paid programme during
+signup — and the enrollment profile form that collects next-of-kin and academic background.</p>
+
+<div class="note">
+  <strong>To change what is visible,</strong> ask your technical contact. Each hideable feature has a
+  single named switch, and turning one on or off takes effect across the sidebar, the page itself,
+  and its direct web address together — so a hidden feature cannot be reached by guessing a URL.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>20. Security, data protection, and housekeeping</h2>
+
+<h3>Protecting your own account</h3>
+<ul>
+  <li>Use a strong, unique password and change any temporary one immediately.</li>
+  <li>Enable two-factor authentication.</li>
+  <li>Never share an administrator login. If another person needs access, they get their own account — shared logins destroy the audit trail.</li>
+  <li>Sign out properly on shared or public machines.</li>
+</ul>
+
+<h3>Protecting student and staff data</h3>
+<p>The platform holds personal data that carries real obligations: next-of-kin contacts, addresses,
+dates of birth, bank account numbers, salaries, tax identification numbers, pension and health
+details, and academic records.</p>
+<ul>
+  <li>Open these records only when you have a genuine reason.</li>
+  <li>Never export, photograph, screenshot, or forward them outside Page Innovations.</li>
+  <li>Never discuss a student's grades, attendance, or personal circumstances with anyone not entitled to know.</li>
+  <li>Work on a machine you control, with a locked screen when you step away.</li>
+</ul>
+
+<h3>Before any destructive action</h3>
+<p>Deleting users, removing enrollments, deleting courses or modules, and revoking instructors all
+destroy records that people depend on. Before you act:</p>
+<ol class="steps">
+  <li>Confirm you have the right record — check the email address, not just the name.</li>
+  <li>Ask whether deactivating would achieve the same thing while preserving history.</li>
+  <li>Consider what the action takes with it — deleting a module deletes its lessons; deleting a user deletes their grades.</li>
+  <li>Where the action affects a person's standing, record why.</li>
+</ol>
+
+<h3>A suggested routine</h3>
+<table>
+  <tr><th style="width:20%">Rhythm</th><th>What to do</th></tr>
+  <tr><td><strong>Daily</strong></td><td>Clear pending instructor applications; check the Inbox; scan the dashboard for anything unusual.</td></tr>
+  <tr><td><strong>Weekly</strong></td><td>Review new enrollments for errors; confirm every active course has an instructor assigned; skim chat moderation.</td></tr>
+  <tr><td><strong>Per intake</strong></td><td>Onboard the cohort; verify enrollments landed on the right programme; check courses are published and complete.</td></tr>
+  <tr><td><strong>Monthly</strong></td><td>Review analytics and payments; audit administrator accounts and remove any that are no longer needed.</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>21. Troubleshooting and FAQs</h2>
+
+<div class="faq">
+  <div class="q">An approved instructor still sees the student view.</div>
+  <p>Their session is holding the old permissions. Ask them to sign out completely and back in, then
+  use the view switcher in the top bar.</p>
+</div>
+
+<div class="faq">
+  <div class="q">Why does an instructor still show a student side on their profile?</div>
+  <p>Because one account carries both capabilities by design — it lets teaching staff take courses
+  too. The list badge shows their earned role, <strong>Instructor</strong>. The profile only mentions
+  a student side when they are actually enrolled in something.</p>
+</div>
+
+<div class="faq">
+  <div class="q">Someone says they registered as an instructor but landed in the student portal.</div>
+  <p>Working as intended — nobody can sign up as an instructor. They must apply through
+  <em>Become an Instructor</em>, and you approve the application. See section 7.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A student signed up with Google and has no course.</div>
+  <p>Google sign-up skips the course picker. The portal prompts them to select their programme, and a
+  banner nags until they do. Alternatively, enrol them yourself from the Enrollments page.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A student enrolled in the wrong course.</div>
+  <p>Fix it on the Enrollments page: remove the wrong enrollment and add the correct one. Students
+  cannot do this themselves.</p>
+</div>
+
+<div class="faq">
+  <div class="q">An instructor cannot see a course they are meant to teach.</div>
+  <p>They have not been assigned to it. Open the course and set its instructor — see section 10.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A course is not appearing for students.</div>
+  <p>It is still a draft. Publish it. Remember that publishing also makes it selectable on the signup
+  form.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A student never received their verification email.</div>
+  <p>Have them check Spam, Junk, and Promotions, and use the resend option. If it still fails, verify
+  the address on their account is correct and correct it if not. Persistent failures across many
+  students point at the email service — escalate to your technical contact.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A student lost their temporary password.</div>
+  <p>Temporary passwords are shown once and cannot be retrieved. Have them use "Forgot password" on
+  the student portal.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A user is locked out.</div>
+  <p>Eight consecutive failed logins lock an account for about 15 minutes. Advise them to wait and
+  then reset their password rather than continuing to guess.</p>
+</div>
+
+<div class="faq">
+  <div class="q">Students report missing test scores.</div>
+  <p>The instructor set the test to withhold results and has not released them. Direct the instructor
+  to the release control.</p>
+</div>
+
+<div class="faq">
+  <div class="q">A student disputes their attendance.</div>
+  <p>Their instructor owns the register and can correct it from the session's attendance view. If you
+  need to establish what happened, consult the Activity Logs.</p>
+</div>
+
+<div class="faq">
+  <div class="q">Where are Coupons, Bundles, Referrals, and Email Campaigns?</div>
+  <p>Switched off for the academy model. They can be re-enabled — see section 19.</p>
+</div>
+
+<div class="faq">
+  <div class="q">Bulk enrollment put students in the wrong course.</div>
+  <p>Remove the incorrect enrollments from the Enrollments page and re-run against the right course.
+  In future, verify the target course before confirming, and trial one small batch first.</p>
+</div>
+
+<div class="note" style="margin-top:8mm">
+  <strong>Page Innovations Administrator Guide, version 1.0.</strong> Screens may differ slightly as
+  the platform is improved. If something on your screen does not match this guide, the screen is right
+  and the guide needs updating — please have it corrected.
+</div>
+
+</body>
+</html>
