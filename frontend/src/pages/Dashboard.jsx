@@ -17,7 +17,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import { profileAPI, enrollmentsAPI, coursesAPI } from '../lib/api';
-import { setActiveView } from '../utils/authz';
+import { setActiveView, canTeach, isAdmin } from '../utils/authz';
 import StreakCard from '../components/dashboard/StreakCard';
 import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { Container } from '../components/layout';
@@ -38,12 +38,18 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // These two nudges are for REAL students only. Don't test role==='student':
+  // approved instructors keep role='student' under the dual-role design, so
+  // that check dragged teachers into /complete-profile and /select-course and
+  // they could never reach their teaching view. Gate on capability instead.
+  const isPureStudent = !!user && !canTeach(user) && !isAdmin(user);
+
   // Post-signup enrollment profile nudge (Page Innovations). Complete when
   // next-of-kin name exists (works whether the student self-completed or an
-  // admin entered it). Students only.
+  // admin entered it).
   const needsProfile =
     isFeatureOn('completeProfile') &&
-    user?.role === 'student' &&
+    isPureStudent &&
     !user?.onboarding_profile?.next_of_kin?.full_name;
 
   // Send a brand-new student to the form once per session (they can Skip).
@@ -61,7 +67,7 @@ export default function Dashboard() {
   const cohortMode = isFeatureOn('cohortMode');
   const [needsCourse, setNeedsCourse] = useState(false);
   useEffect(() => {
-    if (!cohortMode || user?.role !== 'student') return;
+    if (!cohortMode || !isPureStudent) return;
     let active = true;
     enrollmentsAPI.getMyCourses()
       .then((res) => {
